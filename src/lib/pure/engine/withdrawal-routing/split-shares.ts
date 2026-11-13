@@ -16,7 +16,7 @@ const percent = (share: number) =>
 
 /** Each account's share of the year's need: need × split / Σsplit, a
  *  negative or missing split counted as 0, each correction a warning (the
- *  response says how splits off 100% were read). All at 0% routes nothing. */
+ *  response says how splits off 100% were read). All at 0%: all shares 0. */
 export function splitShares(
   splits: Record<AccountCategory, number>,
   warnings: string[],
@@ -34,7 +34,7 @@ export function splitShares(
   if (Math.abs(sum - 1) <= SUM_TOLERANCE) return counted;
   if (sum <= 0) {
     warnings.push(
-      "Withdrawal splits sum to 0%: percentage mode withdraws nothing this year.",
+      "Withdrawal splits sum to 0%: this year is drawn from every account in proportion to what each can give.",
     );
     return counted;
   }

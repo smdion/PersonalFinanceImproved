@@ -29,7 +29,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     !input.decumulationDefaults.withdrawalSplits
   ) {
     warnings.push(
-      "Percentage withdrawal mode selected but no withdrawal splits configured — withdrawals will be $0. Configure splits in Retirement settings.",
+      "Percentage withdrawal mode selected but no withdrawal splits configured — each year is drawn from every account in proportion to what each can give. Configure splits in Retirement settings.",
     );
   }
 

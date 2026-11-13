@@ -367,6 +367,25 @@ describe("answer key: Waterfall and Percentage routing", () => {
     expect(r.warnings.join()).toMatch(/below 0% for hsa/);
   });
 
+  it("strategies/PC-SUM5 [WDR-03] splits summing to 0%: 100,000 placed by what each account can give", () => {
+    // No share: the whole need goes to the 0%-share accounts in proportion
+    // to what each can give (DESIGN 373): A 300,000 and C 100,000 of room,
+    // so A 75,000 and C 25,000; nothing unmet. Before: nothing drawn and
+    // nothing reported unmet.
+    const r = routeForMode(
+      100_000,
+      splitsOf({}),
+      abc({ brokerage: 300_000, hsa: 0, k401: 100_000 }),
+      noBrackets,
+    );
+    const d = drawn(r.slots);
+    cents(
+      { A: d.brokerage, C: d["401k"], unmet: r.unmetNeed ?? 0 },
+      { A: 75_000, C: 25_000, unmet: 0 },
+    );
+    expect(r.warnings.join()).toMatch(/sum to 0%/);
+  });
+
   it("strategies/PC-SUM4 [WDR-03] splits summing to 100%: no warning", () => {
     const r = routeForMode(
       100_000,

@@ -34,7 +34,6 @@ export function routeWithdrawalsPercentage(
     getAllCategories().map((cat) => [cat, getTotalBalance(balances[cat])]),
   ) as Record<AccountCategory, number>;
 
-  // Initial allocation by split percentage
   const targets: Record<AccountCategory, number> = Object.fromEntries(
     getAllCategories().map((cat) => [
       cat,
@@ -42,8 +41,9 @@ export function routeWithdrawalsPercentage(
     ]),
   ) as Record<AccountCategory, number>;
 
-  // Apply account caps and clamp to available balance
-  let excess = 0;
+  // Apply account caps and clamp to available balance; with every share 0,
+  // the whole need is placed below by room (0%-share accounts' rule).
+  let excess = Object.values(shares).some((s) => s > 0) ? 0 : targetWithdrawal;
   const cappedAccounts = new Set<AccountCategory>();
   for (const cat of getAllCategories()) {
     const accountCap = config.withdrawalAccountCaps[cat];
