@@ -3,6 +3,10 @@ import type { resolveAccumulationConfig } from "../override-resolution";
 import { yearContributionTarget, yearZeroBasis } from "./contribution-target";
 import { routeYearSlots, yearContributionLimits } from "./contribution-slots";
 import { yearContributionTotals } from "./contribution-credits";
+import { roundToCents } from "../../../utils/math";
+import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
+import { gapYearNeed } from "../gap-year-need";
+import type { ContributionState } from "@/lib/pure/contributions/contribution-state";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -101,6 +105,27 @@ export function sizeYearContributions(
     age,
   );
 
+  const rampAmount = yearRampAmount(
+    yearIndex,
+    input.brokerageContributionRamp,
+    contribution,
+  );
+  // A gap year's need, from the pay and contributions before any is credited.
+  const gapNeed = setup.gapYear
+    ? gapYearNeed(ctx, {
+        year,
+        age,
+        fraction: proRate,
+        payByPerson: (hasPerPersonSalary
+          ? [...projectedSalaryByPerson.values()]
+          : [projectedSalary]
+        ).map((p) => p * proRate),
+        budget: state.projectedExpenses * proRate,
+        employeeContributions: totalEmployee + rampAmount,
+        pretaxContributions: totalTraditional,
+      })
+    : null;
+
   return {
     proRate,
     targetContribution,
@@ -115,5 +140,22 @@ export function sizeYearContributions(
     totalTraditional,
     overflowToBrokerage,
     totalTaxAdvSpace,
+    rampAmount,
+    gapNeed,
   };
+}
+
+/** The brokerage contribution ramp: $X more each year from year 1, none in a stopped year. */
+function yearRampAmount(
+  yearIndex: number,
+  brokerageContributionRamp: ProjectionContext["input"]["brokerageContributionRamp"],
+  contribution: ContributionState,
+) {
+  const rampYear = Math.min(yearIndex, MAX_BROKERAGE_RAMP_YEARS);
+  return brokerageContributionRamp != null &&
+    brokerageContributionRamp > 0 &&
+    yearIndex > 0 &&
+    contribution.kind !== "stopped"
+    ? roundToCents(brokerageContributionRamp * rampYear)
+    : 0;
 }

@@ -4066,7 +4066,7 @@
       "count": 17
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/pure/engine/projection-year-handlers/contribution-slots.ts": {

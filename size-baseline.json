@@ -286,15 +286,15 @@
     "src/lib/pure/engine/individual-accounts/reconcile.ts": 353,
     "src/lib/pure/engine/individual-accounts/withdrawals.ts": 320,
     "src/lib/pure/engine/irmaa-check.ts": 86,
-    "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 259,
-    "src/lib/pure/engine/projection-year-handlers/contribution-credits.ts": 224,
+    "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 249,
+    "src/lib/pure/engine/projection-year-handlers/contribution-credits.ts": 209,
     "src/lib/pure/engine/projection-year-handlers/contribution-slots.ts": 236,
     "src/lib/pure/engine/projection-year-handlers/contribution-target.ts": 182,
     "src/lib/pure/engine/projection-year-handlers/decumulation-income.ts": 67,
     "src/lib/pure/engine/projection-year-handlers/decumulation-row.ts": 159,
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 162,
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 61,
-    "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 152,
+    "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 128,
     "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 97,
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 454,
     "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": 59,
@@ -961,13 +961,13 @@
       "routePercentage": 189
     },
     "src/lib/pure/engine/gap-year-draw.ts": {
-      "runGapYearDraw": 309
+      "runGapYearDraw": 221
     },
     "src/lib/pure/engine/individual-accounts/contributions.ts": {
       "distributeContributions": 322
     },
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
-      "runAccumulationYear": 234
+      "runAccumulationYear": 224
     },
     "src/lib/pure/engine/projection-year-handlers/context.ts": {
       "buildProjectionContext": 181

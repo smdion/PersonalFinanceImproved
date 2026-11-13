@@ -9,42 +9,18 @@ import {
   goalFundingBalance,
 } from "../individual-accounts/withdrawals";
 import { shortfallFloor, runGapYearDraw } from "../gap-year-draw";
-import type {
-  PreYearSetup,
-  ProjectionContext,
-  ProjectionLoopState,
-} from "./types";
+import type { GapYearNeed } from "../gap-year-need";
+import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** A gap year's spending, drawn from the accounts before growth. */
 export function yearGapDraw(
-  setup: PreYearSetup,
   ctx: ProjectionContext,
   state: ProjectionLoopState,
+  gapNeed: GapYearNeed | null,
   year: number,
-  age: number,
-  proRate: number,
-  hasPerPersonSalary: boolean,
-  projectedSalaryByPerson: PreYearSetup["effectiveSalaryByPerson"],
-  projectedSalary: number,
-  totalEmployee: number,
-  rampAmount: number,
-  totalTraditional: number,
   routeWarnings: string[],
 ) {
-  const gapRun = setup.gapYear
-    ? runGapYearDraw(ctx, state, {
-        year,
-        age,
-        fraction: proRate,
-        payByPerson: (hasPerPersonSalary
-          ? [...projectedSalaryByPerson.values()]
-          : [projectedSalary]
-        ).map((p) => p * proRate),
-        budget: state.projectedExpenses * proRate,
-        employeeContributions: totalEmployee + rampAmount,
-        pretaxContributions: totalTraditional,
-      })
-    : null;
+  const gapRun = gapNeed ? runGapYearDraw(ctx, state, gapNeed) : null;
   const gapDraw = gapRun?.draw ?? null;
   if (gapDraw) {
     routeWarnings.push(...gapDraw.warnings);

@@ -69,7 +69,6 @@ export function runAccumulationYear(
   const {
     currentSalary,
     limitGrowthRate,
-    brokerageContributionRamp,
     decumulationDefaults,
     retirementYear,
   } = input;
@@ -87,7 +86,6 @@ export function runAccumulationYear(
     proRate,
     targetContribution,
     personPay,
-    contribution,
     slots,
     routeWarnings,
     rateCeilingScale,
@@ -97,19 +95,19 @@ export function runAccumulationYear(
     totalTraditional,
     overflowToBrokerage,
     totalTaxAdvSpace,
+    rampAmount,
+    gapNeed,
   } = sizeYearContributions(ctx, state, setup, {
     yearIndex,
     config,
     lgf,
     contributionSpecs,
   });
-  const { rampAmount } = creditYearContributions(
+  creditYearContributions(
     slots,
     balances,
     accountBalance,
-    yearIndex,
-    brokerageContributionRamp,
-    contribution,
+    rampAmount,
     OVERFLOW_CATEGORY,
     indAccounts,
     indKey,
@@ -143,18 +141,10 @@ export function runAccumulationYear(
       indBasis,
     );
   const { gapRun, gapDraw } = yearGapDraw(
-    setup,
     ctx,
     state,
+    gapNeed,
     year,
-    age,
-    proRate,
-    hasPerPersonSalary,
-    projectedSalaryByPerson,
-    projectedSalary,
-    totalEmployee,
-    rampAmount,
-    totalTraditional,
     routeWarnings,
   );
 

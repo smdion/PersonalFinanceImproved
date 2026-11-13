@@ -11,15 +11,11 @@ import {
   addBalance,
   addBasis,
 } from "../../accounts/account-balance";
-import {
-  OVERFLOW_TOLERANCE,
-  MAX_BROKERAGE_RAMP_YEARS,
-} from "../../../constants";
+import { OVERFLOW_TOLERANCE } from "../../../constants";
 import type { resolveAccumulationConfig } from "../override-resolution";
 import { distributeContributions } from "../individual-accounts/contributions";
 import { accrueIndividualBasis, credit } from "../individual-accounts/ledger";
 import { ownPartCredits } from "../individual-accounts/own-part-credits";
-import type { ContributionState } from "@/lib/pure/contributions/contribution-state";
 import { applyLumpSums } from "./lump-sum";
 import type {
   yearContributionTarget,
@@ -95,9 +91,7 @@ export function creditYearContributions(
   slots: AccumulationSlot[],
   balances: ProjectionLoopState["balances"],
   accountBalance: ProjectionLoopState["accountBalance"],
-  yearIndex: number,
-  brokerageContributionRamp: ProjectionContext["input"]["brokerageContributionRamp"],
-  contribution: ContributionState,
+  rampAmount: number,
   OVERFLOW_CATEGORY: ProjectionContext["OVERFLOW_CATEGORY"],
   indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
@@ -134,14 +128,7 @@ export function creditYearContributions(
     }
   }
 
-  // Apply brokerage contribution ramp (additional $X x year index, starting year 1)
-  const rampYear = Math.min(yearIndex, MAX_BROKERAGE_RAMP_YEARS);
-  const rampAmount =
-    (brokerageContributionRamp ?? 0) > 0 &&
-    yearIndex > 0 &&
-    contribution.kind !== "stopped"
-      ? roundToCents(brokerageContributionRamp! * rampYear)
-      : 0;
+  // The brokerage contribution ramp, sized with the year's contributions.
   if (rampAmount > 0) {
     balances.afterTax += rampAmount;
     balances.afterTaxBasis += rampAmount;
@@ -154,8 +141,6 @@ export function creditYearContributions(
   followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
     applyLumpSums(config.lumpSums, ctx, state),
   );
-
-  return { rampAmount };
 }
 
 /** The year's contributions, match, overflow and ramp, spread to each account. */
