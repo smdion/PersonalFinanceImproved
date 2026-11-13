@@ -7,7 +7,6 @@ import {
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 export interface IrmaaInput {
-  enableIrmaaAwareness: boolean | undefined;
   filingStatus: ReturnFilingStatus | null | undefined;
   /** Whether ANY household member is ≥65. */
   anyPersonAge65: boolean;
@@ -35,7 +34,6 @@ interface IrmaaResult {
  */
 export function checkIrmaa(input: IrmaaInput): IrmaaResult {
   const {
-    enableIrmaaAwareness,
     filingStatus,
     anyPersonAge65,
     projectedMagi,
@@ -45,7 +43,10 @@ export function checkIrmaa(input: IrmaaInput): IrmaaResult {
 
   const warnings: string[] = [];
 
-  if (!enableIrmaaAwareness || !filingStatus || !anyPersonAge65) {
+  // Always computed for anyone 65+ (Simple tax mode has no filing status,
+  // so no table-based tax and no surcharge); the awareness switch governs
+  // only the conversion cap.
+  if (!filingStatus || !anyPersonAge65) {
     return { irmaaCost: 0, warnings };
   }
 

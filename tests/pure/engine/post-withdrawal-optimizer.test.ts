@@ -299,7 +299,6 @@ describe("performRothConversion", () => {
 
 function makeIrmaaInput(overrides: Partial<IrmaaInput> = {}): IrmaaInput {
   return {
-    enableIrmaaAwareness: true,
     filingStatus: "MFJ",
     anyPersonAge65: true,
     irmaaBrackets: shippedTaxTables().irmaaBrackets,
@@ -310,12 +309,6 @@ function makeIrmaaInput(overrides: Partial<IrmaaInput> = {}): IrmaaInput {
 }
 
 describe("checkIrmaa", () => {
-  it("returns zero when disabled", () => {
-    const result = checkIrmaa(makeIrmaaInput({ enableIrmaaAwareness: false }));
-    expect(result.irmaaCost).toBe(0);
-    expect(result.warnings).toHaveLength(0);
-  });
-
   it("returns zero when no filing status", () => {
     const result = checkIrmaa(makeIrmaaInput({ filingStatus: null }));
     expect(result.irmaaCost).toBe(0);

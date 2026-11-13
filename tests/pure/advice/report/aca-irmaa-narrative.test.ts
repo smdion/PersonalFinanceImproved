@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { buildWatchlist } from "@/lib/pure/advice/report/aca-irmaa-narrative";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { calculateProjection } from "@/lib/pure/engine";
-import { cents, xfail } from "../../../fixtures/answer-key";
+import { cents } from "../../../fixtures/answer-key";
 import { engineHousehold } from "../../../fixtures/answer-key-household";
 
 const noopDeflate = (v: number) => v;
@@ -24,12 +24,8 @@ function decumYear(
 }
 
 describe("buildWatchlist", () => {
-  // Bug pin (the all-clear, decision E1): a row with `irmaaCost: 0` reads
-  // "No Medicare IRMAA surcharges ... were found", but today 0 also means
-  // IRMAA was never computed (awareness off), so the sentence can't tell
-  // "none found" from "not checked". Changes on purpose with the v0.11
-  // Retirement rules item "IRMAA: always compute it" (decision E1).
-  // Answer-key ret/A31:irmaa, below, holds the decided report.
+  // IRMAA is always computed for anyone 65+, so `irmaaCost: 0` means none
+  // is owed and the all-clear is true (answer-key ret/A31:irmaa, below).
   it("reports a clean plan with no items when nothing is flagged", () => {
     const w = buildWatchlist([decumYear()], noopDeflate);
     expect(w.items).toHaveLength(0);
@@ -234,22 +230,18 @@ describe("answer key: a Medicare couple's report, awareness off", () => {
     cents({ acaItems: count(/ACA/) }, { acaItems: 0 });
   });
 
-  describe("ret/A31:irmaa [RET-14]", () => {
+  it("ret/A31:irmaa [RET-14] awareness off: the report states the surcharge, no all-clear", () => {
     // Decision E1 (IRMAA always computed): the report states the computed
     // surcharge, 2,296.80 a year for the two, so it has an IRMAA item and
     // no all-clear ("No Medicare IRMAA surcharges ... were found"). The
     // source's "doesn't say no IRMAA was found" becomes this (key, sources
-    // that disagreed #11). Today awareness off computes nothing: no IRMAA
-    // item, so the report gives the all-clear.
-    xfail({
-      id: "ret/A31:irmaa [RET-14]",
-      todo: 'v0.11 Retirement rules "IRMAA: always compute it" (decision E1)',
-      run: () => ({
+    // that disagreed #11).
+    cents(
+      {
         irmaaItems: count(/IRMAA/),
         allClear: /no medicare irmaa/i.test(report().narrative) ? 1 : 0,
-      }),
-      expected: { irmaaItems: 1, allClear: 0 },
-      today: { irmaaItems: 0, allClear: 1 },
-    });
+      },
+      { irmaaItems: 1, allClear: 0 },
+    );
   });
 });

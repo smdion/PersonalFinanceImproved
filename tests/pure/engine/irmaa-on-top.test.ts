@@ -124,11 +124,14 @@ describe("IRMAA on top of the budget", () => {
     expect(short.some((y) => (y.unmetNeed ?? 0) > 0)).toBe(true);
   });
 
-  it("without awareness the choice does nothing", () => {
+  it("the surcharge is computed and paid with the awareness switch off", () => {
     const off = years(
       input({ enableIrmaaAwareness: false, irmaaOnTopOfBudget: true }),
     );
-    expect(off[3]!.irmaaPaid).toBeUndefined();
-    expect(off[3]!.irmaaCost).toBe(0);
+    expect(off[3]!.irmaaCost).toBe(onTop[3]!.irmaaCost);
+    expect(off[3]!.irmaaPaid).toBe(off[3]!.irmaaCost);
+    const inBudgetOff = years(input({ enableIrmaaAwareness: false }));
+    expect(inBudgetOff[3]!.irmaaCost).toBeGreaterThan(0);
+    expect(inBudgetOff[3]!.irmaaPaid).toBeUndefined();
   });
 });

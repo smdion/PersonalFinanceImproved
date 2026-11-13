@@ -1,6 +1,6 @@
 /**
- * The IRMAA surcharge choice shows only with IRMAA awareness on (without it
- * there's no surcharge to place) and saves through the settings patch.
+ * The IRMAA surcharge choice shows whether or not IRMAA awareness is on (the
+ * surcharge is computed for anyone 65+) and saves through the settings patch.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -25,9 +25,9 @@ const renderWith = (settings: Record<string, unknown>) => {
 };
 
 describe("HealthcareSection — IRMAA surcharge", () => {
-  it("hidden while IRMAA awareness is off", () => {
+  it("shown while IRMAA awareness is off", () => {
     renderWith({ enableIrmaaAwareness: false });
-    expect(screen.queryByText("IRMAA surcharge")).toBeNull();
+    expect(screen.getByText("IRMAA surcharge")).toBeInTheDocument();
   });
 
   it("in the budget by default; a click puts it on top", () => {

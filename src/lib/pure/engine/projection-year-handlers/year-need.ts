@@ -18,7 +18,7 @@ export function yearNeed(
   thisYear: DecumulationYear,
 ) {
   const { input, hasIndividualAccounts, indAccounts, indKey } = ctx;
-  const { enableIrmaaAwareness, filingStatus } = input;
+  const { filingStatus } = input;
   const { incomeHistory, balances, accountBalance, indBalance, indBasis } =
     state;
   const { year, config, eligibility, taxRates, ssIncome } = thisYear;
@@ -49,7 +49,6 @@ export function yearNeed(
     incomeHistory.length >= 2
   ) {
     const irmaaInNeed = checkHouseholdIrmaa({
-      enableIrmaaAwareness,
       filingStatus,
       personsAge65Plus,
       projectedMagi: yearMagi(incomeHistory.at(-2)!, "irmaa"),

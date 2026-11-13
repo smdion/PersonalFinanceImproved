@@ -29,7 +29,6 @@ export function yearCliffChecks(
     "irmaa",
   );
   const irmaaResult = checkHouseholdIrmaa({
-    enableIrmaaAwareness: input.enableIrmaaAwareness,
     filingStatus: input.filingStatus,
     personsAge65Plus,
     projectedMagi: irmaaLookbackMagi,

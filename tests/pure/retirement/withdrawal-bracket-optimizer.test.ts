@@ -353,7 +353,9 @@ describe("optimizeRothBracketTarget", () => {
     const at12 = result.candidates.find((c) => c.target === 0.12)!;
     const at22 = result.candidates.find((c) => c.target === 0.22)!;
     expect(at12.netCost).toBeCloseTo(261565, -1);
-    expect(at22.netCost).toBeCloseTo(296681, -1);
+    // The 22% path's IRMAA ($13,860.25 over the plan) counts whether or
+    // not IRMAA awareness is on.
+    expect(at22.netCost).toBeCloseTo(310541, -1);
     expect(result.recommendedTarget).toBe(0.12);
   });
 
@@ -480,7 +482,8 @@ describe("optimizeRothBracketTarget", () => {
     // scale than the conversions-on case, confirming the joint-movement
     // logic genuinely didn't fire.
     const at12 = result.candidates.find((c) => c.target === 0.12)!;
-    expect(at12.netCost).toBeCloseTo(818066.8564, -1);
+    // Includes its IRMAA ($3,445.21 over the plan), counted with awareness off.
+    expect(at12.netCost).toBeCloseTo(821512.0652, -1);
     expect(result.recommendedTarget).toBe(0.12);
   });
 

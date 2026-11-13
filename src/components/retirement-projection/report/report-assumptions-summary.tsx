@@ -263,23 +263,19 @@ export function ReportAssumptionsSummary({
         </Section>
       )}
 
-      {(settings.enableIrmaaAwareness || settings.enableAcaAwareness) && (
-        <Section title="Healthcare & Medicare">
-          {settings.enableIrmaaAwareness && (
-            <Row
-              label="IRMAA surcharge"
-              value={
-                settings.irmaaOnTopOfBudget
-                  ? "On top of the budget"
-                  : "In the budget"
-              }
-            />
-          )}
-          {settings.enableAcaAwareness && (
-            <Row label="ACA subsidy awareness" value="Enabled" />
-          )}
-        </Section>
-      )}
+      <Section title="Healthcare & Medicare">
+        <Row
+          label="IRMAA surcharge"
+          value={
+            settings.irmaaOnTopOfBudget
+              ? "On top of the budget"
+              : "In the budget"
+          }
+        />
+        {settings.enableAcaAwareness && (
+          <Row label="ACA subsidy awareness" value="Enabled" />
+        )}
+      </Section>
 
       {rmdExcessYears > 0 && (
         <p className="text-faint mt-2 text-xs">

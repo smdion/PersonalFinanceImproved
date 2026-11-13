@@ -221,7 +221,9 @@ export type ProjectionInput = {
   /** Filing status — used for accurate SS taxation and LTCG brackets.
    *  When omitted, falls back to flat 85% SS taxation and flat LTCG rate. */
   filingStatus?: ReturnFilingStatus;
-  /** Enable IRMAA awareness — report Medicare surcharge cliffs (65+). */
+  /** IRMAA awareness: Roth conversions stop at the next IRMAA cliff (unless
+   *  `irmaaAwareRothConversions` says otherwise). The surcharge itself is
+   *  always computed for anyone 65+. */
   enableIrmaaAwareness?: boolean;
   /** IRMAA surcharges are paid on top of the retirement budget (a year's
    *  need rises by the surcharge) rather than sitting inside it. Only the
@@ -524,7 +526,8 @@ export type EngineDecumulationYear = {
   niitAmount: number;
   // --- IRMAA fields ---
   /** Annual IRMAA surcharge, for everyone 65+ together (already multiplied
-   *  by that count). 0 if below threshold or awareness disabled. */
+   *  by that count). 0 below the first tier, with nobody 65+, or with no
+   *  filing status (Simple tax mode). */
   irmaaCost: number;
   /** The part of `irmaaCost` paid on top of the budget
    *  (`irmaaOnTopOfBudget`). Absent when none is. */
