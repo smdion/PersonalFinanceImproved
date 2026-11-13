@@ -4334,9 +4334,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 4
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 3
     }
   },
   "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": {

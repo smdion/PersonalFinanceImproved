@@ -4,6 +4,7 @@ import type { ResolvedDecumulationConfig } from "../types/decumulation";
 import type { AccountBalances } from "../../accounts/account-balances.types";
 import type { AccountCategory } from "../../../config/account-types";
 import { roundToCents } from "../../../utils/math";
+import { splitShares } from "./split-shares";
 import {
   getAllCategories,
   getAccountTypeConfig,
@@ -15,7 +16,8 @@ import {
 } from "../../accounts/account-balance";
 
 /**
- * Route withdrawals by percentage split across accounts.
+ * Route withdrawals by percentage split across accounts: each account's
+ * share of the need is its split's part of the year's splits (`splitShares`).
  * If an account has insufficient funds, its shortfall redistributes proportionally.
  */
 export function routeWithdrawalsPercentage(
@@ -24,6 +26,7 @@ export function routeWithdrawalsPercentage(
   balances: AccountBalances,
 ): { slots: DecumulationSlot[]; warnings: string[]; unmetNeed?: number } {
   const warnings: string[] = [];
+  const shares = splitShares(config.withdrawalSplits, warnings);
 
   // Calculate available balance per account
   const available: Record<AccountCategory, number> = Object.fromEntries(
@@ -34,7 +37,7 @@ export function routeWithdrawalsPercentage(
   const targets: Record<AccountCategory, number> = Object.fromEntries(
     getAllCategories().map((cat) => [
       cat,
-      roundToCents(targetWithdrawal * (config.withdrawalSplits[cat] ?? 0)),
+      roundToCents(targetWithdrawal * shares[cat]),
     ]),
   ) as Record<AccountCategory, number>;
 
@@ -75,14 +78,10 @@ export function routeWithdrawalsPercentage(
     ) {
       const withRoom = getAllCategories().filter((c) => roomOf(c) > 0);
       if (withRoom.length === 0) break;
-      const splitWeighted = withRoom.filter(
-        (c) => (config.withdrawalSplits[c] ?? 0) > 0,
-      );
+      const splitWeighted = withRoom.filter((c) => shares[c] > 0);
       const pool = splitWeighted.length > 0 ? splitWeighted : withRoom;
       const weightOf = (c: AccountCategory) =>
-        splitWeighted.length > 0
-          ? (config.withdrawalSplits[c] ?? 0)
-          : roomOf(c);
+        splitWeighted.length > 0 ? shares[c] : roomOf(c);
       const totalWeight = pool.reduce((t, c) => t + weightOf(c), 0);
       if (totalWeight <= 0) break;
       const toPlace = excess;

@@ -319,7 +319,7 @@
     "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": 460,
     "src/lib/pure/engine/withdrawal-routing/caps.ts": 64,
     "src/lib/pure/engine/withdrawal-routing/index.ts": 270,
-    "src/lib/pure/engine/withdrawal-routing/percentage.ts": 206,
+    "src/lib/pure/engine/withdrawal-routing/percentage.ts": 205,
     "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": 55,
     "src/lib/pure/engine/withdrawal-routing/types.ts": 71,
     "src/lib/pure/engine/withdrawal-routing/waterfall.ts": 158,
@@ -987,7 +987,7 @@
       "routeWithdrawalsBracketFilling": 432
     },
     "src/lib/pure/engine/withdrawal-routing/percentage.ts": {
-      "routeWithdrawalsPercentage": 186
+      "routeWithdrawalsPercentage": 183
     },
     "src/lib/pure/engine/withdrawal-solver.ts": {
       "evaluateCost": 155

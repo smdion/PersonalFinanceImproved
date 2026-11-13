@@ -229,11 +229,6 @@
       "count": 2
     }
   },
-  "src/lib/pure/engine/withdrawal-routing/percentage.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
   "src/lib/pure/simulation/monte-carlo.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2

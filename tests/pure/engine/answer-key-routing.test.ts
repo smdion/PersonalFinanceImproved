@@ -264,6 +264,87 @@ describe("answer key: Waterfall and Percentage routing", () => {
       { A: 68_571.43, B: 20_000, C: 11_428.57 },
     );
   });
+
+  // Splits that don't sum to 100% (sent, saved, or a year's override merged
+  // over earlier years): each account takes its split's part of their sum,
+  // so the year draws the need, never more or less, and says the sum was off
+  // (E3 ruling 2026-11-12 § 2, J8 (a): "the response says so"; a negative
+  // split counts as 0).
+  const splitsOf = (s: Partial<Record<AccountCategory, number>>) =>
+    makeDecumulationConfig({
+      withdrawalRoutingMode: "percentage",
+      withdrawalOrder: ORDER,
+      withdrawalSplits: {
+        brokerage: 0,
+        hsa: 0,
+        "401k": 0,
+        "403b": 0,
+        ira: 0,
+        ...s,
+      },
+    });
+  const plenty = () => abc({ brokerage: 500_000, hsa: 500_000, k401: 500_000 });
+
+  it("strategies/PC-SUM1 [WDR-03] splits summing to 120%: 100,000 drawn 50,000 / 50,000, with a warning", () => {
+    // Shares 60/60, need 100,000: A 100,000 × 0.6 / 1.2 = 50,000, C the
+    // same. Before, each took need × split: 60,000 + 60,000 = 120,000.
+    const r = routeForMode(
+      100_000,
+      splitsOf({ brokerage: 0.6, "401k": 0.6 }),
+      plenty(),
+      noBrackets,
+    );
+    const d = drawn(r.slots);
+    cents(
+      { A: d.brokerage, C: d["401k"], unmet: r.unmetNeed ?? 0 },
+      { A: 50_000, C: 50_000, unmet: 0 },
+    );
+    expect(r.warnings.join()).toMatch(/sum to 120%/);
+  });
+
+  it("strategies/PC-SUM2 [WDR-03] splits summing to 80%: 100,000 drawn 75,000 / 25,000, with a warning", () => {
+    // Shares 60/20, need 100,000: A 100,000 × 0.6 / 0.8 = 75,000, C
+    // 100,000 × 0.2 / 0.8 = 25,000. Before: 60,000 + 20,000 = 80,000.
+    const r = routeForMode(
+      100_000,
+      splitsOf({ brokerage: 0.6, "401k": 0.2 }),
+      plenty(),
+      noBrackets,
+    );
+    const d = drawn(r.slots);
+    cents(
+      { A: d.brokerage, C: d["401k"], unmet: r.unmetNeed ?? 0 },
+      { A: 75_000, C: 25_000, unmet: 0 },
+    );
+    expect(r.warnings.join()).toMatch(/sum to 80%/);
+  });
+
+  it("strategies/PC-SUM3 [WDR-03] a negative split counts as 0: 100,000 from the other share, with a warning", () => {
+    // Shares 100 and −20 (sum 80% as sent): the −20 counts as 0, so the
+    // sum is 100% and A gives all of it; HSA gives nothing.
+    const r = routeForMode(
+      100_000,
+      splitsOf({ brokerage: 1, hsa: -0.2 }),
+      plenty(),
+      noBrackets,
+    );
+    const d = drawn(r.slots);
+    cents(
+      { A: d.brokerage, B: d.hsa, unmet: r.unmetNeed ?? 0 },
+      { A: 100_000, B: 0, unmet: 0 },
+    );
+    expect(r.warnings.join()).toMatch(/below 0% for hsa/);
+  });
+
+  it("strategies/PC-SUM4 [WDR-03] splits summing to 100%: no warning", () => {
+    const r = routeForMode(
+      100_000,
+      splitsOf({ brokerage: 0.7, "401k": 0.3 }),
+      plenty(),
+      noBrackets,
+    );
+    expect(r.warnings).toEqual([]);
+  });
 });
 
 // ---------------------------------------------------------------------------

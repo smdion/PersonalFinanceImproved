@@ -132,7 +132,7 @@ export const storedWithdrawalOrderSchema = z
 
 /** The saved percentage-mode splits, as fractions, a category left out at 0%.
  *  The sum check is loose on purpose: a one-field edit pushes it off 100%
- *  for a moment. */
+ *  for a moment; the router reads each split as its part of the sum. */
 export const storedWithdrawalSplitsSchema = z
   .partialRecord(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
   .refine(
