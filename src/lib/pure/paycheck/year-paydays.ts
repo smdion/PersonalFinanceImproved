@@ -26,7 +26,12 @@ export function salaryDivisor(
 
 /** A job's year of checks as its contributions read it: the pay schedule's periods (a year of
  *  contribution money) and the salary divisor (each check's share of the salary). */
-export type CheckBasis = { periodsPerYear: number; salaryDivisor: number };
+export type CheckBasis = {
+  periodsPerYear: number;
+  salaryDivisor: number;
+  /** The year's paydays; absent: the periods (no check past them). */
+  paydays?: number;
+};
 
 export function checkBasis(
   input: PayCalendar & Pick<PaycheckInput, "salaryDivisor">,
@@ -34,5 +39,6 @@ export function checkBasis(
   return {
     periodsPerYear: getPeriodsPerYear(input.payPeriod),
     salaryDivisor: salaryDivisor(input),
+    paydays: yearPaydays(input),
   };
 }

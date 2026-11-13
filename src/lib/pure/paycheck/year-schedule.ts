@@ -11,6 +11,7 @@ import { yearTotals } from "./year-totals";
 import { additionalMedicareWithheld } from "./additional-medicare";
 import type { JobChecks } from "./job-last-check";
 import { yearPaydays } from "./year-paydays";
+import { type CheckMoney, checkMoneyFor } from "./extra-check";
 
 /**
  * Social Security withholding for one pay period, given the wage base cap.
@@ -79,10 +80,7 @@ export function householdWithheldSoFar(
 export function buildYearSchedule(
   input: PaycheckInput,
   gross: number,
-  totalPreTax: number,
-  federalWithholding: number,
-  ficaBase: number,
-  totalPostTax: number,
+  usual: CheckMoney,
   bonusEstimate: BonusEstimate,
   /** The job's checks this year: rows before its start and after its last check are empty. */
   { beforeStart, lastCheck }: Pick<JobChecks, "beforeStart" | "lastCheck">,
@@ -92,7 +90,7 @@ export function buildYearSchedule(
   const medRate = input.taxBrackets.medicareRate;
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;
   const bonusPeriodNum = bonusCheckNumber(input, bonusEstimate.bonusGross);
-
+  const checkMoney = checkMoneyFor(input, usual);
   const schedule: PeriodBreakdown[] = [];
   let ytdFicaBase = 0; // Running total of FICA-taxable earnings
 
@@ -114,6 +112,7 @@ export function buildYearSchedule(
       });
       continue;
     }
+    const check = checkMoney(p);
     const isBonus = p === bonusPeriodNum;
     const periodBonusGross = isBonus ? bonusEstimate.bonusGross : 0;
     const periodBonusWithholding = isBonus
@@ -121,7 +120,7 @@ export function buildYearSchedule(
       : 0;
 
     const periodBonusFicaWages = isBonus ? bonusEstimate.bonusFicaWages : 0;
-    const periodFicaBase = ficaBase + periodBonusFicaWages;
+    const periodFicaBase = check.ficaBase + periodBonusFicaWages;
     ytdFicaBase += periodFicaBase;
 
     // Social Security tax: three cases based on where we are relative to the wage base cap
@@ -143,7 +142,7 @@ export function buildYearSchedule(
         ytdFicaBase,
       );
 
-    const regularFicaBase = ficaBase;
+    const regularFicaBase = check.ficaBase;
     const bonusFicaBase = periodBonusFicaWages;
     const totalFicaThisPeriod = periodSS + periodMed;
     // Attribute FICA proportionally between regular pay and bonus
@@ -162,24 +161,25 @@ export function buildYearSchedule(
 
     const periodNet =
       gross -
-      totalPreTax -
-      federalWithholding -
+      check.preTax -
+      check.federalWithholding -
       regularSS -
       regularMed -
-      totalPostTax;
+      check.postTax;
 
     schedule.push({
       periodNumber: p,
       gross: roundToCents(gross),
-      federalWithholding: roundToCents(federalWithholding),
+      federalWithholding: roundToCents(check.federalWithholding),
       ficaSS: regularSS,
       ficaMedicare: regularMed,
-      preTaxDeductions: roundToCents(totalPreTax),
-      postTaxDeductions: roundToCents(totalPostTax),
+      preTaxDeductions: roundToCents(check.preTax),
+      postTaxDeductions: roundToCents(check.postTax),
       netPay: roundToCents(periodNet),
       bonusGross: roundToCents(periodBonusGross),
       bonusWithholding: roundToCents(periodBonusWithholding),
       bonusFica: roundToCents(bonusFicaPortion),
+      ...(check.cut ? { contributionCut: check.cut } : {}),
     });
   }
 

@@ -17,6 +17,7 @@ import { toNumber } from "@/lib/utils/numbers";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { payrollFicaExemptCap } from "@/lib/pure/contributions/irs-limits";
 import type { CheckBasis } from "@/lib/pure/paycheck/year-paydays";
+import { extraCheckFields } from "./extra-check-room";
 import {
   matchPayGroupsWithBonus,
   matchGroupKey,
@@ -32,7 +33,7 @@ export function buildContribAccounts(
   jobContributions: (PaycheckContributionRow & CapPassed)[],
   personalContributions: (PaycheckContributionRow & CapPassed)[],
   salary: number,
-  { periodsPerYear, salaryDivisor }: CheckBasis,
+  basis: CheckBasis,
   /** The year's limits and the person's age at Dec 31 — sizes each
    *  account's FICA-exempt cap (payrollFicaExemptCap). Required so no
    *  caller can quietly treat exempt payroll money as FICA wages. */
@@ -56,7 +57,7 @@ export function buildContribAccounts(
         c.contributionMethod,
         contributionValue,
         salary,
-        periodsPerYear,
+        basis.periodsPerYear,
       ),
     );
   }
@@ -71,7 +72,7 @@ export function buildContribAccounts(
       annual: annualContributionWithBonus(
         c,
         { salary, bonusGross },
-        periodsPerYear,
+        basis.periodsPerYear,
       ),
       salary: matchPay(c),
       employerMatchType: c.employerMatchType,
@@ -82,8 +83,7 @@ export function buildContribAccounts(
     })),
   );
 
-  // The same match on regular paychecks alone — the difference is what the
-  // bonus check's deferral earns (Year-End estimates place it by date).
+  // The same match on regular paychecks alone: the difference is the bonus check's deferral's.
   const baseMatchByRow =
     bonusGroups.size > 0 && bonusGross > 0
       ? computeGroupedEmployerMatch(
@@ -110,11 +110,10 @@ export function buildContribAccounts(
     const perPeriod =
       c.contributionMethod === "fixed_per_period"
         ? contributionValue
-        : safeDivide(annual, salaryDivisor, 0);
+        : safeDivide(annual, basis.salaryDivisor, 0);
 
     const match = matchByRow.get(c.id)!;
 
-    // Group from config displayGroup
     const group = getDisplayGroup(c.accountType as AccountCategory);
     const isPayrollDeducted = isPaidThroughPayroll(c);
 
@@ -138,8 +137,7 @@ export function buildContribAccounts(
       employerMatchAvailable: roundToCents(match.matchAvailableAnnual),
       fullMatchShareOfPay: match.fullMatchShareOfPay,
       employerMatchTaxTreatment: match.employerMatchTaxTreatment,
-      // A capped row's payroll money is already within the IRS limit less
-      // employer money, so all of it is exempt (one split: the cap pass).
+      // A capped row's payroll money is within the IRS limit less employer money: all exempt.
       ficaExemptAnnualCap: !isPayrollDeducted
         ? null
         : c.cap && isPayrollFicaExemptCategory(c.accountType)
@@ -151,6 +149,7 @@ export function buildContribAccounts(
               ficaContext.limits,
               match.matchAnnual,
             ),
+      ...extraCheckFields(c, basis),
     };
   });
   return accounts;

@@ -268,7 +268,7 @@
     "src/lib/pure/contributions/display-specs.ts": 136,
     "src/lib/pure/contributions/irs-limits.ts": 209,
     "src/lib/pure/contributions/joint-accounts.ts": 165,
-    "src/lib/pure/contributions/paycheck-accounts.ts": 157,
+    "src/lib/pure/contributions/paycheck-accounts.ts": 156,
     "src/lib/pure/contributions/person-snapshot.ts": 215,
     "src/lib/pure/contributions/profile-contrib-data.ts": 324,
     "src/lib/pure/contributions/profile-fields.ts": 45,

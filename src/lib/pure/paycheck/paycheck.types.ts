@@ -73,6 +73,17 @@ export type ContributionAccountInput = {
    *  wages (payrollFicaExemptCap); null = they are FICA wages; Infinity =
    *  exempt in full (a capped row, or a cap that can't be sized). */
   ficaExemptAnnualCap: number | null;
+  /** Set when the year has checks past the ones this account's yearly money covers (a 27th or
+   *  53rd payday): those checks, and its limit group's room for them (absent: no limit). */
+  coveredChecks?: number;
+  extraCheckLimit?: { group: string; room: number };
+};
+
+/** What a check past an account's covered checks doesn't take (payroll stops at the limit). */
+export type ContributionCut = {
+  preTax: number;
+  postTax: number;
+  ficaExempt: number;
 };
 
 export type PeriodBreakdown = {
@@ -93,6 +104,8 @@ export type PeriodBreakdown = {
   /** A payday this year after the job's last day — not this job's check
    *  (every amount 0). */
   afterEnd?: true;
+  /** A check past an account's covered checks that takes less than its usual amount. */
+  contributionCut?: ContributionCut;
 };
 
 export type BonusEstimate = {

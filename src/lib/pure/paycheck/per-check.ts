@@ -161,8 +161,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   // Uses the IRS supplemental flat rate (e.g. 22%) instead of marginal bracket rate.
   const bonusEstimate = calculateBonus(input, marginalRate, annualFicaBase);
 
-  // ── Step 7: Extra paycheck months ──
-  // Biweekly months with 3 paydays, found from anchorPayDate (a real payday: no payWeek shift).
+  // ── Step 7: Extra paycheck months (biweekly, 3 paydays; walked from the anchor payday) ──
   const extraPaycheckMonths = findExtraPaycheckMonths(
     input.asOfDate,
     input.payPeriod,
@@ -170,22 +169,23 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   );
 
   // ── Step 8: Year schedule ──
-  // Every pay period, with the bonus in its month and SS stopping at the wage base. Paydays
-  // before a job's start or after its end this year stay (numbering) but pay nothing.
+  // Every payday, the bonus in its month, SS stopping at the wage base; paydays outside the job pay 0.
   const checks = jobChecksThisYear(input);
   const yearSchedule = buildYearSchedule(
     input,
     gross,
-    totalPreTax,
-    federalWithholding,
-    ficaBase,
-    totalPostTax,
+    {
+      preTax: totalPreTax,
+      postTax: totalPostTax,
+      ficaBase,
+      federalTaxableGross,
+      federalWithholding,
+    },
     bonusEstimate,
     checks,
   );
 
-  // Paydays so far this year by the calendar — the year schedule's index
-  // (checks this job paid = this − checks.beforeStart).
+  // Paydays so far this year: the schedule's index (checks paid = this − checks.beforeStart).
   const periodsElapsedYtd = countPeriodsElapsed(
     input.asOfDate,
     input.payPeriod,
