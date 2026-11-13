@@ -8,7 +8,8 @@ import type {
   PaycheckResult,
   DeductionLine,
 } from "./paycheck.types";
-import { formatCurrency, formatPercent } from "../../utils/format";
+import { formatCurrency } from "../../utils/format";
+import { inputWarnings } from "./input-warnings";
 import { roundToCents, safeDivide, sumBy } from "../../utils/math";
 import { getPeriodsPerYear } from "../../config/pay-periods";
 import { sumBracketTax } from "../tax/tax-brackets";
@@ -65,30 +66,7 @@ function lookupFederalWithholding(
 }
 
 export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
-  const warnings: string[] = [];
-
-  // Range validation — catch data-entry errors before they propagate
-  if (input.annualSalary < 0) {
-    warnings.push("Annual salary is negative — results may be incorrect.");
-  }
-  if (input.annualSalary > 10_000_000) {
-    warnings.push("Annual salary exceeds $10M — verify this is correct.");
-  }
-  if (input.bonusPercent < 0 || input.bonusPercent > 5) {
-    warnings.push(
-      `Bonus percent ${formatPercent(input.bonusPercent)} is outside expected range (0-500%).`,
-    );
-  }
-  if (input.bonusMultiplier < 0 || input.bonusMultiplier > 10) {
-    warnings.push(
-      `Bonus multiplier ${input.bonusMultiplier}x is outside expected range (0-10x).`,
-    );
-  }
-  for (const d of input.deductions) {
-    if (d.amount < 0) {
-      warnings.push(`Deduction "${d.name}" has a negative amount.`);
-    }
-  }
+  const { warnings } = inputWarnings(input);
 
   const periodsPerYear = getPeriodsPerYear(input.payPeriod);
   // Other pay on each check: cash lines are paid (gross, net); non-cash
