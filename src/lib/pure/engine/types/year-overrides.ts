@@ -19,6 +19,11 @@ export type LumpSum = {
    *  When set, the engine matches (name, ownerName) before name alone, like
    *  `ContributionSpec.ownerName`. Undefined ⇒ name-only match. */
   targetOwnerName?: string;
+  /** The named account's performance account (null: no single account
+   *  matched) and owner (null: joint), beside the names, which still pick
+   *  the account. */
+  targetPerformanceAccountId?: number | null;
+  targetOwnerPersonId?: number | null;
   /** Whose money it is when no account is named: "Portfolio" for the Brokerage
    *  page's lump sums, otherwise retirement money. Picks Portfolio- or
    *  Retirement-parented accounts first. */

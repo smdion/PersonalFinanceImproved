@@ -21,6 +21,11 @@ export const lumpSumSchema = z
       // Disambiguates two household members' identically-named accounts
       // (LumpSum.targetOwnerName). Optional so older saved lump sums parse.
       targetOwnerName: z.string().max(200).optional(),
+      // The named account's id (null: no single account matched) and owner
+      // (null: joint), beside its name
+      // (LumpSum.targetPerformanceAccountId).
+      targetPerformanceAccountId: z.number().int().nullable().optional(),
+      targetOwnerPersonId: z.number().int().nullable().optional(),
       // Whose money a lump sum with no named account is (the Brokerage
       // page's are Portfolio savings): LumpSum.targetParentCategory.
       targetParentCategory: z.enum(PARENT_CATEGORY_VALUES).optional(),

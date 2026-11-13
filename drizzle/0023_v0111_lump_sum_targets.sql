@@ -1,0 +1,8 @@
+-- v0.11.1 lump-sum targets by id (tag 0023). No schema change: the
+-- converter in src/lib/db/migrate/v0111-lump-sum-targets.ts runs after this
+-- SQL, as restore runs it on an older backup. A saved lump sum that names
+-- its account gains that account's performance account id and owner beside
+-- the names, where its stored name and owner name match exactly one account
+-- of the latest snapshot by a stored column, and a null id where none or
+-- several match. A replay finds nothing: every named lump sum then holds
+-- the id key.

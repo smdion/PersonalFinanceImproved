@@ -162,6 +162,13 @@
       "when": 1794532028314,
       "tag": "0022_v0111_roth_overlay",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794532088314,
+      "tag": "0023_v0111_lump_sum_targets",
+      "breakpoints": true
     }
   ]
 }

@@ -6,7 +6,7 @@
 
 ## Schema version
 
-**Schema version: `0022_v0111_roth_overlay`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
+**Schema version: `0023_v0111_lump_sum_targets`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
 
 | Tag  | Name                      | PostgreSQL | SQLite |
 | ---- | ------------------------- | ---------- | ------ |
@@ -33,6 +33,7 @@
 | 0020 | v0106_stored_json         | yes        | yes    |
 | 0021 | v0110_job_entries         | yes        | yes    |
 | 0022 | v0111_roth_overlay        | yes        | yes    |
+| 0023 | v0111_lump_sum_targets    | yes        | yes    |
 
 ## Relations
 

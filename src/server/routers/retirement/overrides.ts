@@ -28,6 +28,8 @@ function savedSetShape(kind: "accumulation" | "decumulation" | "brokerage") {
       targetAccount: z.enum(accountCategoryEnum()),
       targetAccountName: z.string(),
       targetOwnerName: z.string(),
+      targetPerformanceAccountId: z.number().int().nullable().optional(),
+      targetOwnerPersonId: z.number().int().nullable().optional(),
       taxType: z.enum(["traditional", "roth", ""]),
       label: z.string(),
     }),
