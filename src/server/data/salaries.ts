@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { Db } from "@/lib/db";
+import type { DbOrTx } from "@/lib/db";
 import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 
 /**
@@ -10,7 +10,7 @@ import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
  * doesn't resolve is a missing row, not a sentinel.
  */
 export async function fetchSalaryProfile(
-  db: Db,
+  db: DbOrTx,
   salaryProfileId: number | null | undefined,
 ): Promise<typeof schema.salaryProfiles.$inferSelect | null> {
   if (salaryProfileId == null) return null;

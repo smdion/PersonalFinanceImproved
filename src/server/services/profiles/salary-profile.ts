@@ -1,7 +1,7 @@
 import { and, inArray, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { W4FilingStatus } from "@/lib/config/filing-status";
-import type { Db } from "@/lib/db";
+import type { Db, DbOrTx } from "@/lib/db";
 import {
   applySalaryProfileRow,
   type SalaryProfileActiveMap,
@@ -20,7 +20,7 @@ import {
  * id is null/undefined or the profile doesn't exist.
  */
 export async function loadAndApplySalaryProfile(
-  db: Db,
+  db: DbOrTx,
   salaryProfileId: number | undefined | null,
 ): Promise<SalaryProfileActiveMap> {
   const profile = await fetchSalaryProfile(db, salaryProfileId);
@@ -32,7 +32,7 @@ export async function loadAndApplySalaryProfile(
  * no id is given: for callers that aren't showing a profile of their own.
  */
 export async function loadEffectiveSalaryProfile(
-  db: Db,
+  db: DbOrTx,
   salaryProfileId: number | null | undefined,
 ): Promise<SalaryProfileActiveMap> {
   if (salaryProfileId != null) {
@@ -48,7 +48,7 @@ export async function loadEffectiveSalaryProfile(
  * stand-in for the household's filing status (a W-4 status is a withholding choice).
  */
 export async function w4FilingStatusOf(
-  db: Db,
+  db: DbOrTx,
   personIds: readonly number[],
   asOf: Date,
   salaryProfileActiveMap?: SalaryProfileActiveMap,

@@ -12,7 +12,7 @@ import {
 } from "@/lib/pure/tax/filing-status";
 import { type SalaryProfileActiveMap } from "@/lib/pure/household/compensation";
 import { w4FilingStatusOf } from "@/server/services/profiles/salary-profile";
-import type { Db } from "@/lib/db";
+import type { DbOrTx } from "@/lib/db";
 
 /** People ids, the primary person first (whose W-4 stands in first). */
 function primaryFirst(
@@ -31,7 +31,7 @@ function w4StandInForReturn(w4: W4FilingStatus): ReturnFilingStatus {
 }
 
 export async function thisYearFilingStatus(
-  db: Db,
+  db: DbOrTx,
   args: {
     appSettings: readonly { key: string; value: unknown }[];
     /** The active Retirement Profile's (null = Auto / none). */
