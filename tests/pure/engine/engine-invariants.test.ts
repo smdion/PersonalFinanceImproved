@@ -16,6 +16,7 @@ import {
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { calculateProjection } from "@/lib/pure/engine";
+import { reachesAgeRule } from "@/lib/pure/household/age";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import {
   toSimpleTaxMode,
@@ -1267,13 +1268,10 @@ describe("engine invariants", () => {
       );
     });
 
-    // Bug pin (verdict N7): `year.age` is the primary's, so this holds for
-    // one person but pins N7 for a couple whose primary is 65 or older and
-    // whose spouse is under 65 (who can keep a credit, IRC 36B(b)(3)(C)).
-    // Changes on purpose with v0.11 Retirement rules "59½ tested by year"
-    // (N7: one spouse on Medicare skips ACA for the other): key it on
-    // everyone 65+ (answer-key ret/A32, `tests/pure/engine/answer-key-aca.test.ts`).
-    it("13 — ACA headroom is zero when age >= 65", () => {
+    // Medicare ends the credit only for the person on it, so the check is
+    // skipped only when everyone is 65+ (answer-key ret/A32,
+    // `tests/pure/engine/answer-key-aca.test.ts`).
+    it("13 — ACA isn't checked, and has no headroom, once everyone is 65+", () => {
       fc.assert(
         fc.property(arbitraryRetiredInput(), (input) => {
           const inputWithAca: ProjectionInput = {
@@ -1283,7 +1281,15 @@ describe("engine invariants", () => {
           const result = calculateProjection(inputWithAca);
           for (const year of result.projectionByYear) {
             if (year.phase !== "decumulation") continue;
-            if (year.age >= 65) {
+            const birthYears = input.perPersonBirthYears ?? [];
+            const everyone65 =
+              birthYears.length > 0
+                ? birthYears.every((by) =>
+                    reachesAgeRule(by, "medicare", year.year),
+                  )
+                : year.age >= 65;
+            if (everyone65) {
+              expect(year.acaStatus).toBe("not_checked");
               expect(year.acaMagiHeadroom).toBe(0);
             }
           }

@@ -40,11 +40,14 @@ export function yearCliffChecks(
   const irmaaPaid = input.irmaaOnTopOfBudget === true ? irmaaCost : 0;
   routeWarnings.push(...irmaaResult.warnings);
 
-  // ACA: everyone under 65, the Medicare event IRMAA counts (AGE_RULES.medicare).
-  const allPersonsUnder65 = personsAge65Plus === 0;
+  // ACA: checked while anyone is under 65, the same Medicare-eligibility
+  // event the IRMAA check counts (AGE_RULES.medicare); without birth years
+  // the household's one age stands for one person.
+  const birthYears = input.perPersonBirthYears;
+  const people = birthYears && birthYears.length > 0 ? birthYears.length : 1;
   const acaResult = checkAca({
     enableAcaAwareness: input.enableAcaAwareness,
-    allPersonsUnder65,
+    anyPersonUnder65: personsAge65Plus < people,
     householdSize:
       input.householdSize ??
       acaHouseholdSize(input.perPersonBirthYears?.length, input.filingStatus),

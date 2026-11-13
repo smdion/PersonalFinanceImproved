@@ -6,8 +6,10 @@ import type { AcaStatus } from "./types/projection-result";
 
 export interface AcaInput {
   enableAcaAwareness: boolean | undefined;
-  /** Whether ALL household members are <65. */
-  allPersonsUnder65: boolean;
+  /** Whether anyone in the household is under 65. Medicare ends the credit
+   *  only for the person on it (IRC 36B(c)(2)(B); Reg. 1.36B-2(c)(2)), so a
+   *  spouse under 65 is still checked, on the household's whole income. */
+  anyPersonUnder65: boolean;
   householdSize: number;
   /** The year's income; ACA's MAGI adds the whole Social Security benefit. */
   income: MagiIncome<"aca">;
@@ -31,7 +33,7 @@ interface AcaResult {
 export function checkAca(input: AcaInput): AcaResult {
   const {
     enableAcaAwareness,
-    allPersonsUnder65,
+    anyPersonUnder65,
     householdSize,
     income,
     fplGrowthFactor,
@@ -40,7 +42,7 @@ export function checkAca(input: AcaInput): AcaResult {
 
   const warnings: string[] = [];
 
-  if (!enableAcaAwareness || !allPersonsUnder65) {
+  if (!enableAcaAwareness || !anyPersonUnder65) {
     return { acaStatus: "not_checked", acaMagiHeadroom: 0, warnings };
   }
 

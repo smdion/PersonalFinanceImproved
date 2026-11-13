@@ -230,9 +230,7 @@ describe("answer key: a Medicare couple's report, awareness off", () => {
 
   it("ret/A31 [RET-17] both on Medicare, awareness off: the report has no ACA item", () => {
     // Decided (verdict N8): no ACA item. The check didn't run (awareness
-    // off, and both are 65+), so each year is "not checked", never "lost"
-    // (before v0.11.1 the report said the subsidy was lost in each of the
-    // 3 years, one ranged item).
+    // off, and both are 65+), so each year is "not checked", never "lost".
     cents({ acaItems: count(/ACA/) }, { acaItems: 0 });
   });
 
@@ -242,8 +240,7 @@ describe("answer key: a Medicare couple's report, awareness off", () => {
     // no all-clear ("No Medicare IRMAA surcharges ... were found"). The
     // source's "doesn't say no IRMAA was found" becomes this (key, sources
     // that disagreed #11). Today awareness off computes nothing: no IRMAA
-    // item, so the report gives the all-clear (the false ACA item that hid
-    // it went with verdict N8).
+    // item, so the report gives the all-clear.
     xfail({
       id: "ret/A31:irmaa [RET-14]",
       todo: 'v0.11 Retirement rules "IRMAA: always compute it" (decision E1)',

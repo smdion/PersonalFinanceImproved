@@ -435,7 +435,7 @@ function makeAcaInput(overrides: Partial<AcaFixture> = {}): AcaInput {
     ...rest
   }: AcaFixture = {
     enableAcaAwareness: true,
-    allPersonsUnder65: true,
+    anyPersonUnder65: true,
     householdSize: 2,
     totalTraditionalWithdrawal: 30000,
     rothConversionAmount: 0,
@@ -474,14 +474,12 @@ describe("checkAca", () => {
     expect(result.warnings).toHaveLength(0);
   });
 
-  // Bug pin (verdicts N7 and N8): one spouse 65 or older skips the check
-  // for the other, who can keep a credit (IRC 36B(b)(3)(C); Reg.
-  // 1.36B-2(c)(2)). Changes on purpose with v0.11 Retirement rules "59½
-  // tested by year" (N7: one spouse on Medicare skips ACA for the other),
-  // where answer-key ret/A32 (`tests/pure/engine/answer-key-aca.test.ts`:
-  // kept, headroom 34,600) replaces it, and with the N8 status above.
-  it("is not checked, with no headroom, when not all persons under 65", () => {
-    const result = checkAca(makeAcaInput({ allPersonsUnder65: false }));
+  // Medicare ends the credit only for the person on it (IRC 36B(c)(2)(B);
+  // Reg. 1.36B-2(c)(2)): a spouse under 65 is still checked (answer-key
+  // ret/A32, `tests/pure/engine/answer-key-aca.test.ts`), so only a
+  // household where everyone is 65+ goes unchecked.
+  it("is not checked, with no headroom, when everyone is 65 or older", () => {
+    const result = checkAca(makeAcaInput({ anyPersonUnder65: false }));
     expect(result.acaStatus).toBe("not_checked");
     expect(result.acaMagiHeadroom).toBe(0);
   });

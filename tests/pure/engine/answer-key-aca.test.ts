@@ -66,11 +66,11 @@ function cliff(opts: {
   familySize: number;
   ordinary: number;
   conversion?: number;
-  allPersonsUnder65?: boolean;
+  anyPersonUnder65?: boolean;
 }): { preserved: number; headroom: number } {
   const r = checkAca({
     enableAcaAwareness: true,
-    allPersonsUnder65: opts.allPersonsUnder65 ?? true,
+    anyPersonUnder65: opts.anyPersonUnder65 ?? true,
     householdSize: opts.familySize,
     income: {
       traditionalDraws: opts.ordinary,
@@ -93,10 +93,6 @@ function cliff(opts: {
  *  "not more than" 400%). */
 const N4 =
   'v0.11 Retirement rules "January 1 birthday" (its "exactly 400% FPL"; verdict N4)';
-
-/** One spouse 65 or older skips the check for the other (verdict N7). */
-const N7 =
-  'v0.11 Retirement rules "59½ tested by year" (verdict N7: one spouse on Medicare skips ACA for the other)';
 
 // ---------------------------------------------------------------------------
 // A. The cliff, in dollars
@@ -200,23 +196,18 @@ describe("answer key: the poverty line and household income", () => {
 // ---------------------------------------------------------------------------
 
 describe("answer key: one spouse on Medicare", () => {
-  describe("ret/A32 [RET-17]", () => {
-    // A couple 66 and 60, MAGI 50,000, family of two, 2026. Medicare ends
-    // the credit for the 66-year-old only (ACA-11); the 60-year-old can
-    // keep one, and household income still counts both (ACA-12). Cliff
-    // 400% × 21,150 = 84,600; headroom 84,600 − 50,000 = 34,600. Today
-    // `checkAca` skips the household once anyone is 65: not kept, 0.
-    xfail({
-      id: "ret/A32 [RET-17]",
-      todo: N7,
-      run: () =>
-        cliff({ familySize: 2, ordinary: 50_000, allPersonsUnder65: false }),
-      expected: { preserved: 1, headroom: 34_600 },
-      today: { preserved: 0, headroom: 0 },
+  it("ret/A32 [RET-17] a couple 66 and 60, MAGI 50,000: kept, headroom 34,600", () => {
+    // Family of two, 2026. Medicare ends the credit for the 66-year-old
+    // only (ACA-11); the 60-year-old can keep one, and household income
+    // still counts both (ACA-12). Cliff 400% × 21,150 = 84,600; headroom
+    // 84,600 − 50,000 = 34,600.
+    cents(cliff({ familySize: 2, ordinary: 50_000, anyPersonUnder65: true }), {
+      preserved: 1,
+      headroom: 34_600,
     });
   });
 
-  describe("ret/A32:engine [RET-17]", () => {
+  it("ret/A32:engine [RET-17] the same couple through the engine: kept, headroom 34,600", () => {
     // The same couple through the engine (audit RT48: the engine's "everyone
     // under 65" test). Invented: A born 1960 (66 in 2026) draws Social
     // Security of 50,000 a year, claimed at 62; B born 1966 (60); MFJ,
@@ -224,9 +215,7 @@ describe("answer key: one spouse on Medicare", () => {
     // Security covers the spending, so nothing is drawn, and with
     // provisional income 25,000 (half the benefit) under 32,000 none of it
     // is taxable (IRC 86(b)(1), (c)(1)(B)): no tax, MAGI for the ACA = all 50,000 of
-    // the benefit (ACA-7). Decided: kept, headroom 34,600. Today: not kept,
-    // 0. RT48 (the household counted under 65 if anyone is) passes the
-    // decided figure and fails today's pin.
+    // the benefit (ACA-7). Decided: kept, headroom 34,600.
     const run = () => {
       const h = engineHousehold({
         status: "MFJ",
@@ -252,16 +241,15 @@ describe("answer key: one spouse on Medicare", () => {
       return {
         ssIncome: year.ssIncome,
         drawn: year.totalWithdrawal,
-        preserved: year.acaSubsidyPreserved ? 1 : 0,
+        preserved: year.acaStatus === "kept" ? 1 : 0,
         headroom: year.acaMagiHeadroom,
       };
     };
-    xfail({
-      id: "ret/A32:engine [RET-17]",
-      todo: N7,
-      run,
-      expected: { ssIncome: 50_000, drawn: 0, preserved: 1, headroom: 34_600 },
-      today: { ssIncome: 50_000, drawn: 0, preserved: 0, headroom: 0 },
+    cents(run(), {
+      ssIncome: 50_000,
+      drawn: 0,
+      preserved: 1,
+      headroom: 34_600,
     });
   });
 });
