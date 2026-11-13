@@ -1,5 +1,5 @@
 /**
- * Per-period net pay: gross ÷ periods → pre-tax deductions → federal withholding (IRS annualized
+ * Per-period net pay: gross (salary ÷ its divisor) → pre-tax deductions → federal withholding (IRS annualized
  * method) → FICA → post-tax deductions. Only payroll-deducted contribution accounts are deductions;
  * Section 125 and payroll-FICA-exempt money (HSA) leave the FICA base, 401k deferrals don't.
  */
@@ -20,6 +20,7 @@ import { bonusOnSchedule } from "./bonus-check";
 import { findExtraPaycheckMonths } from "./extra-paycheck-months";
 import { buildYearSchedule } from "./year-schedule";
 import { jobChecksThisYear } from "./job-last-check";
+import { salaryDivisor, yearPaydays } from "./year-paydays";
 import {
   buildPayFrequencyLabel,
   countPeriodsElapsed,
@@ -28,8 +29,7 @@ import {
 
 /**
  * IRS annualized bracket lookup: total annual tax, marginal rate (highest bracket touched), its
- * floor, and the base withholding below it (for the withholding worksheet display).
- * Brackets are { min, max (null = top), rate (decimal) }, each taxing [min, max).
+ * floor and the base withholding below it (worksheet display). Brackets tax [min, max), null = top.
  */
 function lookupFederalWithholding(
   adjustedAnnualWage: number,
@@ -68,7 +68,10 @@ function lookupFederalWithholding(
 export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   const { warnings } = inputWarnings(input);
 
+  // Periods annualize withholding (Pub 15-T); paydays count the year's checks; the divisor sizes each.
   const periodsPerYear = getPeriodsPerYear(input.payPeriod);
+  const paydays = yearPaydays(input);
+  const divisor = salaryDivisor(input);
   // Other pay on each check: cash lines are paid (gross, net); non-cash
   // lines (imputed income) are only taxed. Each line says which taxes
   // apply, so a cash line exempt from a tax comes back out of that base.
@@ -89,12 +92,11 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   const federalEarningsAdjustment = sumTaxable("federalTaxable");
   const ficaEarningsAdjustment = sumTaxable("ficaTaxable");
   const gross = roundToCents(
-    safeDivide(input.annualSalary, periodsPerYear, 0)! + cashEarnings,
+    safeDivide(input.annualSalary, divisor, 0)! + cashEarnings,
   );
 
   // ── Step 1: Classify deductions ──
-  // Pre-tax and post-tax lines from input.deductions (insurance, etc.) and payroll-deducted
-  // input.contributionAccounts (401k, HSA).
+  // Pre-tax and post-tax lines: input.deductions and payroll-deducted contribution accounts.
   const preTaxDeductions: DeductionLine[] = [];
   const postTaxDeductions: DeductionLine[] = [];
 
@@ -136,7 +138,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     (d) => d.amount,
   );
   const ficaExemptFromContributions = sumBy(input.contributionAccounts, (ca) =>
-    regularFicaExemptPerPeriod(ca, periodsPerYear),
+    regularFicaExemptPerPeriod(ca, paydays),
   );
   const ficaBase =
     gross -
@@ -165,11 +167,10 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     safeDivide(annualTax, periodsPerYear, 0)! + input.additionalFedWithholding;
 
   // ── Step 4: FICA taxes ──
-  // Social Security on the FICA base, capped at the wage base. One W-2 employer is modeled;
-  // excess SS across several employers (refunded on the return) isn't.
+  // Social Security on the FICA base up to the wage base; one W-2 employer is modeled.
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;
   const ssRate = input.taxBrackets.socialSecurityRate;
-  const annualFicaBase = ficaBase * periodsPerYear;
+  const annualFicaBase = ficaBase * paydays;
   let ficaSS: number;
   if (annualFicaBase <= ssWageBase) {
     // Full-year SS applies — every period pays SS
@@ -177,7 +178,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   } else {
     // Wage base reached during the year: per-check SS is the year's SS spread evenly, so
     // per-check net × periods is true take-home (the year schedule shows timing).
-    ficaSS = (ssWageBase * ssRate) / periodsPerYear;
+    ficaSS = (ssWageBase * ssRate) / paydays;
     warnings.push(
       `Social Security stops once your pay for the year passes ${formatCurrency(ssWageBase)}; per-check figures average it over the year.`,
     );
@@ -190,12 +191,11 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
       input.taxBrackets,
       annualFicaBase,
       annualFicaBase,
-    ) / periodsPerYear;
+    ) / paydays;
   const ficaMedicare =
     ficaBase * input.taxBrackets.medicareRate + additionalMedicarePerCheck;
 
   // ── Step 5: Net pay ──
-  // Gross - pre-tax deductions - federal withholding - FICA SS - FICA Medicare - post-tax deductions
   const netPay =
     gross -
     totalPreTax -
@@ -209,8 +209,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   const bonusEstimate = calculateBonus(input, marginalRate, annualFicaBase);
 
   // ── Step 7: Extra paycheck months ──
-  // Biweekly pay has 2 months with 3 paydays, found from anchorPayDate (a real payday, so no
-  // payWeek shift).
+  // Biweekly months with 3 paydays, found from anchorPayDate (a real payday: no payWeek shift).
   const extraPaycheckMonths = findExtraPaycheckMonths(
     input.asOfDate,
     input.payPeriod,
@@ -220,7 +219,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   // ── Step 8: Year schedule ──
   // Every pay period, with the bonus in its month and SS stopping at the wage base. Paydays
   // before a job's start or after its end this year stay (numbering) but pay nothing.
-  const checks = jobChecksThisYear(input, periodsPerYear);
+  const checks = jobChecksThisYear(input);
   const yearSchedule = buildYearSchedule(
     input,
     gross,
@@ -265,7 +264,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     bonusEstimate,
     extraPaycheckMonths,
     yearSchedule,
-    periodsPerYear,
+    periodsPerYear: paydays,
     periodsElapsedYtd,
     periodsBeforeStart: checks.beforeStart,
     // Where the bonus falls against the job's checks (for display).

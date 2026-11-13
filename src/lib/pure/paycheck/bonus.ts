@@ -6,7 +6,7 @@ import type {
   DeductionLine,
 } from "./paycheck.types";
 import { roundToCents, sumBy } from "../../utils/math";
-import { getPeriodsPerYear } from "../../config/pay-periods";
+import { yearPaydays } from "./year-paydays";
 import { isPreTax, regularFicaExemptPerPeriod } from "./taxable-wages";
 import { bonusCheckNet } from "./year-totals";
 import { additionalMedicareWithheld } from "./additional-medicare";
@@ -128,13 +128,13 @@ export function calculateBonus(
   const ssRate = input.taxBrackets.socialSecurityRate;
   const medRate = input.taxBrackets.medicareRate;
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;
-  const periodsPerYear = getPeriodsPerYear(input.payPeriod);
+  // The regular checks' exempt money over the year's paydays.
+  const paydays = yearPaydays(input);
   const bonusFicaExempt = sumBy(input.contributionAccounts, (ca) => {
     const cap = ca.ficaExemptAnnualCap;
     if (cap === null) return 0;
     if (!isPreTax(ca.taxTreatment)) return 0;
-    const capLeft =
-      cap - regularFicaExemptPerPeriod(ca, periodsPerYear) * periodsPerYear;
+    const capLeft = cap - regularFicaExemptPerPeriod(ca, paydays) * paydays;
     return Math.min(
       bonusCheckContribution(ca, bonusGross),
       Math.max(0, capLeft),

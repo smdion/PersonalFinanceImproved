@@ -1,9 +1,9 @@
 /** The bonus check on the year schedule: which check pays it. */
 import type { PaycheckInput } from "./paycheck.types";
 import { MS_PER_DAY } from "../../constants";
-import { getPeriodsPerYear } from "../../config/pay-periods";
 import { alignPaydayOnOrAfter } from "./pay-periods-in-year";
 import { bonusAfterEnd } from "./job-last-check";
+import { yearPaydays } from "./year-paydays";
 
 /**
  * Finds the pay period that contains the bonus pay date.
@@ -81,7 +81,7 @@ export function bonusCheckNumber(
   bonusGross: number,
 ): number | null {
   if (bonusGross <= 0) return null;
-  const last = getPeriodsPerYear(input.payPeriod);
+  const last = yearPaydays(input);
   const check =
     input.bonusMonth == null
       ? last
@@ -95,7 +95,7 @@ export function bonusCheckNumber(
             input.bonusDayOfMonth,
           ),
         );
-  return bonusAfterEnd(input, check, last) ? null : check;
+  return bonusAfterEnd(input, check) ? null : check;
 }
 
 /**

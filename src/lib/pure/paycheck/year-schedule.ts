@@ -6,11 +6,11 @@ import type {
   BonusEstimate,
 } from "./paycheck.types";
 import { roundToCents, sumBy } from "../../utils/math";
-import { getPeriodsPerYear } from "../../config/pay-periods";
 import { bonusCheckNumber } from "./bonus-check";
 import { yearTotals } from "./year-totals";
 import { additionalMedicareWithheld } from "./additional-medicare";
 import type { JobChecks } from "./job-last-check";
+import { yearPaydays } from "./year-paydays";
 
 /**
  * Social Security withholding for one pay period, given the wage base cap.
@@ -87,7 +87,7 @@ export function buildYearSchedule(
   /** The job's checks this year: rows before its start and after its last check are empty. */
   { beforeStart, lastCheck }: Pick<JobChecks, "beforeStart" | "lastCheck">,
 ): PeriodBreakdown[] {
-  const periodsPerYear = getPeriodsPerYear(input.payPeriod);
+  const paydays = yearPaydays(input);
   const ssRate = input.taxBrackets.socialSecurityRate;
   const medRate = input.taxBrackets.medicareRate;
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;
@@ -96,7 +96,7 @@ export function buildYearSchedule(
   const schedule: PeriodBreakdown[] = [];
   let ytdFicaBase = 0; // Running total of FICA-taxable earnings
 
-  for (let p = 1; p <= periodsPerYear; p++) {
+  for (let p = 1; p <= paydays; p++) {
     if (p <= beforeStart || p > lastCheck) {
       schedule.push({
         periodNumber: p,

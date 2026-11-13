@@ -748,7 +748,7 @@ describe("a job ending this year", () => {
 
   it("its last check is the last payday on or before its last day", () => {
     const at = (endDate: Date | null) =>
-      lastCheckThisYear({ ...input, endDate }, 26);
+      lastCheckThisYear({ ...input, endDate });
     expect(at(input.endDate!)).toBe(12);
     // Ending on a payday: that check is its last.
     expect(at(new Date("2025-06-06T12:00:00Z"))).toBe(12);
@@ -758,7 +758,7 @@ describe("a job ending this year", () => {
   });
 
   it("its checks this year: twelve", () => {
-    expect(jobChecksThisYear(input, 26)).toEqual({
+    expect(jobChecksThisYear(input)).toEqual({
       beforeStart: 0,
       lastCheck: 12,
       total: 12,
@@ -766,15 +766,12 @@ describe("a job ending this year", () => {
     // Started June 2: the eleven paydays before it aren't its checks; fifteen are.
     const started = new Date("2025-06-02");
     expect(
-      jobChecksThisYear(
-        {
-          ...input,
-          asOfDate: new Date("2025-08-01"),
-          startDate: started,
-          endDate: null,
-        },
-        26,
-      ),
+      jobChecksThisYear({
+        ...input,
+        asOfDate: new Date("2025-08-01"),
+        startDate: started,
+        endDate: null,
+      }),
     ).toEqual({ beforeStart: 11, lastCheck: 26, total: 15 });
   });
 

@@ -338,7 +338,7 @@
     "src/lib/pure/paycheck/extra-paycheck-months.ts": 115,
     "src/lib/pure/paycheck/pay-periods-in-year.ts": 258,
     "src/lib/pure/paycheck/paystub-check.ts": 427,
-    "src/lib/pure/paycheck/per-check.ts": 277,
+    "src/lib/pure/paycheck/per-check.ts": 276,
     "src/lib/pure/paycheck/person-paycheck.ts": 154,
     "src/lib/pure/paycheck/taxable-wages.ts": 23,
     "src/lib/pure/paycheck/year-schedule.ts": 187,
@@ -999,7 +999,7 @@
       "checkPaystub": 162
     },
     "src/lib/pure/paycheck/per-check.ts": {
-      "calculatePaycheck": 210
+      "calculatePaycheck": 209
     },
     "src/lib/pure/retirement/relocation.ts": {
       "calculateRelocation": 316

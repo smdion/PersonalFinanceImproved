@@ -1,6 +1,7 @@
 /** A job's checks this year: the year schedule's rows before its start and after its last check are empty. */
 import type { PaycheckInput } from "./paycheck.types";
 import { countPeriodsElapsed, periodsBeforeStart } from "./pay-periods-in-year";
+import { yearPaydays } from "./year-paydays";
 
 type JobEnd = Pick<
   PaycheckInput,
@@ -19,14 +20,12 @@ function lastDayThisYear(input: JobEnd): Date | null {
  * The job's last check this year (as of `asOfDate`'s year): the paydays
  * through its last day when it ends this year, else the year's last check.
  */
-export function lastCheckThisYear(
-  input: JobEnd,
-  periodsPerYear: number,
-): number {
+export function lastCheckThisYear(input: JobEnd): number {
+  const paydays = yearPaydays(input);
   const end = lastDayThisYear(input);
-  if (!end) return periodsPerYear;
+  if (!end) return paydays;
   return Math.min(
-    periodsPerYear,
+    paydays,
     countPeriodsElapsed(end, input.payPeriod, input.anchorPayDate),
   );
 }
@@ -38,20 +37,15 @@ export function lastCheckThisYear(
 export function bonusAfterEnd(
   input: JobEnd & Pick<PaycheckInput, "bonusMonth">,
   bonusCheck: number,
-  periodsPerYear: number,
 ): boolean {
   if (!lastDayThisYear(input)) return false;
-  return (
-    input.bonusMonth == null ||
-    bonusCheck > lastCheckThisYear(input, periodsPerYear)
-  );
+  return input.bonusMonth == null || bonusCheck > lastCheckThisYear(input);
 }
 
 /** A job's checks in `asOfDate`'s year: the paydays before its start, its last check and the
  *  checks it pays this year (`total`). */
 export function jobChecksThisYear(
   input: JobEnd & Pick<PaycheckInput, "startDate">,
-  periodsPerYear: number,
 ) {
   const beforeStart = periodsBeforeStart(
     input.asOfDate,
@@ -59,7 +53,7 @@ export function jobChecksThisYear(
     input.anchorPayDate,
     input.startDate,
   );
-  const lastCheck = lastCheckThisYear(input, periodsPerYear);
+  const lastCheck = lastCheckThisYear(input);
   return {
     beforeStart,
     lastCheck,
