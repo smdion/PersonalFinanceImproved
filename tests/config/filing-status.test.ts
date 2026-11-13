@@ -5,6 +5,7 @@ import {
   jointTable,
   parseReturnFilingStatus,
   PROJECTION_FILING_STATUSES,
+  spousePair,
   survivorTable,
 } from "@/lib/config/filing-status";
 import {
@@ -62,5 +63,14 @@ describe("filing status", () => {
     expect(parseReturnFilingStatus("QSS")).toBe("QSS");
     expect(parseReturnFilingStatus("MFS")).toBeNull();
     expect(parseReturnFilingStatus(null)).toBeNull();
+  });
+
+  it("pairs the spouses only on a joint return of exactly two people", () => {
+    expect(spousePair("MFJ", ["a", "b"])).toEqual(["a", "b"]);
+    expect(spousePair("MFJ", ["a"])).toBeNull();
+    expect(spousePair("MFJ", ["a", "b", "c"])).toBeNull();
+    expect(spousePair("QSS", ["a", "b"])).toBeNull();
+    expect(spousePair("Single", ["a", "b"])).toBeNull();
+    expect(spousePair(null, ["a", "b"])).toBeNull();
   });
 });

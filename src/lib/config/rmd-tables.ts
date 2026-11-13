@@ -3,11 +3,7 @@
 // getRmdStartAge(). The engine imports these and hardcodes no RMD knowledge.
 import { roundToCents } from "../utils/math";
 import { ageInYear } from "../utils/date";
-import {
-  FILING_STATUS_RULES,
-  filingTable,
-  type ReturnFilingStatus,
-} from "./filing-status";
+import { spousePair, type ReturnFilingStatus } from "./filing-status";
 import { jointLifeDivisor } from "./rmd-joint-life-table";
 
 /** IRS Uniform Lifetime Table — divisor by age (ages 72–120). */
@@ -103,11 +99,9 @@ export function soleBeneficiarySpouseAges(
   people: ReadonlyMap<number, { birthYear: number }>,
   year: number,
 ): Map<number, number> {
-  const joint =
-    filingStatus != null &&
-    filingTable(FILING_STATUS_RULES, filingStatus).peopleOnReturn === 2;
-  const [a, b] = [...people];
-  if (!joint || people.size !== 2 || !a || !b) return new Map();
+  const pair = spousePair(filingStatus, [...people]);
+  if (!pair) return new Map();
+  const [a, b] = pair;
   return new Map([
     [a[0], ageInYear(b[1].birthYear, year)],
     [b[0], ageInYear(a[1].birthYear, year)],

@@ -9,9 +9,8 @@ import {
 } from "@/lib/pure/retirement/social-security";
 import { fraBirthYear, parseAnnualPia } from "@/lib/config/social-security";
 import {
-  FILING_STATUS_RULES,
-  filingTable,
   parseReturnFilingStatus,
+  spousePair,
 } from "@/lib/config/filing-status";
 import { toNumber } from "@/lib/utils/numbers";
 import {
@@ -83,12 +82,9 @@ export function buildSocialSecurityEntries(
   };
 
   const status = parseReturnFilingStatus(filingStatus);
-  const isMfjCouple =
-    status !== null &&
-    filingTable(FILING_STATUS_RULES, status).peopleOnReturn === 2 &&
-    people.length === 2;
+  const spouses = spousePair(status, people);
 
-  return people.map((ps, i) => {
+  return people.map((ps) => {
     const startAge = shiftedStartAge(ps);
     const ownPia = ownPiaFor(ps);
 
@@ -108,8 +104,8 @@ export function buildSocialSecurityEntries(
     // The excess starts the year the worker files (402(b)(1); deemed filing, 402(r)), reduced
     // for this person's age then (402(q)). Symmetric: the higher earner's excess is $0.
     let fromSpouseFiling: SsEntry["fromSpouseFiling"];
-    if (isMfjCouple) {
-      const other = people[i === 0 ? 1 : 0]!;
+    if (spouses) {
+      const other = spouses[0] === ps ? spouses[1] : spouses[0];
       const otherPia = ownPiaFor(other);
       const workerFilingYear = other.birthYear + shiftedStartAge(other);
       const excessStartsLater = workerFilingYear > ps.birthYear + startAge;

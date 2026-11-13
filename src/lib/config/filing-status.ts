@@ -136,6 +136,19 @@ export function parseReturnFilingStatus(
   return RETURN_FILING_STATUS_VALUES.find((s) => s === value) ?? null;
 }
 
+/** The two spouses on a joint return of exactly two people; null otherwise (Ledgr stores no
+ *  spouse link, so a third adult or a one-person joint return has no pair). */
+export function spousePair<P>(
+  status: ReturnFilingStatus | null | undefined,
+  people: readonly P[],
+): readonly [P, P] | null {
+  if (status == null || filingRules(status).peopleOnReturn !== 2) return null;
+  const [a, b] = people;
+  return people.length === 2 && a !== undefined && b !== undefined
+    ? [a, b]
+    : null;
+}
+
 /** A table keyed by return status (rules, labels): a status's entry, either kind. */
 export function filingTable<V>(
   table: Readonly<Record<ReturnFilingStatusSpelling, V>>,
