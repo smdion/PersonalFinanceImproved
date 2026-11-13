@@ -530,13 +530,21 @@ export type EngineDecumulationYear = {
    *  (`irmaaOnTopOfBudget`). Absent when none is. */
   irmaaPaid?: number;
   // --- ACA fields ---
-  /** Whether ACA subsidy was preserved this year (MAGI kept below cliff). */
+  /** The year's ACA check: kept, lost, or not checked (awareness off, or
+   *  everyone on Medicare). */
+  acaStatus: AcaStatus;
+  /** `acaStatus === "kept"`: false both when lost and when not checked
+   *  (kept for API readers; read `acaStatus` for a loss). */
   acaSubsidyPreserved: boolean;
   /** MAGI headroom below ACA cliff ($0 if not applicable). */
   acaMagiHeadroom: number;
   /** Per-year warnings (cap hits, insufficient funds, etc.). */
   warnings: string[];
 };
+
+/** A year's ACA check: the premium credit kept (MAGI under the cliff),
+ *  lost (over it), or not checked (awareness off, or nobody it applies to). */
+export type AcaStatus = "kept" | "lost" | "not_checked";
 
 /** A single year in the engine projection — either accumulation or decumulation. */
 export type EngineYearProjection =

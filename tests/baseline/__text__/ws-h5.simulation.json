@@ -85,6 +85,7 @@
        "phase": "accumulation"
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -186,6 +187,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -287,6 +289,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -388,6 +391,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -489,6 +493,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -590,6 +595,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -691,6 +697,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -792,6 +799,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -893,6 +901,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -994,6 +1003,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -1095,6 +1105,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -1196,6 +1207,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -1297,6 +1309,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -1398,6 +1411,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -1499,6 +1513,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -1600,6 +1615,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -1701,6 +1717,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -1802,6 +1819,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -1903,6 +1921,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -2004,6 +2023,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -2105,6 +2125,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -2206,6 +2227,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -2307,6 +2329,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -2408,6 +2431,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -2509,6 +2533,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -2610,6 +2635,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -2711,6 +2737,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -2812,6 +2839,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -2913,6 +2941,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -3014,6 +3043,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -3115,6 +3145,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -3216,6 +3247,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -3317,6 +3349,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -3418,6 +3451,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -3519,6 +3553,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -3620,6 +3655,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -3721,6 +3757,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -3822,6 +3859,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -3923,6 +3961,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -4024,6 +4063,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -4125,6 +4165,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -4226,6 +4267,7 @@
        "withdrawalSized": false
       },
       {
+       "acaStatus": "not_checked",
        "acaSubsidyPreserved": false,
        "balanceByAccount": {
         "401k": {
@@ -4411,6 +4453,7 @@
       "phase": "accumulation"
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -4512,6 +4555,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -4613,6 +4657,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -4714,6 +4759,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -4815,6 +4861,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -4916,6 +4963,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -5017,6 +5065,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -5118,6 +5167,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -5219,6 +5269,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -5320,6 +5371,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -5421,6 +5473,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -5522,6 +5575,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -5623,6 +5677,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -5724,6 +5779,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -5825,6 +5881,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -5926,6 +5983,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -6027,6 +6085,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -6128,6 +6187,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -6229,6 +6289,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -6330,6 +6391,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -6431,6 +6493,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -6532,6 +6595,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -6633,6 +6697,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -6734,6 +6799,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -6835,6 +6901,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -6936,6 +7003,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -7037,6 +7105,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -7138,6 +7207,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -7239,6 +7309,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -7340,6 +7411,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -7441,6 +7513,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -7542,6 +7615,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -7643,6 +7717,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -7744,6 +7819,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -7845,6 +7921,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -7946,6 +8023,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -8047,6 +8125,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -8148,6 +8227,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -8249,6 +8329,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -8350,6 +8431,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -8451,6 +8533,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {
@@ -8552,6 +8635,7 @@
       "withdrawalSized": false
      },
      {
+      "acaStatus": "not_checked",
       "acaSubsidyPreserved": false,
       "balanceByAccount": {
        "401k": {

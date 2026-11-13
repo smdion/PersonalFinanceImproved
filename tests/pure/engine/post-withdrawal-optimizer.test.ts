@@ -464,15 +464,12 @@ function makeAcaInput(overrides: Partial<AcaFixture> = {}): AcaInput {
 }
 
 describe("checkAca", () => {
-  // Bug pin (verdict N8): "not checked" reads as "not preserved", and the
-  // report says the subsidy was lost. Changes on purpose with the v0.11
-  // Retirement rules item: ACA reported "lost" when never checked (a
-  // status of not checked, preserved or lost); answer-key ret/A31
-  // (`tests/pure/advice/report/aca-irmaa-narrative.test.ts`) holds the decided
-  // report.
-  it("returns false/0 when disabled", () => {
+  // Verdict N8: a check that didn't run says so, never "lost"; the report
+  // reads the status (answer-key ret/A31,
+  // `tests/pure/advice/report/aca-irmaa-narrative.test.ts`).
+  it("is not checked, with no headroom, when awareness is off", () => {
     const result = checkAca(makeAcaInput({ enableAcaAwareness: false }));
-    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.acaStatus).toBe("not_checked");
     expect(result.acaMagiHeadroom).toBe(0);
     expect(result.warnings).toHaveLength(0);
   });
@@ -483,9 +480,9 @@ describe("checkAca", () => {
   // tested by year" (N7: one spouse on Medicare skips ACA for the other),
   // where answer-key ret/A32 (`tests/pure/engine/answer-key-aca.test.ts`:
   // kept, headroom 34,600) replaces it, and with the N8 status above.
-  it("returns false/0 when not all persons under 65", () => {
+  it("is not checked, with no headroom, when not all persons under 65", () => {
     const result = checkAca(makeAcaInput({ allPersonsUnder65: false }));
-    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.acaStatus).toBe("not_checked");
     expect(result.acaMagiHeadroom).toBe(0);
   });
 
@@ -493,7 +490,7 @@ describe("checkAca", () => {
     // Household size 2: FPL = 21150, cliff = 84600
     // MAGI = 30000 + 0 + 5000 + 0 = 35000 < 84600
     const result = checkAca(makeAcaInput());
-    expect(result.acaSubsidyPreserved).toBe(true);
+    expect(result.acaStatus).toBe("kept");
     expect(result.acaMagiHeadroom).toBeCloseTo(84600 - 35000, 0);
     expect(result.warnings).toHaveLength(0);
   });
@@ -504,7 +501,7 @@ describe("checkAca", () => {
       makeAcaInput({ totalTraditionalWithdrawal: 80000 }),
     );
     // MAGI = 80000 + 0 + 5000 + 0 = 85000 > 84600
-    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.acaStatus).toBe("lost");
     expect(result.acaMagiHeadroom).toBe(0);
     expect(result.warnings.length).toBeGreaterThan(0);
     expect(result.warnings[0]).toContain("ACA");
@@ -524,7 +521,7 @@ describe("checkAca", () => {
         ssIncome: 11636.92,
       }),
     );
-    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.acaStatus).toBe("lost");
     expect(result.acaMagiHeadroom).toBe(0);
   });
 
@@ -545,7 +542,7 @@ describe("checkAca", () => {
         brokerageGainsPortion: 0,
       }),
     );
-    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.acaStatus).toBe("lost");
     expect(result.warnings[0]).not.toContain("sourcing");
   });
 
@@ -553,7 +550,7 @@ describe("checkAca", () => {
     // Base MAGI = 30000 + 5000 = 35000 (under cliff)
     // With 60000 conversion: 35000 + 60000 = 95000 (over 84600 cliff)
     const result = checkAca(makeAcaInput({ rothConversionAmount: 60000 }));
-    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.acaStatus).toBe("lost");
   });
 
   it("includes full gross SS benefit (not just the taxable slice) in MAGI calculation", () => {
@@ -562,7 +559,7 @@ describe("checkAca", () => {
     // 0-85% taxable slice used for IRMAA/income tax: 35000 + 50000 = 85000
     // (over 84600 cliff)
     const result = checkAca(makeAcaInput({ ssIncome: 50000 }));
-    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.acaStatus).toBe("lost");
   });
 
   it("includes non-qualified Roth growth income in MAGI (previously omitted here while currentYearMagi/NIIT already included it)", () => {
@@ -570,7 +567,7 @@ describe("checkAca", () => {
     // must push it over the same way rothConversionAmount/ssIncome already do:
     // 35000 + 50000 = 85000 (over 84600 cliff).
     const result = checkAca(makeAcaInput({ rothTaxableGrowth: 50000 }));
-    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.acaStatus).toBe("lost");
   });
 
   it("adjusts cliff by household size (400% of the HHS 2025 guideline)", () => {

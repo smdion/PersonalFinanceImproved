@@ -84,7 +84,7 @@ function cliff(opts: {
     fplByHousehold: FPL_2026(),
   });
   return {
-    preserved: r.acaSubsidyPreserved ? 1 : 0,
+    preserved: r.acaStatus === "kept" ? 1 : 0,
     headroom: r.acaMagiHeadroom,
   };
 }

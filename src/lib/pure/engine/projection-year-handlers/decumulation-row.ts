@@ -65,8 +65,7 @@ export function decumulationYearRow(
   const { rmdExcessAmount } = parts.settle;
   const { deliveredAfterTax, shortfallMaterialityFloor } = parts.shortfall;
   const { unmetNeedRaw, unmetNeedMaterial } = parts.shortfall;
-  const { irmaaCost, irmaaPaid, acaSubsidyPreserved, acaMagiHeadroom } =
-    parts.cliffs;
+  const { irmaaCost, irmaaPaid, acaStatus, acaMagiHeadroom } = parts.cliffs;
   const { yearEnd } = parts.closed;
 
   return {
@@ -152,7 +151,8 @@ export function decumulationYearRow(
     niitAmount,
     irmaaCost,
     ...(irmaaPaid > 0 ? { irmaaPaid } : {}),
-    acaSubsidyPreserved,
+    acaStatus,
+    acaSubsidyPreserved: acaStatus === "kept",
     acaMagiHeadroom,
     warnings: routeWarnings,
   };

@@ -2,6 +2,7 @@
 import { roundToCents } from "../../utils/math";
 import { getAcaSubsidyCliff } from "../../config/aca-tables";
 import { yearMagi, type MagiIncome } from "@/lib/pure/tax/year-income";
+import type { AcaStatus } from "./types/projection-result";
 
 export interface AcaInput {
   enableAcaAwareness: boolean | undefined;
@@ -18,7 +19,7 @@ export interface AcaInput {
 }
 
 interface AcaResult {
-  acaSubsidyPreserved: boolean;
+  acaStatus: AcaStatus;
   acaMagiHeadroom: number;
   warnings: string[];
 }
@@ -40,7 +41,7 @@ export function checkAca(input: AcaInput): AcaResult {
   const warnings: string[] = [];
 
   if (!enableAcaAwareness || !allPersonsUnder65) {
-    return { acaSubsidyPreserved: false, acaMagiHeadroom: 0, warnings };
+    return { acaStatus: "not_checked", acaMagiHeadroom: 0, warnings };
   }
 
   // Grow the 400%-FPL cliff forward (same as growing each FPL cell first);
@@ -68,5 +69,9 @@ export function checkAca(input: AcaInput): AcaResult {
     );
   }
 
-  return { acaSubsidyPreserved, acaMagiHeadroom, warnings };
+  return {
+    acaStatus: acaSubsidyPreserved ? "kept" : "lost",
+    acaMagiHeadroom,
+    warnings,
+  };
 }

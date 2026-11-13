@@ -22,6 +22,7 @@
  ],
  "projectionByYear": [
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -183,170 +184,7 @@
    "withdrawalSized": false
   },
   {
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "hasBudgetOverride": false,
-   "individualAccountBalances": [
-    {
-     "category": "ira",
-     "draw": {
-      "allowPenalizedWithdrawals": false,
-      "eligibilityLocked": false,
-      "reason": {
-       "gate": "age_59_half",
-       "kind": "age_reached"
-      }
-     },
-     "name": "Morgan IRA (Fidelity)",
-     "ownerName": "Morgan",
-     "parentCategory": "Retirement",
-     "taxType": "preTax"
-    },
-    {
-     "category": "ira",
-     "draw": {
-      "allowPenalizedWithdrawals": false,
-      "eligibilityLocked": false,
-      "reason": {
-       "gate": "age_59_half",
-       "kind": "age_reached"
-      }
-     },
-     "name": "Morgan IRA (Fidelity)",
-     "ownerName": "Morgan",
-     "parentCategory": "Retirement",
-     "roth": {
-      "basisUncertain": false
-     },
-     "taxType": "taxFree"
-    },
-    {
-     "category": "ira",
-     "draw": {
-      "allowPenalizedWithdrawals": false,
-      "eligibilityLocked": false,
-      "reason": {
-       "gate": "age_59_half",
-       "kind": "age_reached"
-      }
-     },
-     "name": "Casey IRA (Schwab)",
-     "ownerName": "Casey",
-     "parentCategory": "Retirement",
-     "taxType": "preTax"
-    },
-    {
-     "category": "brokerage",
-     "draw": {
-      "allowPenalizedWithdrawals": false,
-      "eligibilityLocked": false,
-      "reason": {
-       "kind": "no_owner"
-      }
-     },
-     "name": "Joint Brokerage (Vanguard)",
-     "parentCategory": "Retirement",
-     "taxType": "afterTax"
-    }
-   ],
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdByPerson": [
-    {
-     "personName": "Morgan"
-    },
-    {
-     "personName": "Casey"
-    }
-   ],
-   "rmdOverrodeRouting": true,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Morgan"
-    },
-    {
-     "personName": "Casey"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": false
-  },
-  {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -511,6 +349,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -675,6 +514,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -839,6 +679,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -1003,6 +844,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -1167,6 +1009,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -1331,6 +1174,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -1495,6 +1339,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -1659,6 +1504,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -1823,6 +1669,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -1987,6 +1834,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -2151,6 +1999,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -2315,6 +2164,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -2479,6 +2329,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -2643,6 +2494,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -2807,6 +2659,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -2971,6 +2824,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -3135,6 +2989,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -3299,6 +3154,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -3463,6 +3319,7 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {
@@ -3627,6 +3484,172 @@
    "withdrawalSized": false
   },
   {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "hasBudgetOverride": false,
+   "individualAccountBalances": [
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Morgan IRA (Fidelity)",
+     "ownerName": "Morgan",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Morgan IRA (Fidelity)",
+     "ownerName": "Morgan",
+     "parentCategory": "Retirement",
+     "roth": {
+      "basisUncertain": false
+     },
+     "taxType": "taxFree"
+    },
+    {
+     "category": "ira",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "gate": "age_59_half",
+       "kind": "age_reached"
+      }
+     },
+     "name": "Casey IRA (Schwab)",
+     "ownerName": "Casey",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Joint Brokerage (Vanguard)",
+     "parentCategory": "Retirement",
+     "taxType": "afterTax"
+    }
+   ],
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdByPerson": [
+    {
+     "personName": "Morgan"
+    },
+    {
+     "personName": "Casey"
+    }
+   ],
+   "rmdOverrodeRouting": true,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Morgan"
+    },
+    {
+     "personName": "Casey"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": false
+  },
+  {
+   "acaStatus": "not_checked",
    "acaSubsidyPreserved": false,
    "balanceByAccount": {
     "401k": {

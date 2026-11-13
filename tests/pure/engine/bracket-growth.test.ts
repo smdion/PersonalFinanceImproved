@@ -1049,7 +1049,24 @@ describe("end-to-end: ACA subsidy cliff grows through checkAca", () => {
     )!;
     expect(y2028.acaSubsidyPreserved).toBe(true);
     expect(y2029.acaSubsidyPreserved).toBe(true);
+    expect(y2028.acaStatus).toBe("kept");
     expect(y2028.acaMagiHeadroom).toBeGreaterThan(0);
+  });
+
+  it("with awareness off every year is not checked, not lost (verdict N8)", () => {
+    const r = calculateProjection({
+      ...makeAcaHouseholdInput(),
+      enableAcaAwareness: false,
+    });
+    const rows = r.projectionByYear.filter(
+      (y): y is EngineDecumulationYear => y.phase === "decumulation",
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    for (const y of rows) {
+      expect(y.acaStatus).toBe("not_checked");
+      expect(y.acaSubsidyPreserved).toBe(false);
+      expect(y.acaMagiHeadroom).toBe(0);
+    }
   });
 });
 

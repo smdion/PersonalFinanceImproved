@@ -52,8 +52,8 @@ export function yearCliffChecks(
     fplGrowthFactor: thisYear.tables.fplGrowthFactor,
     fplByHousehold: thisYear.taxRates.fplByHousehold,
   });
-  const { acaSubsidyPreserved, acaMagiHeadroom } = acaResult;
+  const { acaStatus, acaMagiHeadroom } = acaResult;
   routeWarnings.push(...acaResult.warnings);
 
-  return { irmaaCost, irmaaPaid, acaSubsidyPreserved, acaMagiHeadroom };
+  return { irmaaCost, irmaaPaid, acaStatus, acaMagiHeadroom };
 }
