@@ -13,6 +13,7 @@ import { speculativeJobValues } from "@/server/data/jobs";
 import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
 import { NEW_HOUSEHOLD_ROW } from "@/server/services/profiles/retirement-settings-row";
+import type { RetirementSettingsInsert } from "@/server/services/profiles/retirement-settings-row";
 
 /** Seed a demo profile into the given database connection (already on the demo schema). */
 export async function seedProfile(
@@ -292,8 +293,7 @@ export async function seedProfile(
     socialSecurityMonthly: rs.socialSecurityMonthly,
     ssStartAge: rs.ssStartAge,
     ...NEW_HOUSEHOLD_ROW,
-  });
-  // 12b. Per-person retirement settings overrides
+  } satisfies RetirementSettingsInsert);
   if (profile.perPersonRetirementSettings) {
     for (const prs of profile.perPersonRetirementSettings) {
       const prsPersonId = personIdByName.get(prs.personName);
@@ -310,7 +310,7 @@ export async function seedProfile(
           socialSecurityMonthly: prs.socialSecurityMonthly,
           ssStartAge: prs.ssStartAge,
           ...NEW_HOUSEHOLD_ROW,
-        });
+        } satisfies RetirementSettingsInsert);
       }
     }
   }

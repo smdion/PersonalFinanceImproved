@@ -5,6 +5,7 @@ import { asc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
+import { copiedSettingsRow } from "@/server/services/profiles/retirement-settings-row";
 import {
   canDeleteContributionProfile,
   canDeleteRetirementProfile,
@@ -294,7 +295,11 @@ function duplicateRetirementProfile(
           profileId: _hhProfileId,
           ...fields
         } = src;
-        return { ...fields, personId: p.id, profileId: newProfile.id };
+        return copiedSettingsRow({
+          ...fields,
+          personId: p.id,
+          profileId: newProfile.id,
+        });
       }),
     );
 

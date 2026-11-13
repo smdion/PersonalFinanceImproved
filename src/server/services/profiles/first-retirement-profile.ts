@@ -1,4 +1,5 @@
 import { isNull, asc, eq } from "drizzle-orm";
+import { copiedSettingsRow } from "@/server/services/profiles/retirement-settings-row";
 import * as schema from "@/lib/db/schema";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { lockForTransaction } from "@/server/data/lock-row";
@@ -71,11 +72,9 @@ export async function adoptFirstRetirementProfile(
   });
 }
 
-/**
- * Completeness invariant: give a person with no rows in a profile its `retirement_settings` and
- * `retirement_profile_people` rows, cloned from the primary person's (else the lowest id's) with
- * person and profile swapped. Skips a table the profile has no row in.
- */
+/** Completeness invariant: give a person with no rows in a profile its `retirement_settings` and
+ *  `retirement_profile_people` rows, cloned from the primary person's (else the lowest id's) with
+ *  person and profile swapped. Skips a table the profile has no row in. */
 export async function addPersonToRetirementProfile(
   tx: DbOrTx,
   profileId: number,
@@ -98,7 +97,7 @@ export async function addPersonToRetirementProfile(
     } = sourceHousehold;
     await tx
       .insert(schema.retirementSettings)
-      .values({ ...householdFields, personId, profileId });
+      .values(copiedSettingsRow({ ...householdFields, personId, profileId }));
   }
 
   const peopleRows = await tx

@@ -21,6 +21,7 @@ import {
   getDefaultDecumulationOrder,
 } from "../../config/account-types";
 import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "../../constants";
+import { storedRothOverlay } from "../../config/roth-bracket-overlay";
 
 /**
  * Appends any engine category missing from `withdrawalOrder` (the schema allows partial arrays,
@@ -138,10 +139,10 @@ function decumulationDefaultsFor(
     withdrawalAccountCaps: buildCategoryRecord(() => null),
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
-    // A stored row without its switch was saved when the overlay applied to
-    // every row: on (calculateProjection warns).
-    rothBracketOverlay:
-      defaults.distributionTaxRates.rothBracketOverlay ?? true,
+    // calculateProjection warns when the switch is empty.
+    rothBracketOverlay: storedRothOverlay(
+      defaults.distributionTaxRates.rothBracketOverlay,
+    ),
     avoidPenalizedWithdrawals: defaults.avoidPenalizedWithdrawals ?? true,
     rmdExcessHandling: defaults.rmdExcessHandling ?? "reinvest",
     qcdMaximize: defaults.qcdMaximize ?? false,

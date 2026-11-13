@@ -413,7 +413,7 @@
     "src/server/services/paycheck/summary.ts": 644,
     "src/server/services/performance/finalize-year.ts": 436,
     "src/server/services/performance/summary.ts": 156,
-    "src/server/services/profiles/first-retirement-profile.ts": 122,
+    "src/server/services/profiles/first-retirement-profile.ts": 121,
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 207,
     "src/server/services/projection/coast-fire.ts": 294,
@@ -1033,7 +1033,7 @@
       "computeContributionSummary.results.map()": 412
     },
     "src/server/services/demo/demo-seed.ts": {
-      "seedProfile": 445
+      "seedProfile": 444
     },
     "src/server/services/investments/current-balances.ts": {
       "computeCurrentBalances": 375
