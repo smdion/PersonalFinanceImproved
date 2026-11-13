@@ -167,8 +167,8 @@ export function reinvestRmdExcess(
         addBalance(accountBalance[cat], excess);
         addBasis(accountBalance[cat], excess);
         if (indAccounts && indBalance && indKey) {
-          // The chosen account, else every Retirement brokerage by balance.
-          // Never a Portfolio account: with none it stays in the aggregate.
+          // The chosen account, else every Retirement brokerage by balance;
+          // the opening state always holds one. Never a Portfolio account.
           const retirementAccounts = indAccounts.filter(
             (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
           );
@@ -178,35 +178,30 @@ export function reinvestRmdExcess(
             (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
             0,
           );
-          if (target.length > 0) {
-            if (targetTotal > 0) {
-              let credited = 0;
-              for (const ia of target) {
-                const k = indKey(ia);
-                const balance = Math.max(0, indBalance.get(k) ?? 0);
-                const share = roundToCents(excess * (balance / targetTotal));
-                indBalance.set(k, roundToCents(balance + share));
-                credited += share;
-              }
-              const remainder = roundToCents(excess - credited);
-              if (remainder !== 0) {
-                const first = target[0]!;
-                const k = indKey(first);
-                indBalance.set(
-                  k,
-                  roundToCents((indBalance.get(k) ?? 0) + remainder),
-                );
-              }
-            } else {
-              // No weight to distribute by (every target account is at
-              // $0) -- credit the first one entirely rather than inventing
-              // a different allocation policy.
-              const k = indKey(target[0]!);
+          if (targetTotal > 0) {
+            let credited = 0;
+            for (const ia of target) {
+              const k = indKey(ia);
+              const balance = Math.max(0, indBalance.get(k) ?? 0);
+              const share = roundToCents(excess * (balance / targetTotal));
+              indBalance.set(k, roundToCents(balance + share));
+              credited += share;
+            }
+            const remainder = roundToCents(excess - credited);
+            if (remainder !== 0) {
+              const first = target[0]!;
+              const k = indKey(first);
               indBalance.set(
                 k,
-                roundToCents((indBalance.get(k) ?? 0) + excess),
+                roundToCents((indBalance.get(k) ?? 0) + remainder),
               );
             }
+          } else {
+            // No weight to distribute by (every target account is at
+            // $0) -- credit the first one entirely rather than inventing
+            // a different allocation policy.
+            const k = indKey(target[0]!);
+            indBalance.set(k, roundToCents((indBalance.get(k) ?? 0) + excess));
           }
         }
         break;

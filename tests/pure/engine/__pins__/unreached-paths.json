@@ -295,6 +295,21 @@
       "penaltyExposedAmount": 0,
       "allowPenalizedWithdrawals": false
      }
+    },
+    {
+     "name": "Retirement brokerage (projected)",
+     "balance": 15877.64,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 0,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     }
     }
    ]
   }

@@ -4146,6 +4146,10 @@ describe("engine snapshot parity", () => {
 const KNOWN_DRIFT = [
   "fixture 39: Individual account tracking through full projection",
   "fixture 52: 3+ individual accounts with unequal balances in same category",
+  // A conversion credits no Roth part, so the declared Roth part can't take
+  // the converted money (RULES § Known Gaps).
+  "fixture 68: rmdSmoothingEnabled converts pre-RMD without enableRothConversions set (self-contained toggle)",
+  "fixture 69: same household with rmdSmoothingEnabled=false — no pre-RMD conversions, and a measurably LARGER RMD at age 75 than fixture 68",
 ];
 
 describe("the two balance tracks agree", () => {

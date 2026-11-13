@@ -1,6 +1,6 @@
 /**
  * Where reinvested RMD money goes: the chosen Retirement brokerage, else every Retirement brokerage
- * by balance, never Portfolio; with none, a projection-only one (also for contribution overflow).
+ * by balance, never Portfolio; with none, the projection-only one the engine declares.
  * Parent category comes from the performance account, else the snapshot row's copy.
  */
 import {
@@ -24,9 +24,6 @@ type RmdTargetEntry = {
 type RmdExcessTargetResolution = {
   /** The chosen account's performance id, when it still qualifies. */
   targetPerformanceAccountId: number | null;
-  /** Add a projection-only retirement brokerage (the household has no
-   *  Retirement brokerage to hold overflow or reinvested RMD money). */
-  addProjectedBrokerage: boolean;
   /** Shown with the projection when a choice couldn't be honoured. */
   warning: string | null;
 };
@@ -49,14 +46,8 @@ export function resolveRmdExcessTarget(input: {
   const retirementBrokerages = entries.filter(
     (e) => tracksCostBasis(e.category) && isRetirementParent(parentOf(e)),
   );
-  const addProjectedBrokerage =
-    entries.length > 0 && retirementBrokerages.length === 0;
   if (id == null || !reinvest)
-    return {
-      targetPerformanceAccountId: null,
-      addProjectedBrokerage,
-      warning: null,
-    };
+    return { targetPerformanceAccountId: null, warning: null };
   // The performance account is canonical for the parent category.
   const perf = perfById.get(id);
   const qualifies =
@@ -66,12 +57,13 @@ export function resolveRmdExcessTarget(input: {
     isRetirementParent(perf.parentCategory) &&
     retirementBrokerages.some((e) => e.performanceAccountIds?.includes(id));
   return qualifies
-    ? { targetPerformanceAccountId: id, addProjectedBrokerage, warning: null }
+    ? { targetPerformanceAccountId: id, warning: null }
     : {
         targetPerformanceAccountId: null,
-        addProjectedBrokerage,
-        warning: addProjectedBrokerage
-          ? "The account picked for unspent required withdrawals is no longer a Retirement brokerage — reinvesting them in a projected retirement brokerage instead."
-          : "The account picked for unspent required withdrawals is no longer a Retirement brokerage — spreading them across your Retirement brokerages instead.",
+        // With no Retirement brokerage the engine projects one.
+        warning:
+          retirementBrokerages.length === 0
+            ? "The account picked for unspent required withdrawals is no longer a Retirement brokerage — reinvesting them in a projected retirement brokerage instead."
+            : "The account picked for unspent required withdrawals is no longer a Retirement brokerage — spreading them across your Retirement brokerages instead.",
       };
 }

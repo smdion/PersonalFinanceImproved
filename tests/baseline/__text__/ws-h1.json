@@ -75,6 +75,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -89,9 +96,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-1534.10 (indBal sum $49038.39 vs acctBal $47504.29)"
    ]
   },
   {
@@ -145,6 +149,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -159,9 +170,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-1917.65 (indBal sum $56582.55 vs acctBal $54664.90)"
    ]
   },
   {
@@ -215,6 +223,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -229,9 +244,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-1975.19 (indBal sum $64417.00 vs acctBal $62441.81)"
    ]
   },
   {
@@ -285,6 +297,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -299,9 +318,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2034.43 (indBal sum $72916.05 vs acctBal $70881.62)"
    ]
   },
   {
@@ -355,6 +371,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -369,9 +392,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2095.47 (indBal sum $82129.75 vs acctBal $80034.28)"
    ]
   },
   {
@@ -425,6 +445,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -439,9 +466,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2158.34 (indBal sum $92111.69 vs acctBal $89953.35)"
    ]
   },
   {
@@ -495,6 +519,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -509,9 +540,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2223.08 (indBal sum $102919.34 vs acctBal $100696.26)"
    ]
   },
   {
@@ -565,6 +593,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -579,9 +614,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2289.77 (indBal sum $114614.33 vs acctBal $112324.56)"
    ]
   },
   {
@@ -635,6 +667,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -649,9 +688,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2358.48 (indBal sum $127262.70 vs acctBal $124904.22)"
    ]
   },
   {
@@ -705,6 +741,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -719,9 +762,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2429.23 (indBal sum $140935.20 vs acctBal $138505.97)"
    ]
   },
   {
@@ -775,6 +815,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -789,9 +836,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2502.09 (indBal sum $155707.69 vs acctBal $153205.60)"
    ]
   },
   {
@@ -845,6 +889,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -859,9 +910,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2577.17 (indBal sum $171661.49 vs acctBal $169084.32)"
    ]
   },
   {
@@ -915,6 +963,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -929,9 +984,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2654.48 (indBal sum $188883.67 vs acctBal $186229.19)"
    ]
   },
   {
@@ -985,6 +1037,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -999,9 +1058,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2734.12 (indBal sum $207467.59 vs acctBal $204733.47)"
    ]
   },
   {
@@ -1055,6 +1111,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1069,9 +1132,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2816.14 (indBal sum $227513.23 vs acctBal $224697.09)"
    ]
   },
   {
@@ -1125,6 +1185,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1139,9 +1206,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2900.62 (indBal sum $249127.76 vs acctBal $246227.14)"
    ]
   },
   {
@@ -1195,6 +1259,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1209,9 +1280,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-2987.64 (indBal sum $272425.97 vs acctBal $269438.33)"
    ]
   },
   {
@@ -1265,6 +1333,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1279,9 +1354,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3077.26 (indBal sum $297530.82 vs acctBal $294453.56)"
    ]
   },
   {
@@ -1335,6 +1407,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1349,9 +1428,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3169.59 (indBal sum $324574.08 vs acctBal $321404.49)"
    ]
   },
   {
@@ -1405,6 +1481,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1419,9 +1502,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3264.68 (indBal sum $353696.84 vs acctBal $350432.16)"
    ]
   },
   {
@@ -1475,6 +1555,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1489,9 +1576,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3362.61 (indBal sum $385050.26 vs acctBal $381687.65)"
    ]
   },
   {
@@ -1545,6 +1629,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1559,9 +1650,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3463.50 (indBal sum $418796.28 vs acctBal $415332.78)"
    ]
   },
   {
@@ -1615,6 +1703,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1629,9 +1724,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3567.40 (indBal sum $455108.28 vs acctBal $451540.88)"
    ]
   },
   {
@@ -1685,6 +1777,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1699,9 +1798,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3674.42 (indBal sum $494172.01 vs acctBal $490497.59)"
    ]
   },
   {
@@ -1755,6 +1851,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1769,9 +1872,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3784.65 (indBal sum $536186.38 vs acctBal $532401.73)"
    ]
   },
   {
@@ -1825,6 +1925,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1839,9 +1946,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-3898.19 (indBal sum $581364.44 vs acctBal $577466.25)"
    ]
   },
   {
@@ -1895,6 +1999,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1909,9 +2020,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4015.15 (indBal sum $629934.32 vs acctBal $625919.17)"
    ]
   },
   {
@@ -1965,6 +2073,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -1979,9 +2094,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4135.59 (indBal sum $682140.30 vs acctBal $678004.71)"
    ]
   },
   {
@@ -2035,6 +2147,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -2049,9 +2168,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4259.66 (indBal sum $738244.03 vs acctBal $733984.37)"
    ]
   },
   {
@@ -2105,6 +2221,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -2119,9 +2242,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4387.44 (indBal sum $798525.63 vs acctBal $794138.19)"
    ]
   },
   {
@@ -2175,6 +2295,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -2189,9 +2316,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4519.08 (indBal sum $863285.09 vs acctBal $858766.01)"
    ]
   },
   {
@@ -2245,6 +2369,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -2259,9 +2390,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4654.65 (indBal sum $932843.58 vs acctBal $928188.93)"
    ]
   },
   {
@@ -2315,6 +2443,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -2329,9 +2464,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4794.28 (indBal sum $1007545.02 vs acctBal $1002750.74)"
    ]
   },
   {
@@ -2385,6 +2517,13 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "accumulation",
@@ -2399,9 +2538,6 @@
      "cappedByTaxType": false,
      "category": "ira"
     }
-   ],
-   "warnings": [
-    "[DIAG] indBal/acctBal reconciliation: 401k Roth drifted by $-4938.12 (indBal sum $1087757.65 vs acctBal $1082819.53)"
    ]
   },
   {
@@ -2475,6 +2611,20 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "decumulation",
@@ -2597,6 +2747,20 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "decumulation",
@@ -2719,6 +2883,20 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "decumulation",
@@ -2846,6 +3024,20 @@
       "basisUncertain": false
      },
      "taxType": "taxFree"
+    },
+    {
+     "category": "401k",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "rule_of_55"
+      }
+     },
+     "name": "Avery 401k (Fidelity)",
+     "ownerName": "Avery",
+     "parentCategory": "Retirement",
+     "taxType": "preTax"
     }
    ],
    "phase": "decumulation",

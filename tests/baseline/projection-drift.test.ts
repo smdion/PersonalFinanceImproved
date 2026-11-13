@@ -14,9 +14,6 @@ import { PROCEDURES, callProcedure } from "./procedures";
 import { seedHousehold } from "./seed";
 import { driftIn } from "../pure/fixtures/drift";
 
-/** Households whose two balance tracks drift today. */
-const KNOWN_DRIFT = ["ws-h1"];
-
 const projection = PROCEDURES.find(
   (p) => p.path === "projection.computeProjection",
 )!;
@@ -35,7 +32,7 @@ afterAll(() => {
 
 describe.each(HOUSEHOLDS.map((h) => [h.key, h] as const))(
   "%s",
-  (key, household) => {
+  (_key, household) => {
     const run = async () => {
       const { caller, cleanup } = await createTestCaller();
       try {
@@ -46,27 +43,10 @@ describe.each(HOUSEHOLDS.map((h) => [h.key, h] as const))(
         await cleanup();
       }
     };
-    const title = "projection has no indBal/acctBal drift";
-    if (KNOWN_DRIFT.includes(key)) {
-      it.fails(
-        `${title} (v0.11 Engine: two balance tracks become one)`,
-        async () => {
-          const output = await run();
-          expect(output).toHaveProperty("result.projectionByYear");
-          expect(driftIn(output)).toEqual([]);
-        },
-        60_000,
-      );
-    } else {
-      it(
-        title,
-        async () => {
-          const output = await run();
-          expect(output).toHaveProperty("result.projectionByYear");
-          expect(driftIn(output)).toEqual([]);
-        },
-        60_000,
-      );
-    }
+    it("projection has no indBal/acctBal drift", async () => {
+      const output = await run();
+      expect(output).toHaveProperty("result.projectionByYear");
+      expect(driftIn(output)).toEqual([]);
+    }, 60_000);
   },
 );

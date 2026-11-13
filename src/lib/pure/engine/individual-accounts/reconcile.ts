@@ -161,11 +161,11 @@ export function buildIndividualYearBalances(
       ...projectedFields,
     };
   });
-  // The projection-only retirement brokerage shows up once it holds money
-  // (an empty "projected" account would be noise in every table).
+  // The projected brokerage and the declared parts show up once they hold
+  // money (an empty part would be noise in every table).
   return rows.filter(
-    (r) =>
-      !r.projectedOnly ||
+    (r, i) =>
+      !(indAccounts[i]!.projectedOnly || indAccounts[i]!.declared) ||
       r.balance !== 0 ||
       r.contribution !== 0 ||
       (r.draw?.withdrawal ?? 0) !== 0,

@@ -1,20 +1,12 @@
 /**
  * The engine's per-account starting list (category, tax type, owner, basis, birth year, early-
- * access eligibility, penalty allowance, unspent-RMD target), plus the projection-only
- * Retirement brokerage when there's none to receive that money.
+ * access eligibility, penalty allowance, unspent-RMD target). The engine declares the
+ * projection-only Retirement brokerage itself (`declareOpeningParts`).
  */
 import { calendarYear } from "@/lib/utils/date";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
-import {
-  getAllCategories,
-  isOverflowTarget,
-  tracksCostBasis,
-} from "@/lib/config/account-types";
-import {
-  PERF_CATEGORY_RETIREMENT,
-  PROJECTED_RETIREMENT_BROKERAGE_LABEL,
-} from "@/lib/config/display-labels";
+import { tracksCostBasis } from "@/lib/config/account-types";
 import type { resolveRmdExcessTarget } from "@/lib/pure/retirement/rmd-excess-target";
 import type { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
@@ -52,7 +44,6 @@ export function buildIndividualAccounts({
   rmdTarget: ReturnType<typeof resolveRmdExcessTarget>;
 }): IndividualAccountInput[] {
   const { accountBreakdownByCategory } = taxBucketBreakdown;
-  const OVERFLOW_TARGET_CATEGORY = getAllCategories().find(isOverflowTarget)!;
   // Per-account early-access eligibility from computeTaxBucketAnalysis (RULES §
   // Single Computation Path). Retirement accounts only: a Portfolio account has
   // no entry, since early-access rules don't apply to a taxable account.
@@ -134,66 +125,49 @@ export function buildIndividualAccounts({
       continue;
     allowPenalizedByJoinKey.set(key, true);
   }
-  return [
-    ...Object.entries(accountBreakdownByCategory).flatMap(([cat, accounts]) =>
-      accounts.map((a) => {
-        const eligibility = a.ownerPersonId
-          ? eligibilityByJoinKey.get(
-              eligibilityJoinKey(a.name, cat, a.taxType, a.ownerPersonId),
-            )
-          : undefined;
-        return {
-          name: a.name,
-          performanceAccountId: soleAccountId(a.performanceAccountIds),
-          category: cat as AccountCategory,
-          taxType: a.taxType,
-          accountType: a.accountType,
-          startingBalance: a.amount,
-          ...(a.costBasis != null ? { startingBasis: a.costBasis } : {}),
-          ownerName: a.ownerName,
-          ownerPersonId: a.ownerPersonId,
-          parentCategory: a.parentCategory,
-          ...eligibility,
-          ownerBirthYear:
-            a.ownerPersonId != null
-              ? birthYearByPersonId.get(a.ownerPersonId)
-              : undefined,
-          ownerRetirementYear:
-            a.ownerPersonId != null
-              ? retirementYearByPersonId?.get(a.ownerPersonId)
-              : undefined,
-          ruleOf55ForceIneligible:
-            a.ownerPersonId != null &&
-            ruleOf55OverrideByPerson.get(a.ownerPersonId) === false
-              ? true
-              : undefined,
-          allowPenalizedWithdrawals: allowPenalizedByJoinKey.get(
-            eligibilityJoinKey(a.name, cat, a.taxType, a.ownerPersonId ?? null),
-          ),
-          ...(rmdTarget.targetPerformanceAccountId != null &&
-          tracksCostBasis(cat) &&
-          a.performanceAccountIds?.includes(
-            rmdTarget.targetPerformanceAccountId,
+  return Object.entries(accountBreakdownByCategory).flatMap(([cat, accounts]) =>
+    accounts.map((a) => {
+      const eligibility = a.ownerPersonId
+        ? eligibilityByJoinKey.get(
+            eligibilityJoinKey(a.name, cat, a.taxType, a.ownerPersonId),
           )
-            ? { rmdExcessTarget: true }
-            : {}),
-        };
-      }),
-    ),
-    ...(rmdTarget.addProjectedBrokerage
-      ? [
-          {
-            name: PROJECTED_RETIREMENT_BROKERAGE_LABEL,
-            category: OVERFLOW_TARGET_CATEGORY,
-            taxType: "afterTax",
-            startingBalance: 0,
-            startingBasis: 0,
-            parentCategory: PERF_CATEGORY_RETIREMENT,
-            projectedOnly: true,
-          },
-        ]
-      : []),
-  ];
+        : undefined;
+      return {
+        name: a.name,
+        performanceAccountId: soleAccountId(a.performanceAccountIds),
+        category: cat as AccountCategory,
+        taxType: a.taxType,
+        accountType: a.accountType,
+        startingBalance: a.amount,
+        ...(a.costBasis != null ? { startingBasis: a.costBasis } : {}),
+        ownerName: a.ownerName,
+        ownerPersonId: a.ownerPersonId,
+        parentCategory: a.parentCategory,
+        ...eligibility,
+        ownerBirthYear:
+          a.ownerPersonId != null
+            ? birthYearByPersonId.get(a.ownerPersonId)
+            : undefined,
+        ownerRetirementYear:
+          a.ownerPersonId != null
+            ? retirementYearByPersonId?.get(a.ownerPersonId)
+            : undefined,
+        ruleOf55ForceIneligible:
+          a.ownerPersonId != null &&
+          ruleOf55OverrideByPerson.get(a.ownerPersonId) === false
+            ? true
+            : undefined,
+        allowPenalizedWithdrawals: allowPenalizedByJoinKey.get(
+          eligibilityJoinKey(a.name, cat, a.taxType, a.ownerPersonId ?? null),
+        ),
+        ...(rmdTarget.targetPerformanceAccountId != null &&
+        tracksCostBasis(cat) &&
+        a.performanceAccountIds?.includes(rmdTarget.targetPerformanceAccountId)
+          ? { rmdExcessTarget: true }
+          : {}),
+      };
+    }),
+  );
 }
 
 /** A part's performance account, when it has exactly one. */

@@ -329,26 +329,6 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     expect(indBal.get(indKey(accts[1]!))).toBe(0);
   });
 
-  it("reinvest: no Retirement brokerage -> aggregate only, the Portfolio account untouched", () => {
-    const { balances, accountBalance } = start();
-    const accts = accounts().slice(2);
-    const indBal = indBalOf(accts);
-    reinvestRmdExcess(
-      "reinvest",
-      true,
-      1000,
-      0,
-      0,
-      balances,
-      accountBalance,
-      accts,
-      indBal,
-      indKey,
-    );
-    expect(balances.afterTax).toBe(121000);
-    expect(indBal.get(indKey(accts[0]!))).toBe(500000);
-  });
-
   it("spend: returns the excess but changes no balance", () => {
     const { balances, accountBalance } = start();
     const excess = reinvestRmdExcess(

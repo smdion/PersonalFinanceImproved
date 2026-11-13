@@ -64,6 +64,9 @@ export type IndividualAccountInput = {
    *  retirement money that needs a brokerage (overflow, reinvested RMDs, unnamed lump
    *  sums). Never its own contributions or goal draws; spent like any retirement account. */
   projectedOnly?: boolean;
+  /** A tax part the opening state declares at $0 beside the account's held
+   *  part (`declareOpeningParts`); its rows appear only once it holds money. */
+  declared?: boolean;
   /** Starting cost basis (brokerage-type accounts), from the account's own
    *  `cost_basis`. Absent: the engine shares the aggregate basis out by
    *  balance. */
