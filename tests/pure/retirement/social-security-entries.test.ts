@@ -10,6 +10,7 @@ function person(overrides: Partial<SsPerson> = {}): SsPerson {
     personId: 1,
     name: "P1",
     birthYear: 1963,
+    dateOfBirth: "1963-06-15",
     socialSecurityMonthly: "2000",
     socialSecurityPia: null,
     ssStartAge: 67,

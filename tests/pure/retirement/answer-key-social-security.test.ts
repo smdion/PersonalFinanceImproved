@@ -34,6 +34,7 @@
 import { describe, expect, it } from "vitest";
 import { cents, xfail } from "../../fixtures/answer-key";
 import {
+  fraBirthYear,
   fraToMonths,
   getFullRetirementAge,
 } from "@/lib/config/social-security";
@@ -86,6 +87,7 @@ function couple(
     personId,
     name: personId === 1 ? "Worker" : "Spouse",
     birthYear: p.birthYear,
+    dateOfBirth: `${p.birthYear}-06-15`,
     socialSecurityMonthly: "0",
     socialSecurityPia: String(p.pia),
     ssStartAge: p.claimAge,
@@ -133,18 +135,13 @@ describe("answer key: full retirement age", () => {
     expect(getFullRetirementAge(1960)).toEqual({ years: 67, months: 0 });
   });
 
-  describe("ret/S14 [RET-29]", () => {
-    // DOB 1960-01-01: a person reaches an age the day before the birthday
-    // (20 CFR 404.102), so 1/1/1960 is in the 1/2/1959-1/1/1960 cohort:
-    // 66y 10m = 802 months. Ledgr reads the birth year only: 1960, 67y
-    // = 804 (verdict N2).
-    xfail({
-      id: "ret/S14 [RET-29]",
-      todo: 'v0.11 Retirement rules "January 1 birthday" (verdict N2)',
-      run: () => fraToMonths(getFullRetirementAge(1960)),
-      expected: 802,
-      today: 804,
-    });
+  it("ret/S14 [RET-29] DOB 1960-01-01: FRA 66y 10m = 802 months", () => {
+    // A person reaches an age the day before the birthday (20 CFR
+    // 404.102), so 1/1/1960 is in the 1/2/1959-1/1/1960 cohort: 66y 10m =
+    // 802 months, not 1960's 67y = 804 (verdict N2).
+    expect(fraToMonths(getFullRetirementAge(fraBirthYear("1960-01-01")))).toBe(
+      802,
+    );
   });
 });
 
@@ -480,7 +477,7 @@ describe("answer key: the claiming-age sweep", () => {
       input,
       personId: 1,
       pia: 30_000,
-      birthYear: 1964,
+      dateOfBirth: "1964-06-15",
     });
     expect(result.candidates.some((c) => c.fails)).toBe(false);
     expect(result.recommendedAge).toBe(70);

@@ -91,7 +91,7 @@ export const socialSecurityRouter = createTRPCRouter({
           input: engineInput,
           personId: person.personId,
           pia: input.pia,
-          birthYear: person.birthYear,
+          dateOfBirth: person.dateOfBirth,
           ages: input.ages,
           buildCandidateInput,
         }),

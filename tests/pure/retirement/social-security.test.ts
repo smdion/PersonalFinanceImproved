@@ -330,7 +330,7 @@ describe("sweepClaimingAges", () => {
       input,
       personId: 1,
       pia: 30000,
-      birthYear: 1963,
+      dateOfBirth: "1963-06-15",
       ages: [62, 70],
     });
 
@@ -425,7 +425,7 @@ describe("sweepClaimingAges", () => {
       input: withUnassignedAccount,
       personId: 1,
       pia,
-      birthYear,
+      dateOfBirth: `${birthYear}-06-15`,
       ages: [claimingAge],
     });
     const realFinalNetWorth = sweep.candidates[0]!.finalNetWorth;
@@ -463,7 +463,12 @@ describe("sweepClaimingAges", () => {
     // must supply its own builder via buildSocialSecurityEntries.
     const input = makeSingleHousehold();
     expect(() =>
-      sweepClaimingAges({ input, personId: 1, pia: 30000, birthYear: 1963 }),
+      sweepClaimingAges({
+        input,
+        personId: 1,
+        pia: 30000,
+        dateOfBirth: "1963-06-15",
+      }),
     ).toThrow(/requires an explicit buildCandidateInput/);
   });
 
@@ -476,7 +481,7 @@ describe("sweepClaimingAges", () => {
       input,
       personId: 1,
       pia: 30000,
-      birthYear: 1963,
+      dateOfBirth: "1963-06-15",
     });
     expect(result.candidates).toHaveLength(9);
     expect(
@@ -493,7 +498,7 @@ describe("sweepClaimingAges", () => {
       input,
       personId: 1,
       pia: 30000,
-      birthYear: 1963,
+      dateOfBirth: "1963-06-15",
       ages: [62, 67, 70],
     });
     for (const candidate of result.candidates) {
@@ -513,7 +518,7 @@ describe("sweepClaimingAges", () => {
       input,
       personId: 1,
       pia: 30000,
-      birthYear: 1963,
+      dateOfBirth: "1963-06-15",
       ages: [65, 70],
     });
     expect(
@@ -530,7 +535,7 @@ describe("sweepClaimingAges", () => {
       input,
       personId: 1,
       pia: 30000,
-      birthYear: 1963,
+      dateOfBirth: "1963-06-15",
     });
     expect(result.recommendedAge).not.toBeNull();
     const recommended = result.candidates.find(
@@ -588,7 +593,7 @@ describe("sweepClaimingAges", () => {
       input: base,
       personId: 1,
       pia: 30000,
-      birthYear: 1963,
+      dateOfBirth: "1963-06-15",
       ages: [62],
       buildCandidateInput,
     });
@@ -596,7 +601,7 @@ describe("sweepClaimingAges", () => {
       input: base,
       personId: 1,
       pia: 30000,
-      birthYear: 1963,
+      dateOfBirth: "1963-06-15",
       ages: [70],
       buildCandidateInput,
     });

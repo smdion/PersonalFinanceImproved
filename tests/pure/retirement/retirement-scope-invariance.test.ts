@@ -249,7 +249,7 @@ describe.each(variants)("retirement answers ignore %s", (_, addPortfolio) => {
         input: { ...input, socialSecurityEntries: undefined },
         personId: 1,
         pia: 30000,
-        birthYear: 1990,
+        dateOfBirth: "1990-06-15",
         ages: [62, 67, 70],
       }).recommendedAge;
     expect(claim(portfolio)).toBe(claim(base));

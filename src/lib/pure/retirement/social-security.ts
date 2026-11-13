@@ -8,6 +8,7 @@ import { calculateProjection } from "../engine";
 import type { ProjectionInput } from "../engine/types";
 import {
   type FullRetirementAge,
+  fraBirthYear,
   fraToMonths,
   getFullRetirementAge,
   SPOUSAL_BENEFIT_BASE_RATE,
@@ -21,10 +22,10 @@ import {
  */
 export function computeAdjustedBenefit(
   pia: number,
-  birthYear: number,
+  fraBirthYear: number,
   claimingAgeMonths: number,
 ): number {
-  const fra = getFullRetirementAge(birthYear);
+  const fra = getFullRetirementAge(fraBirthYear);
   return pia * getClaimingAdjustmentMultiplier(fra, claimingAgeMonths);
 }
 
@@ -36,11 +37,11 @@ export function computeAdjustedBenefit(
 export function computeSpousalBenefit(
   ownAdjustedBenefit: number,
   workerPia: number,
-  spouseBirthYear: number,
+  spouseFraBirthYear: number,
   spouseClaimingAgeMonths: number,
   spouseOwnPia?: number,
 ): number {
-  const spouseFra = getFullRetirementAge(spouseBirthYear);
+  const spouseFra = getFullRetirementAge(spouseFraBirthYear);
   const spousalMultiplier = getSpousalAdjustmentMultiplier(
     spouseFra,
     spouseClaimingAgeMonths,
@@ -91,7 +92,8 @@ type ClaimingAgeSweepOptions = {
   personId: number;
   /** This person's PIA (annual benefit at FRA). */
   pia: number;
-  birthYear: number;
+  /** Stored `YYYY-MM-DD`; the FRA table reads `fraBirthYear(dateOfBirth)`. */
+  dateOfBirth: string;
   /** Claiming ages to test, in whole years. Defaults to every age 62-70. */
   ages?: number[];
   /** Builds each candidate's input from a claiming age. Required for a multi-person household
@@ -164,7 +166,8 @@ function compareCandidates(
 export function sweepClaimingAges(
   options: ClaimingAgeSweepOptions,
 ): ClaimingAgeSweepResult {
-  const { input, pia, birthYear } = options;
+  const { input, pia } = options;
+  const birthCohort = fraBirthYear(options.dateOfBirth);
   const ages = options.ages ?? defaultCandidateAges();
   const buildInput =
     options.buildCandidateInput ??
@@ -175,7 +178,7 @@ export function sweepClaimingAges(
     .map((claimingAge) => {
       const adjustedAnnualBenefit = computeAdjustedBenefit(
         pia,
-        birthYear,
+        birthCohort,
         claimingAge * 12,
       );
       const candidateInput = buildInput(claimingAge, adjustedAnnualBenefit);

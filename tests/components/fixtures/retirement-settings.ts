@@ -85,6 +85,7 @@ export function makePersonSettings(
     personId: 1,
     name: "Avery",
     birthYear: 1980,
+    dateOfBirth: "1980-04-02",
     retirementAge: 65,
     endAge: 95,
     salaryAnnualIncrease: "0.03",

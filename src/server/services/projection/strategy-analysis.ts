@@ -52,7 +52,7 @@ import { formatPercent } from "@/lib/utils/percent";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
 import { computeAdjustedBenefit } from "@/lib/pure/retirement/social-security";
-import { parseAnnualPia } from "@/lib/config/social-security";
+import { fraBirthYear, parseAnnualPia } from "@/lib/config/social-security";
 
 /** The mean of `values`; 0 when there are none. */
 function average(values: readonly number[]): number {
@@ -604,7 +604,7 @@ export async function analyzeStrategy(
               ...variantInput,
               socialSecurityAnnual: computeAdjustedBenefit(
                 soloPia,
-                solo.birthYear,
+                fraBirthYear(solo.dateOfBirth),
                 rounded * 12,
               ),
             };

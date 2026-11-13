@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   getFullRetirementAge,
   fraToMonths,
+  fraBirthYear,
   SPOUSAL_BENEFIT_BASE_RATE,
   parseAnnualPia,
 } from "@/lib/config/social-security";
@@ -60,6 +61,23 @@ describe("getFullRetirementAge — SSA birth-year cohorts", () => {
   it("returns 67y0m for 1960 and later", () => {
     expect(getFullRetirementAge(1960)).toEqual({ years: 67, months: 0 });
     expect(getFullRetirementAge(2000)).toEqual({ years: 67, months: 0 });
+  });
+});
+
+describe("fraBirthYear — the age is attained the day before the birthday (20 CFR 404.102)", () => {
+  it("a January 1 birth reads the prior year's row", () => {
+    // Attains each age on December 31 of the year before: 1959's cohort.
+    expect(fraBirthYear("1960-01-01")).toBe(1959);
+    expect(getFullRetirementAge(fraBirthYear("1960-01-01"))).toEqual({
+      years: 66,
+      months: 10,
+    });
+  });
+
+  it("any other day reads its own year", () => {
+    expect(fraBirthYear("1960-01-02")).toBe(1960);
+    expect(fraBirthYear("1959-12-31")).toBe(1959);
+    expect(fraBirthYear("1960-02-01")).toBe(1960);
   });
 });
 

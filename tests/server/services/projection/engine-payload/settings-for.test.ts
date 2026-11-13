@@ -5,6 +5,7 @@ import {
   perPersonSettingsFor,
   type ActiveProfileRows,
 } from "@/server/services/projection/engine-payload/settings-for";
+import { buildSocialSecurityEntries } from "@/lib/pure/retirement/social-security-entries";
 
 // An invented household: profile 1 is active, profile 2 is another one.
 // Each person's settings come from their own profile-people row in the
@@ -153,6 +154,27 @@ describe("settingsFor", () => {
 });
 
 describe("perPersonSettingsFor", () => {
+  it("a January 1 birth claims on the prior year's FRA, in its own birth year", () => {
+    // PIA 2,000 a month claimed at 67 (804 months): born 1960-01-01, FRA
+    // is 66y 10m (20 CFR 404.102), so 2 months of credits at 2/3% each
+    // (20 CFR 404.313): 2,026.67, not 1960's FRA of 67 and 2,000.
+    const people = [
+      { id: 1, name: "Avery", dateOfBirth: "1960-01-01" },
+    ] as Parameters<typeof perPersonSettingsFor>[0];
+    const [avery] = perPersonSettingsFor(
+      people,
+      rows({}),
+      {},
+    ).perPersonSettings;
+    expect(avery).toMatchObject({ birthYear: 1960, dateOfBirth: "1960-01-01" });
+    const [entry] = buildSocialSecurityEntries(
+      [{ ...avery!, socialSecurityPia: "2000", ssStartAge: 67 }],
+      "Single",
+    );
+    expect(entry!.birthYear).toBe(1960);
+    expect(entry!.annualAmount / 12).toBeCloseTo(2_026.67, 2);
+  });
+
   it("adds the what-if retirement age and shows the raise rate as text", () => {
     const people = [
       { id: 1, name: "Avery", dateOfBirth: "1980-04-02" },
@@ -168,6 +190,7 @@ describe("perPersonSettingsFor", () => {
         personId: 1,
         name: "Avery",
         birthYear: 1980,
+        dateOfBirth: "1980-04-02",
         retirementAge: 67,
         endAge: 95,
         salaryAnnualIncrease: "0.03",
@@ -180,6 +203,7 @@ describe("perPersonSettingsFor", () => {
         personId: 2,
         name: "Blake",
         birthYear: 1982,
+        dateOfBirth: "1982-09-15",
         retirementAge: 62,
         endAge: 90,
         salaryAnnualIncrease: "0.03",

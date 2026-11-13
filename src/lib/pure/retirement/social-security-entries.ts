@@ -7,7 +7,7 @@ import {
   computeAdjustedBenefit,
   computeSpousalBenefit,
 } from "@/lib/pure/retirement/social-security";
-import { parseAnnualPia } from "@/lib/config/social-security";
+import { fraBirthYear, parseAnnualPia } from "@/lib/config/social-security";
 import {
   FILING_STATUS_RULES,
   filingTable,
@@ -26,6 +26,9 @@ export type SsPerson = {
   personId: number;
   name: string;
   birthYear: number;
+  /** Stored `YYYY-MM-DD`: the FRA table reads `fraBirthYear(dateOfBirth)` (a January 1 birth
+   *  is the prior year's), the claim year reads `birthYear`. */
+  dateOfBirth: string;
   socialSecurityMonthly: string;
   socialSecurityPia?: string | null;
   ssStartAge: number;
@@ -92,7 +95,11 @@ export function buildSocialSecurityEntries(
     // unchanged (the pre-PIA model, no claiming-age response).
     let annualAmount =
       ownPia != null
-        ? computeAdjustedBenefit(ownPia, ps.birthYear, startAge * 12)
+        ? computeAdjustedBenefit(
+            ownPia,
+            fraBirthYear(ps.dateOfBirth),
+            startAge * 12,
+          )
         : toNumber(ps.socialSecurityMonthly) * 12;
 
     // Spousal benefit (MFJ + 2 people stand in for a spouse link): needs the other person's PIA
@@ -108,7 +115,7 @@ export function buildSocialSecurityEntries(
         annualAmount = computeSpousalBenefit(
           annualAmount,
           otherPia,
-          ps.birthYear,
+          fraBirthYear(ps.dateOfBirth),
           startAge * 12,
           ownPia ?? undefined,
         );

@@ -71,6 +71,7 @@ export function perPersonSettingsFor(
       personId: p.id,
       name: p.name,
       birthYear: calendarYear(p.dateOfBirth),
+      dateOfBirth: p.dateOfBirth,
       retirementAge: own.retirementAge + (opts.retirementAgeDelta ?? 0),
       endAge: own.endAge,
       // The effective raise rate: the per-person control edits it directly.

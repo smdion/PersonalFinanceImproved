@@ -283,7 +283,7 @@ describe("projection router — computeSocialSecurityClaimingSweep, MFJ two-pers
         input: engineInput,
         personId: workerId,
         pia: 48000,
-        birthYear: worker.birthYear,
+        dateOfBirth: worker.dateOfBirth,
         ages: [62, 70],
         buildCandidateInput: (claimingAge) => ({
           ...engineInput,
@@ -418,7 +418,7 @@ describe("projection router — computeSocialSecurityClaimingSweep", () => {
         input: engineInput,
         personId,
         pia: 30000,
-        birthYear: person.birthYear,
+        dateOfBirth: person.dateOfBirth,
         ages: [62, 67],
       });
 

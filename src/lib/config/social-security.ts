@@ -1,6 +1,7 @@
 // Social Security claiming-age math on a user-entered PIA (benefit at FRA): FRA by birth year
 // and the early/delayed adjustment (SSA Publication 05-10147). Fixed by law, not yearly data,
 // so static constants rather than a versioned table.
+import { calendarYear } from "../utils/date";
 
 /** Full Retirement Age, in whole years + months, by birth year. */
 export type FullRetirementAge = { years: number; months: number };
@@ -21,6 +22,14 @@ export function getFullRetirementAge(birthYear: number): FullRetirementAge {
   if (birthYear === 1958) return { years: 66, months: 8 };
   if (birthYear === 1959) return { years: 66, months: 10 };
   return { years: 67, months: 0 }; // 1960 and later
+}
+
+/** The birth year `getFullRetirementAge` reads for a stored `YYYY-MM-DD` date of birth. A person
+ *  attains an age the day before the birthday (20 CFR 404.102), so a January 1 birth is in the
+ *  prior year's row: born 1960-01-01, FRA 66y 10m, not 67. */
+export function fraBirthYear(dateOfBirth: string): number {
+  const year = calendarYear(dateOfBirth);
+  return dateOfBirth.slice(5, 10) === "01-01" ? year - 1 : year;
 }
 
 /** Convert a `FullRetirementAge` to a total month count from birth. */
