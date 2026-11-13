@@ -150,6 +150,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
         },
       },
       annualExpenses: 72000,
+      decumulationAnnualExpenses: 72000,
       inflationRate: 0.025,
       returnRates: [{ label: "7%", rate: 0.07 }],
       socialSecurityAnnual: 36000,
@@ -175,6 +176,7 @@ function arbitraryInput(): fc.Arbitrary<ProjectionInput> {
       salary: fc.integer({ min: 30000, max: 500000 }),
       salaryGrowthRate: fc.double({ min: -0.02, max: 0.06, noNaN: true }),
       annualExpenses: fc.integer({ min: 20000, max: 200000 }),
+      decumulationAnnualExpenses: fc.integer({ min: 20000, max: 200000 }),
       returnRate: fc.double({ min: 0.03, max: 0.1, noNaN: true }),
       contributionRate: fc.double({ min: 0.0, max: 0.4, noNaN: true }),
       preTaxBalance: fc.integer({ min: 0, max: 500000 }),
@@ -198,6 +200,7 @@ function arbitraryInput(): fc.Arbitrary<ProjectionInput> {
         currentSalary: r.salary,
         salaryGrowthRate: r.salaryGrowthRate,
         annualExpenses: Math.min(r.annualExpenses, r.salary),
+        decumulationAnnualExpenses: Math.min(r.annualExpenses, r.salary),
         returnRates: [{ label: `Age ${r.currentAge}`, rate: r.returnRate }],
         accumulationDefaults: makeAccumulationDefaults({
           contributionRate: r.contributionRate,
@@ -253,6 +256,7 @@ function arbitraryRetiredInput(): fc.Arbitrary<ProjectionInput> {
       brokerageBalance: fc.integer({ min: 20000, max: 300000 }),
       hsaBalance: fc.integer({ min: 0, max: 80000 }),
       annualExpenses: fc.integer({ min: 30000, max: 120000 }),
+      decumulationAnnualExpenses: fc.integer({ min: 30000, max: 120000 }),
       returnRate: fc.double({ min: 0.03, max: 0.09, noNaN: true }),
     })
     .map((r) => {
@@ -263,6 +267,7 @@ function arbitraryRetiredInput(): fc.Arbitrary<ProjectionInput> {
         projectionEndYear: AS_OF.getFullYear() + r.yearsRemaining,
         currentSalary: 0,
         annualExpenses: r.annualExpenses,
+        decumulationAnnualExpenses: r.annualExpenses,
         returnRates: [{ label: `Age ${r.currentAge}`, rate: r.returnRate }],
         startingBalances: {
           preTax: r.preTaxBalance,
@@ -1168,6 +1173,7 @@ describe("engine invariants", () => {
           },
         },
         annualExpenses: 60000,
+        decumulationAnnualExpenses: 60000,
       });
       const result = calculateProjection(input);
       for (const year of result.projectionByYear) {
@@ -1219,6 +1225,7 @@ describe("engine invariants", () => {
           },
         },
         annualExpenses: 50000,
+        decumulationAnnualExpenses: 50000,
       });
       const result = calculateProjection(input);
       for (const year of result.projectionByYear) {
@@ -1348,6 +1355,7 @@ describe("engine invariants", () => {
         projectionEndYear: AS_OF.getFullYear() + 29,
         currentSalary: 0,
         annualExpenses: 80000,
+        decumulationAnnualExpenses: 80000,
         returnRates: [{ label: "5%", rate: 0.05 }], // modest returns to trigger guardrails
         startingBalances: {
           preTax: 550000,
@@ -1592,6 +1600,7 @@ describe("engine invariants", () => {
           projectionEndYear: AS_OF.getFullYear() + 10,
           currentSalary: 0,
           annualExpenses: 20000,
+          decumulationAnnualExpenses: 20000,
           birthYear: AS_OF.getFullYear() - 75,
         }),
       });
@@ -1623,6 +1632,7 @@ describe("engine invariants", () => {
               projectionEndYear: AS_OF.getFullYear() + 15,
               currentSalary: 0,
               annualExpenses: 50000,
+              decumulationAnnualExpenses: 50000,
               birthYear: AS_OF.getFullYear() - 67,
             }),
           ),
@@ -3034,6 +3044,7 @@ describe("engine invariants", () => {
           birthYear: 1950,
           currentSalary: 0,
           annualExpenses: 40000,
+          decumulationAnnualExpenses: 40000,
           socialSecurityAnnual: 30000,
           ssStartAge: 70,
         });

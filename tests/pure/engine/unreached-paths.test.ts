@@ -143,6 +143,7 @@ describe("RMD money past the need, Social Security covering part of the tax (A2 
       ],
       {
         annualExpenses: 29000,
+        decumulationAnnualExpenses: 29000,
         socialSecurityEntries: [ss(1, 1948, 30000), ss(2, 1961)],
       },
       { rmdExcessHandling: "reinvest" },
@@ -216,6 +217,7 @@ describe("a QCD (A2 L3)", () => {
       [acct("Ann IRA", "ira", 500000, 1), acct("Bo 401k", "401k", 500000, 2)],
       {
         annualExpenses: 1000,
+        decumulationAnnualExpenses: 1000,
         socialSecurityEntries: [ss(1, 1948), ss(2, 1950)],
         perPersonBirthYears: [1948, 1950],
       },
@@ -241,6 +243,7 @@ describe("IRMAA paid on top of the budget (A2 L3)", () => {
       ],
       {
         annualExpenses: 400000,
+        decumulationAnnualExpenses: 400000,
         enableIrmaaAwareness: true,
         irmaaOnTopOfBudget: true,
         socialSecurityEntries: [ss(1, 1948), ss(2, 1951)],
@@ -276,6 +279,7 @@ describe("a Roth conversion year with brokerage gains and NIIT (A2 L3.4)", () =>
     ],
     {
       annualExpenses: 120000,
+      decumulationAnnualExpenses: 120000,
       currentAge: 66,
       birthYear: 1960,
       perPersonBirthYears: [1960, 1961],
@@ -376,6 +380,7 @@ describe("the five eligibility reasons no household shows (B L3)", () => {
       perPersonBirthYears: [1974, 1972],
       socialSecurityEntries: [ss(1, 1974), ss(2, 1972)],
       annualExpenses: 60000,
+      decumulationAnnualExpenses: 60000,
     }),
   )[0]!;
 
@@ -424,6 +429,7 @@ function worker(
     currentSalary: 100000,
     salaryGrowthRate: 0,
     annualExpenses: 50000,
+    decumulationAnnualExpenses: 50000,
     ...overrides,
   });
 }

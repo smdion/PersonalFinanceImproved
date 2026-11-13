@@ -123,6 +123,7 @@ function engineYear(
       perPersonBirthYears: people.map((p) => p.birthYear),
       filingStatus: people.length > 1 ? "MFJ" : "Single",
       annualExpenses: 10_000,
+      decumulationAnnualExpenses: 10_000,
     },
     {
       qcdMaximize: true,

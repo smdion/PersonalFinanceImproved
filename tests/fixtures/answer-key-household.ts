@@ -322,6 +322,7 @@ export function engineHousehold(h: KeyHousehold): ProjectionInput {
       accountBalances as ProjectionInput["startingAccountBalances"],
     individualAccounts: accounts,
     annualExpenses: h.spending,
+    decumulationAnnualExpenses: h.spending,
     inflationRate: 0,
     returnRates: [{ label: "0%", rate: 0 }],
     socialSecurityAnnual:

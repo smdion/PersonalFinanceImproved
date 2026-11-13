@@ -125,6 +125,7 @@ describe("Accumulation sanity — deterministic math", () => {
           },
         },
         annualExpenses: 40000,
+        decumulationAnnualExpenses: 40000,
         inflationRate: 0,
         socialSecurityAnnual: 0,
         ssStartAge: 99,

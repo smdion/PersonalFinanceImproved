@@ -245,8 +245,8 @@ export type ProjectionInput = {
    *  IRMAA applies when ANY person is ≥65; ACA applies when ALL persons are <65.
    *  Falls back to deriving age from `currentAge` if not provided. */
   perPersonBirthYears?: number[];
-  /** Annual expenses for decumulation phase. When set, projectedExpenses resets to this value at retirement age. */
-  decumulationAnnualExpenses?: number;
+  /** The Retirement budget (today's $): spending resets to it, inflated, at retirement. */
+  decumulationAnnualExpenses: number;
   /** Rate-Seeded: seed the first decumulation year's spending from `withdrawalRate × balance`
    *  instead of the budget or a year-1 override; later years run the strategy as usual. */
   rateSeededDecumulationYear1?: boolean;
@@ -561,7 +561,7 @@ export type ProjectionResult = {
    *  Not what any strategy actually spends — a reference "4%-rule-style" figure. */
   sustainableWithdrawal: number;
   /** Stated retirement need (decumulationAnnualExpenses) inflated to the first decumulation year,
-   *  before any strategy adjusts it; null without a budget. Checks spending against real need. */
+   *  before any strategy adjusts it; null when the plan never retires. Checks spending against real need. */
   firstDecumulationYearStatedNeed: number | null;
   /** Per-account depletion tracking: first year each account category hits zero. */
   accountDepletions: {

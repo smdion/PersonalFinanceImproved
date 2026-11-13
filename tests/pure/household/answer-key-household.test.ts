@@ -320,6 +320,7 @@ describe("household: Coast FIRE reads retirement money only", () => {
         startingBalances: balances,
         startingAccountBalances: accounts,
         annualExpenses: 60_000,
+        decumulationAnnualExpenses: 60_000,
         inflationRate: 0,
         returnRates: [{ label: "7%", rate: 0.07 }],
         socialSecurityAnnual: 0,

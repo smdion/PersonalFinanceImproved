@@ -75,6 +75,7 @@ describe("Trinity Study — 4% rule validation", { timeout: 60_000 }, () => {
           },
         },
         annualExpenses: 1000000 * 0.03,
+        decumulationAnnualExpenses: 1000000 * 0.03,
       });
       const mc = makeMCInput(engine, {
         numTrials: 5000,
@@ -112,6 +113,7 @@ describe("Trinity Study — 4% rule validation", { timeout: 60_000 }, () => {
           },
         },
         annualExpenses: 1000000 * 0.06,
+        decumulationAnnualExpenses: 1000000 * 0.06,
       });
       const mc = makeMCInput(engine, {
         numTrials: 5000,

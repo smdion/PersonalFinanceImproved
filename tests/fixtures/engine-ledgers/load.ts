@@ -532,6 +532,7 @@ export function ledgerInput(
     startingAccountBalances,
     individualAccounts,
     annualExpenses: h.annualSpendingToday,
+    decumulationAnnualExpenses: h.annualSpendingToday,
     inflationRate: Number(h.inflation),
     returnRates: h.returnRates.map((r) => ({
       label: `Age ${r.fromAge}`,

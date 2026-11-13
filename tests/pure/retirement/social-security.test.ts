@@ -737,6 +737,7 @@ describe("Social Security in the engine (COLA and its tax)", () => {
         socialSecurityAnnual: 200000,
         ssStartAge: 62,
         annualExpenses: 90000,
+        decumulationAnnualExpenses: 90000,
       }),
     );
     const first = years[0]!;

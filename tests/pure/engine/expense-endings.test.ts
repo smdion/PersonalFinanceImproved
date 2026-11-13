@@ -19,6 +19,7 @@ const base = (overrides: Partial<ProjectionInput> = {}) =>
     currentSalary: 150000,
     salaryGrowthRate: 0,
     annualExpenses: 100000,
+    decumulationAnnualExpenses: 100000,
     inflationRate: 0,
     returnRates,
     ...overrides,
@@ -118,14 +119,6 @@ describe("a loan paid off in the projection", () => {
       expenseEndings: [ending],
     });
     expect(spend(i, 2030)).toBeCloseTo(120000, 0);
-  });
-
-  it("a figure typed before retirement and carried into it stays too", () => {
-    const i = base({
-      budgetOverrides: [{ year: 2029, value: 10000 }],
-      expenseEndings: [{ ...ending, year: 2040 }],
-    });
-    expect(spend(i, 2041)).toBeCloseTo(120000, 0);
   });
 
   it("the stated retirement need takes the same cut (Coast FIRE reads it)", () => {

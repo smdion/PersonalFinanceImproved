@@ -46,6 +46,7 @@ function couple(
     currentSalary: 160000,
     salaryGrowthRate: 0,
     annualExpenses: 100000,
+    decumulationAnnualExpenses: 100000,
     inflationRate: 0,
     returnRates,
     payrollTax,
@@ -77,7 +78,10 @@ describe("gap-year draw", () => {
   });
 
   it("the balance falls by the draw against the same plan with enough pay", () => {
-    const covered = couple({ annualExpenses: 40000 });
+    const covered = couple({
+      annualExpenses: 40000,
+      decumulationAnnualExpenses: 40000,
+    });
     expect(year(covered, 2031).gapDraw?.withdrawal).toBe(0);
     expect(year(couple(), 2034).retirementBalance).toBeLessThan(
       year(covered, 2034).retirementBalance,
@@ -95,6 +99,7 @@ describe("gap-year draw", () => {
       currentSalary: 80000,
       salaryGrowthRate: 0,
       annualExpenses: 60000,
+      decumulationAnnualExpenses: 60000,
       inflationRate: 0,
       returnRates,
       workingYearsByPerson: { 1: { start: null, end: 2028 } },
@@ -338,6 +343,7 @@ describe("what goes into a gap year's shortfall", () => {
         salaryByPerson: high,
         currentSalary: 500000,
         annualExpenses: 400000,
+        decumulationAnnualExpenses: 400000,
         payrollTax: { ...payrollTax, socialSecurityWageBase: base },
       });
     expect(needIn(input(180000))).toBeLessThan(needIn(input(400000)));
@@ -345,7 +351,10 @@ describe("what goes into a gap year's shortfall", () => {
 
   it("the draw comes out before the year's growth", () => {
     const drawn = year(couple(), 2031);
-    const kept = year(couple({ annualExpenses: 40000 }), 2031);
+    const kept = year(
+      couple({ annualExpenses: 40000, decumulationAnnualExpenses: 40000 }),
+      2031,
+    );
     const gap = kept.retirementBalance - drawn.retirementBalance;
     expect(gap).toBeGreaterThan(drawn.gapDraw!.withdrawal);
   });

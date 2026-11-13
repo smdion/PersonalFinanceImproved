@@ -14,7 +14,6 @@ import type {
   ProjectionInput,
   ProjectionResult,
 } from "../engine/types";
-import { roundToCents } from "../../utils/math";
 import { getAllCategories } from "../../config/account-types";
 
 type CoastFireStatus = "already_coast" | "found" | "unreachable";
@@ -39,7 +38,7 @@ type CoastFireResult = {
   retired: boolean;
 };
 
-/** Dollars of rounding slack in the no-stated-need fallback check (see passes()). */
+/** Dollars of rounding slack when the first year's spending meets the stated need. */
 const NET_WITHDRAWAL_ROUNDING_TOLERANCE = 1;
 
 const UNREACHABLE: CoastFireResult = {
@@ -100,28 +99,13 @@ function passes(projection: ProjectionResult): boolean {
  *  retirement year spends at least the household's stated need. */
 export function meetsFirstYearNeed(projection: ProjectionResult): boolean {
   const retirementYear = firstRetirementYear(projection);
-  if (!retirementYear) return false;
-  // Against the stated need, never `sustainableWithdrawal`. With no retirement budget set
-  // there's no stated need, so the withdrawal is compared instead (no spurious failure).
-  if (projection.firstDecumulationYearStatedNeed == null) {
-    // `sustainableWithdrawal` is gross of tax and net of Social Security; undo both so it's in
-    // the same total-spending terms as `strategySpending`.
-    const netSustainableWithdrawal = roundToCents(
-      projection.sustainableWithdrawal -
-        retirementYear.taxCost +
-        retirementYear.ssIncome,
-    );
-    // The two sides can be one figure rebuilt from separately-rounded parts, a cent apart,
-    // so compare with a $1 tolerance.
-    return (
-      netSustainableWithdrawal >=
-      strategySpending(retirementYear) - NET_WITHDRAWAL_ROUNDING_TOLERANCE
-    );
-  }
+  // Set in the first retirement year from the Retirement budget; null only
+  // when the plan never retires.
+  const need = projection.firstDecumulationYearStatedNeed;
+  if (!retirementYear || need == null) return false;
+  // Against the stated need, never `sustainableWithdrawal`.
   return (
-    strategySpending(retirementYear) >=
-    projection.firstDecumulationYearStatedNeed -
-      NET_WITHDRAWAL_ROUNDING_TOLERANCE
+    strategySpending(retirementYear) >= need - NET_WITHDRAWAL_ROUNDING_TOLERANCE
   );
 }
 

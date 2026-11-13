@@ -25,6 +25,7 @@ const input = (
     ],
     {
       annualExpenses: 400000,
+      decumulationAnnualExpenses: 400000,
       enableIrmaaAwareness: true,
       socialSecurityEntries: [
         {
@@ -112,6 +113,7 @@ describe("IRMAA on top of the budget", () => {
         ],
         {
           annualExpenses: 420000,
+          decumulationAnnualExpenses: 420000,
           enableIrmaaAwareness: true,
           irmaaOnTopOfBudget: true,
           projectionEndYear: 2041,

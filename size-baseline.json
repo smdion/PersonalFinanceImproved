@@ -296,7 +296,7 @@
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 61,
     "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 152,
     "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 97,
-    "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 461,
+    "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 454,
     "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": 59,
     "src/lib/pure/engine/projection-year-handlers/rmd-step.ts": 240,
     "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 361,
@@ -973,7 +973,7 @@
       "buildProjectionContext": 181
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
-      "runPreYearSetup": 369
+      "runPreYearSetup": 365
     },
     "src/lib/pure/engine/rmd-enforcement.ts": {
       "enforceOwnerRmds": 152

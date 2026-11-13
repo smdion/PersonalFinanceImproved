@@ -314,11 +314,7 @@ export function runPreYearSetup(
   // A loan paid off: its line leaves the budget. Not over a figure typed in
   // for this phase, and a rate-seeded retirement has no budget to take it from.
   const typedFigure = [...budgetOverrideMap.keys()].some(
-    (y) =>
-      y <= year &&
-      (isAccumulation ||
-        y >= input.retirementYear ||
-        input.decumulationAnnualExpenses == null),
+    (y) => y <= year && (isAccumulation || y >= input.retirementYear),
   );
   const rateSeeded =
     !isAccumulation && input.rateSeededDecumulationYear1 === true;
@@ -438,10 +434,7 @@ function seedRetirementSpending(
   yearIndex: number,
 ) {
   const decumulationExpensesJustSet =
-    !isAccumulation &&
-    !state.decumulationExpensesSet &&
-    (input.decumulationAnnualExpenses != null ||
-      input.rateSeededDecumulationYear1 === true);
+    !isAccumulation && !state.decumulationExpensesSet;
   if (decumulationExpensesJustSet) {
     // Rate-Seeded: year 1 is the Initial Withdrawal Rate × starting balance,
     // not the budget. Strategies evolve it as they would a budget-seeded
@@ -450,7 +443,7 @@ function seedRetirementSpending(
       ? roundToCents(
           input.decumulationDefaults.withdrawalRate * retirementBalance,
         )
-      : input.decumulationAnnualExpenses! * inflation.growth(yearIndex);
+      : input.decumulationAnnualExpenses * inflation.growth(yearIndex);
     // budgetOnlyExpenses seeds identically (a rate-seeded run has no budget
     // to track), before anything downstream changes projectedExpenses.
     state.budgetOnlyExpenses = state.projectedExpenses;

@@ -80,7 +80,7 @@ describe("per-owner RMDs through the engine", () => {
     const qcdYear = decumYears(
       household(
         [acct("Ann IRA", "ira", 500000, 1), acct("Bo 401k", "401k", 500000, 2)],
-        { ...ages, annualExpenses: 1000 },
+        { ...ages, annualExpenses: 1000, decumulationAnnualExpenses: 1000 },
         { qcdMaximize: true },
       ),
     )[0]!;
@@ -99,7 +99,7 @@ describe("per-owner RMDs through the engine", () => {
           acct("Ann Roth", "ira", 100000, 1, "taxFree"),
           acct("Bo 401k", "401k", 500000, 2),
         ],
-        { annualExpenses: 1000 },
+        { annualExpenses: 1000, decumulationAnnualExpenses: 1000 },
       ),
     )[0]!;
     expect(year.rmdAmount).toBe(0);

@@ -44,6 +44,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
         retirementYear: AS_OF.getFullYear() + 0,
         projectionEndYear: AS_OF.getFullYear() + 30,
         annualExpenses: 40000, // 4% of $1M
+        decumulationAnnualExpenses: 40000,
         inflationRate: 0.03,
       });
 
@@ -111,6 +112,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
           },
         },
         annualExpenses: spending,
+        decumulationAnnualExpenses: spending,
         inflationRate: 0.03,
       });
 
@@ -145,6 +147,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
           retirementYear: AS_OF.getFullYear() + 0,
           projectionEndYear: AS_OF.getFullYear() + 30,
           annualExpenses: 1_000_000 * swr,
+          decumulationAnnualExpenses: 1_000_000 * swr,
           inflationRate: 0.03,
           decumulationDefaults: {
             withdrawalRate: swr,
@@ -235,6 +238,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
           retirementYear: AS_OF.getFullYear() + 0,
           projectionEndYear: AS_OF.getFullYear() + 30,
           annualExpenses: 1_000_000 * swr,
+          decumulationAnnualExpenses: 1_000_000 * swr,
           inflationRate: 0.03,
           decumulationDefaults: {
             withdrawalRate: swr,

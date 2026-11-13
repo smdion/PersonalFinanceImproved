@@ -131,6 +131,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
         },
       },
       annualExpenses: 72000,
+      decumulationAnnualExpenses: 72000,
       inflationRate: 0.025,
       returnRates: [{ label: "7%", rate: 0.07 }],
       socialSecurityAnnual: 36000,
@@ -159,6 +160,20 @@ function roundDeep(obj: unknown, decimals = 2): any {
 }
 
 /** Extract key metrics from engine result for snapshot comparison. */
+/** A budget change (monthly) typed for `from`, carried with inflation into
+ *  the retirement year, stated in today's dollars: the Retirement budget a
+ *  fixture gives so its retirement starts from the figure it carried. */
+function carriedBudget(
+  monthly: number,
+  from: number,
+  retirementYear: number,
+  rate: number,
+): number {
+  let nominal = monthly * 12;
+  for (let y = from + 1; y <= retirementYear; y++) nominal *= 1 + rate;
+  return nominal / Math.pow(1 + rate, retirementYear - AS_OF.getFullYear());
+}
+
 function extractMetrics(result: ReturnType<typeof calculateProjection>) {
   // Every fixture's starting money agrees with itself.
   expect(startingBalanceGaps(result)).toEqual([]);
@@ -278,6 +293,7 @@ describe("engine snapshot parity", () => {
         brokerage: { structure: "basis_tracking", balance: 5000, basis: 3000 },
       },
       annualExpenses: 48000,
+      decumulationAnnualExpenses: 48000,
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
@@ -346,6 +362,7 @@ describe("engine snapshot parity", () => {
         },
       },
       annualExpenses: 60000,
+      decumulationAnnualExpenses: 60000,
       socialSecurityAnnual: 36000,
     });
     const result = calculateProjection(input);
@@ -560,6 +577,12 @@ describe("engine snapshot parity", () => {
       budgetOverrides: [
         { year: 2040, value: 8000, notes: "Empty nest — monthly $8k" },
       ],
+      decumulationAnnualExpenses: carriedBudget(
+        8000,
+        2040,
+        AS_OF.getFullYear() + 30,
+        0.025,
+      ),
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
@@ -747,6 +770,7 @@ describe("engine snapshot parity", () => {
       projectionEndYear: AS_OF.getFullYear() + 50,
       currentSalary: 180000,
       annualExpenses: 80000,
+      decumulationAnnualExpenses: 80000,
       startingBalances: {
         preTax: 320000,
         taxFree: 80000,
@@ -813,6 +837,7 @@ describe("engine snapshot parity", () => {
         },
       },
       annualExpenses: 60000,
+      decumulationAnnualExpenses: 60000,
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
@@ -859,6 +884,7 @@ describe("engine snapshot parity", () => {
         },
       },
       annualExpenses: 55000,
+      decumulationAnnualExpenses: 55000,
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
@@ -929,6 +955,7 @@ describe("engine snapshot parity", () => {
         },
       },
       annualExpenses: 50000,
+      decumulationAnnualExpenses: 50000,
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
@@ -982,6 +1009,7 @@ describe("engine snapshot parity", () => {
         },
       },
       annualExpenses: 55000,
+      decumulationAnnualExpenses: 55000,
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
@@ -1004,6 +1032,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 18000,
       ssStartAge: 67,
       annualExpenses: 80000,
+      decumulationAnnualExpenses: 80000,
       startingBalances: {
         preTax: 90000,
         taxFree: 30000,
@@ -1043,6 +1072,7 @@ describe("engine snapshot parity", () => {
       projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 200000,
       annualExpenses: 90000,
+      decumulationAnnualExpenses: 90000,
       startingBalances: {
         preTax: 50000,
         taxFree: 20000,
@@ -1113,6 +1143,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 48000,
       ssStartAge: 67,
       annualExpenses: 70000,
+      decumulationAnnualExpenses: 70000,
       currentSalary: 0,
       startingBalances: {
         preTax: 580000,
@@ -1154,6 +1185,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 24000,
       ssStartAge: 67,
       annualExpenses: 55000,
+      decumulationAnnualExpenses: 55000,
       currentSalary: 0,
       startingBalances: {
         preTax: 390000,
@@ -1191,6 +1223,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 0,
       ssStartAge: 67,
       annualExpenses: 65000,
+      decumulationAnnualExpenses: 65000,
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
@@ -1206,6 +1239,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 36000,
       ssStartAge: 67,
       annualExpenses: 60000,
+      decumulationAnnualExpenses: 60000,
       // filingStatus intentionally omitted
     });
     const result = calculateProjection(input);
@@ -1227,6 +1261,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 30000,
       ssStartAge: 65,
       annualExpenses: 40000,
+      decumulationAnnualExpenses: 40000,
       startingBalances: {
         preTax: 100000,
         taxFree: 50000,
@@ -1289,6 +1324,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 48000,
       ssStartAge: 65,
       annualExpenses: 120000,
+      decumulationAnnualExpenses: 120000,
       startingBalances: {
         preTax: 500000,
         taxFree: 200000,
@@ -1354,6 +1390,7 @@ describe("engine snapshot parity", () => {
       filingStatus: "MFJ",
       currentSalary: 120000,
       annualExpenses: 70000,
+      decumulationAnnualExpenses: 70000,
       decumulationOverrides: [
         {
           year: 2035,
@@ -1403,6 +1440,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 36000,
       ssStartAge: 67,
       annualExpenses: 65000,
+      decumulationAnnualExpenses: 65000,
       decumulationOverrides: [
         {
           year: 2027,
@@ -1452,6 +1490,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 28000,
       ssStartAge: 67,
       annualExpenses: 65000,
+      decumulationAnnualExpenses: 65000,
       decumulationOverrides: [
         {
           year: 2030,
@@ -1503,6 +1542,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 20000,
       ssStartAge: 67,
       annualExpenses: 50000,
+      decumulationAnnualExpenses: 50000,
       decumulationOverrides: [
         {
           year: 2030,
@@ -1555,6 +1595,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 42000,
       ssStartAge: 70,
       annualExpenses: 70000,
+      decumulationAnnualExpenses: 70000,
       startingBalances: {
         preTax: 1100000,
         taxFree: 150000,
@@ -1640,6 +1681,7 @@ describe("engine snapshot parity", () => {
       projectionEndYear: AS_OF.getFullYear() + 29,
       currentSalary: 0,
       annualExpenses: 60000,
+      decumulationAnnualExpenses: 60000,
       returnRates: [{ label: "10%", rate: 0.1 }], // strong returns
       startingBalances: {
         preTax: 700000,
@@ -1725,6 +1767,7 @@ describe("engine snapshot parity", () => {
       projectionEndYear: AS_OF.getFullYear() + 29,
       currentSalary: 0,
       annualExpenses: 80000,
+      decumulationAnnualExpenses: 80000,
       returnRates: [{ label: "2%", rate: 0.02 }], // poor returns
       startingBalances: {
         preTax: 530000,
@@ -1802,6 +1845,7 @@ describe("engine snapshot parity", () => {
       projectionEndYear: AS_OF.getFullYear() + 23,
       currentSalary: 0,
       annualExpenses: 55000,
+      decumulationAnnualExpenses: 55000,
       inflationRate: 0.03,
       returnRates: [{ label: "1%", rate: 0.01 }], // below inflation = loss in real terms
       startingBalances: {
@@ -1873,6 +1917,7 @@ describe("engine snapshot parity", () => {
       projectionEndYear: AS_OF.getFullYear() + 22,
       currentSalary: 0,
       annualExpenses: 60000,
+      decumulationAnnualExpenses: 60000,
       returnRates: [{ label: "3%", rate: 0.03 }],
       budgetOverrides: [
         { year: 2028, value: 5500, notes: "Cut budget after market dip" },
@@ -2154,6 +2199,7 @@ describe("engine snapshot parity", () => {
       projectionEndYear: AS_OF.getFullYear() + 50,
       currentSalary: 100000,
       annualExpenses: 48000,
+      decumulationAnnualExpenses: 48000,
       returnRates: [{ label: "6%", rate: 0.06 }],
     });
     const result = calculateProjection(input);
@@ -2173,6 +2219,7 @@ describe("engine snapshot parity", () => {
       birthYear: 1959,
       filingStatus: "MFJ",
       annualExpenses: 60000,
+      decumulationAnnualExpenses: 60000,
       startingBalances: {
         preTax: 700000,
         taxFree: 100000,
@@ -2266,6 +2313,12 @@ describe("engine snapshot parity", () => {
       budgetOverrides: [
         { year: 2030, value: 5000, notes: "Lower budget after kids" },
       ],
+      decumulationAnnualExpenses: carriedBudget(
+        5000,
+        2030,
+        AS_OF.getFullYear() + 15,
+        0.025,
+      ),
       decumulationOverrides: [
         {
           year: 2040,
@@ -2294,6 +2347,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 48000,
       ssStartAge: 70,
       annualExpenses: 120000,
+      decumulationAnnualExpenses: 120000,
       startingBalances: {
         preTax: 2300000,
         taxFree: 500000,
@@ -2425,6 +2479,7 @@ describe("engine snapshot parity", () => {
       currentSalary: 0,
       filingStatus: "MFJ",
       annualExpenses: 70000,
+      decumulationAnnualExpenses: 70000,
       startingBalances: {
         preTax: 550000,
         taxFree: 150000,
@@ -2557,6 +2612,7 @@ describe("engine snapshot parity", () => {
       projectionEndYear: AS_OF.getFullYear() + 23,
       currentSalary: 0,
       annualExpenses: 50000,
+      decumulationAnnualExpenses: 50000,
       startingBalances: {
         preTax: 300000,
         taxFree: 100000,
@@ -2698,6 +2754,7 @@ describe("engine snapshot parity", () => {
       currentSalary: 0,
       filingStatus: "MFJ",
       annualExpenses: 65000,
+      decumulationAnnualExpenses: 65000,
       startingBalances: {
         preTax: 200000,
         taxFree: 300000,
@@ -2769,6 +2826,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 44000,
       ssStartAge: 66,
       annualExpenses: 90000,
+      decumulationAnnualExpenses: 90000,
       startingBalances: {
         preTax: 800000,
         taxFree: 200000,
@@ -2853,6 +2911,7 @@ describe("engine snapshot parity", () => {
       socialSecurityAnnual: 44000,
       ssStartAge: 66,
       annualExpenses: 90000,
+      decumulationAnnualExpenses: 90000,
       startingBalances: {
         preTax: 800000,
         taxFree: 200000,
@@ -2929,6 +2988,7 @@ describe("engine snapshot parity", () => {
       birthYear: 1950,
       currentSalary: 0,
       annualExpenses: 40000,
+      decumulationAnnualExpenses: 40000,
       socialSecurityAnnual: 30000,
       ssStartAge: 70,
       startingBalances: {
@@ -3007,6 +3067,7 @@ describe("engine snapshot parity", () => {
       birthYear: 1949,
       currentSalary: 0,
       annualExpenses: 35000,
+      decumulationAnnualExpenses: 35000,
       socialSecurityAnnual: 25000,
       ssStartAge: 70,
       returnRates: [{ label: "5%", rate: 0.05 }],
@@ -3084,6 +3145,7 @@ describe("engine snapshot parity", () => {
       projectionEndYear: AS_OF.getFullYear() + 23,
       currentSalary: 0,
       annualExpenses: 80000,
+      decumulationAnnualExpenses: 80000,
       startingBalances: {
         preTax: 450000,
         taxFree: 150000,
@@ -3340,6 +3402,7 @@ describe("engine snapshot parity", () => {
         },
       },
       annualExpenses: 120000,
+      decumulationAnnualExpenses: 120000,
       socialSecurityAnnual: 42000,
     });
     const result = calculateProjection(input);
@@ -3399,6 +3462,7 @@ describe("engine snapshot parity", () => {
         },
       },
       annualExpenses: 80000,
+      decumulationAnnualExpenses: 80000,
       ssStartAge: 67,
     });
     const result = calculateProjection(input);
@@ -3426,6 +3490,7 @@ describe("engine snapshot parity", () => {
       birthYear: 1950,
       currentSalary: 0,
       annualExpenses: 40000,
+      decumulationAnnualExpenses: 40000,
       socialSecurityAnnual: 30000,
       ssStartAge: 70,
       socialSecurityEntries: [
@@ -3608,6 +3673,7 @@ describe("engine snapshot parity", () => {
       birthYear: 1950,
       currentSalary: 0,
       annualExpenses: 40000,
+      decumulationAnnualExpenses: 40000,
       socialSecurityAnnual: 30000,
       ssStartAge: 70,
       socialSecurityEntries: [
@@ -3735,6 +3801,7 @@ describe("engine snapshot parity", () => {
       birthYear: 1950,
       currentSalary: 0,
       annualExpenses: 40000,
+      decumulationAnnualExpenses: 40000,
       socialSecurityAnnual: 30000,
       ssStartAge: 70,
       socialSecurityEntries: [
@@ -3869,6 +3936,7 @@ describe("engine snapshot parity", () => {
       birthYear: 1960,
       currentSalary: 0,
       annualExpenses: 90000,
+      decumulationAnnualExpenses: 90000,
       socialSecurityAnnual: 24000,
       ssStartAge: 67,
       socialSecurityEntries: [

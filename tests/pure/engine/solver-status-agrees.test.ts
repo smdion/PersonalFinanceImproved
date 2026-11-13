@@ -59,6 +59,7 @@ function couple(
       retirementYear: 2025,
       projectionEndYear: 2050,
       annualExpenses: 70000,
+      decumulationAnnualExpenses: 70000,
       socialSecurityEntries: [
         {
           personId: 1,

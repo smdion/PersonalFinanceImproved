@@ -1,35 +1,35 @@
 {
   "$comment": "Engine golden fixtures' reviews, keyed by the sha256 of each fixture's engine input (tests/pure/engine/engine-golden.test.ts). A changed input drops out of this file and fails the test until its figures are re-derived by hand and its new hash recorded here.",
   "inputs": {
-    "6b20600ba954e747bfd1fe468fbe6a95825e57ecaa02fe2c898069ff764b8425": {
+    "cbe5a1709984e992450699eaaf19d98bb67f7313bf1060b6cac61435f2f08517": {
       "fixture": "engine/GOLD-1",
-      "reviewed": "2026-11-10",
-      "checked": "every year's balance and draw, the 2031 depletion: (start \u2212 40,000) \u00d7 1.05 by hand; gains under the 0% band; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with"
+      "reviewed": "2026-11-13",
+      "checked": "every year's balance and draw, the 2031 depletion: (start \u2212 40,000) \u00d7 1.05 by hand; gains under the 0% band; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
     },
-    "114870831d53225f7e90a6083f6a942ae4795ea3d6088ff7dcf146619e0054e0": {
+    "46cf15ee2492afcbb1a31a126c240d2577a517672a118f2dd3a565fd7ea73d9d": {
       "fixture": "engine/GOLD-2",
-      "reviewed": "2026-11-10",
-      "checked": "spending inflated 3% a year from 2026; balances (start \u2212 spending) \u00d7 1.04 by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with"
+      "reviewed": "2026-11-13",
+      "checked": "spending inflated 3% a year from 2026; balances (start \u2212 spending) \u00d7 1.04 by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
     },
-    "e0ff2397ae1a983f97caebb64d0ef0a122fb62b407eb952e95db54dd373baefc": {
+    "ba5cc8433af38e2c57c4caeb9e8959ac5e24ce359a60638a22ca05fb37ea3fe9": {
       "fixture": "engine/GOLD-3",
-      "reviewed": "2026-11-10",
-      "checked": "two working years (start + 10,000) \u00d7 1.05, then draws of 60,000 and the 2029 depletion, by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with"
+      "reviewed": "2026-11-13",
+      "checked": "two working years (start + 10,000) \u00d7 1.05, then draws of 60,000 and the 2029 depletion, by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
     },
-    "bcdcde4bbb0b949bc8d725d8ccee498aab06bb3d76dd6ae0140c47b5641e154d": {
+    "10c4c23587faecbaf9a686c6feb0cf058f70c5005d93a63799929d36121d283e": {
       "fixture": "engine/GOLD-4",
-      "reviewed": "2026-11-10",
-      "checked": "draw = spending \u2212 Social Security (16,000); provisional income under $25,000 so no tax; by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with"
+      "reviewed": "2026-11-13",
+      "checked": "draw = spending \u2212 Social Security (16,000); provisional income under $25,000 so no tax; by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
     },
-    "e09aa7b7d67faabdcfa176a5d5c88996b9281835d1c55937b3aafe8e5ccb19c6": {
+    "d6351178da3c9149db5f8578248d94bd0b66b1b388f00aa39124560b88425867": {
       "fixture": "engine/GOLD-5",
-      "reviewed": "2026-11-12",
-      "checked": "the IRA gross-up W = 42,977.27 from the 2026 Single standard deduction and 10%/12% bands; balances by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; re-keyed when the household's projected brokerage's flag became origin: projected (no money in the input changed; the hand figures above pass unchanged)"
+      "reviewed": "2026-11-13",
+      "checked": "the IRA gross-up W = 42,977.27 from the 2026 Single standard deduction and 10%/12% bands; balances by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; re-keyed when the household's projected brokerage's flag became origin: projected (no money in the input changed; the hand figures above pass unchanged); its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
     },
-    "b2230559db6d99440097f6382603de180cf7a9401710838e0232d1cd2ee07f36": {
+    "7a53320b6b93792c3dee962bd1a1c190a073dbce0e10cce4fd16ebf56817f30c": {
       "fixture": "engine/GOLD-6",
-      "reviewed": "2026-11-10",
-      "checked": "the $2,000-a-month budget from 2028 sticks forward; balances by hand at 0% return; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with"
+      "reviewed": "2026-11-13",
+      "checked": "the $2,000-a-month budget from 2028 sticks forward; balances by hand at 0% return; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
     }
   }
 }

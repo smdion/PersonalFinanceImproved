@@ -740,6 +740,7 @@ function makeBaseProjection(
     },
     startingAccountBalances: { ...EMPTY_ACCOUNT_BALANCES },
     annualExpenses: 0,
+    decumulationAnnualExpenses: 0,
     inflationRate: 0,
     returnRates: [{ label: "7%", rate: 0.07 }],
     socialSecurityAnnual: 0,
@@ -783,6 +784,7 @@ describe("retirement projection edge cases", () => {
           },
         },
         annualExpenses: 40_000,
+        decumulationAnnualExpenses: 40_000,
         inflationRate: 0,
       }),
     );
@@ -815,6 +817,7 @@ describe("retirement projection edge cases", () => {
           },
         },
         annualExpenses: 40_000,
+        decumulationAnnualExpenses: 40_000,
         inflationRate: 0,
       }),
     );
@@ -859,6 +862,7 @@ describe("retirement projection edge cases", () => {
           },
         },
         annualExpenses: 100_000, // 20% withdrawal — unsustainable
+        decumulationAnnualExpenses: 100_000,
         inflationRate: 0.03,
       }),
     );
@@ -890,6 +894,7 @@ describe("retirement projection edge cases", () => {
             },
           },
           annualExpenses: 0,
+          decumulationAnnualExpenses: 0,
           returnRates: [],
         }),
       ),
@@ -948,6 +953,7 @@ describe("retirement projection edge cases", () => {
           },
         },
         annualExpenses: 40_000,
+        decumulationAnnualExpenses: 40_000,
         socialSecurityAnnual: 24_000,
         ssStartAge: 67,
         inflationRate: 0,
@@ -1062,6 +1068,7 @@ describe("retirement projection edge cases", () => {
         projectionEndYear: JAN_1.getFullYear() + 35,
         currentSalary: 100_000,
         annualExpenses: 50_000,
+        decumulationAnnualExpenses: 50_000,
         inflationRate: 0,
         budgetOverrides: [{ year: retYear, value: 3000 }], // $3000/month = $36000/year
         startingBalances: {
@@ -1113,6 +1120,7 @@ describe("retirement projection edge cases", () => {
           },
         },
         annualExpenses: 0,
+        decumulationAnnualExpenses: 0,
         inflationRate: 0,
         returnRates: [{ label: "7%", rate: 0.07 }],
       }),

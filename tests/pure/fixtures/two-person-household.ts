@@ -120,6 +120,7 @@ export function household(
       },
     },
     annualExpenses: 40000,
+    decumulationAnnualExpenses: 40000,
     inflationRate: 0,
     returnRates: [{ label: "0%", rate: 0 }],
     socialSecurityAnnual: 0,

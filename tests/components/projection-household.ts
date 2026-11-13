@@ -57,6 +57,7 @@ export function annAndBo(
       currentSalary: 160000,
       salaryGrowthRate: 0.02,
       annualExpenses: 90000,
+      decumulationAnnualExpenses: 90000,
       inflationRate: 0,
       returnRates: Array.from({ length: 70 }, (_, i) => ({
         label: `Age ${30 + i}`,

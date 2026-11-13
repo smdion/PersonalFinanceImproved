@@ -132,6 +132,7 @@ export function makeRetiringMidyearInput(
       overrides.startingBalances ?? startingBalances,
     ),
     annualExpenses: 40000,
+    decumulationAnnualExpenses: 40000,
     inflationRate: 0.03,
     returnRates: [{ label: "7%", rate: 0.07 }],
     socialSecurityAnnual: 24000,

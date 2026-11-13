@@ -99,6 +99,7 @@ describe("runStressTestScenarios (M2)", () => {
         },
       },
       annualExpenses: 72000,
+      decumulationAnnualExpenses: 72000,
       inflationRate: 0.025,
       returnRates: [{ label: "7%", rate: 0.07 }],
       socialSecurityAnnual: 36000,
@@ -210,9 +211,9 @@ describe("runStressTestScenarios (M2)", () => {
     // the "fixed" strategy under test,
     // sustainableWithdrawal is the strategy's actual first decumulation
     // year withdrawal, not a `balance × withdrawalRate` reference figure.
-    // makeBaseInput() sets no `decumulationAnnualExpenses`, so year-1
-    // spending is whatever accumulation-phase `annualExpenses` inflates to
-    // by retirement — 30 years compounded at each SCENARIO's OWN
+    // makeBaseInput()'s Retirement budget equals `annualExpenses`, so year-1
+    // spending is that budget inflated to retirement — 30 years compounded
+    // at each SCENARIO's OWN
     // inflationRate (conservative 4% vs optimistic 2%, see
     // lib/pure/simulation/stress-test.ts). Higher assumed inflation produces a bigger
     // nominal-dollar year-1 budget regardless of portfolio size, so

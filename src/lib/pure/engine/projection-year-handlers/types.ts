@@ -107,7 +107,7 @@ export type ProjectionLoopState = {
    *  equal retirementYear when retiring mid-year). */
   decumulationExpensesSet: boolean;
   /** The first decumulation year's stated need in that year's dollars, set
-   *  once with the decumulation budget; null without one. The result's
+   *  once with the decumulation budget; null until the plan retires. The result's
    *  `firstDecumulationYearStatedNeed`. */
   firstDecumulationYearStatedNeed: number | null;
 

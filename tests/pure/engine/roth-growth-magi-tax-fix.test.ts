@@ -128,6 +128,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       },
     },
     annualExpenses: 150000,
+    decumulationAnnualExpenses: 150000,
     inflationRate: 0.025,
     returnRates: [{ label: "7%", rate: 0.07 }],
     socialSecurityAnnual: 0,

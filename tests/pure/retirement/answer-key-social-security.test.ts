@@ -426,6 +426,7 @@ describe("answer key: the claiming-age sweep", () => {
         socialSecurityAnnual: 0,
         ssStartAge: 70,
         annualExpenses: 60_000,
+        decumulationAnnualExpenses: 60_000,
         filingStatus: "Single",
       },
       {

@@ -206,6 +206,7 @@ describe("Monte Carlo statistical properties", { timeout: 60_000 }, () => {
         retirementYear: AS_OF.getFullYear() + 0,
         projectionEndYear: AS_OF.getFullYear() + 5,
         annualExpenses: 0, // No withdrawals to isolate return behavior
+        decumulationAnnualExpenses: 0,
       });
       const mc = makeMCInput(engine, {
         numTrials: 3000,

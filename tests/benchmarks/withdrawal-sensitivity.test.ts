@@ -49,6 +49,7 @@ describe("Withdrawal rate sensitivity", () => {
           },
         },
         annualExpenses: 1000000 * swr,
+        decumulationAnnualExpenses: 1000000 * swr,
       });
       const mc = makeMCInput(engine, {
         numTrials: 3000,

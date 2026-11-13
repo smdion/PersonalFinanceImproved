@@ -116,6 +116,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       brokerage: { structure: "basis_tracking", balance: 10000, basis: 8000 },
     },
     annualExpenses: 72000,
+    decumulationAnnualExpenses: 72000,
     inflationRate: 0.025,
     returnRates: [{ label: "7%", rate: 0.07 }],
     socialSecurityAnnual: 20000,

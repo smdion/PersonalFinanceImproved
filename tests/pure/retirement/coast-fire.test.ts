@@ -118,6 +118,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
         },
       },
       annualExpenses: 72000,
+      decumulationAnnualExpenses: 72000,
       inflationRate: 0.025,
       returnRates: [{ label: "7%", rate: 0.07 }],
       socialSecurityAnnual: 36000,
@@ -160,6 +161,7 @@ describe("findCoastFireAge", () => {
         },
       },
       annualExpenses: 48_000,
+      decumulationAnnualExpenses: 48_000,
     });
 
     const result = findCoastFireAge(input);
@@ -198,6 +200,7 @@ describe("findCoastFireAge", () => {
         brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
       },
       annualExpenses: 60_000,
+      decumulationAnnualExpenses: 60_000,
     });
 
     const result = findCoastFireAge(input);
@@ -212,6 +215,7 @@ describe("findCoastFireAge", () => {
     const input = makeInput({
       currentSalary: 30_000,
       annualExpenses: 150_000,
+      decumulationAnnualExpenses: 150_000,
       startingBalances: {
         preTax: 1000,
         taxFree: 0,
@@ -247,6 +251,7 @@ describe("findCoastFireAge", () => {
       retirementYear: AS_OF.getFullYear() + 30,
       currentSalary: 150_000,
       annualExpenses: 72_000,
+      decumulationAnnualExpenses: 72_000,
       startingBalances: {
         preTax: 270000,
         taxFree: 80000,
@@ -326,6 +331,7 @@ describe("findCoastFireAge", () => {
         },
       },
       annualExpenses: 60_000,
+      decumulationAnnualExpenses: 60_000,
     });
 
     const result = findCoastFireAge(input);
@@ -361,6 +367,7 @@ describe("findCoastFireAge", () => {
         brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
       },
       annualExpenses: 40_000,
+      decumulationAnnualExpenses: 40_000,
     });
 
     const result = findCoastFireAge(input);
@@ -398,6 +405,7 @@ describe("findCoastFireAge", () => {
       retirementYear: AS_OF.getFullYear() + 35,
       currentSalary: 150_000,
       annualExpenses: 60_000,
+      decumulationAnnualExpenses: 60_000,
       startingBalances: {
         preTax: 500,
         taxFree: 0,
@@ -438,6 +446,7 @@ describe("findCoastFireAge", () => {
       retirementYear: AS_OF.getFullYear() + 25,
       currentSalary: 200_000,
       annualExpenses: 80_000,
+      decumulationAnnualExpenses: 80_000,
       startingBalances: {
         preTax: 425000,
         taxFree: 125000,
@@ -604,6 +613,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
         },
       },
       annualExpenses: 94000,
+      decumulationAnnualExpenses: 94000,
       inflationRate: 0.03,
       returnRates: [{ label: "7%", rate: 0.0727 }],
       socialSecurityAnnual: 0,
@@ -798,6 +808,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
         },
       },
       annualExpenses: 90000,
+      decumulationAnnualExpenses: 90000,
       inflationRate: 0.025,
       returnRates: [{ label: "7%", rate: 0.07 }],
       socialSecurityAnnual: 65000,
@@ -902,135 +913,6 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
       ],
     });
     const result = findCoastFireAge(input);
-    expect(result.status).toBe("already_coast");
-  });
-});
-
-describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallback (finding #9)", () => {
-  const AS_OF_4 = new Date("2025-03-07");
-
-  // sustainableWithdrawal's meaning is the strategy's
-  // actual tax-grossed-up withdrawal (gross of tax, net of Social
-  // Security) without updating the no-stated-need fallback in passes(),
-  // which still compared it directly against projectedExpenses (gross of
-  // Social Security, net of tax). A household whose spending is mostly
-  // covered by a large Social Security benefit exposes the mismatch
-  // clearly: sustainableWithdrawal (the portfolio's own share only) comes
-  // in well under projectedExpenses (total spending) even though the
-  // household is comfortably funded once SS's contribution and the tax
-  // bill are both accounted for correctly.
-  function makeSsHeavyInput(
-    overrides: Partial<ProjectionInput> = {},
-  ): ProjectionInput {
-    return withCapsAge({
-      accumulationDefaults: makeAccumulationDefaults({
-        accountSplits: {
-          "401k": 0.4,
-          "403b": 0,
-          hsa: 0.1,
-          ira: 0.15,
-          brokerage: 0.35,
-        },
-      }),
-      decumulationDefaults: {
-        withdrawalRate: 0.04,
-        withdrawalRoutingMode: "waterfall",
-        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-        withdrawalSplits: {
-          "401k": 0.35,
-          "403b": 0,
-          ira: 0.25,
-          brokerage: 0.3,
-          hsa: 0.1,
-        },
-        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
-        distributionTaxRates: {
-          ...shippedTaxTables(),
-          traditionalFallbackRate: 0.22,
-          roth: 0,
-          hsa: 0,
-          brokerage: 0.15,
-        },
-      },
-      accumulationOverrides: [],
-      decumulationOverrides: [],
-      currentAge: 66,
-      retirementYear: AS_OF_4.getFullYear() + 1,
-      projectionEndYear: AS_OF_4.getFullYear() + 24,
-      currentSalary: 150000,
-      salaryGrowthRate: 0.03,
-      salaryCap: null,
-      salaryOverrides: [],
-      budgetOverrides: [],
-      irsLimitCaps: capsFromBaseLimits({
-        baseLimits: {
-          "401k": 23500,
-          "403b": 23500,
-          hsa: 4300,
-          ira: 7000,
-          brokerage: 0,
-        },
-        catchupLimits: {
-          "401k": 7500,
-          ira: 1000,
-          hsa: 1000,
-          "401k_super": 11250,
-        },
-        currentAge: 66,
-      }),
-      limitGrowthRate: 0.02,
-
-      employerMatchRateByCategory: {
-        "401k": 0.03,
-        "403b": 0,
-        hsa: 0,
-        ira: 0,
-        brokerage: 0,
-      },
-      startingBalances: {
-        preTax: 500000,
-        taxFree: 250000,
-        afterTax: 100000,
-        afterTaxBasis: 80000,
-        hsa: 50000,
-      },
-      startingAccountBalances: {
-        "401k": {
-          structure: "roth_traditional",
-          traditional: 400000,
-          roth: 100000,
-        },
-        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-        hsa: { structure: "single_bucket", balance: 50000 },
-        ira: {
-          structure: "roth_traditional",
-          traditional: 100000,
-          roth: 150000,
-        },
-        brokerage: {
-          structure: "basis_tracking",
-          balance: 100000,
-          basis: 80000,
-        },
-      },
-      annualExpenses: 90000,
-      inflationRate: 0.025,
-      returnRates: [{ label: "7%", rate: 0.07 }],
-      socialSecurityAnnual: 60000,
-      ssStartAge: 67,
-      asOfDate: AS_OF_4,
-      ...overrides,
-    }) as ProjectionInput;
-  }
-
-  it("reports already_coast for a Social-Security-heavy household the old gross-vs-net comparison would have wrongly failed", () => {
-    // Confirmed via an engine probe: the strategy's actual first-year
-    // withdrawal nets to exactly projectedExpenses once its tax cost is
-    // subtracted and SS is added back, but the OLD (buggy) direct
-    // comparison of the raw gross figure against projectedExpenses came
-    // in under by roughly the tax bill -- ~$41k vs. a ~$92k need -- which
-    // would have wrongly reported this plan as not sustainable.
-    const result = findCoastFireAge(makeSsHeavyInput());
     expect(result.status).toBe("already_coast");
   });
 });

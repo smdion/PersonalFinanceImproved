@@ -132,6 +132,7 @@ function retiree(strategy: WithdrawalStrategyType): ProjectionInput {
       startingBalances: makeTaxBuckets(),
       ...overrides,
       annualExpenses: 70000,
+      decumulationAnnualExpenses: 70000,
       inflationRate: 0.025,
       returnRates,
       socialSecurityAnnual: 30000,

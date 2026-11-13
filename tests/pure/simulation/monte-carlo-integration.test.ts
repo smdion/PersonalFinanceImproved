@@ -111,6 +111,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       brokerage: { structure: "basis_tracking", balance: 30000, basis: 20000 },
     },
     annualExpenses: 72000,
+    decumulationAnnualExpenses: 72000,
     inflationRate: 0.025,
     returnRates: [{ label: "7%", rate: 0.07 }],
     socialSecurityAnnual: 36000,
@@ -229,6 +230,7 @@ describe("monte carlo integration", () => {
     const engineInput = makeInput({
       currentSalary: 120000,
       annualExpenses: 55000,
+      decumulationAnnualExpenses: 55000,
     });
 
     const mcInput: MonteCarloInput = {
@@ -287,6 +289,7 @@ describe("monte carlo integration", () => {
         },
       },
       annualExpenses: 80000,
+      decumulationAnnualExpenses: 80000,
     });
 
     const mcInput: MonteCarloInput = {
@@ -333,6 +336,7 @@ describe("monte carlo integration", () => {
       birthYear: 1960,
       currentSalary: 0,
       annualExpenses: 90000,
+      decumulationAnnualExpenses: 90000,
       socialSecurityAnnual: 24000,
       ssStartAge: 67,
       socialSecurityEntries: [
@@ -478,6 +482,7 @@ describe("monte carlo integration", () => {
       retirementYear: AS_OF.getFullYear() + 5,
       projectionEndYear: AS_OF.getFullYear() + 10,
       annualExpenses: 120000,
+      decumulationAnnualExpenses: 120000,
       individualAccounts: [
         {
           name: "Alice 401k",
