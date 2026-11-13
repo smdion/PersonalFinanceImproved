@@ -10,7 +10,7 @@ import {
 } from "@/lib/pure/household/household-income";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { yearTotals } from "@/lib/pure/paycheck/year-totals";
-import { salaryDivisor } from "@/lib/pure/paycheck/year-paydays";
+import { checkBasis } from "@/lib/pure/paycheck/year-paydays";
 import type { buildPaycheckInputForJob } from "@/lib/pure/paycheck/paycheck-input";
 import type {
   BlendedAnnualTotals,
@@ -47,7 +47,7 @@ export function checkPaychecks(
           configured(jobContributions),
           configured(personalContributions),
           salary,
-          salaryDivisor(paycheckInput),
+          checkBasis(paycheckInput),
           ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
           contributionPay(salary, bonusTerms, comp.bonusOverride).bonusGross,
         ),

@@ -261,7 +261,7 @@ describe("employer match — each account's own election", () => {
       ],
       [],
       SALARY,
-      26,
+      { periodsPerYear: 26, salaryDivisor: 26 },
       { limits, ageAtYearEnd: 40 },
       BONUS,
     );

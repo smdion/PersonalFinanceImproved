@@ -30,7 +30,7 @@ import {
 import {
   buildPaycheckInputForJob,
   jobScheduleDates,
-  jobSalaryDivisor,
+  jobCheckBasis,
 } from "@/lib/pure/paycheck/paycheck-input";
 import { salaryDivisor } from "@/lib/pure/paycheck/year-paydays";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
@@ -288,7 +288,7 @@ export async function computePaycheckSummary(
       jobContribs,
       personalContribs,
       salary,
-      jobSalaryDivisor(job, opts.asOf ?? asOfDate),
+      jobCheckBasis(job, opts.asOf ?? asOfDate),
       ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
       contributionPay(salary, bonusTerms, comp.bonusOverride).bonusGross,
     );

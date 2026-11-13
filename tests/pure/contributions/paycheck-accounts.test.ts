@@ -42,7 +42,13 @@ function row(
 }
 
 const build = (r: ContribRowWithActiveFields & CapPassed, ageAtYearEnd = 40) =>
-  buildContribAccounts([r], [], 100000, 26, { limits, ageAtYearEnd })[0]!;
+  buildContribAccounts(
+    [r],
+    [],
+    100000,
+    { periodsPerYear: 26, salaryDivisor: 26 },
+    { limits, ageAtYearEnd },
+  )[0]!;
 
 describe("buildContribAccounts — ficaExemptAnnualCap", () => {
   it("payroll HSA: coverage limit less employer money", () => {
@@ -95,7 +101,7 @@ describe("buildContribAccounts — employer match on bonus checks", () => {
       [r],
       [],
       100000,
-      26,
+      { periodsPerYear: 26, salaryDivisor: 26 },
       { limits, ageAtYearEnd: 40 },
       20000,
     )[0]!;

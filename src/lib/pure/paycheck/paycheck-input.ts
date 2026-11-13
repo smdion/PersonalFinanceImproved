@@ -13,7 +13,7 @@ import type {
 } from "@/lib/pure/paycheck/paycheck.types";
 import { toNumber } from "@/lib/utils/numbers";
 import { requireLimit } from "@/lib/pure/tax/tax-limits";
-import { salaryDivisor } from "@/lib/pure/paycheck/year-paydays";
+import { checkBasis } from "@/lib/pure/paycheck/year-paydays";
 
 /**
  * Fields from the resolved Salary Profile entry (`startDate` from the job). Callers pass only a
@@ -105,16 +105,16 @@ export function jobScheduleDates(
   };
 }
 
-/** What a job's salary is divided by for each check in `asOfDate`'s year (salaryDivisor): its
- *  contribution accounts are built before its paycheck input. */
-export function jobSalaryDivisor(
+/** A job's check basis in `asOfDate`'s year (checkBasis): its contribution accounts are built
+ *  before its paycheck input. */
+export function jobCheckBasis(
   job: Pick<
     JobForPaycheckInput,
     "payPeriod" | "salaryDivisor" | "anchorPayDate" | "startDate" | "endDate"
   >,
   asOfDate: Date,
-): number {
-  return salaryDivisor({
+) {
+  return checkBasis({
     asOfDate,
     payPeriod: job.payPeriod!,
     anchorPayDate: jobScheduleDates(job).anchorPayDate,

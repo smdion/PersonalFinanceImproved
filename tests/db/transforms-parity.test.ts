@@ -185,10 +185,16 @@ describe("contribution.ts — PG string mode", () => {
       include401kInBonus: false,
     } as unknown as ContribRowWithActiveFields & CapPassed;
 
-    const [acct] = buildContribAccounts([row], [], 100000, 26, {
-      limits: {},
-      ageAtYearEnd: 40,
-    });
+    const [acct] = buildContribAccounts(
+      [row],
+      [],
+      100000,
+      { periodsPerYear: 26, salaryDivisor: 26 },
+      {
+        limits: {},
+        ageAtYearEnd: 40,
+      },
+    );
 
     expect(acct).toBeDefined();
     expect(typeof acct!.annualContribution).toBe("number");

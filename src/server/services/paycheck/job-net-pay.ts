@@ -13,7 +13,7 @@ import {
 } from "@/lib/pure/household/compensation";
 import {
   buildPaycheckInputForJob,
-  jobSalaryDivisor,
+  jobCheckBasis,
 } from "@/lib/pure/paycheck/paycheck-input";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import {
@@ -171,7 +171,7 @@ export async function computeJobNetPayPerCheck(
   const comp = resolveCompensation(salaryProfileActiveMap, job.id);
   const currentSalary = comp.salary;
   const bonusTerms = comp.terms;
-  const divisor = jobSalaryDivisor(resolvedJob, asOfDate);
+  const basis = jobCheckBasis(resolvedJob, asOfDate);
   const taxBrackets = buildBracketInput(bracketRow, limitsMap, allBrackets);
 
   const deductions: DeductionLine[] = jobDeductions.map((d) =>
@@ -217,7 +217,7 @@ export async function computeJobNetPayPerCheck(
     cappedRows(jobContribs),
     cappedRows(personalContribs.filter((c) => c.ownership !== "joint")),
     currentSalary,
-    divisor,
+    basis,
     ficaCapContext(
       limitsRecord,
       jobPerson?.dateOfBirth ?? null,

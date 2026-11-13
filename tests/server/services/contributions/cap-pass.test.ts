@@ -191,7 +191,7 @@ describe("capEffectiveContribs", () => {
       [{ ...out!, isActive: true } as never],
       [],
       60000,
-      12,
+      { periodsPerYear: 12, salaryDivisor: 12 },
       { limits, ageAtYearEnd: 40 },
       0,
     );

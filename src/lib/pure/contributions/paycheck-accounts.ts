@@ -16,6 +16,7 @@ import {
 import { toNumber } from "@/lib/utils/numbers";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
 import { payrollFicaExemptCap } from "@/lib/pure/contributions/irs-limits";
+import type { CheckBasis } from "@/lib/pure/paycheck/year-paydays";
 import {
   matchPayGroupsWithBonus,
   matchGroupKey,
@@ -25,14 +26,13 @@ import {
 import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
 import type { PaycheckContributionRow } from "@/lib/pure/contributions/paycheck-contribution-row";
 
-/** ContributionAccountInput[] from DB rows for a job and person. The match
- *  is grouped (computeGroupedEmployerMatch): a Roth + Traditional split of
- *  one account is capped on their combined contribution. */
+/** ContributionAccountInput[] from DB rows for a job and person. The match is grouped
+ *  (computeGroupedEmployerMatch): a Roth + Traditional split is capped on their combined money. */
 export function buildContribAccounts(
   jobContributions: (PaycheckContributionRow & CapPassed)[],
   personalContributions: (PaycheckContributionRow & CapPassed)[],
   salary: number,
-  periodsPerYear: number,
+  { periodsPerYear, salaryDivisor }: CheckBasis,
   /** The year's limits and the person's age at Dec 31 — sizes each
    *  account's FICA-exempt cap (payrollFicaExemptCap). Required so no
    *  caller can quietly treat exempt payroll money as FICA wages. */
@@ -110,7 +110,7 @@ export function buildContribAccounts(
     const perPeriod =
       c.contributionMethod === "fixed_per_period"
         ? contributionValue
-        : safeDivide(annual, periodsPerYear, 0);
+        : safeDivide(annual, salaryDivisor, 0);
 
     const match = matchByRow.get(c.id)!;
 

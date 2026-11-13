@@ -94,7 +94,7 @@ export function contributionAccountsFor<R extends ContributionAccountRow>({
     jobContributions,
     personalContributions,
     salary,
-    periodsPerYear,
+    { periodsPerYear, salaryDivisor: periodsPerYear },
     ficaCapContext(limitsRecord, person.dateOfBirth, asOfDate.getFullYear()),
     pay.bonusGross,
   );
