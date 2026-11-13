@@ -72,11 +72,10 @@ export function qcdStep(
     );
     totalQcd = totalQcdAmount(qcdByPerson);
     if (totalQcd > 0) {
-      // Aggregate tracks (matches reinvestRmdExcess's own pattern -- both
-      // trackers must still move together regardless of the per-account
-      // debit below).
+      // Both aggregate tracks, from the category QCDs come from (config).
       balances.preTax = roundToCents(balances.preTax - totalQcd);
-      addTraditional(accountBalance.ira, -totalQcd);
+      const qcdCategory = ctx.ACCOUNT_CATEGORIES.find(isQcdEligible)!;
+      addTraditional(accountBalance[qcdCategory], -totalQcd);
       // A QCD leaves one owner's own IRAs: debit each person's amount from
       // only their Retirement-parented IRAs, by balance, never pooled (the
       // reconcile step would spread it over every IRA in the category).

@@ -317,70 +317,65 @@ export function distributeContributions(
       )
       .sort((a, b) => a.allocationPriority - b.allocationPriority);
 
-    if (brokAccounts.length > 0) {
-      let remaining = overflowToBrokerage;
-      for (const spec of overflowSpecs) {
-        if (remaining <= 0) break;
-        if (spec.targetAnnual == null || spec.targetAnnual <= 0) continue;
-        const sk = specKeyOf(spec);
-        const accountName = specToAccount.get(sk);
-        if (!accountName) continue;
-        const currentContribution = indContributions.get(accountName) ?? 0;
-        const room = Math.max(0, spec.targetAnnual - currentContribution);
-        const portion = roundToCents(Math.min(remaining, room));
-        if (portion > 0) {
-          credit(accountName, portion, [
+    let remaining = overflowToBrokerage;
+    for (const spec of overflowSpecs) {
+      if (remaining <= 0) break;
+      if (spec.targetAnnual == null || spec.targetAnnual <= 0) continue;
+      const sk = specKeyOf(spec);
+      const accountName = specToAccount.get(sk);
+      if (!accountName) continue;
+      const currentContribution = indContributions.get(accountName) ?? 0;
+      const room = Math.max(0, spec.targetAnnual - currentContribution);
+      const portion = roundToCents(Math.min(remaining, room));
+      if (portion > 0) {
+        credit(accountName, portion, [
+          indContributions,
+          indBalance,
+          indOverflow,
+        ]);
+        remaining -= portion;
+      }
+    }
+    if (remaining > 0) {
+      const noTargetSpecs = overflowSpecs.filter((s) => s.targetAnnual == null);
+      if (noTargetSpecs.length > 0) {
+        const perAccount = roundToCents(remaining / noTargetSpecs.length);
+        for (const spec of noTargetSpecs) {
+          const accountName = specToAccount.get(specKeyOf(spec));
+          if (!accountName) continue;
+          credit(accountName, perAccount, [
             indContributions,
             indBalance,
             indOverflow,
           ]);
-          remaining -= portion;
         }
-      }
-      if (remaining > 0) {
-        const noTargetSpecs = overflowSpecs.filter(
-          (s) => s.targetAnnual == null,
-        );
-        if (noTargetSpecs.length > 0) {
-          const perAccount = roundToCents(remaining / noTargetSpecs.length);
-          for (const spec of noTargetSpecs) {
-            const accountName = specToAccount.get(specKeyOf(spec));
-            if (!accountName) continue;
-            credit(accountName, perAccount, [
+        // Routed in full — the fallback below must not hand it out again.
+        remaining = 0;
+      } else {
+        const lastSpec = overflowSpecs[overflowSpecs.length - 1];
+        if (lastSpec) {
+          const accountName = specToAccount.get(specKeyOf(lastSpec));
+          if (accountName) {
+            credit(accountName, remaining, [
               indContributions,
               indBalance,
               indOverflow,
             ]);
-          }
-          // Routed in full — the fallback below must not hand it out again.
-          remaining = 0;
-        } else {
-          const lastSpec = overflowSpecs[overflowSpecs.length - 1];
-          if (lastSpec) {
-            const accountName = specToAccount.get(specKeyOf(lastSpec));
-            if (accountName) {
-              credit(accountName, remaining, [
-                indContributions,
-                indBalance,
-                indOverflow,
-              ]);
-              remaining = 0;
-            }
+            remaining = 0;
           }
         }
       }
+    }
 
-      // Fallback: if remaining overflow wasn't routed (no matching specs),
-      // distribute to joint/unowned brokerage accounts directly.
-      if (remaining > 0) {
-        const jointBrok = brokAccounts.filter((ia) => ia.ownerPersonId == null);
-        const fallbackAccounts =
-          jointBrok.length > 0 ? jointBrok : brokAccounts;
-        const perAccount = roundToCents(remaining / fallbackAccounts.length);
-        for (const ia of fallbackAccounts) {
-          const k = indKey(ia);
-          credit(k, perAccount, [indContributions, indBalance, indOverflow]);
-        }
+    // Fallback: if remaining overflow wasn't routed (no matching specs),
+    // distribute to joint/unowned brokerage accounts directly.
+    if (remaining > 0) {
+      const jointBrok = brokAccounts.filter((ia) => ia.ownerPersonId == null);
+      const fallbackAccounts = jointBrok.length > 0 ? jointBrok : brokAccounts;
+      const perAccount = roundToCents(remaining / fallbackAccounts.length);
+      for (const ia of fallbackAccounts) {
+        const k = indKey(ia);
+        credit(k, perAccount, [indContributions, indBalance, indOverflow]);
       }
     }
   }

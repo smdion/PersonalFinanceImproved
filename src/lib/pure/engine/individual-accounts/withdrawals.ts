@@ -56,12 +56,11 @@ export function distributeGoalWithdrawal(
     (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
     0,
   );
+  // A goal's draw is capped at goalFundingBalance, this same total, so a
+  // draw here always has a total to share by.
   for (const ia of brokAccounts) {
     const k = indKey(ia);
-    const weight =
-      brokTotal > 0
-        ? Math.max(0, indBalance.get(k) ?? 0) / brokTotal
-        : 1 / brokAccounts.length;
+    const weight = Math.max(0, indBalance.get(k) ?? 0) / brokTotal;
     indBalance.set(
       k,
       roundToCents((indBalance.get(k) ?? 0) - drawAmount * weight),
