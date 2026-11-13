@@ -152,7 +152,6 @@ export function buildProjectionContext(
     }
   }
 
-  // Individual account tracking
   const indAccounts = declareOpeningParts(input.individualAccounts ?? []);
   const hasIndividualAccounts = indAccounts.length > 0;
   const indKey = makeIndKey();
@@ -185,6 +184,7 @@ export function buildProjectionContext(
     sortedDecumulationOverrides,
     sortedProfileSwitches,
     hasIndividualAccounts,
+    holdsAccounts: indAccounts.some((ia) => ia.origin == null),
     indAccounts,
     indKey,
     indParentCat,

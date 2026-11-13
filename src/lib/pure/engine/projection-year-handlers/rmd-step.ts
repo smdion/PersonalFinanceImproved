@@ -27,8 +27,7 @@ export function qcdStep(
   year: number,
   config: ReturnType<typeof resolveDecumulationConfig>,
 ) {
-  const { hasIndividualAccounts, rmdStartAgeByPerson, indAccounts, indKey } =
-    ctx;
+  const { holdsAccounts, rmdStartAgeByPerson, indAccounts, indKey } = ctx;
   const { decumulationDefaults } = ctx.input;
   const { indBalance, balances, accountBalance } = state;
   // A QCD satisfies part of an owner's RMD tax-free, so it runs before the
@@ -37,7 +36,7 @@ export function qcdStep(
   let totalQcd = 0;
   let qcdByPerson: { personId: number; qcdAmount: number }[] = [];
   const qcdEligiblePersonIds =
-    hasIndividualAccounts && rmdStartAgeByPerson.size > 0
+    holdsAccounts && rmdStartAgeByPerson.size > 0
       ? Array.from(rmdStartAgeByPerson.entries())
           .filter(([, { birthYear }]) => reachesAgeRule(birthYear, "qcd", year))
           .map(([personId]) => personId)

@@ -213,3 +213,24 @@ describe("parts no real account stands behind", () => {
     for (const y of run(true)) expect(y.individualAccountBalances).toEqual([]);
   });
 });
+
+describe("a run whose parts are all synthetic (EN14 rule 2)", () => {
+  const parts = [
+    { ...acct("Ann IRA", "ira", 400000, 1), parentCategory: "Retirement" },
+    { ...acct("Bo IRA", "ira", 300000, 2), parentCategory: "Retirement" },
+  ];
+  const firstRetiredYear = (synthetic: boolean) =>
+    calculateProjection(
+      household(
+        parts.map((p) =>
+          synthetic ? { ...p, origin: "synthetic" as const } : p,
+        ),
+      ),
+    ).projectionByYear.find((y) => y.phase === "decumulation")!;
+
+  it("takes the household's RMD and eligibility, not each owner's", () => {
+    expect(firstRetiredYear(false).rmdByPerson).toBeDefined();
+    expect(firstRetiredYear(true).rmdByPerson).toBeUndefined();
+    expect(firstRetiredYear(true).rmdDivisor).toBeDefined();
+  });
+});

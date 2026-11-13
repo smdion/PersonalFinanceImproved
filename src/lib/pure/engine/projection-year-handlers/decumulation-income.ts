@@ -18,12 +18,12 @@ export function rmdIncomeByOwner(
   state: ProjectionLoopState,
   year: number,
 ) {
-  const { input, hasIndividualAccounts, rmdStartAgeByPerson } = ctx;
+  const { input, holdsAccounts, rmdStartAgeByPerson } = ctx;
   const { priorYearEndTradByPerson } = state;
   // Each owner's RMD from their own Traditional balance and age, before
   // routing: the QCD takes part of it ahead of the tax estimate. Without
-  // tracked accounts or RMD ages, the household path applies instead.
-  const perOwnerRmd = hasIndividualAccounts && rmdStartAgeByPerson.size > 0;
+  // a real account or RMD ages, the household path applies instead.
+  const perOwnerRmd = holdsAccounts && rmdStartAgeByPerson.size > 0;
   let perPersonRmdTotal: number | undefined;
   let rmdByPerson: EngineDecumulationYear["rmdByPerson"];
   if (perOwnerRmd) {

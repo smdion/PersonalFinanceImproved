@@ -153,6 +153,9 @@ export type ProjectionContext = {
 
   // Individual account setup
   hasIndividualAccounts: boolean;
+  /** Some part is a held account (`origin` absent): per-owner RMDs, QCDs and
+   *  penalty eligibility need one; synthetic parts keep the household's path. */
+  holdsAccounts: boolean;
   indAccounts: IndividualAccountInput[];
   indKey: ReturnType<typeof makeIndKey>;
   indParentCat: Map<string, string>;

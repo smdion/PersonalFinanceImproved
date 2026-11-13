@@ -54,7 +54,7 @@ export function runDecumulationYear(
   // Each account's penalty-free/locked split this year, computed once for
   // both routeForMode sites (the solver's estimate and the real draw), from
   // the running Roth basis the UI shows.
-  const eligibility = hasIndividualAccounts
+  const eligibility = ctx.holdsAccounts
     ? computeWithdrawalEligibility({
         year,
         indAccounts,
