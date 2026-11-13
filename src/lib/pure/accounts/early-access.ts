@@ -15,6 +15,24 @@ import { assertNever } from "@/lib/utils/assert-never";
 import { formatPercent } from "@/lib/utils/percent";
 import { roundToCents } from "@/lib/utils/math";
 
+/** One conversion's basis still in a Roth IRA. Its tax year starts its own
+ *  five-year clock (IRC 408A(d)(3)(F); Reg. 1.408A-6 A-5(c)); null: no year
+ *  on record, never seasoned. */
+export type ConversionLayer = { year: number | null; amount: number };
+
+/** Conversion basis by conversion, oldest first: the given layers, else the
+ *  one layer a stored total and its latest year describe. */
+export function conversionLayersOf(basis: {
+  conversionBasis: number;
+  latestConversionYear: number | null;
+  conversionLayers?: readonly ConversionLayer[];
+}): readonly ConversionLayer[] {
+  if (basis.conversionLayers) return basis.conversionLayers;
+  return basis.conversionBasis > 0
+    ? [{ year: basis.latestConversionYear, amount: basis.conversionBasis }]
+    : [];
+}
+
 export type SeparationSource = "explicit" | "derived" | "active" | "no_data";
 
 type SeparationResolution = {
@@ -170,15 +188,21 @@ export function computeRothIraAccess(input: {
   contributionBasis: number;
   conversionBasis: number;
   latestConversionYear: number | null;
+  /** Conversion basis by conversion, oldest first (`RothBasisState`);
+   *  when given, they win over the two pooled fields above. */
+  conversionLayers?: readonly ConversionLayer[];
 }): EarlyAccessSlice[] {
-  const {
-    balance,
-    currentAge,
-    currentYear,
-    contributionBasis,
-    conversionBasis,
-    latestConversionYear,
-  } = input;
+  const { balance, currentAge, currentYear, contributionBasis } = input;
+  const layers = conversionLayersOf(input);
+  const conversionBasis = layers.reduce((t, l) => t + l.amount, 0);
+  // Any layer without a year keeps the whole pool unseasoned, as a stored
+  // total without one does.
+  const latestConversionYear = layers.some((l) => l.year == null)
+    ? null
+    : layers.reduce<number | null>(
+        (y, l) => Math.max(y ?? -Infinity, l.year!),
+        null,
+      );
   const cappedContribution = Math.max(0, Math.min(contributionBasis, balance));
   const cappedConversion = Math.max(
     0,
@@ -252,6 +276,7 @@ export function earlyAccessSlices(
     contributionBasis: number;
     conversionBasis: number;
     latestConversionYear: number | null;
+    conversionLayers?: readonly ConversionLayer[];
   },
 ): EarlyAccessSlice[] | null {
   const { balance, currentAge, isRoth, ruleOf55Met } = account;

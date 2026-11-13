@@ -5,12 +5,17 @@
  */
 import { roundToCents } from "@/lib/utils/math";
 import type { RothBasisMeta } from "@/lib/pure/accounts/account-balances.types";
+import type { ConversionLayer } from "@/lib/pure/accounts/early-access";
 
 /** Running per-account Roth basis state for one projected year. */
 export type RothBasisState = {
   contributionBasis: number;
   conversionBasis: number;
   latestConversionYear: number | null;
+  /** Conversion basis by conversion, oldest first (they come out first in,
+   *  first out: Reg. 1.408A-6 A-8), summing to `conversionBasis`. Absent:
+   *  one layer at `latestConversionYear` (stored basis keeps one year). */
+  conversionLayers?: readonly ConversionLayer[];
   /** `account_basis.year` this state was seeded from; null when the
    *  household has no row for this account at all (basis starts at 0 and
    *  grows only from modeled contributions). */
@@ -37,6 +42,24 @@ const ZERO_DRAW: BasisDraw = {
   conversionDrawn: 0,
   growthDrawn: 0,
 };
+
+/** Keeps `total` dollars of `layers`, from the front (the oldest) or from
+ *  the back (the newest), in their order. */
+function layersCappedTo(
+  layers: readonly ConversionLayer[],
+  keepFromFront: boolean,
+  total: number,
+): ConversionLayer[] {
+  const ordered = keepFromFront ? layers : [...layers].reverse();
+  let left = Math.max(0, total);
+  const kept: ConversionLayer[] = [];
+  for (const layer of ordered) {
+    const amount = roundToCents(Math.min(layer.amount, left));
+    left = roundToCents(left - amount);
+    if (amount > 0) kept.push({ year: layer.year, amount });
+  }
+  return keepFromFront ? kept : kept.reverse();
+}
 
 /** Seeds tracked basis from the "now" `rothBasisMeta`; `meta == null` (no
  *  `account_basis` row) seeds all zeros, grown by modeled contributions. */
@@ -129,16 +152,25 @@ export function applyBasisDraw(
   state: RothBasisState,
   draw: BasisDraw,
 ): RothBasisState {
+  const conversionBasis = Math.max(
+    0,
+    roundToCents(state.conversionBasis - draw.conversionDrawn),
+  );
   return {
     ...state,
     contributionBasis: Math.max(
       0,
       roundToCents(state.contributionBasis - draw.contributionDrawn),
     ),
-    conversionBasis: Math.max(
-      0,
-      roundToCents(state.conversionBasis - draw.conversionDrawn),
-    ),
+    conversionBasis,
+    // Oldest conversions come out first: the layers left are the newest.
+    ...(state.conversionLayers && {
+      conversionLayers: layersCappedTo(
+        state.conversionLayers,
+        false,
+        conversionBasis,
+      ),
+    }),
   };
 }
 
@@ -163,5 +195,13 @@ export function clampBasisToBalance(
     ...state,
     contributionBasis: roundToCents(cappedContribution),
     conversionBasis: roundToCents(cappedConversion),
+    // The cap keeps the oldest conversions, as `computeRothIraAccess` does.
+    ...(state.conversionLayers && {
+      conversionLayers: layersCappedTo(
+        state.conversionLayers,
+        true,
+        cappedConversion,
+      ),
+    }),
   };
 }

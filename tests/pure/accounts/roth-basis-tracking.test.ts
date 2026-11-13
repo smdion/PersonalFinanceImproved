@@ -14,8 +14,10 @@ import {
   drawFromBasis,
   applyBasisDraw,
   clampBasisToBalance,
+  type RothBasisState,
 } from "@/lib/pure/accounts/roth-basis-tracking";
 import {
+  conversionLayersOf,
   computeRothIraAccess,
   computeEmployerPlanRothAccess,
 } from "@/lib/pure/accounts/early-access";
@@ -335,5 +337,68 @@ describe("clampBasisToBalance", () => {
     const clamped = clampBasisToBalance(state, 0);
     expect(clamped.contributionBasis).toBe(0);
     expect(clamped.conversionBasis).toBe(0);
+  });
+});
+
+describe("conversion layers", () => {
+  /** A 2022 and a 2025 conversion of 10,000 each, no contributions. */
+  const ladder: RothBasisState = {
+    contributionBasis: 0,
+    conversionBasis: 20000,
+    latestConversionYear: 2025,
+    conversionLayers: [
+      { year: 2022, amount: 10000 },
+      { year: 2025, amount: 10000 },
+    ],
+    sourceYear: 2026,
+    isSeeded: false,
+    stale: false,
+  };
+
+  it("stored basis (no layers) reads as one layer at its latest conversion year", () => {
+    const seeded = initRothBasisState(
+      {
+        year: 2026,
+        contributionBasis: 0,
+        conversionBasis: 4000,
+        latestConversionYear: 2023,
+        isSeeded: false,
+        updatedAt: new Date(),
+      },
+      2026,
+    );
+    expect(seeded.conversionLayers).toBeUndefined();
+    expect(conversionLayersOf(seeded)).toEqual([{ year: 2023, amount: 4000 }]);
+    expect(conversionLayersOf(initRothBasisState(null, 2026))).toEqual([]);
+  });
+
+  it("a draw takes the oldest conversion first (Reg. 1.408A-6 A-8)", () => {
+    const next = applyBasisDraw(ladder, {
+      contributionDrawn: 0,
+      conversionDrawn: 15000,
+      growthDrawn: 0,
+    });
+    expect(next.conversionBasis).toBe(5000);
+    expect(next.conversionLayers).toEqual([{ year: 2025, amount: 5000 }]);
+  });
+
+  it("a cap below the basis keeps the oldest conversions, as computeRothIraAccess does", () => {
+    const clamped = clampBasisToBalance(ladder, 12000);
+    expect(clamped.conversionBasis).toBe(12000);
+    expect(clamped.conversionLayers).toEqual([
+      { year: 2022, amount: 10000 },
+      { year: 2025, amount: 2000 },
+    ]);
+  });
+
+  it("state without layers stays without them through a draw and a cap", () => {
+    const { conversionLayers: _drop, ...pooled } = ladder;
+    const drawn = applyBasisDraw(pooled, {
+      contributionDrawn: 0,
+      conversionDrawn: 1000,
+      growthDrawn: 0,
+    });
+    expect(drawn.conversionLayers).toBeUndefined();
+    expect(clampBasisToBalance(drawn, 100).conversionLayers).toBeUndefined();
   });
 });

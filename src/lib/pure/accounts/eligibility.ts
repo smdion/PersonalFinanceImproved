@@ -171,8 +171,7 @@ export function computeWithdrawalEligibility(input: {
       const currentAge = ageInYear(birthYear, year);
       const rule = earlyAccessRuleOf(ia.category);
       const isRoth = isTaxFreeBucket(ia.taxType);
-      // Rule of 55 projected to `year` with the resolver the Tax Buckets
-      // "at retirement" view uses.
+      // Rule of 55 in `year`: the Tax Buckets "at retirement" resolver.
       const projected =
         rule === "employer_plan"
           ? projectRuleOf55(ia.ruleOf55 ?? null, year, birthYear, {
@@ -190,6 +189,7 @@ export function computeWithdrawalEligibility(input: {
         contributionBasis,
         conversionBasis,
         latestConversionYear,
+        conversionLayers: trackedBasis?.conversionLayers,
       });
       if (slices) penaltyFreeAmount = penaltyFreePrefixAmount(slices);
       if (isRoth && (rule === "ira_59_half" || rule === "employer_plan")) {
