@@ -7,7 +7,10 @@ import type {
   ContributionAccountInput,
   DeductionLine,
 } from "@/lib/pure/paycheck/paycheck.types";
-import type { PaycheckResult } from "@/lib/pure/paycheck/paycheck.types";
+import type {
+  ContributionCut,
+  PaycheckResult,
+} from "@/lib/pure/paycheck/paycheck.types";
 import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
 import { bonusCheckNet, yearTotals } from "@/lib/pure/paycheck/year-totals";
 import { isPreTax } from "@/lib/pure/paycheck/taxable-wages";
@@ -65,12 +68,25 @@ export function computeAnnualEarnings(args: {
   const bonusEstimate = paycheck.bonusEstimate;
   const bonus = bonusPaid ? bonusEstimate.bonusGross : 0;
 
-  const preTaxContributions = sumBy(
-    args.contributionAccounts.filter(
-      (ca) => ca.isPayrollDeducted && isPreTax(ca.taxTreatment),
-    ),
-    (ca) => ca.annualContribution * share + bonusCheckContribution(ca, bonus),
-  );
+  // What the job's checks past an account's covered ones didn't take (payroll stops at the limit).
+  const yearCut = (pick: (cut: ContributionCut) => number) =>
+    sumBy(
+      paycheck.yearSchedule.slice(
+        paycheck.periodsBeforeStart,
+        paycheck.periodsBeforeStart + checks,
+      ),
+      (r) => (r.contributionCut ? pick(r.contributionCut) : 0),
+    );
+  const preTaxContributions =
+    sumBy(
+      args.contributionAccounts.filter(
+        (ca) => ca.isPayrollDeducted && isPreTax(ca.taxTreatment),
+      ),
+      (ca) =>
+        ca.annualContribution *
+          (ca.coveredChecks === undefined ? share : checks / ca.coveredChecks) +
+        bonusCheckContribution(ca, bonus),
+    ) - yearCut((c) => c.preTax);
   const preTaxDeductions =
     sumBy(
       args.deductions.filter((d) => isPreTax(d.taxTreatment)),
@@ -105,6 +121,7 @@ export function computeAnnualEarnings(args: {
     // plus the bonus check's — built from explicit parts, never from salary.
     ficaWages: roundToCents(
       paycheck.ficaWages * checks +
+        yearCut((c) => c.ficaExempt) +
         (bonusPaid ? bonusEstimate.bonusFicaWages : 0),
     ),
     // The year schedule's own checks (Social Security stops at the wage

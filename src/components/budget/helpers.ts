@@ -6,6 +6,7 @@
 import { computeAnnualContribution } from "@/lib/pure/contributions/contribution-amount";
 import { computeValue } from "@/lib/pure/contributions/contribution-caps";
 import { isPaidThroughPayroll } from "@/lib/pure/paycheck/bonus";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import type { PayrollBreakdown, SinkingFundLine } from "./types";
 import type { ContributionMethod } from "@/lib/config/enum-values";
 
@@ -123,8 +124,8 @@ export function buildNonPayrollContributions(
 ): Map<string, number> {
   if (!paycheckData || !Array.isArray(paycheckData)) return new Map();
   const data = paycheckData as Array<{
-    paycheck: { periodsPerYear: number } | null;
-    job: unknown;
+    paycheck: unknown;
+    job: { payPeriod: string } | null;
     salary?: number;
     rawContribs?: Array<{
       id: number;
@@ -149,7 +150,8 @@ export function buildNonPayrollContributions(
         c.contributionMethod,
         val,
         d.salary ?? 0,
-        d.paycheck.periodsPerYear,
+        // A year of contribution money: the pay schedule's periods, not the year's paydays.
+        getPeriodsPerYear(d.job.payPeriod),
       );
       const existing = map.get(c.accountType) ?? 0;
       map.set(c.accountType, existing + monthly);

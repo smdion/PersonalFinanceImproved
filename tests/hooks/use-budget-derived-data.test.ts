@@ -33,7 +33,7 @@ const paycheckPeople = [
       preTaxDeductions: [],
       postTaxDeductions: [],
     },
-    job: { id: 1 },
+    job: { id: 1, payPeriod: "monthly" as const },
     salary: 0,
     person: { name: "Alex" },
     rawContribs: [
@@ -225,7 +225,7 @@ describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, n
             preTaxDeductions: [],
             postTaxDeductions: [],
           },
-          job: { id: 1 },
+          job: { id: 1, payPeriod: "monthly" as const },
           salary: 0,
           person: { name: "Alex" },
           rawContribs: [
@@ -260,7 +260,7 @@ describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, n
             preTaxDeductions: [],
             postTaxDeductions: [],
           },
-          job: { id: 1 },
+          job: { id: 1, payPeriod: "monthly" as const },
           salary: 0,
           person: { name: "Alex" },
           rawContribs: [

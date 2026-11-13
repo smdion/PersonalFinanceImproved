@@ -60,9 +60,6 @@ const NOON_AUG_14 = "2026-08-14T12:00:00Z";
 /** PW-3.15: ±$0.01 a check on a year's sum of 26 checks. */
 const YEAR_TOLERANCE = 0.26;
 
-const N5 =
-  'v0.11 Paycheck "27 or 53 payday year: real paydays" (decision "A 27 or 53 payday year uses real paydays")';
-
 type SeedJob = Parameters<typeof seedJob>[2];
 
 type AccountRow = typeof schema.contributionAccounts.$inferInsert;
@@ -488,14 +485,15 @@ describe("paycheck/N6: a bonus before the first payday", () => {
 });
 
 // ---------------------------------------------------------------------------
-// N5: a 27-payday year (decision: real paydays, salary ÷ normal periods)
+// N5: a 27-payday year (decisions: real paydays; salary ÷ the pay
+// schedule's periods by default, ÷ the year's paydays when the Salary
+// Profile entry says so)
 // ---------------------------------------------------------------------------
 
 describe("paycheck/N5: a 27-payday year", () => {
   // Biweekly, first payday Thursday January 1, 2026: paydays January 1 to
   // December 31, 27 of them. $200,000 with a $40,000 bonus December 31:
-  // the bonus is on check 27, and its FICA is walked with the year. Today
-  // the schedule stops at 26 rows, the bonus on the last of them.
+  // the bonus is on check 27, and its FICA is walked with the year.
   const bonus = household({
     job: {
       ...BIWEEKLY,
@@ -506,28 +504,21 @@ describe("paycheck/N5: a 27-payday year", () => {
       bonusDayOfMonth: 31,
     },
   });
-  xfail({
-    id: "paycheck/N5-bonus [PAY-22]",
-    todo: N5,
-    run: () => {
-      const rows = bonus().paycheck.yearSchedule;
-      return {
+  it("paycheck/N5-bonus [PAY-22] 27 checks, the bonus on the 27th", () => {
+    const rows = bonus().paycheck.yearSchedule;
+    cents(
+      {
         rows: rows.length,
         bonusGross: round2(rows.reduce((a, r) => a + r.bonusGross, 0)),
         bonusOnLast: rows[rows.length - 1]!.bonusGross,
-      };
-    },
-    expected: { rows: 27, bonusGross: 40_000, bonusOnLast: 40_000 },
-    today: { rows: 26, bonusGross: 40_000 },
+      },
+      { rows: 27, bonusGross: 40_000, bonusOnLast: 40_000 },
+    );
   });
 
   // $52,000, the same 27 paydays, the job ending December 31: 27 checks
-  // of 52,000 / 26 = 2,000, gross 54,000. Gross and net must come from
-  // the same checks; the net isn't worked here, so the property is held:
-  // 27 rows, and the year's gross and net equal the rows' sums. Today
-  // both count the schedule's 26 rows (gross 52,000; net 26 × 1,690.85 =
-  // 43,962.10: 1c 52,000; 2a 43,400; T26 Single row A 19,900, C 1,240,
-  // D 12%: 2h 156.15; SS 124.00; Medicare 29.00), so no 27th check.
+  // of 52,000 / 26 = 2,000, gross 54,000. Gross and net come from the
+  // same checks: the year's gross and net equal the rows' sums.
   const ending = household({
     job: {
       ...BIWEEKLY,
@@ -536,25 +527,41 @@ describe("paycheck/N5: a 27-payday year", () => {
       endDate: "2026-12-31",
     },
   });
-  xfail({
-    id: "paycheck/N5-end [PAY-22]",
-    todo: N5,
-    run: () => {
-      const s = ending();
-      const rows = paidRows(s);
-      return {
+  it("paycheck/N5-end [PAY-22] 27 checks of salary ÷ 26, gross and net from the same rows", () => {
+    const s = ending();
+    const rows = paidRows(s);
+    cents(
+      {
         rows: rows.length,
+        gross: s.earnings.gross,
         grossGap: round2(
           s.earnings.gross - rows.reduce((a, r) => a + r.gross, 0),
         ),
         netGap: round2(
           s.earnings.netRegular - rows.reduce((a, r) => a + r.netPay, 0),
         ),
-        net: s.earnings.netRegular,
-      };
+      },
+      { rows: 27, gross: 54_000, grossGap: 0, netGap: 0 },
+    );
+  });
+
+  // The same $52,000 and 27 paydays, the entry set to divide the salary
+  // by the year's paydays: 27 checks of 52,000 / 27, the year's pay
+  // the salary, 52,000.
+  const spread = household({
+    job: {
+      ...BIWEEKLY,
+      anchorPayDate: "2026-01-01",
+      annualSalary: "52000",
+      salaryDivisor: "paydays",
     },
-    expected: { rows: 27, grossGap: 0, netGap: 0 },
-    today: { rows: 26, grossGap: 0, netGap: 0, net: 43_962.1 },
+  });
+  it("paycheck/N5-spread [PAY-22] salary ÷ 27: the year pays the salary", () => {
+    const s = spread();
+    cents(
+      { rows: paidRows(s).length, gross: s.earnings.gross },
+      { rows: 27, gross: 52_000 },
+    );
   });
 });
 

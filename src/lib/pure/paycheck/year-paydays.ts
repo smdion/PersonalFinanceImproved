@@ -2,16 +2,22 @@
 import { getPeriodsPerYear } from "../../config/pay-periods";
 import { DEFAULT_SALARY_DIVISOR } from "../../config/enum-values";
 import type { PaycheckInput } from "./paycheck.types";
+import { countPeriodsElapsed } from "./pay-periods-in-year";
 
 type PayCalendar = Pick<
   PaycheckInput,
   "asOfDate" | "payPeriod" | "anchorPayDate"
 >;
 
-/** The paydays in `asOfDate`'s year on the job's pay calendar (the year schedule's rows):
- *  the pay schedule's usual periods (26 biweekly), every year. */
+/** The paydays in `asOfDate`'s year on the job's pay calendar (the year schedule's rows): a
+ *  weekly or biweekly job's real paydays, walked from its anchor payday (27 biweekly, or 53
+ *  weekly, in some years); the pay schedule's usual periods for the others. */
 export function yearPaydays(input: PayCalendar): number {
-  return getPeriodsPerYear(input.payPeriod);
+  const { asOfDate, payPeriod, anchorPayDate } = input;
+  if (payPeriod !== "biweekly" && payPeriod !== "weekly")
+    return getPeriodsPerYear(payPeriod);
+  const lastDay = new Date(Date.UTC(asOfDate.getUTCFullYear(), 11, 31, 12));
+  return countPeriodsElapsed(lastDay, payPeriod, anchorPayDate);
 }
 
 /** What the salary is divided by for each check: the pay schedule's usual periods (the
