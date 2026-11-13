@@ -17,7 +17,8 @@ import {
 } from "../../../constants";
 import type { resolveAccumulationConfig } from "../override-resolution";
 import { distributeContributions } from "../individual-accounts/contributions";
-import { accrueIndividualBasis } from "../individual-accounts/ledger";
+import { accrueIndividualBasis, credit } from "../individual-accounts/ledger";
+import { ownPartCredits } from "../individual-accounts/own-part-credits";
 import type { ContributionState } from "@/lib/pure/contributions/contribution-state";
 import { applyLumpSums } from "./lump-sum";
 import type {
@@ -106,8 +107,7 @@ export function creditYearContributions(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
 ) {
-  // Update balances: contributions + employer match
-  // Route contributions to correct tax buckets AND per-account balances
+  // Buckets and categories here; the parts in distributeYearContributions.
   for (const slot of slots) {
     const bs = getAccountTypeConfig(slot.category).balanceStructure;
     if (bs === "roth_traditional") {
@@ -186,14 +186,15 @@ export function distributeYearContributions(
   let indIntentional = new Map<string, number>();
   let indOverflow = new Map<string, number>();
   let indRamp = new Map<string, number>();
-  if (hasIndividualAccounts && contributionSpecs) {
-    // Contributions, match, overflow and the ramp are cash in: new basis.
-    const distResult = followInflows(
-      indAccounts,
-      indKey,
-      indBalance,
-      brokBasis,
-      () =>
+  // Contributions, match, overflow and the ramp are cash in: new basis.
+  const own = ownPartCredits(slots, rampAmount, contributionSpecs, indAccounts);
+  if (own)
+    followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
+      own.forEach(([ia, amount]) => credit(indKey(ia), amount, [indBalance])),
+    );
+  else if (hasIndividualAccounts && contributionSpecs) {
+    ({ indContributions, indMatch, indIntentional, indOverflow, indRamp } =
+      followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
         distributeContributions({
           slots,
           contributionSpecs,
@@ -213,12 +214,7 @@ export function distributeYearContributions(
           rampAmount,
           employerMatchByParentCat: activeEmployerMatchByParentCat,
         }),
-    );
-    indContributions = distResult.indContributions;
-    indMatch = distResult.indMatch;
-    indIntentional = distResult.indIntentional;
-    indOverflow = distResult.indOverflow;
-    indRamp = distResult.indRamp;
+      ));
     // Tracked Roth basis grows by this year's contribution, which excludes
     // employer match (roth-basis-tracking.ts's docblock says why).
     accrueIndividualBasis(indAccounts, indKey, indBasis, indContributions);
