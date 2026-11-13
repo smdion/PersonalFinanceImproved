@@ -82,7 +82,7 @@ describe("validateTaxDataFile catches", () => {
     delete tier(none).partD;
     for (const f of [half, off])
       expect(validateTaxDataFile(f).join()).toMatch(
-        /2026 irmaa Single: partB and partD must sum to annualSurcharge/,
+        /2026 irmaa Single: brackets out of shape/,
       );
     expect(validateTaxDataFile(none)).toEqual([]);
   });

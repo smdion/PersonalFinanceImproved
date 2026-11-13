@@ -11,9 +11,9 @@ import { TAX_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
 import { TAX_TABLE_ROWS } from "@/lib/config/filing-status";
 import {
   fplByHouseholdAmountsSchema,
-  irmaaBracketsSchema,
   ltcgBracketsSchema,
 } from "@/lib/db/shapes/json-schemas";
+import { irmaaFileBracketsSchema } from "./irmaa-brackets";
 
 /** Indexed dollar figures may move −2%…+15% a year. */
 const INDEXED_BOUNDS = [0.98, 1.15] as const;
@@ -309,21 +309,9 @@ export function validateTaxDataFile(
     for (const [st, b] of Object.entries(d.ltcg?.brackets ?? {}))
       if (!ltcgBracketsSchema.safeParse(b).success)
         add(`${y} ltcg ${st}: brackets out of shape`);
-    for (const [st, b] of Object.entries(d.irmaa?.brackets ?? {})) {
-      if (!irmaaBracketsSchema.safeParse(b).success)
+    for (const [st, b] of Object.entries(d.irmaa?.brackets ?? {}))
+      if (!irmaaFileBracketsSchema.safeParse(b).success)
         add(`${y} irmaa ${st}: brackets out of shape`);
-      // A tier's Part B and Part D (optional): both, summing to its surcharge.
-      for (const t of rowsOf(b)) {
-        const { partB, partD, annualSurcharge } = t;
-        if (partB === undefined && partD === undefined) continue;
-        if (
-          typeof partB !== "number" ||
-          typeof partD !== "number" ||
-          Math.abs(partB + partD - Number(annualSurcharge)) >= 0.005
-        )
-          add(`${y} irmaa ${st}: partB and partD must sum to annualSurcharge`);
-      }
-    }
     if (d.fpl && !fplByHouseholdAmountsSchema.safeParse(d.fpl.amounts).success)
       add(`${y} fpl: needs sizes 1–8`);
     if (!Number.isInteger(d.revision) || d.revision < 1)
