@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { buildWatchlist } from "@/lib/pure/advice/report/aca-irmaa-narrative";
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import { calculateProjection } from "@/lib/pure/engine";
-import { xfail } from "../../../fixtures/answer-key";
+import { cents, xfail } from "../../../fixtures/answer-key";
 import { engineHousehold } from "../../../fixtures/answer-key-household";
 
 const noopDeflate = (v: number) => v;
@@ -17,20 +17,19 @@ function decumYear(
     phase: "decumulation",
     rmdShortfallAmount: 0,
     irmaaCost: 0,
-    acaSubsidyPreserved: true,
+    acaStatus: "kept",
     acaMagiHeadroom: 0,
     ...overrides,
   } as unknown as EngineDecumulationYear;
 }
 
 describe("buildWatchlist", () => {
-  // Bug pin (the all-clear, verdicts N8 and E1): a row with `irmaaCost: 0`
-  // reads "No Medicare IRMAA surcharges ... were found", but today 0 also
-  // means IRMAA was never computed (awareness off), so the sentence can't
-  // tell "none found" from "not checked"; only N8's false "ACA lost" flag
-  // hides it. Changes on purpose with the v0.11 Retirement rules items: ACA
-  // reported "lost" when never checked, and "IRMAA: always compute it"
-  // (decision E1). Answer-key ret/A31, below, holds the decided report.
+  // Bug pin (the all-clear, decision E1): a row with `irmaaCost: 0` reads
+  // "No Medicare IRMAA surcharges ... were found", but today 0 also means
+  // IRMAA was never computed (awareness off), so the sentence can't tell
+  // "none found" from "not checked". Changes on purpose with the v0.11
+  // Retirement rules item "IRMAA: always compute it" (decision E1).
+  // Answer-key ret/A31:irmaa, below, holds the decided report.
   it("reports a clean plan with no items when nothing is flagged", () => {
     const w = buildWatchlist([decumYear()], noopDeflate);
     expect(w.items).toHaveLength(0);
@@ -59,7 +58,7 @@ describe("buildWatchlist", () => {
 
   it("flags a lost ACA subsidy as a warning, regardless of headroom", () => {
     const w = buildWatchlist(
-      [decumYear({ acaSubsidyPreserved: false, acaMagiHeadroom: 0 })],
+      [decumYear({ acaStatus: "lost", acaMagiHeadroom: 0 })],
       noopDeflate,
     );
     expect(w.items).toHaveLength(1);
@@ -67,9 +66,18 @@ describe("buildWatchlist", () => {
     expect(w.items[0]!.detail).toMatch(/lost/i);
   });
 
+  it("says nothing about the ACA in a year it wasn't checked (verdict N8)", () => {
+    const w = buildWatchlist(
+      [decumYear({ acaStatus: "not_checked", acaMagiHeadroom: 0 })],
+      noopDeflate,
+    );
+    expect(w.items).toHaveLength(0);
+    expect(w.narrative).not.toMatch(/ACA/);
+  });
+
   it("flags being close to the ACA cliff (small positive headroom) as informational, not a loss", () => {
     const w = buildWatchlist(
-      [decumYear({ acaSubsidyPreserved: true, acaMagiHeadroom: 1500 })],
+      [decumYear({ acaStatus: "kept", acaMagiHeadroom: 1500 })],
       noopDeflate,
     );
     expect(w.items).toHaveLength(1);
@@ -96,7 +104,7 @@ describe("buildWatchlist", () => {
       [
         decumYear({
           year: 2046,
-          acaSubsidyPreserved: true,
+          acaStatus: "kept",
           acaMagiHeadroom: 5400,
         }),
       ],
@@ -114,7 +122,7 @@ describe("buildWatchlist", () => {
 
   it("does not flag ACA proximity when headroom is comfortably large", () => {
     const w = buildWatchlist(
-      [decumYear({ acaSubsidyPreserved: true, acaMagiHeadroom: 50000 })],
+      [decumYear({ acaStatus: "kept", acaMagiHeadroom: 50000 })],
       noopDeflate,
     );
     expect(w.items).toHaveLength(0);
@@ -125,7 +133,7 @@ describe("buildWatchlist", () => {
       [
         decumYear({ year: 2040, rmdShortfallAmount: 1000 }),
         decumYear({ year: 2041, irmaaCost: 500 }),
-        decumYear({ year: 2042, acaSubsidyPreserved: false }),
+        decumYear({ year: 2042, acaStatus: "lost" }),
       ],
       noopDeflate,
     );
@@ -137,7 +145,7 @@ describe("buildWatchlist", () => {
 
   it("collapses a long run of consecutive same-condition years into one ranged entry, not one line per year", () => {
     const years = Array.from({ length: 40 }, (_, i) =>
-      decumYear({ year: 2044 + i, acaSubsidyPreserved: false }),
+      decumYear({ year: 2044 + i, acaStatus: "lost" }),
     );
     const w = buildWatchlist(years, noopDeflate);
     expect(w.items).toHaveLength(1);
@@ -150,14 +158,14 @@ describe("buildWatchlist", () => {
 
   it("does not merge a broken run — a gap year restarts the range", () => {
     const years = [
-      decumYear({ year: 2044, acaSubsidyPreserved: false }),
-      decumYear({ year: 2045, acaSubsidyPreserved: false }),
+      decumYear({ year: 2044, acaStatus: "lost" }),
+      decumYear({ year: 2045, acaStatus: "lost" }),
       decumYear({
         year: 2046,
-        acaSubsidyPreserved: true,
+        acaStatus: "kept",
         acaMagiHeadroom: 50000,
       }), // gap
-      decumYear({ year: 2047, acaSubsidyPreserved: false }),
+      decumYear({ year: 2047, acaStatus: "lost" }),
     ];
     const w = buildWatchlist(years, noopDeflate);
     expect(w.items).toHaveLength(2);
@@ -170,12 +178,12 @@ describe("buildWatchlist", () => {
       decumYear({
         year: 2044,
         rmdShortfallAmount: 1000,
-        acaSubsidyPreserved: false,
+        acaStatus: "lost",
       }),
       decumYear({
         year: 2045,
         rmdShortfallAmount: 1200,
-        acaSubsidyPreserved: false,
+        acaStatus: "lost",
       }),
     ];
     const w = buildWatchlist(years, noopDeflate);
@@ -220,17 +228,12 @@ describe("answer key: a Medicare couple's report, awareness off", () => {
   const count = (pattern: RegExp) =>
     report().items.filter((i) => pattern.test(i.detail)).length;
 
-  describe("ret/A31 [RET-17]", () => {
-    // Decided (verdict N8): no ACA item. Today `checkAca` answers "not
-    // preserved" when it didn't check, and the report says the subsidy
-    // was lost in each of the 3 years (one ranged item).
-    xfail({
-      id: "ret/A31 [RET-17]",
-      todo: 'v0.11 Retirement rules: ACA reported "lost" when never checked (verdict N8)',
-      run: () => ({ acaItems: count(/ACA/) }),
-      expected: { acaItems: 0 },
-      today: { acaItems: 1 },
-    });
+  it("ret/A31 [RET-17] both on Medicare, awareness off: the report has no ACA item", () => {
+    // Decided (verdict N8): no ACA item. The check didn't run (awareness
+    // off, and both are 65+), so each year is "not checked", never "lost"
+    // (before v0.11.1 the report said the subsidy was lost in each of the
+    // 3 years, one ranged item).
+    cents({ acaItems: count(/ACA/) }, { acaItems: 0 });
   });
 
   describe("ret/A31:irmaa [RET-14]", () => {
@@ -239,7 +242,8 @@ describe("answer key: a Medicare couple's report, awareness off", () => {
     // no all-clear ("No Medicare IRMAA surcharges ... were found"). The
     // source's "doesn't say no IRMAA was found" becomes this (key, sources
     // that disagreed #11). Today awareness off computes nothing: no IRMAA
-    // item, and the all-clear is hidden only by the false ACA item above.
+    // item, so the report gives the all-clear (the false ACA item that hid
+    // it went with verdict N8).
     xfail({
       id: "ret/A31:irmaa [RET-14]",
       todo: 'v0.11 Retirement rules "IRMAA: always compute it" (decision E1)',
@@ -248,7 +252,7 @@ describe("answer key: a Medicare couple's report, awareness off", () => {
         allClear: /no medicare irmaa/i.test(report().narrative) ? 1 : 0,
       }),
       expected: { irmaaItems: 1, allClear: 0 },
-      today: { irmaaItems: 0, allClear: 0 },
+      today: { irmaaItems: 0, allClear: 1 },
     });
   });
 });

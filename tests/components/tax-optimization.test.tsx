@@ -59,6 +59,7 @@ function row(overrides: Partial<TaxYearRow> = {}): TaxYearRow {
     rmdExcess: 0,
     unmetNeed: 0,
     acaSubsidyPreserved: true,
+    acaStatus: "kept",
     acaMagiHeadroom: 0,
     flags: ["Roth conversion"],
     ...overrides,

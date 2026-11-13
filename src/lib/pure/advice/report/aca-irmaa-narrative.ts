@@ -87,9 +87,11 @@ export function buildWatchlist(
         amount: deflate(y.irmaaCost, y.year),
       });
     }
-    if (y.acaSubsidyPreserved === false) {
+    // Only a year the check ran on says anything: not checked
+    // is neither a loss nor headroom.
+    if (y.acaStatus === "lost") {
       flags.push({ year: y.year, kind: "aca-lost", severity: "warning" });
-    } else {
+    } else if (y.acaStatus === "kept") {
       // acaMagiHeadroom is nominal: deflate before comparing with the real-dollar
       // threshold, or the window shrinks in later years, where the cliff bites hardest.
       const realHeadroom = deflate(y.acaMagiHeadroom, y.year);
@@ -148,9 +150,15 @@ export function buildWatchlist(
     }
   }
 
+  // The all-clear names the ACA only when some year was checked.
+  const acaChecked = decumulationYears.some(
+    (y) => y.acaStatus !== "not_checked",
+  );
   const narrative =
     parts.length === 0
-      ? "No Medicare IRMAA surcharges, ACA subsidy losses, or Required Minimum Distribution shortfalls were found in your projection."
+      ? acaChecked
+        ? "No Medicare IRMAA surcharges, ACA subsidy losses, or Required Minimum Distribution shortfalls were found in your projection."
+        : "No Medicare IRMAA surcharges or Required Minimum Distribution shortfalls were found in your projection."
       : `Across your retirement, this projection has ${parts.join(", ")}. See below for the specific years.`;
 
   return { items, narrative };

@@ -70,7 +70,7 @@ function decumYear(
     age: 65,
     phase: "decumulation",
     rmdShortfallAmount: 0,
-    acaSubsidyPreserved: true,
+    acaStatus: "kept",
     ...overrides,
   } as unknown as EngineDecumulationYear;
 }
@@ -123,7 +123,7 @@ describe("buildActionItems", () => {
 
   it("recommends reviewing ACA income timing when the subsidy is lost in any year", () => {
     const result = buildActionItems(projectionResult(), mcResult(), [
-      decumYear({ acaSubsidyPreserved: false }),
+      decumYear({ acaStatus: "lost" }),
     ]);
     expect(result.items.some((i) => /ACA subsidy cliff/i.test(i.title))).toBe(
       true,

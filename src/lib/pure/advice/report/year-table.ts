@@ -21,7 +21,7 @@ export function taxYearFlags(
     | "rmdOverrodeRouting"
     | "rmdShortfallAmount"
     | "irmaaCost"
-    | "acaSubsidyPreserved"
+    | "acaStatus"
     | "rothConversionAmount"
     | "rothConversionIrmaaCapped"
   >,
@@ -30,7 +30,7 @@ export function taxYearFlags(
   if (y.rmdOverrodeRouting) flags.push("RMD");
   if (y.rmdShortfallAmount > 0) flags.push("RMD shortfall");
   if (y.irmaaCost > 0) flags.push("IRMAA");
-  if (y.acaSubsidyPreserved === false) flags.push("ACA lost");
+  if (y.acaStatus === "lost") flags.push("ACA lost");
   if (y.rothConversionAmount > 0) flags.push("Roth conversion");
   if (y.rothConversionIrmaaCapped) flags.push("Roth capped (IRMAA)");
   return flags;

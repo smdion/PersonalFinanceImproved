@@ -161,7 +161,12 @@ type TaxYearRow = {
   rmdShortfall: number;
   rmdExcess: number;
   unmetNeed: number;
+  /** @deprecated True only when the check ran and the credit was kept; read
+   *  `acaStatus`. Kept in the response for API clients (no breaking API in a
+   *  v0.11 patch). */
   acaSubsidyPreserved: boolean;
+  /** The year's ACA check: kept, lost, or not checked. */
+  acaStatus: EngineDecumulationYear["acaStatus"];
   acaMagiHeadroom: number;
   /** Set once Group D lands; harmless (undefined) until then. */
   rothConversionIrmaaCapped?: boolean;
@@ -202,6 +207,7 @@ function toTaxYearRow(
     rmdExcess: y.rmdExcessAmount,
     unmetNeed: y.unmetNeedMaterial ? (y.unmetNeed ?? 0) : 0,
     acaSubsidyPreserved: y.acaSubsidyPreserved,
+    acaStatus: y.acaStatus,
     acaMagiHeadroom: y.acaMagiHeadroom,
     rothConversionIrmaaCapped: y.rothConversionIrmaaCapped,
     flags: taxYearFlags(y),

@@ -533,8 +533,9 @@ export type EngineDecumulationYear = {
   /** The year's ACA check: kept, lost, or not checked (awareness off, or
    *  everyone on Medicare). */
   acaStatus: AcaStatus;
-  /** `acaStatus === "kept"`: false both when lost and when not checked
-   *  (kept for API readers; read `acaStatus` for a loss). */
+  /** @deprecated True only when the check ran and the credit was kept
+   *  (`acaStatus === "kept"`); read `acaStatus`. Kept in the response for
+   *  API clients (no breaking API in a v0.11 patch). */
   acaSubsidyPreserved: boolean;
   /** MAGI headroom below ACA cliff ($0 if not applicable). */
   acaMagiHeadroom: number;

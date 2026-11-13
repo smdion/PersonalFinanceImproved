@@ -17,7 +17,7 @@ function decumYear(
     rmdOverrodeRouting: false,
     rmdShortfallAmount: 0,
     irmaaCost: 0,
-    acaSubsidyPreserved: true,
+    acaStatus: "kept",
     rothConversionAmount: 0,
     ...overrides,
   } as unknown as EngineDecumulationYear;
@@ -52,7 +52,7 @@ describe("buildYearTableRows", () => {
       [
         decumYear({
           irmaaCost: 500,
-          acaSubsidyPreserved: false,
+          acaStatus: "lost",
           rothConversionAmount: 10000,
         }),
       ],

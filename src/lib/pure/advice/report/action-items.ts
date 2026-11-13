@@ -54,9 +54,7 @@ export function buildActionItems(
     });
   }
 
-  const acaLostYears = decumulationYears.filter(
-    (y) => y.acaSubsidyPreserved === false,
-  );
+  const acaLostYears = decumulationYears.filter((y) => y.acaStatus === "lost");
   if (acaLostYears.length > 0) {
     items.push({
       title: "Review income timing around your ACA subsidy cliff",

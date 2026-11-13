@@ -801,18 +801,12 @@ export function DecumulationRow({
                     `IRMAA: ${formatCurrency(deflate(dyr.irmaaCost, yearRow.year))}/yr surcharge (${dyr.irmaaPaid ? "on top of your budget" : "in your budget"})`,
                   ]
                 : []),
-              ...(dyr.acaSubsidyPreserved
+              ...(dyr.acaStatus === "kept"
                 ? [
                     `ACA: subsidy preserved (${formatCurrency(deflate(dyr.acaMagiHeadroom, yearRow.year))} headroom)`,
                   ]
                 : []),
-              ...(!dyr.acaSubsidyPreserved &&
-              dyr.acaMagiHeadroom === 0 &&
-              (people ?? enginePeople ?? []).every(
-                (p) => yearRow.year - p.birthYear < 65,
-              )
-                ? [`ACA: subsidy lost`]
-                : []),
+              ...(dyr.acaStatus === "lost" ? [`ACA: subsidy lost`] : []),
             ]}
             side="left"
             maxWidth={320}
