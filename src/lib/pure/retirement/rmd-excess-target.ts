@@ -1,12 +1,13 @@
 /**
  * Where reinvested RMD money goes: the chosen Retirement brokerage, else every Retirement brokerage
  * by balance, never Portfolio; with none, the projection-only one the engine declares.
- * Parent category comes from the performance account, else the snapshot row's copy.
+ * An entry's parent is the snapshot loader's (the performance account's first).
  */
 import {
   isRetirementParent,
   tracksCostBasis,
 } from "@/lib/config/account-types";
+import { isRetirementBrokerage } from "@/lib/pure/engine";
 
 type RmdTargetPerfAccount = {
   id: number;
@@ -37,14 +38,8 @@ export function resolveRmdExcessTarget(input: {
 }): RmdExcessTargetResolution {
   const { targetPerformanceAccountId: id, reinvest, entries } = input;
   const perfById = new Map(input.perfAccounts.map((p) => [p.id, p]));
-  const parentOf = (e: RmdTargetEntry) =>
-    e.performanceAccountIds
-      ?.map((pid) => perfById.get(pid)?.parentCategory)
-      .find((p) => p != null) ??
-    e.parentCategory ??
-    "Retirement";
-  const retirementBrokerages = entries.filter(
-    (e) => tracksCostBasis(e.category) && isRetirementParent(parentOf(e)),
+  const retirementBrokerages = entries.filter((e) =>
+    isRetirementBrokerage(e.category, e.parentCategory),
   );
   if (id == null || !reinvest)
     return { targetPerformanceAccountId: null, warning: null };

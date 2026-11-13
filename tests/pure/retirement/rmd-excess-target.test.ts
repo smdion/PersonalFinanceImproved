@@ -83,10 +83,11 @@ describe("resolveRmdExcessTarget", () => {
     expect(r.warning).toMatch(/projected retirement brokerage/);
   });
 
-  it("the performance account's parent decides, not the snapshot row's copy", () => {
-    // Re-parented to Retirement after the last snapshot.
+  it("an entry carries the loader's parent, the performance account's first", () => {
+    // Re-parented to Retirement after the last snapshot: the loader hands
+    // the entry the performance account's parent.
     const r = resolveRmdExcessTarget({
-      entries: [entry(2, "Portfolio")],
+      entries: [entry(2, "Retirement")],
       perfAccounts: [perf(2, "Retirement")],
       targetPerformanceAccountId: 2,
       reinvest: true,
