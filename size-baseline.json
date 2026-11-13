@@ -402,7 +402,7 @@
     "src/server/services/contributions/profile.ts": 289,
     "src/server/services/contributions/summary.ts": 716,
     "src/server/services/debts/other-liabilities.ts": 54,
-    "src/server/services/demo/demo-seed.ts": 462,
+    "src/server/services/demo/demo-seed.ts": 427,
     "src/server/services/investments/current-balances.ts": 465,
     "src/server/services/investments/sec-facts.ts": 576,
     "src/server/services/net-worth/other-assets.ts": 85,
@@ -1034,7 +1034,7 @@
       "computeContributionSummary.results.map()": 412
     },
     "src/server/services/demo/demo-seed.ts": {
-      "seedProfile": 444
+      "seedProfile": 410
     },
     "src/server/services/investments/current-balances.ts": {
       "computeCurrentBalances": 375

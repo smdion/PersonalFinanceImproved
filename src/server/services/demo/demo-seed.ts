@@ -12,8 +12,7 @@ import {
 import { speculativeJobValues } from "@/server/data/jobs";
 import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { adoptFirstRetirementProfile } from "@/server/services/profiles/first-retirement-profile";
-import { NEW_HOUSEHOLD_ROW } from "@/server/services/profiles/retirement-settings-row";
-import type { RetirementSettingsInsert } from "@/server/services/profiles/retirement-settings-row";
+import { seedRetirementSettings } from "./demo-retirement-settings";
 
 /** Seed a demo profile into the given database connection (already on the demo schema). */
 export async function seedProfile(
@@ -279,41 +278,7 @@ export async function seedProfile(
   }
 
   // 12. Retirement settings, a new household's (NEW_HOUSEHOLD_ROW).
-  const rs = profile.retirementSettings;
-  const personId = personIdByName.get(rs.personName)!;
-  await db.insert(schema.retirementSettings).values({
-    personId,
-    retirementAge: rs.retirementAge,
-    endAge: rs.endAge,
-    returnAfterRetirement: rs.returnAfterRetirement,
-    annualInflation: rs.annualInflation,
-    salaryAnnualIncrease: rs.salaryAnnualIncrease,
-    withdrawalRate: rs.withdrawalRate,
-    withdrawalStrategy: rs.withdrawalStrategy,
-    socialSecurityMonthly: rs.socialSecurityMonthly,
-    ssStartAge: rs.ssStartAge,
-    ...NEW_HOUSEHOLD_ROW,
-  } satisfies RetirementSettingsInsert);
-  if (profile.perPersonRetirementSettings) {
-    for (const prs of profile.perPersonRetirementSettings) {
-      const prsPersonId = personIdByName.get(prs.personName);
-      if (prsPersonId && prsPersonId !== personId) {
-        await db.insert(schema.retirementSettings).values({
-          personId: prsPersonId,
-          retirementAge: prs.retirementAge ?? rs.retirementAge,
-          endAge: prs.endAge ?? rs.endAge,
-          returnAfterRetirement: rs.returnAfterRetirement,
-          annualInflation: rs.annualInflation,
-          salaryAnnualIncrease: rs.salaryAnnualIncrease,
-          withdrawalRate: prs.withdrawalRate ?? rs.withdrawalRate,
-          withdrawalStrategy: rs.withdrawalStrategy,
-          socialSecurityMonthly: prs.socialSecurityMonthly,
-          ssStartAge: prs.ssStartAge,
-          ...NEW_HOUSEHOLD_ROW,
-        } satisfies RetirementSettingsInsert);
-      }
-    }
-  }
+  await seedRetirementSettings(db, profile, personIdByName);
 
   // 12c. The first Retirement profile, as a real install gets it.
   await adoptFirstRetirementProfile(db);
