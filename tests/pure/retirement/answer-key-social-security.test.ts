@@ -32,7 +32,7 @@
  * multiplier (verdict U4).
  */
 import { describe, expect, it } from "vitest";
-import { cents, xfail } from "../../fixtures/answer-key";
+import { cents } from "../../fixtures/answer-key";
 import {
   fraBirthYear,
   fraToMonths,
@@ -119,9 +119,6 @@ function paidMonthly(
     paid.ssIncomeByPerson!.find((p) => p.personId === personId)!.amount / 12
   );
 }
-
-const N1 =
-  'v0.11 Retirement rules "Spousal excess is lost for life when the lower earner claims in an earlier year" (verdict N1)';
 
 // ---------------------------------------------------------------------------
 // A. Full retirement age (20 CFR 404.409(a))
@@ -273,7 +270,7 @@ describe("answer key: spousal benefits", () => {
   });
 
   it("ret/S20 [RET-31] worker not yet filed: no spousal excess before the worker files", () => {
-    // Renamed with N1: the excess waits for the worker's filing and then
+    // The excess waits for the worker's filing and then
     // starts (SP-2; 20 CFR 404.330). Here only the wait is checked: both
     // born 1960; the spouse claims at 66 (2026), the worker at 70 (2030).
     // In 2026 the spouse has her own only: 1,000 × (1 − 12 × 5/9%) =
@@ -297,51 +294,36 @@ describe("answer key: spousal benefits", () => {
     cents(spouse!.annualAmount / 12, 1_025);
   });
 
-  describe("ret/S44 [RET-31]", () => {
+  it("ret/S44 [RET-31] worker files at 70: 700, then 1,200 from 2035", () => {
     // Both born 1965 (FRA 67). Spouse (PIA 1,000) claims at 62 in 2027;
     // the worker (PIA 3,000) files at 70 in 2035. Until 2035 she has her
     // own 700; from the worker's filing month the excess starts (42 USC
     // 402(b)(1), 402(r)(1); POMS GN 00204.035), reduced by her months
     // before FRA at that start (402(q)(6)(A)(ii)): at 70 none, so 700 +
-    // 500 = 1,200. Today the excess is lost for life: 700 in 2035.
-    xfail({
-      id: "ret/S44 [RET-31]",
-      todo: N1,
-      run: () => {
-        const entries = couple(
-          { birthYear: 1965, pia: 3_000, claimAge: 70 },
-          { birthYear: 1965, pia: 1_000, claimAge: 62 },
-        );
-        return {
-          beforeFiling: paidMonthly(entries, 2, 2030),
-          afterFiling: paidMonthly(entries, 2, 2035),
-        };
-      },
-      expected: { beforeFiling: 700, afterFiling: 1_200 },
-      today: { beforeFiling: 700, afterFiling: 700 },
-    });
+    // 500 = 1,200.
+    const entries = couple(
+      { birthYear: 1965, pia: 3_000, claimAge: 70 },
+      { birthYear: 1965, pia: 1_000, claimAge: 62 },
+    );
+    const paid = {
+      beforeFiling: paidMonthly(entries, 2, 2030),
+      afterFiling: paidMonthly(entries, 2, 2035),
+    };
+    cents(paid, { beforeFiling: 700, afterFiling: 1_200 });
   });
 
-  describe("ret/S45 [RET-31]", () => {
+  it("ret/S45 [RET-31] worker files at 64: 700, then 1,075 from 2029", () => {
     // Same, the worker files at 64 (2029). The excess starts then, with 36
     // months to her FRA: 500 × (1 − 36 × 25/36%) = 375. 700, then 1,075.
-    // Today: 700 for life.
-    xfail({
-      id: "ret/S45 [RET-31]",
-      todo: N1,
-      run: () => {
-        const entries = couple(
-          { birthYear: 1965, pia: 3_000, claimAge: 64 },
-          { birthYear: 1965, pia: 1_000, claimAge: 62 },
-        );
-        return {
-          beforeFiling: paidMonthly(entries, 2, 2028),
-          afterFiling: paidMonthly(entries, 2, 2029),
-        };
-      },
-      expected: { beforeFiling: 700, afterFiling: 1_075 },
-      today: { beforeFiling: 700, afterFiling: 700 },
-    });
+    const entries = couple(
+      { birthYear: 1965, pia: 3_000, claimAge: 64 },
+      { birthYear: 1965, pia: 1_000, claimAge: 62 },
+    );
+    const paid = {
+      beforeFiling: paidMonthly(entries, 2, 2028),
+      afterFiling: paidMonthly(entries, 2, 2029),
+    };
+    cents(paid, { beforeFiling: 700, afterFiling: 1_075 });
   });
 
   it("ret/S46 [RET-31] own 1,240 at 70 with credits: 1,500", () => {

@@ -899,18 +899,13 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
     expect(sam.annualAmount).toBeCloseTo(24000, 2);
   });
 
-  // Bug pin (verdict N1): the spousal excess is lost for life here. In law
-  // it starts when the worker files (42 USC 402(b)(1), 402(r)(1); POMS GN
-  // 00204.035). Changes on purpose with v0.11 Retirement rules "Spousal
-  // excess is lost for life when the lower earner claims in an earlier
-  // year", where answer-key ret/S44 and ret/S45
-  // (`tests/pure/retirement/answer-key-social-security.test.ts`) replace it.
-  it("does NOT pay a spousal top-up for years before the worker has filed", async () => {
+  it("pays the spousal top-up from the worker's filing year, not before", async () => {
     const schema = await getSchema();
     const { eq } = await import("drizzle-orm");
     // Push Alex (the PIA worker) out to claim at 70, while Sam still claims
-    // at 67 — SSA pays no spousal benefit until the worker files, so Sam
-    // gets NO top-up and keeps their own flat $21600.
+    // at 67: SSA pays no spousal benefit until the worker files (42 USC
+    // 402(b)(1)), so Sam keeps their own flat $21600 until 2033 (Alex, born
+    // 1963, at 70), then 50% × $48000 = $24000 (Sam is past FRA then).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (db as any)
       .update(schema.retirementProfilePeople)
@@ -924,6 +919,7 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
       (e) => e.personId === personBId,
     )!;
     expect(sam.annualAmount).toBe(21600);
+    expect(sam.fromSpouseFiling).toEqual({ year: 2033, annualAmount: 24000 });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (db as any)

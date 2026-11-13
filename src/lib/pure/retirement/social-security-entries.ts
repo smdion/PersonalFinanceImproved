@@ -40,6 +40,8 @@ type SsEntry = {
   annualAmount: number;
   startAge: number;
   birthYear: number;
+  /** From the worker's filing year, own plus the spousal excess (the engine's entry field). */
+  fromSpouseFiling?: { year: number; annualAmount: number };
 };
 
 /** Per-person what-if override keyed by `personId` (claiming-age sweep). Each field is optional;
@@ -102,23 +104,32 @@ export function buildSocialSecurityEntries(
           )
         : toNumber(ps.socialSecurityMonthly) * 12;
 
-    // Spousal benefit (MFJ + 2 people stand in for a spouse link): needs the other person's PIA
-    // and their claim year (`birthYear + startAge`) no later than this one's. Symmetric:
-    // computeSpousalBenefit's max() gives the higher earner their own benefit back.
+    // Spousal benefit (MFJ + 2 people stand in for a spouse link): needs the other person's PIA.
+    // The excess starts the year the worker files (402(b)(1); deemed filing, 402(r)), reduced
+    // for this person's age then (402(q)). Symmetric: the higher earner's excess is $0.
+    let fromSpouseFiling: SsEntry["fromSpouseFiling"];
     if (isMfjCouple) {
       const other = people[i === 0 ? 1 : 0]!;
       const otherPia = ownPiaFor(other);
-      const otherStartAge = shiftedStartAge(other);
-      const workerHasFiled =
-        other.birthYear + otherStartAge <= ps.birthYear + startAge;
-      if (otherPia != null && workerHasFiled) {
-        annualAmount = computeSpousalBenefit(
+      const workerFilingYear = other.birthYear + shiftedStartAge(other);
+      const excessStartsLater = workerFilingYear > ps.birthYear + startAge;
+      if (otherPia != null) {
+        const withExcess = computeSpousalBenefit(
           annualAmount,
           otherPia,
           fraBirthYear(ps.dateOfBirth),
           startAge * 12,
           ownPia ?? undefined,
+          excessStartsLater
+            ? (workerFilingYear - ps.birthYear) * 12
+            : startAge * 12,
         );
+        if (!excessStartsLater) annualAmount = withExcess;
+        else if (withExcess > annualAmount)
+          fromSpouseFiling = {
+            year: workerFilingYear,
+            annualAmount: withExcess,
+          };
       }
     }
 
@@ -128,6 +139,7 @@ export function buildSocialSecurityEntries(
       annualAmount,
       startAge,
       birthYear: ps.birthYear,
+      ...(fromSpouseFiling ? { fromSpouseFiling } : {}),
     };
   });
 }

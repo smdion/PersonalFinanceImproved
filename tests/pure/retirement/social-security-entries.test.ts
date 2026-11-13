@@ -102,13 +102,10 @@ describe("buildSocialSecurityEntries", () => {
     expect(low!.annualAmount).toBeCloseTo(16200, 2);
   });
 
-  // Bug pin (verdict N1): the spousal excess is lost for life here. In law
-  // it starts when the worker files (42 USC 402(b)(1), 402(r)(1); POMS GN
-  // 00204.035). Changes on purpose with v0.11 Retirement rules "Spousal
-  // excess is lost for life when the lower earner claims in an earlier
-  // year", where answer-key ret/S44 and ret/S45
-  // (`tests/pure/retirement/answer-key-social-security.test.ts`) replace it.
-  it("MFJ + 2: no spousal top-up before the worker has filed", () => {
+  // The excess starts when the worker files (42 USC 402(b)(1), 402(r)(1);
+  // POMS GN 00204.035): own only until then, then the greater of own and
+  // spousal from the worker's filing year.
+  it("MFJ + 2: the spousal top-up starts in the worker's filing year", () => {
     const [, sam] = buildSocialSecurityEntries(
       [
         person({
@@ -124,7 +121,10 @@ describe("buildSocialSecurityEntries", () => {
       ],
       "MFJ",
     );
-    expect(sam!.annualAmount).toBe(21600); // own flat, no spousal
+    expect(sam!.annualAmount).toBe(21600); // own flat until the worker files
+    // The worker (born 1963) files at 70 in 2033; Sam is past FRA then, so
+    // 50% × $48,000 unreduced = $24,000 > $21,600.
+    expect(sam!.fromSpouseFiling).toEqual({ year: 2033, annualAmount: 24000 });
   });
 
   it("does not apply spousal math for Single / HOH / 3+ people", () => {
