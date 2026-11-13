@@ -34,6 +34,8 @@ export const ROUTERS_ON_POSTGRES =
 // ── The synchronous bridge ──
 
 type Reply = {
+  /** The request's id, echoed by the worker. */
+  id: number;
   result?: {
     rows: unknown[];
     rowCount: number;
@@ -45,7 +47,16 @@ type Reply = {
 
 let bridge: { worker: Worker; wake: Int32Array; port: MessagePort } | null =
   null;
+let sent = 0;
 
+/**
+ * One request, answered synchronously. The worker posts its reply, sets the
+ * flag, then notifies; a wait that already saw the flag set returns before
+ * that notify lands, so a notify can wake the next request's wait before
+ * its reply exists (CI run 43361513884). A wake is only a hint: the call
+ * returns when the port holds the reply carrying its own id, and drops a
+ * reply to a request that gave up waiting.
+ */
 function call(msg: Record<string, unknown>): NonNullable<Reply["result"]> {
   if (!bridge) {
     const flag = new SharedArrayBuffer(4);
@@ -57,11 +68,20 @@ function call(msg: Record<string, unknown>): NonNullable<Reply["result"]> {
     worker.unref();
     bridge = { worker, wake: new Int32Array(flag), port: port1 };
   }
-  Atomics.store(bridge.wake, 0, 0);
-  bridge.worker.postMessage(msg);
-  Atomics.wait(bridge.wake, 0, 0, 120_000);
-  const reply = receiveMessageOnPort(bridge.port)?.message as Reply | undefined;
-  if (!reply) throw new Error("PostgreSQL bridge: no answer in 120 s");
+  const id = ++sent;
+  bridge.worker.postMessage({ ...msg, id });
+  const deadline = performance.now() + 120_000;
+  let reply: Reply | undefined;
+  while (reply?.id !== id) {
+    // Cleared before the port is read: the reply is posted before the flag
+    // is set, so a reply this misses sets it again and the wait returns.
+    Atomics.store(bridge.wake, 0, 0);
+    reply = receiveMessageOnPort(bridge.port)?.message as Reply | undefined;
+    if (reply) continue;
+    const left = deadline - performance.now();
+    if (left <= 0) throw new Error("PostgreSQL bridge: no answer in 120 s");
+    Atomics.wait(bridge.wake, 0, 0, left);
+  }
   if (reply.error)
     throw Object.assign(
       new Error(

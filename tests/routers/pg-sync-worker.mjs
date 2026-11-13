@@ -78,10 +78,13 @@ async function handle(msg) {
 }
 
 parentPort.on("message", async (msg) => {
+  // The reply carries the request's id: the test thread matches on it, not
+  // on the wake (postgres-router-db.ts call()).
   try {
-    port.postMessage({ result: await handle(msg) });
+    port.postMessage({ id: msg.id, result: await handle(msg) });
   } catch (e) {
     port.postMessage({
+      id: msg.id,
       error: { message: e?.message ?? String(e), code: e?.code ?? null },
     });
   }
