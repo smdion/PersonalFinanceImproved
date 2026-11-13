@@ -263,6 +263,25 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     expect(indBal.get(indKey(accts[2]!))).toBe(500000);
   });
 
+  it("reinvest: accounts with no Retirement brokerage part are refused (the opening state declares one)", () => {
+    const { balances, accountBalance } = start();
+    const accts = accounts().slice(2);
+    expect(() =>
+      reinvestRmdExcess(
+        "reinvest",
+        true,
+        90000,
+        50000,
+        10000,
+        balances,
+        accountBalance,
+        accts,
+        indBalOf(accts),
+        indKey,
+      ),
+    ).toThrow("no Retirement brokerage part");
+  });
+
   it("reinvest: a chosen target account takes it all; rounding remainder goes to the first", () => {
     const { balances, accountBalance } = start();
     const accts = accounts();

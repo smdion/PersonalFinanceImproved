@@ -174,6 +174,9 @@ export function reinvestRmdExcess(
           );
           const chosen = retirementAccounts.filter((ia) => ia.rmdExcessTarget);
           const target = chosen.length > 0 ? chosen : retirementAccounts;
+          const [first] = target;
+          if (!first)
+            throw new Error("reinvestRmdExcess: no Retirement brokerage part");
           const targetTotal = target.reduce(
             (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
             0,
@@ -189,7 +192,6 @@ export function reinvestRmdExcess(
             }
             const remainder = roundToCents(excess - credited);
             if (remainder !== 0) {
-              const first = target[0]!;
               const k = indKey(first);
               indBalance.set(
                 k,
@@ -200,7 +202,7 @@ export function reinvestRmdExcess(
             // No weight to distribute by (every target account is at
             // $0) -- credit the first one entirely rather than inventing
             // a different allocation policy.
-            const k = indKey(target[0]!);
+            const k = indKey(first);
             indBalance.set(k, roundToCents((indBalance.get(k) ?? 0) + excess));
           }
         }
