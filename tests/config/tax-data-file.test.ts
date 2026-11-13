@@ -67,6 +67,25 @@ describe("tax-data file", () => {
 
 describe("validateTaxDataFile catches", () => {
   const clone = () => JSON.parse(JSON.stringify(file)) as typeof file;
+
+  it("an IRMAA tier whose Part B and Part D don't both sum to its surcharge", () => {
+    const tier = (f: typeof file) =>
+      (
+        f.years["2026"]!.irmaa!.brackets.Single as Record<string, unknown>[]
+      )[0]!;
+    const half = clone();
+    delete tier(half).partD;
+    const off = clone();
+    tier(off).partD = 175;
+    const none = clone();
+    delete tier(none).partB;
+    delete tier(none).partD;
+    for (const f of [half, off])
+      expect(validateTaxDataFile(f).join()).toMatch(
+        /2026 irmaa Single: partB and partD must sum to annualSurcharge/,
+      );
+    expect(validateTaxDataFile(none)).toEqual([]);
+  });
   type Year = (typeof file)["years"][string];
   /** The poverty guidelines moved 3% (each size, whole dollars). */
   const moveFpl = (
@@ -152,6 +171,8 @@ describe("validateTaxDataFile catches", () => {
         "magiThreshold",
         "baseWithholding",
         "annualSurcharge",
+        "partB",
+        "partD",
       ])
         if (typeof r[k] === "number") r[k] = r[k] * 1.02;
     };
@@ -183,12 +204,17 @@ describe("validateTaxDataFile catches", () => {
     // own (they follow the Part B premium, which moves every year).
     const k = clone();
     const surcharges = JSON.parse(JSON.stringify(moved)) as typeof prev;
-    type Surcharged = { annualSurcharge: number };
+    type Surcharged = {
+      annualSurcharge: number;
+      partB?: number;
+      partD?: number;
+    };
     for (const [st, rows] of Object.entries(surcharges.irmaa!.brackets))
       (rows as Surcharged[]).forEach((r, i) => {
-        r.annualSurcharge = (prev.irmaa!.brackets[st] as Surcharged[])[
-          i
-        ]!.annualSurcharge;
+        const was = (prev.irmaa!.brackets[st] as Surcharged[])[i]!;
+        r.annualSurcharge = was.annualSurcharge;
+        r.partB = was.partB;
+        r.partD = was.partD;
       });
     k.years[next] = surcharges;
     expect(validateTaxDataFile(k).map((p) => p.split(":")[0])).toEqual(
@@ -203,8 +229,12 @@ describe("validateTaxDataFile catches", () => {
     frozen.ltcg = moved.ltcg;
     frozen.fpl = moved.fpl;
     for (const rows of Object.values(frozen.irmaa!.brackets))
-      (rows as { annualSurcharge: number }[]).forEach((r) => {
+      (
+        rows as { annualSurcharge: number; partB?: number; partD?: number }[]
+      ).forEach((r) => {
         r.annualSurcharge = r.annualSurcharge * 1.02;
+        if (r.partB !== undefined) r.partB = r.partB * 1.02;
+        if (r.partD !== undefined) r.partD = r.partD * 1.02;
       });
     m.years[next] = frozen;
     expect(validateTaxDataFile(m)).toEqual([]);
@@ -228,6 +258,8 @@ describe("validateTaxDataFile catches", () => {
           "magiThreshold",
           "baseWithholding",
           "annualSurcharge",
+          "partB",
+          "partD",
         ])
           if (typeof r[k] === "number") r[k] = r[k] * 1.02;
       };
@@ -262,6 +294,8 @@ describe("validateTaxDataFile catches", () => {
         "magiThreshold",
         "baseWithholding",
         "annualSurcharge",
+        "partB",
+        "partD",
       ])
         if (typeof r[k] === "number") r[k] = r[k] * 1.02;
     };

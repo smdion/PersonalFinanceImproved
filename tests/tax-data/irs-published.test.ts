@@ -213,12 +213,15 @@ for (const [y, p] of Object.entries(PUBLISHED)) {
       const col = IRMAA_COLUMN[st];
       const tiers = p.irmaa[col];
       // Per person, a year: (Part B + Part D monthly adjustment) × 12,
-      // to the cent (the shipped `notes` say so).
-      it(`${y} IRMAA ${st}: every tier's MAGI and surcharge = ${tiers.cite} [RET-15]`, () => {
+      // to the cent (the shipped `notes` say so), and each part × 12.
+      const yearly = (monthly: number) => Math.round(monthly * 12 * 100) / 100;
+      it(`${y} IRMAA ${st}: every tier's MAGI, surcharge and its Part B and Part D = ${tiers.cite} [RET-15]`, () => {
         expect(year(y).irmaa?.brackets[st]).toEqual(
           tiers.value.map((t) => ({
             magiThreshold: t.over,
-            annualSurcharge: Math.round((t.partB + t.partD) * 12 * 100) / 100,
+            annualSurcharge: yearly(t.partB + t.partD),
+            partB: yearly(t.partB),
+            partD: yearly(t.partD),
           })),
         );
       });

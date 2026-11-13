@@ -1,6 +1,6 @@
 {
   "$schema": "../schema/year.schema.json",
-  "revision": 3,
+  "revision": 4,
   "source": "IRS Notice 2024-80; IRS Rev. Proc. 2024-25; IRC 223(b)(3); IRS Publication 15 (2025); OBBBA §70102; IRC 63(c); IRC 3101(b)(2); IRS Rev. Proc. 2024-40; OBBBA §70103; IRS Publication 15-T (2025); CMS 2025 Medicare Parts A & B Premiums and Deductibles; HHS 2024 Poverty Guidelines",
   "limits": {
     "401k_employee_limit": {
@@ -834,71 +834,101 @@
       "MFJ": [
         {
           "magiThreshold": 212000,
-          "annualSurcharge": 1052.4
+          "annualSurcharge": 1052.4,
+          "partB": 888.0,
+          "partD": 164.4
         },
         {
           "magiThreshold": 266000,
-          "annualSurcharge": 2643.6
+          "annualSurcharge": 2643.6,
+          "partB": 2220.0,
+          "partD": 423.6
         },
         {
           "magiThreshold": 334000,
-          "annualSurcharge": 4234.8
+          "annualSurcharge": 4234.8,
+          "partB": 3550.8,
+          "partD": 684.0
         },
         {
           "magiThreshold": 400000,
-          "annualSurcharge": 5826.0
+          "annualSurcharge": 5826.0,
+          "partB": 4882.8,
+          "partD": 943.2
         },
         {
           "magiThreshold": 750000,
-          "annualSurcharge": 6356.4
+          "annualSurcharge": 6356.4,
+          "partB": 5326.8,
+          "partD": 1029.6
         }
       ],
       "Single": [
         {
           "magiThreshold": 106000,
-          "annualSurcharge": 1052.4
+          "annualSurcharge": 1052.4,
+          "partB": 888.0,
+          "partD": 164.4
         },
         {
           "magiThreshold": 133000,
-          "annualSurcharge": 2643.6
+          "annualSurcharge": 2643.6,
+          "partB": 2220.0,
+          "partD": 423.6
         },
         {
           "magiThreshold": 167000,
-          "annualSurcharge": 4234.8
+          "annualSurcharge": 4234.8,
+          "partB": 3550.8,
+          "partD": 684.0
         },
         {
           "magiThreshold": 200000,
-          "annualSurcharge": 5826.0
+          "annualSurcharge": 5826.0,
+          "partB": 4882.8,
+          "partD": 943.2
         },
         {
           "magiThreshold": 500000,
-          "annualSurcharge": 6356.4
+          "annualSurcharge": 6356.4,
+          "partB": 5326.8,
+          "partD": 1029.6
         }
       ],
       "HOH": [
         {
           "magiThreshold": 106000,
-          "annualSurcharge": 1052.4
+          "annualSurcharge": 1052.4,
+          "partB": 888.0,
+          "partD": 164.4
         },
         {
           "magiThreshold": 133000,
-          "annualSurcharge": 2643.6
+          "annualSurcharge": 2643.6,
+          "partB": 2220.0,
+          "partD": 423.6
         },
         {
           "magiThreshold": 167000,
-          "annualSurcharge": 4234.8
+          "annualSurcharge": 4234.8,
+          "partB": 3550.8,
+          "partD": 684.0
         },
         {
           "magiThreshold": 200000,
-          "annualSurcharge": 5826.0
+          "annualSurcharge": 5826.0,
+          "partB": 4882.8,
+          "partD": 943.2
         },
         {
           "magiThreshold": 500000,
-          "annualSurcharge": 6356.4
+          "annualSurcharge": 6356.4,
+          "partB": 5326.8,
+          "partD": 1029.6
         }
       ]
     },
-    "notes": "Part B + Part D income-related adjustments, per person, a year (monthly × 12). 2025 premiums use 2023 MAGI."
+    "notes": "Part B + Part D income-related adjustments, per person, a year (monthly × 12); partB and partD give each part. 2025 premiums use 2023 MAGI."
   },
   "fpl": {
     "source": "HHS 2024 Poverty Guidelines",

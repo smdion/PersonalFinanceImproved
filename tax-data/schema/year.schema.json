@@ -395,6 +395,16 @@
                     "type": "number",
                     "minimum": 0,
                     "description": "Per person, a year: Part B + Part D adjustments × 12."
+                  },
+                  "partB": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Its Part B adjustment, per person, a year (monthly × 12). Optional; with partD it sums to annualSurcharge."
+                  },
+                  "partD": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Its Part D adjustment, per person, a year (monthly × 12). Optional; with partB it sums to annualSurcharge."
                   }
                 },
                 "additionalProperties": false
@@ -411,6 +421,16 @@
                     "type": "number",
                     "minimum": 0,
                     "description": "Per person, a year: Part B + Part D adjustments × 12."
+                  },
+                  "partB": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Its Part B adjustment, per person, a year (monthly × 12). Optional; with partD it sums to annualSurcharge."
+                  },
+                  "partD": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Its Part D adjustment, per person, a year (monthly × 12). Optional; with partB it sums to annualSurcharge."
                   }
                 },
                 "additionalProperties": false
@@ -427,6 +447,16 @@
                     "type": "number",
                     "minimum": 0,
                     "description": "Per person, a year: Part B + Part D adjustments × 12."
+                  },
+                  "partB": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Its Part B adjustment, per person, a year (monthly × 12). Optional; with partD it sums to annualSurcharge."
+                  },
+                  "partD": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Its Part D adjustment, per person, a year (monthly × 12). Optional; with partB it sums to annualSurcharge."
                   }
                 },
                 "additionalProperties": false

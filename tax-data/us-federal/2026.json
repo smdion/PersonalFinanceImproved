@@ -1,6 +1,6 @@
 {
   "$schema": "../schema/year.schema.json",
-  "revision": 2,
+  "revision": 3,
   "source": "IRS Notice 2025-67; IRS Rev. Proc. 2025-19; IRC 223(b)(3); IRS Publication 15 (2026); IRS Rev. Proc. 2025-32; IRC 3101(b)(2); OBBBA §70103; IRS Publication 15-T (2026); OBBBA §70102; CMS 2026 Medicare Parts A & B Premiums and Deductibles; HHS 2025 Poverty Guidelines",
   "limits": {
     "401k_employee_limit": {
@@ -776,71 +776,101 @@
       "MFJ": [
         {
           "magiThreshold": 218000,
-          "annualSurcharge": 1148.4
+          "annualSurcharge": 1148.4,
+          "partB": 974.4,
+          "partD": 174.0
         },
         {
           "magiThreshold": 274000,
-          "annualSurcharge": 2884.8
+          "annualSurcharge": 2884.8,
+          "partB": 2434.8,
+          "partD": 450.0
         },
         {
           "magiThreshold": 342000,
-          "annualSurcharge": 4620.0
+          "annualSurcharge": 4620.0,
+          "partB": 3895.2,
+          "partD": 724.8
         },
         {
           "magiThreshold": 410000,
-          "annualSurcharge": 6355.2
+          "annualSurcharge": 6355.2,
+          "partB": 5355.6,
+          "partD": 999.6
         },
         {
           "magiThreshold": 750000,
-          "annualSurcharge": 6936.0
+          "annualSurcharge": 6936.0,
+          "partB": 5844.0,
+          "partD": 1092.0
         }
       ],
       "Single": [
         {
           "magiThreshold": 109000,
-          "annualSurcharge": 1148.4
+          "annualSurcharge": 1148.4,
+          "partB": 974.4,
+          "partD": 174.0
         },
         {
           "magiThreshold": 137000,
-          "annualSurcharge": 2884.8
+          "annualSurcharge": 2884.8,
+          "partB": 2434.8,
+          "partD": 450.0
         },
         {
           "magiThreshold": 171000,
-          "annualSurcharge": 4620.0
+          "annualSurcharge": 4620.0,
+          "partB": 3895.2,
+          "partD": 724.8
         },
         {
           "magiThreshold": 205000,
-          "annualSurcharge": 6355.2
+          "annualSurcharge": 6355.2,
+          "partB": 5355.6,
+          "partD": 999.6
         },
         {
           "magiThreshold": 500000,
-          "annualSurcharge": 6936.0
+          "annualSurcharge": 6936.0,
+          "partB": 5844.0,
+          "partD": 1092.0
         }
       ],
       "HOH": [
         {
           "magiThreshold": 109000,
-          "annualSurcharge": 1148.4
+          "annualSurcharge": 1148.4,
+          "partB": 974.4,
+          "partD": 174.0
         },
         {
           "magiThreshold": 137000,
-          "annualSurcharge": 2884.8
+          "annualSurcharge": 2884.8,
+          "partB": 2434.8,
+          "partD": 450.0
         },
         {
           "magiThreshold": 171000,
-          "annualSurcharge": 4620.0
+          "annualSurcharge": 4620.0,
+          "partB": 3895.2,
+          "partD": 724.8
         },
         {
           "magiThreshold": 205000,
-          "annualSurcharge": 6355.2
+          "annualSurcharge": 6355.2,
+          "partB": 5355.6,
+          "partD": 999.6
         },
         {
           "magiThreshold": 500000,
-          "annualSurcharge": 6936.0
+          "annualSurcharge": 6936.0,
+          "partB": 5844.0,
+          "partD": 1092.0
         }
       ]
     },
-    "notes": "Part B + Part D income-related adjustments, per person, a year (monthly × 12). 2026 premiums use 2024 MAGI.",
+    "notes": "Part B + Part D income-related adjustments, per person, a year (monthly × 12); partB and partD give each part. 2026 premiums use 2024 MAGI.",
     "supersedes": {
       "MFJ": [
         [

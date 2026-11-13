@@ -169,6 +169,16 @@ function buildYearSchema(): object {
                   description:
                     "Per person, a year: Part B + Part D adjustments × 12.",
                 },
+                partB: {
+                  ...money,
+                  description:
+                    "Its Part B adjustment, per person, a year (monthly × 12). Optional; with partD it sums to annualSurcharge.",
+                },
+                partD: {
+                  ...money,
+                  description:
+                    "Its Part D adjustment, per person, a year (monthly × 12). Optional; with partB it sums to annualSurcharge.",
+                },
               },
               additionalProperties: false,
             },

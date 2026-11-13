@@ -75,7 +75,7 @@ The check refuses a blank, so no figure or citation can carry over from last yea
 - **Rates are fractions**: 6.2% is `0.062`.
 - **`threshold: null` is the top bracket** (no upper end) in the capital-gains brackets.
 - **Withholding tables** are Publication 15-T's _Percentage Method Tables for Automated Payroll Systems_ (annual): `standard` is the STANDARD schedule (a 2020-or-later Form W-4 with Step 2 not checked, or a 2019-or-earlier one), `checkbox` the Step 2 Checkbox schedule. Each row's `baseWithholding` must equal the previous row's plus its rate × the gap (within $1).
-- **IRMAA** `annualSurcharge` is per person, a year: the Part B and Part D income-related adjustments, monthly × 12, above `magiThreshold`.
+- **IRMAA** `annualSurcharge` is per person, a year: the Part B and Part D income-related adjustments, monthly × 12, above `magiThreshold`. `partB` and `partD` give each part the same way (from CMS's Part B and Part D tables); they sum to `annualSurcharge` to the cent. Older Ledgr versions ignore them.
 - **Poverty lines run a year behind**: a coverage year uses the previous year's HHS guidelines (2026 holds HHS 2025), the 48 contiguous states and DC.
 - **`revision` vs `dataVersion`.** Raise a year's `revision` when that year's figures change (a correction). Raise `dataVersion` in `index.json` by one on _every_ change to any file — installs take the higher `dataVersion` as newer, so two different versions must never share one.
 - **Two pull requests that both raise `dataVersion`**: whichever merges second takes the next number after `main`'s (rebase, set it to `main`'s + 1). CI fails a change that doesn't raise it.
