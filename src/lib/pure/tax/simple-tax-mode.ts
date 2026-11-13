@@ -62,13 +62,11 @@ export function toSimpleTaxMode(
   const total = roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
   const isRetirementSpec = (s: { parentCategory?: string }) =>
     isRetirementMoney(s.parentCategory);
-  // The ramp is Portfolio savings whenever there's a real Portfolio
-  // brokerage to hold it (the engine's rule); otherwise retirement money.
+  // The ramp is Portfolio savings whenever a Portfolio brokerage holds it (the
+  // engine's rule; its projected brokerage is Retirement money); else retirement.
   const hasPortfolioBrokerage = indAccounts.some(
     (ia) =>
-      isOverflowTarget(ia.category) &&
-      !ia.projectedOnly &&
-      !isRetirementMoney(ia.parentCategory),
+      isOverflowTarget(ia.category) && !isRetirementMoney(ia.parentCategory),
   );
 
   return {
