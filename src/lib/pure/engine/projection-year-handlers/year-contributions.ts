@@ -3,7 +3,10 @@ import type { resolveAccumulationConfig } from "../override-resolution";
 import { yearContributionTarget, yearZeroBasis } from "./contribution-target";
 import { routeYearSlots, yearContributionLimits } from "./contribution-slots";
 import { yearContributionTotals } from "./contribution-credits";
-import { roundToCents } from "../../../utils/math";
+import { roundToCents, sumBy } from "../../../utils/math";
+import type { AccumulationSlot } from "../types/routing";
+import { fundGapYearSaving } from "./gap-year-saving";
+import { rampIsPortfolioSaving } from "@/lib/pure/accounts/brokerage-ramp";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { gapYearNeed } from "../gap-year-need";
 import type { ContributionState } from "@/lib/pure/contributions/contribution-state";
@@ -15,7 +18,8 @@ import type {
 
 /**
  * Year 0's basis, the target and employer match, the IRS limits, the routed
- * slots and their totals. Reads the balances not at all.
+ * slots and their totals; in a gap year, the Portfolio saving the pay left
+ * after spending funds (fundGapYearSaving). Reads the balances not at all.
  */
 export function sizeYearContributions(
   ctx: ProjectionContext,
@@ -25,17 +29,138 @@ export function sizeYearContributions(
     yearIndex: number;
     config: ReturnType<typeof resolveAccumulationConfig>;
     lgf: number;
-    contributionSpecs: ProjectionLoopState["contributionSpecs"];
   },
 ) {
-  const { yearIndex, config, lgf, contributionSpecs } = terms;
+  const { yearIndex } = terms;
   const {
     year,
     age,
     effectiveSalary: projectedSalary,
     effectiveSalaryByPerson: projectedSalaryByPerson,
   } = setup;
-  const { input, hasPerPersonSalary, firstYearFraction, TAX_ADVANTAGED } = ctx;
+  const { input, hasPerPersonSalary, TAX_ADVANTAGED } = ctx;
+  const { currentSalary } = input;
+  // This year's specs: someone not at work this year has theirs zeroed.
+  const specs = setup.yearSpecs ?? state.contributionSpecs;
+  const route = (s: typeof specs) =>
+    routeYearContributions(ctx, state, setup, { ...terms, specs: s });
+  const first = route(specs);
+  // A gap year's need, from the pay and contributions before any is credited.
+  const needOf = (slots: AccumulationSlot[], ramp: number) =>
+    gapYearNeed(ctx, {
+      year,
+      age,
+      fraction: first.proRate,
+      payByPerson: (hasPerPersonSalary
+        ? [...projectedSalaryByPerson.values()]
+        : [projectedSalary]
+      ).map((p) => p * first.proRate),
+      budget: state.projectedExpenses * first.proRate,
+      employeeContributions:
+        roundToCents(sumBy(slots, (s) => s.employeeContrib)) + ramp,
+      pretaxContributions: roundToCents(
+        sumBy(slots, (s) => s.traditionalContrib),
+      ),
+    });
+  const firstRamp = yearRampAmount(
+    yearIndex,
+    input.brokerageContributionRamp,
+    first.contribution,
+  );
+  const funded = setup.gapYear
+    ? fundGapYearSaving(
+        specs,
+        {
+          amount: firstRamp,
+          isPortfolio: rampIsPortfolioSaving(
+            ctx.indAccounts,
+            (ia) => ctx.indParentCat.get(ctx.indKey(ia)) ?? ia.parentCategory,
+          ),
+        },
+        first,
+        route,
+        (slots, ramp) => needOf(slots, ramp).need,
+      )
+    : { specs, sized: first, ramp: firstRamp, skipped: 0 };
+  const contributionSpecs = funded.specs;
+  const rampAmount = funded.ramp;
+  const {
+    useRealContributions,
+    proRate,
+    targetContribution,
+    personPay,
+    contribution,
+    slots,
+    routeWarnings,
+    specOverflow,
+    rateCeilingScale,
+  } = funded.sized;
+  if (funded.skipped > 0)
+    routeWarnings.push(
+      `${year}: $${Math.round(funded.skipped).toLocaleString()} of Portfolio saving skipped: the pay left after spending doesn't cover it, and a gap year draws for spending only.`,
+    );
+
+  const {
+    totalEmployee,
+    totalEmployer,
+    totalRoth,
+    totalTraditional,
+    overflowToBrokerage,
+    totalTaxAdvSpace,
+  } = yearContributionTotals(
+    slots,
+    useRealContributions,
+    contributionSpecs,
+    specOverflow,
+    state,
+    projectedSalary,
+    currentSalary,
+    TAX_ADVANTAGED,
+    year,
+    age,
+  );
+
+  const gapNeed = setup.gapYear ? needOf(slots, rampAmount) : null;
+
+  return {
+    proRate,
+    targetContribution,
+    personPay,
+    contribution,
+    slots,
+    routeWarnings,
+    rateCeilingScale,
+    totalEmployee,
+    totalEmployer,
+    totalRoth,
+    totalTraditional,
+    overflowToBrokerage,
+    totalTaxAdvSpace,
+    rampAmount,
+    gapNeed,
+    contributionSpecs,
+  };
+}
+
+/** Year 0's basis, the target and match, the IRS limits and the routed slots, for `specs`. */
+function routeYearContributions(
+  ctx: ProjectionContext,
+  state: ProjectionLoopState,
+  setup: PreYearSetup,
+  terms: {
+    yearIndex: number;
+    config: ReturnType<typeof resolveAccumulationConfig>;
+    lgf: number;
+    specs: ProjectionLoopState["contributionSpecs"];
+  },
+) {
+  const { yearIndex, config, lgf, specs: contributionSpecs } = terms;
+  const {
+    year,
+    effectiveSalary: projectedSalary,
+    effectiveSalaryByPerson: projectedSalaryByPerson,
+  } = setup;
+  const { input, hasPerPersonSalary, firstYearFraction } = ctx;
   const { currentSalary, irsLimitCaps } = input;
   const { activeBaseYearContributions, activeBaseYearEmployerMatch } = state;
 
@@ -85,63 +210,17 @@ export function sizeYearContributions(
       projectedSalary,
       targetContribution,
     );
-  const {
-    totalEmployee,
-    totalEmployer,
-    totalRoth,
-    totalTraditional,
-    overflowToBrokerage,
-    totalTaxAdvSpace,
-  } = yearContributionTotals(
-    slots,
-    useRealContributions,
-    contributionSpecs,
-    specOverflow,
-    state,
-    projectedSalary,
-    currentSalary,
-    TAX_ADVANTAGED,
-    year,
-    age,
-  );
-
-  const rampAmount = yearRampAmount(
-    yearIndex,
-    input.brokerageContributionRamp,
-    contribution,
-  );
-  // A gap year's need, from the pay and contributions before any is credited.
-  const gapNeed = setup.gapYear
-    ? gapYearNeed(ctx, {
-        year,
-        age,
-        fraction: proRate,
-        payByPerson: (hasPerPersonSalary
-          ? [...projectedSalaryByPerson.values()]
-          : [projectedSalary]
-        ).map((p) => p * proRate),
-        budget: state.projectedExpenses * proRate,
-        employeeContributions: totalEmployee + rampAmount,
-        pretaxContributions: totalTraditional,
-      })
-    : null;
 
   return {
+    useRealContributions,
     proRate,
     targetContribution,
     personPay,
     contribution,
     slots,
     routeWarnings,
+    specOverflow,
     rateCeilingScale,
-    totalEmployee,
-    totalEmployer,
-    totalRoth,
-    totalTraditional,
-    overflowToBrokerage,
-    totalTaxAdvSpace,
-    rampAmount,
-    gapNeed,
   };
 }
 

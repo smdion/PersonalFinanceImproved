@@ -6,6 +6,10 @@ import { assert, describe, expect, it } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
+import {
+  toSimpleTaxMode,
+  type SimpleTaxModeParts,
+} from "@/lib/pure/tax/simple-tax-mode";
 import { acct, household } from "../fixtures/two-person-household";
 
 const returnRates = Array.from({ length: 70 }, (_, i) => ({
@@ -478,5 +482,152 @@ describe("gap-year figures (pins current behavior)", () => {
       warnings: [],
       withdrawal: 70624.32,
     });
+  });
+});
+
+// A gap year's draw covers spending only: its Portfolio saving is funded
+// from the pay left after spending; only the part a draw would have to
+// fund is skipped, with a warning. Worked by hand from the rule: in 2031
+// Bo's $60,000 pay carries $16,590 of tax and payroll tax (the year's own
+// figure, pinned above), so $43,410 is left before spending. Bo saves
+// $6,000 a year to a Portfolio-parented Roth IRA (after tax, so the saving
+// doesn't change the year's tax).
+describe("a gap year's Portfolio saving", () => {
+  const portfolioRoth = {
+    ...acct("Bo Portfolio Roth", "ira", 20000, 2, "taxFree"),
+    parentCategory: "Portfolio",
+  };
+  const contributionSpecs = [
+    {
+      category: "ira",
+      name: "Bo Portfolio Roth",
+      method: "fixed_annual",
+      value: 6000,
+      salaryFraction: 0,
+      baseAnnual: 6000,
+      taxTreatment: "tax_free",
+      personId: 2,
+      ownerName: "Bo",
+      accountName: "Bo Portfolio Roth",
+      allocationPriority: 0,
+      parentCategory: "Portfolio",
+      contributionScaling: "fixed_amount",
+    },
+  ] as ProjectionInput["contributionSpecs"];
+  const run = (annualExpenses: number) => {
+    const row = year(
+      couple({ contributionSpecs, annualExpenses }, [
+        acct("Ann Roth IRA", "ira", 400000, 1, "taxFree"),
+        acct("Bo Brokerage", "brokerage", 400000, 2, "afterTax"),
+        portfolioRoth,
+      ]),
+      2031,
+    );
+    const saved = row.individualAccountBalances.find(
+      (a) => a.name === "Bo Portfolio Roth",
+    )?.contribution;
+    const skipWarning = row.warnings.find((w) =>
+      w.includes("Portfolio saving"),
+    );
+    return { row, saved, skipWarning };
+  };
+
+  it("pay that covers the saving: all of it saved, nothing drawn", () => {
+    // $43,410 − $30,000 spending = $13,410 left, over the $6,000.
+    const { row, saved, skipWarning } = run(30000);
+    expect(row.gapDraw?.taxOnIncome).toBe(16590);
+    expect(saved).toBe(6000);
+    expect(row.totalEmployee).toBe(6000);
+    expect(row.gapDraw?.withdrawal).toBe(0);
+    expect(skipWarning).toBeUndefined();
+  });
+
+  it("pay that covers part: that part saved, the rest skipped and warned", () => {
+    // $43,410 − $40,000 = $3,410 saved; $2,590 skipped, not drawn.
+    const { row, saved, skipWarning } = run(40000);
+    expect(row.gapDraw?.taxOnIncome).toBe(16590);
+    expect(saved).toBe(3410);
+    expect(row.totalEmployee).toBe(3410);
+    expect(row.gapDraw?.need).toBe(0);
+    expect(row.gapDraw?.withdrawal).toBe(0);
+    expect(skipWarning).toBe(
+      "2031: $2,590 of Portfolio saving skipped: the pay left after spending doesn't cover it, and a gap year draws for spending only.",
+    );
+  });
+
+  it("pay that covers none of it: all skipped and warned, the draw is spending only", () => {
+    // $43,410 − $100,000 = −$56,590: nothing saved; the draw is the
+    // $56,590 spending needs; the $6,000 isn't drawn.
+    const { row, saved, skipWarning } = run(100000);
+    expect(saved ?? 0).toBe(0);
+    expect(row.totalEmployee).toBe(0);
+    expect(row.gapDraw?.need).toBe(56590);
+    expect(row.gapDraw?.contributions).toBe(0);
+    expect(skipWarning).toContain("2031: $6,000 of Portfolio saving skipped");
+  });
+
+  it("a working year saves it all", () => {
+    expect(year(couple({ contributionSpecs }), 2029).totalEmployee).toBe(6000);
+  });
+});
+
+// The brokerage ramp ($1,000 more each year, so $5,000 in 2031) is Portfolio
+// saving only when it lands in a Portfolio brokerage; with none it goes to a
+// Retirement brokerage, and retirement saving continues as configured.
+describe("a gap year's brokerage ramp", () => {
+  const ramp = { brokerageContributionRamp: 1000 };
+
+  it("with no Portfolio brokerage it is retirement saving: kept and drawn for", () => {
+    // $100,000 − ($60,000 − $5,000 − $16,590) = $61,590.
+    const row = year(couple(ramp), 2031);
+    expect(row.brokerageRampContribution).toBe(5000);
+    expect(row.gapDraw?.need).toBe(61590);
+    expect(row.warnings.some((w) => w.includes("Portfolio saving"))).toBe(
+      false,
+    );
+  });
+
+  it("with no Portfolio brokerage Simple mode keeps it too", () => {
+    const zero = { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 };
+    const parts: SimpleTaxModeParts = {
+      retirementBuckets: {
+        preTax: 0,
+        taxFree: 400000,
+        hsa: 0,
+        afterTax: 400000,
+        afterTaxBasis: 400000,
+      },
+      defaults: {
+        baseYearContributions: zero,
+        baseYearEmployerMatch: zero,
+        employerMatchRateByCategory: zero,
+        accountSplits: zero,
+        taxSplits: {},
+      },
+    };
+    const row = year(toSimpleTaxMode(couple(ramp), parts), 2031);
+    expect(row.brokerageRampContribution).toBe(5000);
+    expect(row.warnings.some((w) => w.includes("Portfolio saving"))).toBe(
+      false,
+    );
+  });
+
+  it("landing in a Portfolio brokerage it is Portfolio saving: skipped and warned", () => {
+    const row = year(
+      couple(ramp, [
+        acct("Ann Roth IRA", "ira", 400000, 1, "taxFree"),
+        acct("Bo Brokerage", "brokerage", 400000, 2, "afterTax"),
+        {
+          ...acct("Bo Portfolio", "brokerage", 20000, 2, "afterTax"),
+          parentCategory: "Portfolio",
+        },
+      ]),
+      2031,
+    );
+    expect(row.brokerageRampContribution).toBe(0);
+    expect(row.gapDraw?.need).toBe(56590);
+    expect(row.warnings).toContain(
+      "2031: $5,000 of Portfolio saving skipped: the pay left after spending doesn't cover it, and a gap year draws for spending only.",
+    );
   });
 });

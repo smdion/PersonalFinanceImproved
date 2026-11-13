@@ -1766,12 +1766,10 @@
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
     }
+   ],
+   "warnings": [
+    "2044: $4,767 of Portfolio saving skipped: the pay left after spending doesn't cover it, and a gap year draws for spending only."
    ]
   },
   {
@@ -1916,12 +1914,10 @@
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
     }
+   ],
+   "warnings": [
+    "2045: $4,910 of Portfolio saving skipped: the pay left after spending doesn't cover it, and a gap year draws for spending only."
    ]
   },
   {
@@ -8085,6 +8081,20 @@
      "name": "Joint Brokerage (Schwab)",
      "parentCategory": "Portfolio",
      "taxType": "afterTax"
+    },
+    {
+     "category": "brokerage",
+     "draw": {
+      "allowPenalizedWithdrawals": false,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      }
+     },
+     "name": "Retirement brokerage (projected)",
+     "parentCategory": "Retirement",
+     "projectedOnly": true,
+     "taxType": "afterTax"
     }
    ],
    "phase": "decumulation",
@@ -8113,7 +8123,7 @@
      "personName": "Riley"
     }
    ],
-   "rmdOverrodeRouting": false,
+   "rmdOverrodeRouting": true,
    "slots": [
     {
      "cappedByAccount": false,

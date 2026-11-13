@@ -10,6 +10,7 @@ import {
   zeroBalance,
 } from "../../config/account-types";
 import { roundToCents } from "../../utils/math";
+import { rampIsPortfolioSaving } from "../accounts/brokerage-ramp";
 import { resolveLumpSumTarget } from "../engine/projection-year-handlers/lump-sum";
 import type { AccountBalance } from "../../config/account-types.types";
 import type { AccountCategory } from "../../config/account-types";
@@ -62,12 +63,9 @@ export function toSimpleTaxMode(
   const total = roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
   const isRetirementSpec = (s: { parentCategory?: string }) =>
     isRetirementMoney(s.parentCategory);
-  // The ramp is Portfolio savings whenever a Portfolio brokerage holds it (the
-  // engine's rule; its projected brokerage is Retirement money); else retirement.
-  const hasPortfolioBrokerage = indAccounts.some(
-    (ia) =>
-      isOverflowTarget(ia.category) && !isRetirementMoney(ia.parentCategory),
-  );
+  // The ramp is Portfolio savings when it lands in a Portfolio brokerage
+  // (the engine's rule); otherwise retirement money.
+  const hasPortfolioBrokerage = rampIsPortfolioSaving(indAccounts);
 
   return {
     ...input,

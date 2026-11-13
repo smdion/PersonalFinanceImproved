@@ -26316,12 +26316,10 @@
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "401k"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "brokerage"
        }
+      ],
+      "warnings": [
+       "2044: $4,767 of Portfolio saving skipped: the pay left after spending doesn't cover it, and a gap year draws for spending only."
       ]
      },
      {
@@ -26466,12 +26464,10 @@
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "401k"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "brokerage"
        }
+      ],
+      "warnings": [
+       "2045: $4,910 of Portfolio saving skipped: the pay left after spending doesn't cover it, and a gap year draws for spending only."
       ]
      },
      {

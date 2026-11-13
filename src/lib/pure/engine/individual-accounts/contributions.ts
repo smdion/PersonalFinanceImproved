@@ -14,7 +14,8 @@ import {
 } from "../../../config/account-types";
 import { projectSpecAmount } from "../contribution-projection";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
-import { credit, portfolioFirst, retirementFirst, specKeyOf } from "./ledger";
+import { rampBrokerages } from "@/lib/pure/accounts/brokerage-ramp";
+import { credit, retirementFirst, specKeyOf } from "./ledger";
 import { otherParts } from "./other-tax-part";
 
 interface DistributeContributionsInput {
@@ -350,11 +351,7 @@ export function distributeContributions(
     // household has no brokerage at all.
     const parentOf = (ia: IndividualAccountInput) =>
       indParentCat.get(indKey(ia)) ?? ia.parentCategory;
-    const brokerages = indAccounts.filter((ia) =>
-      isOverflowTarget(ia.category),
-    );
-    const real = brokerages.filter((ia) => ia.origin !== "projected");
-    const group = real.length > 0 ? portfolioFirst(real, parentOf) : brokerages;
+    const group = rampBrokerages(indAccounts, parentOf);
     const groupWithSpecs = group.filter((ia) =>
       accountsWithSpecs.has(indKey(ia)),
     );

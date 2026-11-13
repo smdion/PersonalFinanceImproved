@@ -98,7 +98,7 @@ $12,000.00
 Total
 $40,000.00$50,100.00 w/ match
 Retirement
-$2,101,169.31
+$2,107,214.40
 Nest egg in 2046 (today's $, baseline — fixed returns)
 Run a simulation on the Retirement page to see the simulated range.
 Years to retirement20 yrs (2026 → 2046)
@@ -109,7 +109,7 @@ HSA$28,000.00
 Contributions$28,000.00/yr(+ $10,100.00 match)
 Tax-advantaged room$29,750.00/yr
 Retirement budget$62,400.00/yr
-Est. Withdrawal (baseline)?$97,178.89/yr(Variable Percentage (VPW), varies)
+Est. Withdrawal (baseline)?$97,458.47/yr(Variable Percentage (VPW), varies)
 Coast FIRE?2032 (Jordan, 48)(baseline; see Projection Health for simulated)
 DurationLasts to 97+
 Readiness?

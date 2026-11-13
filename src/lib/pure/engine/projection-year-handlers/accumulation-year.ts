@@ -52,8 +52,6 @@ export function runAccumulationYear(
     firstYearFraction,
     OVERFLOW_CATEGORY,
   } = ctx;
-  // This year's specs: someone not at work this year has theirs zeroed.
-  const contributionSpecs = setup.yearSpecs ?? state.contributionSpecs;
   const {
     balances,
     accountBalance,
@@ -97,12 +95,8 @@ export function runAccumulationYear(
     totalTaxAdvSpace,
     rampAmount,
     gapNeed,
-  } = sizeYearContributions(ctx, state, setup, {
-    yearIndex,
-    config,
-    lgf,
     contributionSpecs,
-  });
+  } = sizeYearContributions(ctx, state, setup, { yearIndex, config, lgf });
   creditYearContributions(
     slots,
     balances,
