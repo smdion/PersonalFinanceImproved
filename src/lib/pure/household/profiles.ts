@@ -134,6 +134,15 @@ function isJobCurrent(job: Omit<JobLike, "personId">, asOf: Date): boolean {
   );
 }
 
+/** Jobs in a person's order: started first, then the lower id, whatever order rows arrive in. */
+function startedFirst(
+  a: { startDate: string; id: number },
+  b: { startDate: string; id: number },
+): number {
+  if (a.startDate === b.startDate) return a.id - b.id;
+  return a.startDate < b.startDate ? -1 : 1;
+}
+
 /** The person's current job on `asOf` (isJobCurrent). With two current,
  *  the one started first (then the lower id), whatever order rows arrive in. */
 export function findActiveJob<T extends JobLike & { id: number }>(
@@ -143,13 +152,7 @@ export function findActiveJob<T extends JobLike & { id: number }>(
 ): T | undefined {
   return jobs
     .filter((j) => j.personId === personId && isJobCurrent(j, asOf))
-    .sort((a, b) =>
-      a.startDate === b.startDate
-        ? a.id - b.id
-        : a.startDate < b.startDate
-          ? -1
-          : 1,
-    )[0];
+    .sort(startedFirst)[0];
 }
 
 /** A job's What-If tweak: the person's current job's only (findActiveJob, as Paycheck reads it);
