@@ -304,7 +304,7 @@
     "src/lib/pure/engine/projection-year-handlers/year-deduction.ts": 57,
     "src/lib/pure/engine/projection-year-handlers/year-draws.ts": 181,
     "src/lib/pure/engine/projection-year-handlers/year-end-accounts.ts": 116,
-    "src/lib/pure/engine/projection-year-handlers/year-end.ts": 152,
+    "src/lib/pure/engine/projection-year-handlers/year-end.ts": 151,
     "src/lib/pure/engine/projection-year-handlers/year-need.ts": 97,
     "src/lib/pure/engine/projection-year-handlers/year-tax-tables.ts": 85,
     "src/lib/pure/engine/rmd-enforcement.ts": 431,

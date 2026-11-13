@@ -117,14 +117,13 @@ export function distributeYearDraws(
   },
 ) {
   const { hasIndividualAccounts, indAccounts, indKey } = ctx;
-  const { indBalance, brokBasis, indBasis } = state;
   const { year, eligibility } = thisYear;
   const { slots, routeWarnings } = flow.route;
   const { ownerRmd } = flow.rmd;
-  // Draws reach accounts before tax: the tax reads this year's Roth basis
-  // draws, and only indBalance/indBasis change here. indBalance is copied first for
-  // the basis draw's pro-rata ratio.
-  const preWithdrawalIndBalance = new Map(indBalance);
+  // Copies: drawn before tax, landed by settleYearDraws with the deduction.
+  const indBalance = new Map(state.indBalance);
+  const brokBasis = new Map(state.brokBasis);
+  const indBasis = new Map(state.indBasis);
   const distributeResult = hasIndividualAccounts
     ? followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
         distributeWithdrawals(
@@ -144,7 +143,7 @@ export function distributeYearDraws(
         indAccounts,
         indKey,
         indBasis,
-        preWithdrawalBalance: preWithdrawalIndBalance,
+        preWithdrawalBalance: state.indBalance,
         withdrawals: decumulationIndWithdrawal,
       })
     : new Map<string, BasisDraw>();
@@ -177,5 +176,6 @@ export function distributeYearDraws(
     basisDraws,
     rothTaxSplit,
     earlyWithdrawalPenalty,
+    ledger: { indBalance, brokBasis, indBasis },
   };
 }

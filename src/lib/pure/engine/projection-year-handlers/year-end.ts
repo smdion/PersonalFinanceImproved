@@ -43,18 +43,17 @@ export function closeDecumulationYear(
   const { decumContributionByAccount } = flow.contributions;
   const { decumulationIndWithdrawal, basisDraws } = flow.drawn;
   const { routeWarnings } = flow.route;
-  // Apply growth
+  // Apply growth, to the tax buckets and to each account (negatives at 0)
   applyGrowth({ effectiveReturn: returnRate, balances, accountBalance });
+  const decumulationIndGrowth = hasIndividualAccounts
+    ? applyIndividualGrowth(indAccounts, indKey, indBalance, returnRate, true)
+    : new Map<string, number>();
 
   // Update RMD tracking: year-end Traditional balance (after growth) for next year's RMD
   state.priorYearEndTradBalance = balances.preTax;
   // Update spending strategy state: prior year return + spending
   spendingState.priorYearReturn = returnRate;
   spendingState.priorYearSpending = state.projectedExpenses;
-  // Per-individual-account growth (decumulation)
-  const decumulationIndGrowth = hasIndividualAccounts
-    ? applyIndividualGrowth(indAccounts, indKey, indBalance, returnRate, true)
-    : new Map<string, number>();
   // Each owner's RMD base is year-end, after growth — like the household's
   // above and accumulation's.
   updatePerPersonTradBalance(ctx, state);

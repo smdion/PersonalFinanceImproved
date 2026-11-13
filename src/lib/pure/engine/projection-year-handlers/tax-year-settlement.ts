@@ -162,9 +162,13 @@ export function settleYearDraws(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
   thisYear: DecumulationYear,
-  flow: Pick<DecumulationFlow, "need" | "route" | "rmd" | "priced" | "parts">,
+  flow: Omit<DecumulationFlow, "conversion">,
 ) {
   const { indAccounts, indKey, hasIndividualAccounts } = ctx;
+  // Each account's draw (distributeYearDraws) lands with the deduction below.
+  for (const [k, v] of flow.drawn.ledger.indBalance) state.indBalance.set(k, v);
+  for (const [k, v] of flow.drawn.ledger.brokBasis) state.brokBasis.set(k, v);
+  for (const [k, v] of flow.drawn.ledger.indBasis) state.indBasis.set(k, v);
   const { balances, accountBalance, indBalance, brokBasis } = state;
   const { depletionTracked, accountDepletions } = state;
   const { config, year, age } = thisYear;
@@ -173,12 +177,8 @@ export function settleYearDraws(
   const { taxFromSlots } = flow.priced;
   const { rmdOverrodeRouting, totalWithdrawal } = flow.rmd;
   const { afterTaxNeed } = flow.need;
-  // Deduct withdrawals from tax buckets and per-account balances
   deductWithdrawals({ slots, balances, accountBalance, brokerageBasisPortion });
-
-  // Ensure no negative balances
   clampBalances(balances, accountBalance);
-
   // Lump sums (one-time, outside limits) are cash in: new basis in the
   // brokerage account they land in.
   followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
