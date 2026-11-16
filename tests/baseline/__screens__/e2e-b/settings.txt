@@ -16,16 +16,19 @@ ID
 Name
 Date of Birth
 Primary
+Spouse
 Actions
 1
 Jordan
 1984-02-20
 Yes
+Riley (if filing jointly)
 Edit
 Delete
 2
 Riley
 1986-09-05
+Jordan (if filing jointly)
 Edit
 Delete
 Retirement

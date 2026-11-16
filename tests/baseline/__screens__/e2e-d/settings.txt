@@ -16,16 +16,19 @@ ID
 Name
 Date of Birth
 Primary
+Spouse
 Actions
 1
 Sam
 1976-03-10
 Yes
+Alex (if filing jointly)
 Edit
 Delete
 2
 Alex
 1978-06-20
+Sam (if filing jointly)
 Edit
 Delete
 Retirement

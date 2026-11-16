@@ -1,10 +1,10 @@
 "use client";
 
-/** Settings tab for managing household members (name, date of birth, primary flag) using the generic DataTable with an inline person form. */
+/** Settings tab for managing household members (name, date of birth, primary flag, spouse) using the generic DataTable with an inline person form. */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
-import { FormField, FormInput } from "@/components/forms";
+import { FormField, FormInput, FormSelect } from "@/components/forms";
 import { DataTable, DataTableFormActions } from "./data-table";
 
 export function PeopleSettings() {
@@ -21,6 +21,16 @@ export function PeopleSettings() {
   const updateMut = trpc.people.update.useMutation({
     onSuccess: () => utils.people.list.invalidate(),
   });
+  const spouseMut = trpc.people.setSpouse.useMutation({
+    onSuccess: () => {
+      utils.people.list.invalidate();
+      utils.projection.invalidate();
+      utils.retirement.invalidate();
+    },
+  });
+  const people = data ?? [];
+  const nameOf = (id: number | null) =>
+    people.find((p) => p.id === id)?.name ?? null;
 
   return (
     <DataTable
@@ -33,6 +43,51 @@ export function PeopleSettings() {
           key: "isPrimaryUser",
           label: "Primary",
           render: (r) => (r.isPrimaryUser ? "Yes" : ""),
+        },
+        {
+          key: "spousePersonId",
+          label: "Spouse",
+          render: (r) => {
+            // Two people: the joint return's spouses are the two of them (shown, not chosen).
+            if (people.length < 3) {
+              const other = people.find((p) => p.id !== r.id);
+              return other ? (
+                <span
+                  className="text-muted"
+                  title="On a joint return, the spouses are the household's two people"
+                >
+                  {other.name} (if filing jointly)
+                </span>
+              ) : (
+                ""
+              );
+            }
+            if (!admin) return nameOf(r.spousePersonId) ?? "";
+            return (
+              <FormSelect
+                aria-label={`${r.name}'s spouse`}
+                title="Who files a joint return with this person: Social Security spousal benefits and the RMD spouse table use it"
+                value={r.spousePersonId ?? ""}
+                disabled={spouseMut.isPending}
+                onChange={(e) =>
+                  spouseMut.mutate({
+                    id: r.id,
+                    spousePersonId:
+                      e.target.value === "" ? null : Number(e.target.value),
+                  })
+                }
+              >
+                <option value="">None</option>
+                {people
+                  .filter((p) => p.id !== r.id)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+              </FormSelect>
+            );
+          },
         },
       ]}
       data={data}

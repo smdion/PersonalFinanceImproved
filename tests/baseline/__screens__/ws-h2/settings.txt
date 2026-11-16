@@ -16,6 +16,7 @@ ID
 Name
 Date of Birth
 Primary
+Spouse
 Actions
 1
 Taylor
