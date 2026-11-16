@@ -145,7 +145,7 @@ export function creditYearContributions(
 
 /** The year's contributions, match, overflow and ramp, spread to each account. */
 export function distributeYearContributions(
-  hasIndividualAccounts: boolean,
+  holdsAccounts: boolean,
   contributionSpecs: ProjectionLoopState["contributionSpecs"],
   indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
@@ -177,7 +177,7 @@ export function distributeYearContributions(
     followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
       own.forEach(([ia, amount]) => credit(indKey(ia), amount, [indBalance])),
     );
-  else if (hasIndividualAccounts && contributionSpecs) {
+  else if (holdsAccounts && contributionSpecs) {
     ({ indContributions, indMatch, indIntentional, indOverflow, indRamp } =
       followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
         distributeContributions({

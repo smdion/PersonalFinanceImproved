@@ -21,14 +21,14 @@ import type { LumpSum } from "@/lib/pure/engine/types";
 
 function makeCtx(
   overrides: Partial<{
-    hasIndividualAccounts: boolean;
+    holdsAccounts: boolean;
     indAccounts: { name?: string; category: string; taxType: string }[];
     indKey: (ia: object) => string;
     rmdStartAgeByPerson: Map<number, { startAge: number; birthYear: number }>;
   }> = {},
 ): ProjectionContext {
   return {
-    hasIndividualAccounts: false,
+    holdsAccounts: false,
     indAccounts: [],
     // Keyed by category alone — this test\'s indBalance is keyed the same way.
     indKey: (ia: object) => (ia as { category: string }).category,
@@ -117,7 +117,7 @@ describe("applyLumpSums", () => {
       { name: "myBrokerage", category: "brokerage", taxType: "afterTax" },
     ];
     const ctx = makeCtx({
-      hasIndividualAccounts: true,
+      holdsAccounts: true,
       indAccounts,
       indKey: (ia: { name?: string }) => ia.name ?? "",
     });
@@ -153,7 +153,7 @@ describe("applyLumpSums", () => {
       },
     ];
     const ctx = makeCtx({
-      hasIndividualAccounts: true,
+      holdsAccounts: true,
       indAccounts,
       indKey: (ia: { name?: string; ownerName?: string }) =>
         `${ia.ownerName}::${ia.name}`,
@@ -179,7 +179,7 @@ describe("applyLumpSums", () => {
       { name: "myBrokerage", category: "brokerage", taxType: "afterTax" },
     ];
     const ctx = makeCtx({
-      hasIndividualAccounts: true,
+      holdsAccounts: true,
       indAccounts,
       indKey: (ia: { name?: string }) => ia.name ?? "",
     });
@@ -200,7 +200,7 @@ describe("applyLumpSums", () => {
     const indBalance = new Map<string, number>([["401k", 200000]]);
     const indAccounts = [{ category: "401k", taxType: "preTax" }];
     const ctx = makeCtx({
-      hasIndividualAccounts: true,
+      holdsAccounts: true,
       indAccounts,
       // Keyed by category alone — this test\'s indBalance is keyed the same way.
       indKey: (ia: object) => (ia as { category: string }).category,
@@ -229,7 +229,7 @@ describe("updatePerPersonTradBalance", () => {
     const rmdMap = new Map([[1, { startAge: 73, birthYear: 1951 }]]);
     const ctx = makeCtx({
       rmdStartAgeByPerson: rmdMap,
-      hasIndividualAccounts: false,
+      holdsAccounts: false,
     });
     const state = makeState();
     state.priorYearEndTradByPerson.set(1, 500);
@@ -249,7 +249,7 @@ describe("updatePerPersonTradBalance", () => {
     ]);
     const ctx = makeCtx({
       rmdStartAgeByPerson: rmdMap,
-      hasIndividualAccounts: true,
+      holdsAccounts: true,
       indAccounts,
       // Keyed by category alone — this test\'s indBalance is keyed the same way.
       indKey: (ia: object) => (ia as { category: string }).category,
@@ -267,7 +267,7 @@ describe("updatePerPersonTradBalance", () => {
     const indBalance = new Map([["401k", 80000]]);
     const ctx = makeCtx({
       rmdStartAgeByPerson: rmdMap,
-      hasIndividualAccounts: true,
+      holdsAccounts: true,
       indAccounts,
       // Keyed by category alone — this test\'s indBalance is keyed the same way.
       indKey: (ia: object) => (ia as { category: string }).category,

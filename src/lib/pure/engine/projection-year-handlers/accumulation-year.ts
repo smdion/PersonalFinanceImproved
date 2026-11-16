@@ -44,7 +44,7 @@ export function runAccumulationYear(
     budgetOverrideMap,
     brokerageGoalsByYear,
     sortedAccOverrides,
-    hasIndividualAccounts,
+    holdsAccounts,
     indAccounts,
     indKey,
     indParentCat,
@@ -113,7 +113,7 @@ export function runAccumulationYear(
   );
   const { indContributions, indMatch, indIntentional, indOverflow, indRamp } =
     distributeYearContributions(
-      hasIndividualAccounts,
+      holdsAccounts,
       contributionSpecs,
       indAccounts,
       indKey,
@@ -148,7 +148,7 @@ export function runAccumulationYear(
       ? Math.pow(1 + returnRate, firstYearFraction) - 1
       : returnRate;
   applyGrowth({ effectiveReturn, balances, accountBalance });
-  const indGrowth = hasIndividualAccounts
+  const indGrowth = holdsAccounts
     ? applyIndividualGrowth(indAccounts, indKey, indBalance, effectiveReturn)
     : new Map<string, number>();
 
@@ -156,7 +156,7 @@ export function runAccumulationYear(
     brokerageGoalsByYear,
     year,
     balances,
-    hasIndividualAccounts,
+    holdsAccounts,
     indAccounts,
     indKey,
     indBalance,
@@ -168,7 +168,7 @@ export function runAccumulationYear(
   );
   const { indYearBalances, allAccountsBalance, retirementBalance } =
     closeYearAccounts(
-      hasIndividualAccounts,
+      holdsAccounts,
       indAccounts,
       indKey,
       indBalance,

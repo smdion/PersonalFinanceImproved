@@ -86,7 +86,7 @@ export function buildProjectionState(
   );
 
   const { specToAccount, accountsWithSpecs } =
-    ctx.hasIndividualAccounts && contributionSpecs
+    ctx.holdsAccounts && contributionSpecs
       ? buildSpecToAccountMapping(
           contributionSpecs,
           ctx.indAccounts,

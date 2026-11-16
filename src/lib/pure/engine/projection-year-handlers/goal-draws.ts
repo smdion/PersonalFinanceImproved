@@ -38,7 +38,7 @@ export function brokerageGoalDraws(
   brokerageGoalsByYear: ProjectionContext["brokerageGoalsByYear"],
   year: number,
   balances: ProjectionLoopState["balances"],
-  hasIndividualAccounts: boolean,
+  holdsAccounts: boolean,
   indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
   indBalance: ProjectionLoopState["indBalance"],
@@ -58,7 +58,7 @@ export function brokerageGoalDraws(
       Math.min(
         goal.targetAmount,
         balances.afterTax,
-        hasIndividualAccounts
+        holdsAccounts
           ? goalFundingBalance(indAccounts, indKey, indBalance)
           : balances.afterTax,
       ),
@@ -80,7 +80,7 @@ export function brokerageGoalDraws(
     // Goals draw Portfolio brokerages, so their own basis prices the gain
     // (the aggregate ratio when they hold nothing per account).
     const basisRatio =
-      (hasIndividualAccounts
+      (holdsAccounts
         ? groupBasisRatio(
             goalFundingAccounts(indAccounts),
             indKey,
@@ -109,7 +109,7 @@ export function brokerageGoalDraws(
         Math.max(0, getBasis(accountBalance[OVERFLOW_CATEGORY]) - basisPortion),
       ),
     );
-    if (hasIndividualAccounts) {
+    if (holdsAccounts) {
       followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
         distributeGoalWithdrawal(drawAmount, indAccounts, indKey, indBalance),
       );

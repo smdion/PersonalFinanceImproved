@@ -165,7 +165,7 @@ export function settleYearDraws(
   thisYear: DecumulationYear,
   flow: Omit<DecumulationFlow, "conversion">,
 ) {
-  const { indAccounts, indKey, hasIndividualAccounts } = ctx;
+  const { indAccounts, indKey, holdsAccounts } = ctx;
   // Each account's draw (distributeYearDraws) lands with the deduction below.
   for (const [k, v] of flow.drawn.ledger.indBalance) state.indBalance.set(k, v);
   for (const [k, v] of flow.drawn.ledger.brokBasis) state.brokBasis.set(k, v);
@@ -206,14 +206,14 @@ export function settleYearDraws(
         withdrawalTax,
         balances,
         accountBalance,
-        hasIndividualAccounts ? indAccounts : undefined,
-        hasIndividualAccounts ? indBalance : undefined,
-        hasIndividualAccounts ? indKey : undefined,
+        holdsAccounts ? indAccounts : undefined,
+        holdsAccounts ? indBalance : undefined,
+        holdsAccounts ? indKey : undefined,
       ),
   );
 
   // Clamp individual account balances
-  if (hasIndividualAccounts) {
+  if (holdsAccounts) {
     followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
       clampIndividualBalances(indAccounts, indKey, indBalance),
     );
@@ -239,8 +239,7 @@ export function yearRothConversion(
   thisYear: DecumulationYear,
   flow: Pick<DecumulationFlow, "need" | "route" | "rmd" | "priced" | "parts">,
 ) {
-  const { hasIndividualAccounts, rmdStartAgeByPerson, indAccounts, indKey } =
-    ctx;
+  const { holdsAccounts, rmdStartAgeByPerson, indAccounts, indKey } = ctx;
   const { input } = ctx;
   const { enableIrmaaAwareness, filingStatus } = input;
   const { indBalance, balances, brokBasis, accountBalance } = state;
@@ -306,7 +305,7 @@ export function yearRothConversion(
     brokBasis,
     () =>
       performRothConversion({
-        brokerageBasisRatio: hasIndividualAccounts
+        brokerageBasisRatio: holdsAccounts
           ? retirementBrokerageBasisRatio(
               indAccounts,
               indKey,
@@ -335,9 +334,9 @@ export function yearRothConversion(
         accountBalance,
         // Portfolio-parented money stays out of the conversion and its tax.
         nonRetirement,
-        indAccounts: hasIndividualAccounts ? indAccounts : undefined,
-        indBalance: hasIndividualAccounts ? indBalance : undefined,
-        indKey: hasIndividualAccounts ? indKey : undefined,
+        indAccounts: holdsAccounts ? indAccounts : undefined,
+        indBalance: holdsAccounts ? indBalance : undefined,
+        indKey: holdsAccounts ? indKey : undefined,
         rmdSmoothingTarget,
         rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
       }),

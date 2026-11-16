@@ -12,7 +12,7 @@ import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** The year's per-account rows, then the accounts reconciled and checked. */
 export function closeYearAccounts(
-  hasIndividualAccounts: boolean,
+  holdsAccounts: boolean,
   indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
   indBalance: ProjectionLoopState["indBalance"],
@@ -33,7 +33,7 @@ export function closeYearAccounts(
   retirementYear: number,
   age: number,
 ) {
-  const indYearBalances: IndividualAccountYearBalance[] = hasIndividualAccounts
+  const indYearBalances: IndividualAccountYearBalance[] = holdsAccounts
     ? buildIndividualYearBalances(
         indAccounts,
         indKey,
@@ -63,7 +63,7 @@ export function closeYearAccounts(
   // Reconcile indBalance to accountBalance once per year, as decumulation-year.ts does:
   // after the output row is built (output shows pre-cleanup figures, the
   // carried state post-cleanup) and before the divergence check below.
-  if (hasIndividualAccounts) {
+  if (holdsAccounts) {
     routeWarnings.push(
       ...followReconciliation(
         indAccounts,
@@ -94,7 +94,7 @@ export function closeYearAccounts(
 
   const { allAccountsBalance, retirementBalance } = scopedBalances(
     balances,
-    hasIndividualAccounts
+    holdsAccounts
       ? computeNonRetirementExclusion(indAccounts, indBalance, indKey)
       : undefined,
   );

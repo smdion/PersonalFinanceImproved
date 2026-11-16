@@ -53,7 +53,7 @@ export function runPreYearSetup(
     budgetOverrideMap,
     returnRateMap,
     sortedProfileSwitches,
-    hasIndividualAccounts,
+    holdsAccounts,
     indAccounts,
     indKey,
     indParentCat,
@@ -91,7 +91,7 @@ export function runPreYearSetup(
       // Update contribution rate ceiling for the new profile
       state.accumulationDefaults.contributionRate = ps.contributionRate;
       // Rebuild spec-to-account mapping for the new specs
-      if (hasIndividualAccounts) {
+      if (holdsAccounts) {
         const rebuilt = buildSpecToAccountMapping(
           state.contributionSpecs,
           indAccounts,
@@ -269,7 +269,7 @@ export function runPreYearSetup(
   // Portfolio-parented accounts never size retirement spending. Computed once per
   // decumulation year (PreYearSetup.nonRetirement) so every consumer reads the same figure.
   const nonRetirement =
-    !isAccumulation && hasIndividualAccounts
+    !isAccumulation && holdsAccounts
       ? computeNonRetirementExclusion(indAccounts, state.indBalance, indKey)
       : undefined;
   const { allAccountsBalance: totalBalance, retirementBalance } =

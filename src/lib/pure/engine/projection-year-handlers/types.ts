@@ -154,7 +154,7 @@ export type ProjectionContext = {
   // Individual account setup
   /** Some part belongs to a real account (`isHeldPart`); without one the run
    *  takes the household path and `indAccounts` is empty. */
-  hasIndividualAccounts: boolean;
+  holdsAccounts: boolean;
   indAccounts: IndividualAccountInput[];
   indKey: ReturnType<typeof makeIndKey>;
   indParentCat: Map<string, string>;

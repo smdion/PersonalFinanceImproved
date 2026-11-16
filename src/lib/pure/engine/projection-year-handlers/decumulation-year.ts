@@ -37,7 +37,7 @@ export function runDecumulationYear(
   const {
     input,
     sortedDecumulationOverrides,
-    hasIndividualAccounts,
+    holdsAccounts,
     indAccounts,
     indKey,
   } = ctx;
@@ -54,7 +54,7 @@ export function runDecumulationYear(
   // Each account's penalty-free/locked split this year, computed once for
   // both routeForMode sites (the solver's estimate and the real draw), from
   // the running Roth basis the UI shows.
-  const eligibility = ctx.hasIndividualAccounts
+  const eligibility = ctx.holdsAccounts
     ? computeWithdrawalEligibility({
         year,
         indAccounts,
@@ -91,7 +91,7 @@ export function runDecumulationYear(
   // The brokerage basis ratio of this year's retirement withdrawals: the
   // Retirement brokerages' own (start of year). One ratio for the
   // estimate, the ranking and the real tax.
-  const retirementBasisRatio = hasIndividualAccounts
+  const retirementBasisRatio = holdsAccounts
     ? retirementBrokerageBasisRatio(indAccounts, indKey, indBalance, brokBasis)
     : undefined;
 

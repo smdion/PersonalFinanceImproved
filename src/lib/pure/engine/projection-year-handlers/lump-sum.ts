@@ -27,7 +27,7 @@ export function applyLumpSums(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
 ): void {
-  const { hasIndividualAccounts, indAccounts, indKey } = ctx;
+  const { holdsAccounts, indAccounts, indKey } = ctx;
   const { balances, accountBalance, indBalance } = state;
 
   for (const ls of lumpSums) {
@@ -51,7 +51,7 @@ export function applyLumpSums(
       addBasis(accountBalance[ls.targetAccount], ls.amount);
     }
     // Update individual account tracking for the lump sum
-    if (hasIndividualAccounts) {
+    if (holdsAccounts) {
       const target = resolveLumpSumTarget(ls, indAccounts);
       if (target) {
         const key = indKey(target);

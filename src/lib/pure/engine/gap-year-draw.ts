@@ -50,7 +50,7 @@ export function runGapYearDraw(
   state: ProjectionLoopState,
   sized: GapYearNeed,
 ): { draw: GapYearDraw; accounts: GapYearAccounts | null } {
-  const { input, hasIndividualAccounts, indAccounts, indKey } = ctx;
+  const { input, holdsAccounts, indAccounts, indKey } = ctx;
   const { balances, accountBalance, indBalance, indBasis, brokBasis } = state;
   const { year, need, figures, wages, incomeAlone, taxOnIncome } = sized;
   const { taxableSsOn, taxBrackets, standardDeduction, ltcgBrackets } = sized;
@@ -76,7 +76,7 @@ export function runGapYearDraw(
     decumulationDefaults,
     ctx.sortedDecumulationOverrides,
   );
-  const eligibility = ctx.hasIndividualAccounts
+  const eligibility = ctx.holdsAccounts
     ? computeWithdrawalEligibility({
         year,
         indAccounts,
@@ -85,19 +85,19 @@ export function runGapYearDraw(
         indBasis,
       })
     : undefined;
-  const nonRetirement = hasIndividualAccounts
+  const nonRetirement = holdsAccounts
     ? computeNonRetirementExclusion(indAccounts, indBalance, indKey)
     : undefined;
-  const retirementBasisRatio = hasIndividualAccounts
+  const retirementBasisRatio = holdsAccounts
     ? retirementBrokerageBasisRatio(indAccounts, indKey, indBalance, brokBasis)
     : undefined;
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: retirementBasisRatio,
-    indBasis: hasIndividualAccounts ? indBasis : undefined,
-    indAccounts: hasIndividualAccounts ? indAccounts : undefined,
-    indKey: hasIndividualAccounts ? indKey : undefined,
-    indBalance: hasIndividualAccounts ? indBalance : undefined,
+    indBasis: holdsAccounts ? indBasis : undefined,
+    indAccounts: holdsAccounts ? indAccounts : undefined,
+    indKey: holdsAccounts ? indKey : undefined,
+    indBalance: holdsAccounts ? indBalance : undefined,
     year,
   });
 
@@ -131,7 +131,7 @@ export function runGapYearDraw(
     balance: typeof indBalance,
     basis: typeof indBasis,
   ) => {
-    if (!hasIndividualAccounts)
+    if (!holdsAccounts)
       return {
         byKey: new Map<string, number>(),
         draws: new Map<string, BasisDraw>(),
@@ -233,7 +233,7 @@ export function runGapYearDraw(
     brokerageBasisPortion: priced.brokerageBasisPortion,
   });
   clampBalances(balances, accountBalance);
-  if (hasIndividualAccounts) {
+  if (holdsAccounts) {
     followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
       clampIndividualBalances(indAccounts, indKey, indBalance),
     );

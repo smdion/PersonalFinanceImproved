@@ -35,7 +35,7 @@ export function closeDecumulationYear(
     contributions: ReturnType<typeof decumulationPortfolioContributions>;
   },
 ) {
-  const { hasIndividualAccounts, indAccounts, indKey, indParentCat } = ctx;
+  const { holdsAccounts, indAccounts, indKey, indParentCat } = ctx;
   const { balances, accountBalance, spendingState } = state;
   const { indBalance, indBasis, brokBasis } = state;
   const { year, age, eligibility } = thisYear;
@@ -45,7 +45,7 @@ export function closeDecumulationYear(
   const { routeWarnings } = flow.route;
   // Apply growth, to the tax buckets and to each account (negatives at 0)
   applyGrowth({ effectiveReturn: returnRate, balances, accountBalance });
-  const decumulationIndGrowth = hasIndividualAccounts
+  const decumulationIndGrowth = holdsAccounts
     ? applyIndividualGrowth(indAccounts, indKey, indBalance, returnRate, true)
     : new Map<string, number>();
 
@@ -66,13 +66,13 @@ export function closeDecumulationYear(
 
   // Tracked Roth basis clamped to the balance before the row is built
   // (clampBasisToBalance): losses can leave basis above what's held.
-  if (hasIndividualAccounts) {
+  if (holdsAccounts) {
     clampIndividualBasis(indAccounts, indKey, indBasis, indBalance);
   }
 
   // Build individual account year balances (decumulation)
   const decumulationIndYearBalances: IndividualAccountYearBalance[] =
-    hasIndividualAccounts
+    holdsAccounts
       ? buildIndividualYearBalances(
           indAccounts,
           indKey,
@@ -99,7 +99,7 @@ export function closeDecumulationYear(
   // indBalance reconciled to accountBalance once a year (the tracks drift), after dust
   // cleanup and before the basis re-clamp, so next year's eligibility can't
   // see an eligible balance in a locked category.
-  if (hasIndividualAccounts) {
+  if (holdsAccounts) {
     routeWarnings.push(
       ...followReconciliation(
         indAccounts,
@@ -130,12 +130,12 @@ export function closeDecumulationYear(
 
   // Basis re-clamped after dust cleanup: an account cleaned to $0 carries $0
   // basis into next year (the row already shows the pre-cleanup figure).
-  if (hasIndividualAccounts) {
+  if (holdsAccounts) {
     clampIndividualBasis(indAccounts, indKey, indBasis, indBalance);
   }
   const yearEnd = scopedBalances(
     balances,
-    hasIndividualAccounts
+    holdsAccounts
       ? computeNonRetirementExclusion(indAccounts, indBalance, indKey)
       : undefined,
   );

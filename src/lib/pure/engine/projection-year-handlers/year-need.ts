@@ -17,7 +17,7 @@ export function yearNeed(
   state: ProjectionLoopState,
   thisYear: DecumulationYear,
 ) {
-  const { input, hasIndividualAccounts, indAccounts, indKey } = ctx;
+  const { input, holdsAccounts, indAccounts, indKey } = ctx;
   const { filingStatus } = input;
   const { incomeHistory, balances, accountBalance, indBalance, indBasis } =
     state;
@@ -82,10 +82,10 @@ export function yearNeed(
     brokerageBasisRatio: retirementBasisRatio,
     eligibility,
     nonRetirement,
-    indAccounts: hasIndividualAccounts ? indAccounts : undefined,
-    indKey: hasIndividualAccounts ? indKey : undefined,
-    indBalance: hasIndividualAccounts ? indBalance : undefined,
-    indBasis: hasIndividualAccounts ? indBasis : undefined,
+    indAccounts: holdsAccounts ? indAccounts : undefined,
+    indKey: holdsAccounts ? indKey : undefined,
+    indBalance: holdsAccounts ? indBalance : undefined,
+    indBasis: holdsAccounts ? indBasis : undefined,
     year,
   });
   const { targetWithdrawal } = taxEstimate;
