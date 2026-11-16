@@ -75,6 +75,7 @@ describe("yearCliffChecks: the conversion warning", () => {
     const [warning] = routeWarnings.filter((w) =>
       w.includes("Roth conversion"),
     );
-    expect(warning).toContain("$20000");
+    expect(warning).toContain("the 2026 Roth conversion of $20000");
+    expect(warning).toContain("a person");
   });
 });

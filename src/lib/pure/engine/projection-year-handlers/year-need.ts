@@ -39,9 +39,8 @@ export function yearNeed(
       ? Math.max(0, ssIncome - state.projectedExpenses)
       : 0;
 
-  // IRMAA paid on top of the budget joins a need-sized year's need (never
-  // projectedExpenses or taxCost), once the year-N-2 MAGI is known; until
-  // then, or in a withdrawal-sized year, it only lowers what's spent.
+  // IRMAA paid on top joins a need-sized year's need (never projectedExpenses
+  // or taxCost) once year N−2 is recorded; otherwise it lowers what's spent.
   const lookback = irmaaLookbackYear(state.irmaaTaxYears, year);
   if (
     input.irmaaOnTopOfBudget === true &&
@@ -52,6 +51,7 @@ export function yearNeed(
       filingStatus,
       personsAge65Plus,
       projectedMagi: lookback.magi,
+      magiTaxYear: lookback.year,
       rothConversionAmount: 0,
       irmaaBrackets: grownIrmaaBracketsForCheck,
     }).irmaaCost;

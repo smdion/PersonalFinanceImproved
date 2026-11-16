@@ -10,8 +10,7 @@ import type {
 import type { RepricedFlow } from "./conversion-year-reprice";
 import { irmaaTaxYearFor } from "./irmaa-lookback";
 
-/** This year's income recorded for later lookbacks, then IRMAA from the
- *  year-N-2 MAGI (this year's for the first two) and the ACA cliff check. */
+/** Records this year's income, then IRMAA from year N−2's MAGI and the ACA cliff. */
 export function yearCliffChecks(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
@@ -29,6 +28,7 @@ export function yearCliffChecks(
     filingStatus: input.filingStatus,
     personsAge65Plus,
     projectedMagi: lookback.magi,
+    magiTaxYear: lookback.year,
     rothConversionAmount: lookback.rothConversion,
     irmaaBrackets: thisYear.tables.grownIrmaaBracketsForCheck,
   });

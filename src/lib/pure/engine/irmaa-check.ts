@@ -10,12 +10,10 @@ export interface IrmaaInput {
   filingStatus: ReturnFilingStatus | null | undefined;
   /** Whether ANY household member is ≥65. */
   anyPersonAge65: boolean;
-  /**
-   * MAGI for IRMAA determination. Per IRS rules, year N IRMAA is based on
-   * year N-2 MAGI. The orchestrator should pass the 2-year-lookback MAGI
-   * when available, or current-year MAGI as a fallback for the first 2 years.
-   */
+  /** MAGI for IRMAA: year N reads tax year N−2's, or year N's own until recorded. */
   projectedMagi: number;
+  /** The tax year `projectedMagi` is from (the warning names it). */
+  magiTaxYear: number;
   /** The Roth conversion inside `projectedMagi`'s year (the cliff warning's). */
   rothConversionAmount: number;
   /** IRMAA brackets grown to year N's vintage (this year's surcharge schedule); a different
@@ -37,6 +35,7 @@ export function checkIrmaa(input: IrmaaInput): IrmaaResult {
     filingStatus,
     anyPersonAge65,
     projectedMagi,
+    magiTaxYear,
     rothConversionAmount,
     irmaaBrackets,
   } = input;
@@ -48,7 +47,6 @@ export function checkIrmaa(input: IrmaaInput): IrmaaResult {
     return { irmaaCost: 0, warnings };
   }
 
-  // projectedMagi is the 2-year-lookback MAGI per IRS rules (or current-year fallback).
   const irmaaCost = getIrmaaCost(projectedMagi, filingStatus, irmaaBrackets);
 
   // If a Roth conversion pushed MAGI over a cliff, check whether less would
@@ -74,7 +72,7 @@ export function checkIrmaa(input: IrmaaInput): IrmaaResult {
         );
         if (maxConversionForCliff < rothConversionAmount) {
           warnings.push(
-            `IRMAA: Roth conversion of $${rothConversionAmount.toFixed(0)} pushes MAGI over $${nextCliff.toLocaleString()} cliff — $${irmaaCost.toLocaleString()}/yr surcharge`,
+            `IRMAA: the ${magiTaxYear} Roth conversion of $${rothConversionAmount.toFixed(0)} pushed ${magiTaxYear} MAGI over the $${nextCliff.toLocaleString()} cliff — $${irmaaCost.toLocaleString()}/yr surcharge a person`,
           );
         }
       }

@@ -303,6 +303,7 @@ function makeIrmaaInput(overrides: Partial<IrmaaInput> = {}): IrmaaInput {
     anyPersonAge65: true,
     irmaaBrackets: shippedTaxTables().irmaaBrackets,
     projectedMagi: 250000,
+    magiTaxYear: 2026,
     rothConversionAmount: 0,
     ...overrides,
   };
@@ -343,7 +344,9 @@ describe("checkIrmaa", () => {
     expect(result.irmaaCost).toBeCloseTo(1148.4, 2);
     expect(result.warnings.length).toBeGreaterThan(0);
     expect(result.warnings[0]).toContain("IRMAA");
-    expect(result.warnings[0]).toContain("Roth conversion");
+    expect(result.warnings[0]).toBe(
+      "IRMAA: the 2026 Roth conversion of $20000 pushed 2026 MAGI over the $218,000 cliff — $1,148.4/yr surcharge a person",
+    );
   });
 
   it("warns when the conversion moves MAGI up a tier (271000 → 276000, tier 1 → tier 2)", () => {
