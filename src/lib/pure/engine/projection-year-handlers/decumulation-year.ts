@@ -3,7 +3,7 @@ import { socialSecurityForYear } from "../social-security-income";
 import { retirementBrokerageBasisRatio } from "../brokerage-basis";
 import { sumBy } from "../../../utils/math";
 import { getAllCategories } from "../../../config/account-types";
-import { countReachingAgeRule } from "@/lib/pure/household/age";
+import { countPeople, countReachingAgeRule } from "@/lib/pure/household/age";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
 import type {
@@ -77,8 +77,7 @@ export function runDecumulationYear(
       ? `[DIAG] Roth divergence: acctBal.roth=${accountBalanceRothTotal.toFixed(0)}, balances.taxFree=${balances.taxFree.toFixed(0)}, delta=${(balances.taxFree - accountBalanceRothTotal).toFixed(0)}`
       : null;
 
-  // Social Security income reduces withdrawal need (per person from each
-  // one's own start age).
+  // Social Security reduces the need (each person's from their start age).
   const { ssIncome, ssIncomeByPerson } = socialSecurityForYear(
     input,
     year,
@@ -126,6 +125,7 @@ export function runDecumulationYear(
     tables,
     ssIncome,
     personsAge65Plus,
+    personsUnder65: countPeople(perPersonBirthYears) - personsAge65Plus,
     retirementBasisRatio,
     ssIncomeByPerson,
     estTraditionalPortion,

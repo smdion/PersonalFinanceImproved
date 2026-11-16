@@ -24,6 +24,15 @@ export function reachesAgeRule(
   return ageInYear(birthYear, year) * 12 + 12 - birthMonth >= age * 12;
 }
 
+/** How many people the household has: one per birth year, else one. */
+export function countPeople(
+  perPersonBirthYears: readonly number[] | undefined,
+): number {
+  return perPersonBirthYears && perPersonBirthYears.length > 0
+    ? perPersonBirthYears.length
+    : 1;
+}
+
 /**
  * How many people meet `rule` in `year`. Without per-person birth years,
  * the household's one representative age (already the age in `year`)

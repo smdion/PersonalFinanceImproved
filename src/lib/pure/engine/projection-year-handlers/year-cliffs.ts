@@ -20,7 +20,7 @@ export function yearCliffChecks(
 ) {
   const { input } = ctx;
   const { incomeHistory } = state;
-  const { personsAge65Plus } = thisYear;
+  const { personsAge65Plus, personsUnder65 } = thisYear;
   const { routeWarnings } = flow.route;
   const { income } = flow.repriced;
   incomeHistory.push(income);
@@ -39,13 +39,10 @@ export function yearCliffChecks(
   const irmaaPaid = input.irmaaOnTopOfBudget === true ? irmaaCost : 0;
   routeWarnings.push(...irmaaResult.warnings);
 
-  // ACA: checked while anyone is under 65 (AGE_RULES.medicare, as IRMAA);
-  // without birth years the household's one age stands for one person.
-  const birthYears = input.perPersonBirthYears;
-  const people = birthYears && birthYears.length > 0 ? birthYears.length : 1;
+  // ACA: checked while anyone is under 65 (AGE_RULES.medicare, as IRMAA).
   const acaResult = checkAca({
     enableAcaAwareness: input.enableAcaAwareness,
-    anyPersonUnder65: personsAge65Plus < people,
+    anyPersonUnder65: personsUnder65 > 0,
     householdSize:
       input.householdSize ??
       acaHouseholdSize(input.perPersonBirthYears?.length, input.filingStatus),

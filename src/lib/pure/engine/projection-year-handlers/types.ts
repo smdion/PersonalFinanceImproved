@@ -246,6 +246,7 @@ export type DecumulationYear = {
   tables: YearTaxTables;
   ssIncome: number;
   personsAge65Plus: number;
+  personsUnder65: number;
   retirementBasisRatio: number | undefined;
   ssIncomeByPerson: ReturnType<
     typeof socialSecurityForYear

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   limitAge,
   ageOnDate,
+  countPeople,
   countReachingAgeRule,
   reachesAgeRule,
 } from "@/lib/pure/household/age";
@@ -22,6 +23,17 @@ describe("reachesAgeRule (age at Dec 31)", () => {
   it("Medicare from the year the person turns 65", () => {
     expect(reachesAgeRule(1962, "medicare", 2026)).toBe(false);
     expect(reachesAgeRule(1961, "medicare", 2026)).toBe(true);
+  });
+});
+
+describe("countPeople", () => {
+  it("counts one person per birth year", () => {
+    expect(countPeople([1958, 1963])).toBe(2);
+  });
+
+  it("without birth years, the household is one person", () => {
+    expect(countPeople(undefined)).toBe(1);
+    expect(countPeople([])).toBe(1);
   });
 });
 
