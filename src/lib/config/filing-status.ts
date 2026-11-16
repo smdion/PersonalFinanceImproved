@@ -136,13 +136,28 @@ export function parseReturnFilingStatus(
   return RETURN_FILING_STATUS_VALUES.find((s) => s === value) ?? null;
 }
 
-/** The two spouses on a joint return of exactly two people; null otherwise (Ledgr stores no
- *  spouse link, so a third adult or a one-person joint return has no pair). */
+/** A person as the spouse rule reads them: their id and the spouse stored on their row
+ *  (`people.spouse_person_id`; null or absent = none stored). */
+export type SpouseLink = {
+  readonly id: number;
+  readonly spouseId?: number | null;
+};
+
+/** The two spouses on a joint return: the stored pair when both are among `people` and each
+ *  names the other; otherwise, with no pair stored, exactly two people. null on a one-person
+ *  return, and for a third adult with no pair stored. */
 export function spousePair<P>(
   status: ReturnFilingStatus | null | undefined,
   people: readonly P[],
+  link: (p: P) => SpouseLink,
 ): readonly [P, P] | null {
   if (status == null || filingRules(status).peopleOnReturn !== 2) return null;
+  for (const a of people) {
+    const { id, spouseId } = link(a);
+    if (spouseId == null || spouseId === id) continue;
+    const b = people.find((p) => link(p).id === spouseId);
+    if (b !== undefined && link(b).spouseId === id) return [a, b];
+  }
   const [a, b] = people;
   return people.length === 2 && a !== undefined && b !== undefined
     ? [a, b]

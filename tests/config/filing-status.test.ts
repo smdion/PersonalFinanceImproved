@@ -65,12 +65,43 @@ describe("filing status", () => {
     expect(parseReturnFilingStatus(null)).toBeNull();
   });
 
-  it("pairs the spouses only on a joint return of exactly two people", () => {
-    expect(spousePair("MFJ", ["a", "b"])).toEqual(["a", "b"]);
-    expect(spousePair("MFJ", ["a"])).toBeNull();
-    expect(spousePair("MFJ", ["a", "b", "c"])).toBeNull();
-    expect(spousePair("QSS", ["a", "b"])).toBeNull();
-    expect(spousePair("Single", ["a", "b"])).toBeNull();
-    expect(spousePair(null, ["a", "b"])).toBeNull();
+  // People as `spousePair` reads them: an id and the spouse stored on the row.
+  type P = { id: number; spouseId?: number | null };
+  const link = (p: P) => p;
+  const a: P = { id: 1 };
+  const b: P = { id: 2 };
+  const c: P = { id: 3 };
+
+  it("with no pair stored, pairs the spouses only on a joint return of exactly two people", () => {
+    expect(spousePair("MFJ", [a, b], link)).toEqual([a, b]);
+    expect(spousePair("MFJ", [a], link)).toBeNull();
+    expect(spousePair("MFJ", [a, b, c], link)).toBeNull();
+    expect(spousePair("QSS", [a, b], link)).toBeNull();
+    expect(spousePair("Single", [a, b], link)).toBeNull();
+    expect(spousePair(null, [a, b], link)).toBeNull();
+  });
+
+  it("reads the stored pair first: a third adult keeps the spouses paired", () => {
+    const ann: P = { id: 1, spouseId: 3 };
+    const cal: P = { id: 3, spouseId: 1 };
+    expect(spousePair("MFJ", [ann, b, cal], link)).toEqual([ann, cal]);
+    // Two people, the stored pair is the same pair.
+    expect(spousePair("MFJ", [ann, cal], link)).toEqual([ann, cal]);
+    // Only on a joint return.
+    expect(spousePair("Single", [ann, b, cal], link)).toBeNull();
+    expect(spousePair("HOH", [ann, b, cal], link)).toBeNull();
+  });
+
+  it("a stored link that isn't a pair on this return falls back to today's rule", () => {
+    // One-sided (never written so; any install may hold it).
+    const oneSided: P = { id: 1, spouseId: 3 };
+    expect(spousePair("MFJ", [oneSided, b, c], link)).toBeNull();
+    expect(spousePair("MFJ", [oneSided, b], link)).toEqual([oneSided, b]);
+    // The spouse isn't among the return's people.
+    const absent: P = { id: 1, spouseId: 9 };
+    expect(spousePair("MFJ", [absent, b, c], link)).toBeNull();
+    // A self-link.
+    const self: P = { id: 1, spouseId: 1 };
+    expect(spousePair("MFJ", [self, b, c], link)).toBeNull();
   });
 });

@@ -31,6 +31,8 @@ export type SsPerson = {
   socialSecurityMonthly: string;
   socialSecurityPia?: string | null;
   ssStartAge: number;
+  /** The spouse stored on their row (`people.spouse_person_id`); absent or null = none. */
+  spousePersonId?: number | null;
 };
 
 type SsEntry = {
@@ -41,6 +43,8 @@ type SsEntry = {
   birthYear: number;
   /** From the worker's filing year, own plus the spousal excess (the engine's entry field). */
   fromSpouseFiling?: { year: number; annualAmount: number };
+  /** The stored spouse, passed on for the engine's RMD pair (only when stored). */
+  spousePersonId?: number;
 };
 
 /** Per-person what-if override keyed by `personId` (claiming-age sweep). Each field is optional;
@@ -51,7 +55,7 @@ export type SsEntryOverride = {
 };
 
 /**
- * @param filingStatus    spouses only for a two-person return with exactly two people
+ * @param filingStatus    spouses only on a joint return: the stored pair, else exactly two people
  * @param ssStartAgeDelta whole years added to each stored claiming age, clamped to [62, 70];
  *                        ignored for a person with a `startAge` override
  */
@@ -82,7 +86,10 @@ export function buildSocialSecurityEntries(
   };
 
   const status = parseReturnFilingStatus(filingStatus);
-  const spouses = spousePair(status, people);
+  const spouses = spousePair(status, people, (p) => ({
+    id: p.personId,
+    spouseId: p.spousePersonId,
+  }));
 
   return people.map((ps) => {
     const startAge = shiftedStartAge(ps);
@@ -100,7 +107,7 @@ export function buildSocialSecurityEntries(
           )
         : toNumber(ps.socialSecurityMonthly) * 12;
 
-    // Spousal benefit (MFJ + 2 people stand in for a spouse link): needs the other person's PIA.
+    // Spousal benefit (the joint return's pair, `spousePair`): needs the other person's PIA.
     // The excess starts the year the worker files (402(b)(1); deemed filing, 402(r)), reduced
     // for this person's age then (402(q)). Symmetric: the higher earner's excess is $0.
     let fromSpouseFiling: SsEntry["fromSpouseFiling"];
@@ -136,6 +143,9 @@ export function buildSocialSecurityEntries(
       startAge,
       birthYear: ps.birthYear,
       ...(fromSpouseFiling ? { fromSpouseFiling } : {}),
+      ...(ps.spousePersonId != null
+        ? { spousePersonId: ps.spousePersonId }
+        : {}),
     };
   });
 }

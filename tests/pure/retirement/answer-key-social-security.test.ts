@@ -334,6 +334,37 @@ describe("answer key: spousal benefits", () => {
     cents(spouseMonthly(1_000, 3_000, 1965, 840), 1_500);
   });
 
+  it("ret/S48 [RET-31] a third adult in the household: the stored pair keeps S21's 1,025", () => {
+    // S21's couple (worker born 1960, PIA 3,000, files at 67 in 2027;
+    // spouse born 1965, PIA 1,000, claims at 62 in 2027) plus a parent
+    // (born 1958, own PIA 1,400, no spouse in the household). Spousal
+    // entitlement follows the marriage (42 USC 402(b)(1)), not the number
+    // of adults: with the pair stored she gets 700 + 325 = 1,025 (402(r)
+    // deemed filing, as S16). With no pair stored Ledgr can't tell who the
+    // spouse is and pays own only: 1,000 × 0.70 = 700 (RULES § Known Gaps,
+    // the fallback). The parent's own benefit is the same either way.
+    const household = (linked: boolean): SsPerson[] =>
+      [
+        { id: 1, birthYear: 1960, pia: 3_000, claimAge: 67, spouse: 2 },
+        { id: 2, birthYear: 1965, pia: 1_000, claimAge: 62, spouse: 1 },
+        { id: 3, birthYear: 1958, pia: 1_400, claimAge: 67, spouse: null },
+      ].map((p) => ({
+        personId: p.id,
+        name: `Person ${p.id}`,
+        birthYear: p.birthYear,
+        dateOfBirth: `${p.birthYear}-06-15`,
+        socialSecurityMonthly: "0",
+        socialSecurityPia: String(p.pia),
+        ssStartAge: p.claimAge,
+        spousePersonId: linked ? p.spouse : null,
+      }));
+    const stored = buildSocialSecurityEntries(household(true), "MFJ");
+    const none = buildSocialSecurityEntries(household(false), "MFJ");
+    cents(stored[1]!.annualAmount / 12, 1_025);
+    cents(none[1]!.annualAmount / 12, 700);
+    expect(stored[2]!.annualAmount).toBe(none[2]!.annualAmount);
+  });
+
   it("ret/S47 [RET-31] own 1,550 at 70 is over half the worker's: own only, 1,550", () => {
     // Own PIA 1,250 at 70: own 1,550 > 1,500, own only (402(k)(3)(A):
     // the excess less the own benefit as payable is below zero).

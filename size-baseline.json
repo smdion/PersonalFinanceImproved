@@ -970,7 +970,7 @@
       "runAccumulationYear": 218
     },
     "src/lib/pure/engine/projection-year-handlers/context.ts": {
-      "buildProjectionContext": 181
+      "buildProjectionContext": 180
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
       "runPreYearSetup": 365

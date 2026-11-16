@@ -80,6 +80,8 @@ export function perPersonSettingsFor(
       socialSecurityPia: own.socialSecurityPia,
       ssStartAge: own.ssStartAge,
       ruleOf55Override: own.ruleOf55Override,
+      // The stored spouse, only when one is stored (spousePair falls back without it).
+      ...(p.spousePersonId != null ? { spousePersonId: p.spousePersonId } : {}),
     };
   });
 

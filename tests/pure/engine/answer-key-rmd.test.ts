@@ -112,6 +112,7 @@ function engineYear(
     name: string;
     birthYear: number;
     birthMonth?: number;
+    spousePersonId?: number;
   }[],
   accounts: IndividualAccountInput[],
   year = 2026,
@@ -130,6 +131,7 @@ function engineYear(
             birthYear: p.birthYear,
             startAge: 70,
             annualAmount: 0,
+            ...(p.spousePersonId ? { spousePersonId: p.spousePersonId } : {}),
           })),
       perPersonBirthYears: people.map((p) => p.birthYear),
       people: people.map((p) => ({
@@ -384,6 +386,36 @@ describe("answer key: the RMD amount", () => {
     expect(year.rmdByPerson![0]!.divisor).toBe(20.9);
     cents(year.rmdByPerson![0]!.amount, 47_846.89);
     cents(year.rmdAmount, 47_846.89);
+  });
+
+  it("ret/R33 [RET-02] owner 80, spouse 69, and a third adult: the stored pair keeps Table II, 47,846.89", () => {
+    // The couple above, with a third adult (born 1990) in the household. The
+    // spouse is still the owner's sole beneficiary (Reg. 1.401(a)(9)-5(c)(2)),
+    // so Table II 80/69 = 20.9: 1,000,000 ÷ 20.9 = 47,846.89. With no pair
+    // stored, Ledgr can't tell who the spouse is and takes Table III 20.2:
+    // 1,000,000 ÷ 20.2 = 49,504.95 (RULES § Known Gaps, the fallback).
+    const household = (linked: boolean) => [
+      {
+        personId: 1,
+        name: "Ann",
+        birthYear: 1946,
+        ...(linked ? { spousePersonId: 2 } : {}),
+      },
+      {
+        personId: 2,
+        name: "Bo",
+        birthYear: 1957,
+        ...(linked ? { spousePersonId: 1 } : {}),
+      },
+      { personId: 3, name: "Cy", birthYear: 1990 },
+    ];
+    const ira = () => [acct("H IRA", "ira", 1_000_000, 1)];
+    const stored = engineYear(household(true), ira());
+    expect(stored.rmdByPerson![0]!.divisor).toBe(20.9);
+    cents(stored.rmdAmount, 47_846.89);
+    const none = engineYear(household(false), ira());
+    expect(none.rmdByPerson![0]!.divisor).toBe(20.2);
+    cents(none.rmdAmount, 49_504.95);
   });
 
   it("ret/R19 [RET-02] owner 80, spouse 70, exactly 10 years: Table III, 49,504.95", () => {

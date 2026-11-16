@@ -175,4 +175,23 @@ describe("soleBeneficiarySpouseAges — the spouse taken as sole beneficiary", (
     const one = new Map([[1, { birthYear: 1946 }]]);
     expect(soleBeneficiarySpouseAges("MFJ", one, 2026).size).toBe(0);
   });
+
+  it("with a third adult, the stored pair's ages; none with no pair stored", () => {
+    const three = new Map<
+      number,
+      { birthYear: number; spousePersonId?: number | null }
+    >([
+      [1, { birthYear: 1946, spousePersonId: 2 }],
+      [2, { birthYear: 1957, spousePersonId: 1 }],
+      [3, { birthYear: 1990 }],
+    ]);
+    expect([...soleBeneficiarySpouseAges("MFJ", three, 2026)]).toEqual([
+      [1, 69],
+      [2, 80],
+    ]);
+    const unlinked = new Map(
+      [...three].map(([id, p]) => [id, { birthYear: p.birthYear }]),
+    );
+    expect(soleBeneficiarySpouseAges("MFJ", unlinked, 2026).size).toBe(0);
+  });
 });

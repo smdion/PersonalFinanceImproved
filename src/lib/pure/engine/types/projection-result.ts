@@ -196,8 +196,7 @@ export type ProjectionInput = {
   returnRates: { label: string; rate: number }[];
   /** Social Security annual income from ssStartAge; ignored with socialSecurityEntries. */
   socialSecurityAnnual: number;
-  /** Age at which Social Security income begins (default 67).
-   *  When socialSecurityEntries is provided, this is ignored. */
+  /** Age Social Security income begins (default 67); ignored with socialSecurityEntries. */
   ssStartAge: number;
   /** Per-person entries; when provided, they override socialSecurityAnnual and ssStartAge. */
   socialSecurityEntries?: {
@@ -210,9 +209,10 @@ export type ProjectionInput = {
     birthYear: number;
     /** From `year` on, in place of `annualAmount`: own plus a spousal excess (42 USC 402(b), (r)). */
     fromSpouseFiling?: { year: number; annualAmount: number };
+    /** Their stored spouse (people.spouse_person_id), for the RMD's `spousePair`; absent = none. */
+    spousePersonId?: number;
   }[];
-  /** Birth year of primary person — used for RMD start age (SECURE 2.0).
-   *  When omitted, RMDs are not enforced (backward-compatible). */
+  /** The primary person's birth year, for the RMD start age (SECURE 2.0); omitted, no RMDs. */
   birthYear?: number;
   /** Stock share of the portfolio (0–1) by age, from the allocation glide
    *  path (lib/pure/simulation/stock-share.ts) — what VPW sizes its percentage by.

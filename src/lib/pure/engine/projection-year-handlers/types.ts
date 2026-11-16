@@ -174,7 +174,11 @@ export type ProjectionContext = {
   // Engine config
   firstYearFraction: number;
   rmdStartAge: number | null;
-  rmdStartAgeByPerson: Map<number, { startAge: number; birthYear: number }>;
+  /** Per person: RMD start age, birth year and stored spouse (the entries' `spousePersonId`). */
+  rmdStartAgeByPerson: Map<
+    number,
+    { startAge: number; birthYear: number; spousePersonId?: number }
+  >;
   /** Whose RMD an account with no owner counts toward (rmdOwnerOf): the
    *  household's primary person. */
   primaryPersonId: number | null;

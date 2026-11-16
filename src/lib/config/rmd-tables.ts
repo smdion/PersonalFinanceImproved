@@ -92,14 +92,20 @@ export function computeRmdAmount(
   return roundToCents(priorYearEndTradBalance / factor);
 }
 
-/** Each person's sole-beneficiary spouse's age in `year`, for `getRmdFactor`: on a joint return
- *  of two, the other spouse (Ledgr has no beneficiary input); none otherwise. */
+/** Each person's sole-beneficiary spouse's age in `year`, for `getRmdFactor`: on a joint return,
+ *  the other spouse of `spousePair` (Ledgr has no beneficiary input); none otherwise. */
 export function soleBeneficiarySpouseAges(
   filingStatus: ReturnFilingStatus | undefined,
-  people: ReadonlyMap<number, { birthYear: number }>,
+  people: ReadonlyMap<
+    number,
+    { birthYear: number; spousePersonId?: number | null }
+  >,
   year: number,
 ): Map<number, number> {
-  const pair = spousePair(filingStatus, [...people]);
+  const pair = spousePair(filingStatus, [...people], ([id, p]) => ({
+    id,
+    spouseId: p.spousePersonId,
+  }));
   if (!pair) return new Map();
   const [a, b] = pair;
   return new Map([
