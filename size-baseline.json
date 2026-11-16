@@ -300,7 +300,7 @@
     "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": 59,
     "src/lib/pure/engine/projection-year-handlers/rmd-step.ts": 236,
     "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 357,
-    "src/lib/pure/engine/projection-year-handlers/year-cliffs.ts": 57,
+    "src/lib/pure/engine/projection-year-handlers/year-cliffs.ts": 54,
     "src/lib/pure/engine/projection-year-handlers/year-deduction.ts": 57,
     "src/lib/pure/engine/projection-year-handlers/year-draws.ts": 181,
     "src/lib/pure/engine/projection-year-handlers/year-end-accounts.ts": 116,

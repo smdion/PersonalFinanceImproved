@@ -1,8 +1,8 @@
 /** The decumulation year's after-tax need, and the withdrawal that meets it. */
 import { roundToCents } from "../../../utils/math";
-import { yearMagi } from "@/lib/pure/tax/year-income";
 import { checkHouseholdIrmaa } from "../household-irmaa";
 import { estimateWithdrawalTaxCost } from "../withdrawal-solver";
+import { irmaaLookbackYear } from "./irmaa-lookback";
 import type {
   DecumulationYear,
   ProjectionContext,
@@ -19,8 +19,7 @@ export function yearNeed(
 ) {
   const { input, holdsAccounts, indAccounts, indKey } = ctx;
   const { filingStatus } = input;
-  const { incomeHistory, balances, accountBalance, indBalance, indBasis } =
-    state;
+  const { balances, accountBalance, indBalance, indBasis } = state;
   const { year, config, eligibility, taxRates, ssIncome } = thisYear;
   const { personsAge65Plus, retirementBasisRatio } = thisYear;
   const { totalBalance, nonRetirement } = thisYear.setup;
@@ -43,15 +42,16 @@ export function yearNeed(
   // IRMAA paid on top of the budget joins a need-sized year's need (never
   // projectedExpenses or taxCost), once the year-N-2 MAGI is known; until
   // then, or in a withdrawal-sized year, it only lowers what's spent.
+  const lookback = irmaaLookbackYear(state.irmaaTaxYears, year);
   if (
     input.irmaaOnTopOfBudget === true &&
     state.portfolioWithdrawal === null &&
-    incomeHistory.length >= 2
+    lookback
   ) {
     const irmaaInNeed = checkHouseholdIrmaa({
       filingStatus,
       personsAge65Plus,
-      projectedMagi: yearMagi(incomeHistory.at(-2)!, "irmaa"),
+      projectedMagi: lookback.magi,
       rothConversionAmount: 0,
       irmaaBrackets: grownIrmaaBracketsForCheck,
     }).irmaaCost;

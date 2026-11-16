@@ -1,5 +1,4 @@
 /** The decumulation year's IRMAA and ACA cliff checks. */
-import { yearMagi } from "@/lib/pure/tax/year-income";
 import { checkHouseholdIrmaa } from "../household-irmaa";
 import { checkAca } from "../aca-check";
 import { acaHouseholdSize } from "@/lib/config/aca-tables";
@@ -9,6 +8,7 @@ import type {
   ProjectionLoopState,
 } from "./types";
 import type { RepricedFlow } from "./conversion-year-reprice";
+import { irmaaTaxYearFor } from "./irmaa-lookback";
 
 /** This year's income recorded for later lookbacks, then IRMAA from the
  *  year-N-2 MAGI (this year's for the first two) and the ACA cliff check. */
@@ -19,19 +19,16 @@ export function yearCliffChecks(
   flow: RepricedFlow,
 ) {
   const { input } = ctx;
-  const { incomeHistory } = state;
-  const { personsAge65Plus, personsUnder65 } = thisYear;
+  const { incomeHistory, irmaaTaxYears } = state;
+  const { year, personsAge65Plus, personsUnder65 } = thisYear;
   const { routeWarnings } = flow.route;
   const { income } = flow.repriced;
   incomeHistory.push(income);
-  const irmaaLookbackMagi = yearMagi(
-    incomeHistory.length > 2 ? incomeHistory.at(-3)! : income,
-    "irmaa",
-  );
+  const lookback = irmaaTaxYearFor(irmaaTaxYears, year, income);
   const irmaaResult = checkHouseholdIrmaa({
     filingStatus: input.filingStatus,
     personsAge65Plus,
-    projectedMagi: irmaaLookbackMagi,
+    projectedMagi: lookback.magi,
     rothConversionAmount: flow.conversion.rothConversionAmount,
     irmaaBrackets: thisYear.tables.grownIrmaaBracketsForCheck,
   });

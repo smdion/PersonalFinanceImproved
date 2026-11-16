@@ -28,6 +28,7 @@ import type { makeIndKey } from "../individual-accounts/ledger";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { BrokerageBasis } from "../brokerage-basis";
+import type { IrmaaTaxYears } from "./irmaa-lookback";
 import type { YearIncome } from "@/lib/pure/tax/year-income";
 import type { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
 import type { resolveDecumulationConfig } from "../override-resolution";
@@ -99,6 +100,8 @@ export type ProjectionLoopState = {
 
   // Tax/IRMAA history
   incomeHistory: YearIncome[];
+  /** Each recorded tax year's IRMAA MAGI, by year (`irmaa-lookback.ts`). */
+  irmaaTaxYears: IrmaaTaxYears;
   /** The no-owner Traditional account warning is said once a projection. */
   rmdNoOwnerWarned: boolean;
 

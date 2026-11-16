@@ -58,7 +58,7 @@ export function buildProjectionState(
   // Spending strategy cross-year state
   const spendingState = initialCrossYearState();
 
-  // Each decumulation year's income, for the IRMAA and senior-deduction lookbacks
+  // Each decumulation year's income, for the senior deduction's lookback
   const incomeHistory: YearIncome[] = [];
 
   // Individual account balances
@@ -129,6 +129,7 @@ export function buildProjectionState(
     accumulationDefaults,
     spendingState,
     incomeHistory,
+    irmaaTaxYears: new Map(),
     rmdNoOwnerWarned: false,
     decumulationExpensesSet: false,
     firstDecumulationYearStatedNeed: null,
