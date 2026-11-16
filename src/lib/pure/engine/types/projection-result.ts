@@ -520,7 +520,7 @@ export type EngineDecumulationYear = {
   /** Annual IRMAA surcharge, for everyone 65+ together (already multiplied
    *  by that count). 0 below tier 1, or with no filing status (Simple mode). */
   irmaaCost: number;
-  /** What of `irmaaCost` is paid on top of the budget; absent when none. */
+  /** What of `irmaaCost` is charged on top of the budget (a part the year can't pay is in `unmetNeed`); absent when none. */
   irmaaPaid?: number;
   // --- ACA fields ---
   acaStatus: "kept" | "lost" | "not_checked";

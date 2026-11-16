@@ -64,7 +64,8 @@ export function decumulationYearRow(
   const { totalQcd, qcdByPerson } = parts.qcd;
   const { rmdExcessAmount } = parts.settle;
   const { deliveredAfterTax, shortfallMaterialityFloor } = parts.shortfall;
-  const { unmetNeedRaw, unmetNeedMaterial, irmaaPaid } = parts.shortfall;
+  const { unmetNeedRaw, unmetNeedMaterial } = parts.shortfall;
+  const { paid, reinvested } = parts.shortfall.irmaaPayment;
   const { irmaa, acaStatus, acaMagiHeadroom } = parts.cliffs;
   const { yearEnd } = parts.closed;
 
@@ -73,12 +74,7 @@ export function decumulationYearRow(
     age,
     phase: "decumulation",
     projectedExpenses: roundToCents(state.projectedExpenses),
-    spending: roundToCents(
-      deliveredAfterTax -
-        irmaaPaid -
-        (config.rmdExcessHandling === "reinvest" ? rmdExcessAmount : 0) +
-        ssIncome,
-    ),
+    spending: roundToCents(deliveredAfterTax - paid - reinvested + ssIncome),
     withdrawalSized: state.portfolioWithdrawal !== null,
     budgetOnlyExpenses: roundToCents(state.budgetOnlyExpenses),
     hasBudgetOverride: budgetOverrideMap.has(year),
@@ -150,7 +146,7 @@ export function decumulationYearRow(
     strategyAction,
     niitAmount,
     irmaaCost: irmaa.cost,
-    ...(irmaaPaid > 0 ? { irmaaPaid } : {}),
+    ...(irmaa.onTop > 0 ? { irmaaPaid: irmaa.onTop } : {}),
     acaStatus,
     acaSubsidyPreserved: acaStatus === "kept",
     acaMagiHeadroom,

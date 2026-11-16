@@ -136,7 +136,7 @@ export function runDecumulationYear(
   const rmd = enforceYearRmd(ctx, state, thisYear, route, owed, qcd);
   const drawn = distributeYearDraws(ctx, state, thisYear, { route, rmd });
   const drawnFlow = { need, route, rmd, drawn };
-  const { settle, ...taxed } = settleYearTax(ctx, state, thisYear, drawnFlow);
+  const taxed = settleYearTax(ctx, state, thisYear, drawnFlow);
   const flow = { ...drawnFlow, ...taxed };
   const cliffs = yearCliffChecks(ctx, state, thisYear, flow, irmaa);
   const shortfall = fundingShortfallForYear(state, thisYear, flow, cliffs);
@@ -153,7 +153,7 @@ export function runDecumulationYear(
     decumulationYearRow(ctx, state, thisYear, yearFlow, {
       owed,
       qcd,
-      settle,
+      settle: flow.settle,
       shortfall,
       cliffs,
       closed,

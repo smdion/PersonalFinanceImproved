@@ -124,6 +124,36 @@ describe("IRMAA on top of the budget", () => {
     expect(short.some((y) => (y.unmetNeed ?? 0) > 0)).toBe(true);
   });
 
+  it("a year with nothing to spend pays none of the surcharge: it's unmet need, not spending below $0", () => {
+    const short = years(
+      household(
+        [
+          acct("Ann 401k", "401k", 900000, 1),
+          acct("Bo 401k", "401k", 900000, 2),
+        ],
+        {
+          annualExpenses: 420000,
+          decumulationAnnualExpenses: 420000,
+          enableIrmaaAwareness: true,
+          irmaaOnTopOfBudget: true,
+          projectionEndYear: 2041,
+          perPersonBirthYears: [1948, 1951],
+        },
+      ),
+    );
+    expect(short.every((y) => y.spending >= 0)).toBe(true);
+    // 2030 reads 2028's MAGI but delivers nothing and has no Social
+    // Security: the surcharge is still charged on top, and the whole of it
+    // joins the year's unmet need.
+    const y = short.find((r) => r.year === 2030)!;
+    expect(y.irmaaCost).toBeGreaterThan(0);
+    expect(y.deliveredAfterTax).toBe(0);
+    expect(y.irmaaPaid).toBe(y.irmaaCost);
+    expect(y.spending).toBe(0);
+    expect(y.unmetNeed).toBe(y.afterTaxNeed);
+    expect(y.afterTaxNeed).toBeCloseTo(y.projectedExpenses + y.irmaaCost, 2);
+  });
+
   it("the surcharge is computed and paid with the awareness switch off", () => {
     const off = years(
       input({ enableIrmaaAwareness: false, irmaaOnTopOfBudget: true }),

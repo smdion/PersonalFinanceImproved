@@ -3,14 +3,13 @@ import { roundToCents } from "../../../utils/math";
 import { shortfallFloor } from "../gap-year-draw";
 import type { DecumulationYear } from "./types";
 import type { RepricedFlow } from "./conversion-year-reprice";
-import type { IrmaaCharge } from "./irmaa-charge";
+import { payIrmaaCharge, type IrmaaCharge } from "./irmaa-charge";
 
-/** unmetNeedRaw (the response's unmetNeed; its routed branch isn't floor-
- *  filtered), unmetNeedMaterial, and the IRMAA the year pays on top. */
+/** The unmet need (its routed part not floor-filtered), and IRMAA paid. */
 export function fundingShortfallForYear(
   state: { portfolioWithdrawal: number | null },
   thisYear: DecumulationYear,
-  flow: RepricedFlow,
+  flow: RepricedFlow & { settle: { rmdExcessAmount: number } },
   { irmaa }: { irmaa: IrmaaCharge },
 ) {
   const { totalWithdrawal } = flow.rmd;
@@ -18,32 +17,33 @@ export function fundingShortfallForYear(
   const { penaltyCost, surplusCredit } = flow.parts;
   const { afterTaxNeed } = flow.need;
   const { routedUnmetNeed } = flow.route;
-  // The router's unmet need misses gaps from an under-sized gross-up and from
-  // tax that rose after routing (RMD, conversion, LTCG, NIIT); comparing what
-  // was delivered with what was needed catches them. The larger one counts.
+  // The router's unmet need misses gaps from an under-sized gross-up and tax
+  // that rose after routing; comparing delivered with needed catches them.
   const deliveredAfterTax = roundToCents(
     totalWithdrawal - taxCost - penaltyCost,
   );
-  // A withdrawal-sized year's shortfall is the part of its amount that couldn't
-  // leave the portfolio (later tax only lowers what's spent); otherwise the
-  // need less what was delivered and Social Security's surplus credit.
-  const fundingShortfall = roundToCents(
+  const irmaaPayment = payIrmaaCharge(irmaa, state, thisYear, {
+    deliveredAfterTax,
+    rmdExcessAmount: flow.settle.rmdExcessAmount,
+  });
+  // A withdrawal-sized year's gap: what couldn't leave the portfolio; else
+  // the need less what was delivered and Social Security's surplus credit.
+  const needGap = roundToCents(
     state.portfolioWithdrawal !== null
       ? Math.max(0, state.portfolioWithdrawal - totalWithdrawal)
       : Math.max(0, afterTaxNeed - deliveredAfterTax - surplusCredit(taxCost)),
   );
-  // Materiality floor, not a correctness tolerance (SHORTFALL_MATERIALITY).
+  const fundingShortfall = roundToCents(needGap + irmaaPayment.unpaid);
   const shortfallMaterialityFloor = shortfallFloor(afterTaxNeed);
   const unmetNeedRaw =
     fundingShortfall > shortfallMaterialityFloor
       ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
       : routedUnmetNeed;
-  // unmetNeedMaterial: the one materiality verdict for alerting. A no-gross-up
-  // household's own tax and penalty are netted out: that gap is by design.
+  // A no-gross-up household's own tax and penalty gap is by design: netted out.
   const shouldGrossUp = thisYear.taxRates.grossUpForTaxes !== false;
   const grossUpExplainedGap = shouldGrossUp
     ? 0
-    : roundToCents(Math.min(taxCost + penaltyCost, fundingShortfall));
+    : roundToCents(Math.min(taxCost + penaltyCost, needGap));
   const netFundingShortfall = roundToCents(
     Math.max(0, fundingShortfall - grossUpExplainedGap),
   );
@@ -52,7 +52,7 @@ export function fundingShortfallForYear(
     shortfallMaterialityFloor;
 
   return {
-    irmaaPaid: irmaa.onTop,
+    irmaaPayment,
     deliveredAfterTax,
     shortfallMaterialityFloor,
     unmetNeedRaw,
