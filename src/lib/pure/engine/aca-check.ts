@@ -44,13 +44,14 @@ export function checkAca(input: AcaInput): AcaResult {
     return { acaStatus: "not_checked", acaMagiHeadroom: 0, warnings };
   }
 
-  // Grow the 400%-FPL cliff forward (same as growing each FPL cell first);
-  // `fplByHousehold` is the coverage year's poverty levels.
-  const acaCliff =
-    getAcaSubsidyCliff(householdSize, fplByHousehold) * fplGrowthFactor;
+  // The coverage year's 400%-FPL cliff, grown forward.
+  const acaCliff = roundToCents(
+    getAcaSubsidyCliff(householdSize, fplByHousehold) * fplGrowthFactor,
+  );
   const projectedMagi = yearMagi(income, "aca");
   const acaMagiHeadroom = roundToCents(Math.max(0, acaCliff - projectedMagi));
-  const acaStatus = projectedMagi < acaCliff ? "kept" : "lost";
+  // Not more than 400% keeps the credit (IRC 36B(c)(1)(A)), to the cent.
+  const acaStatus = projectedMagi <= acaCliff ? "kept" : "lost";
 
   if (acaStatus === "lost") {
     const overage = roundToCents(projectedMagi - acaCliff);
@@ -62,8 +63,7 @@ export function checkAca(input: AcaInput): AcaResult {
       ? ` — sourcing $${overage.toFixed(0)} less from brokerage (and more from Roth) would keep MAGI under the cliff`
       : "";
     warnings.push(
-      // acaCliff is a grown float: round it to match the whole-dollar
-      // MAGI/overage figures either side of it.
+      // Whole dollars, as the MAGI and overage beside it.
       `ACA: MAGI $${projectedMagi.toFixed(0)} exceeds $${Math.round(acaCliff).toLocaleString()} cliff by $${overage.toFixed(0)} — subsidy lost${attribution}`,
     );
   }

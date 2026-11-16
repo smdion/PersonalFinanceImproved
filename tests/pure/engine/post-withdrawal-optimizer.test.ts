@@ -501,8 +501,8 @@ describe("checkAca", () => {
 
   it("reads the ACA MAGI to the cent, whatever the term order (exactly at the cliff)", () => {
     // MAGI is 84,600.00 to the cent (84600 or 84599.99999999999 by term
-    // order), the 2-person cliff, read as lost: this pins CALCULATIONS RET-17's
-    // Gap, not the law (IRC 36B(c)(1)(A) "does not exceed" keeps exactly 400%).
+    // order), the 2-person cliff: kept with no headroom (IRC 36B(c)(1)(A):
+    // "not more than" 400% keeps the credit).
     const result = checkAca(
       makeAcaInput({
         totalTraditionalWithdrawal: 15821.05,
@@ -510,6 +510,18 @@ describe("checkAca", () => {
         brokerageGainsPortion: 7842.51,
         rothTaxableGrowth: 3097.57,
         ssIncome: 11636.92,
+      }),
+    );
+    expect(result.acaStatus).toBe("kept");
+    expect(result.acaMagiHeadroom).toBe(0);
+  });
+
+  it("one cent over the cliff loses the credit", () => {
+    // 84,600.01 > 84,600 (IRC 36B(c)(1)(A)).
+    const result = checkAca(
+      makeAcaInput({
+        totalTraditionalWithdrawal: 79600.01,
+        brokerageGainsPortion: 5000,
       }),
     );
     expect(result.acaStatus).toBe("lost");

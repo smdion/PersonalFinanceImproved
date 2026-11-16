@@ -42,12 +42,11 @@
  *
  * Not written here: the premium tax credit amount (the applicable
  * percentage, the credit, reconciliation): P21-P25, A3, A5-A17, A19, A20,
- * A23-A25, A27-A29, as todos at the end. A1 and A21 are counted as
- * expected failures but have no function to call yet (plan open question
- * 2), so they are todos too, their figures kept beside them.
+ * A23-A25, A27-A29, as todos at the end. A1 and A21 have no function to
+ * call yet, so they are todos too, their figures kept beside them.
  */
 import { describe, it } from "vitest";
-import { cents, runOneYear, xfail } from "../../fixtures/answer-key";
+import { cents, runOneYear } from "../../fixtures/answer-key";
 import { checkAca } from "@/lib/pure/engine/aca-check";
 import { getAcaSubsidyCliff } from "@/lib/config/aca-tables";
 import { yearMagi } from "@/lib/pure/tax/year-income";
@@ -89,11 +88,6 @@ function cliff(opts: {
   };
 }
 
-/** Exactly 400% reads as over the cliff (verdict N4; IRC 36B(c)(1)(A):
- *  "not more than" 400%). */
-const N4 =
-  'v0.11 Retirement rules "January 1 birthday" (its "exactly 400% FPL"; verdict N4)';
-
 // ---------------------------------------------------------------------------
 // A. The cliff, in dollars
 // ---------------------------------------------------------------------------
@@ -108,20 +102,15 @@ describe("answer key: the 400% cliff, 2026", () => {
     });
   });
 
-  describe("ret/A1:flag [RET-17]", () => {
+  it("ret/A1:flag [RET-17] family of one, household income 62,600: exactly 400%, the credit is kept", () => {
     // A1's household (family of one, 2026, household income 62,600):
     // 400% × 15,650 = 62,600 is "not more than" 400% (ACA-10; Form 8962
     // instructions, "more than" 400% loses it), so the credit is kept;
     // headroom 62,600 − 62,600 = 0. A1's credit amount (5,765.04) waits on
-    // the credit function (todo below); this is the flag alone. Today
-    // `checkAca` keeps it only below the cliff (`<`): lost. Audit RT44 (the
-    // `<=` fix) passes the decided flag and fails today's pin.
-    xfail({
-      id: "ret/A1:flag [RET-17]",
-      todo: N4,
-      run: () => cliff({ familySize: 1, ordinary: 62_600 }),
-      expected: { preserved: 1, headroom: 0 },
-      today: { preserved: 0, headroom: 0 },
+    // the credit function (todo below); this is the flag alone.
+    cents(cliff({ familySize: 1, ordinary: 62_600 }), {
+      preserved: 1,
+      headroom: 0,
     });
   });
 
@@ -261,17 +250,16 @@ describe("answer key: one spouse on Medicare", () => {
 describe("answer key: premium tax credit cases blocked on the credit amount", () => {
   const CREDIT =
     'v0.11 Retirement rules "Add: survivor benefit and first death" (premium tax credit amount)';
-  // A1 (expected failure, N4): family of one, household income 62,600 =
+  // A1: family of one, household income 62,600 =
   // exactly 400% of 15,650 (ACA-10: not "more than"), so the credit
   // stands: 9.96% × 62,600 = 6,234.96; 12,000 benchmark − 6,234.96 =
   // 5,765.04 (Rev. Proc. 2025-25 § 3.01; Reg. 1.36B-3(d)). Form 8962
-  // rounds the contribution to whole dollars (ACA-18): 5,765. Today
-  // `checkAca` reads exactly 400% as over (verdict N4, audit RT44): the
-  // flag alone is `ret/A1:flag` above.
-  it.todo(`ret/A1: blocked on ${CREDIT} (then N4, exactly 400%)`);
-  // A21 (expected failure, N4): family of two, 84,600 = 400% of 21,150:
+  // rounds the contribution to whole dollars (ACA-18): 5,765. The flag
+  // alone is `ret/A1:flag` above.
+  it.todo(`ret/A1: blocked on ${CREDIT}`);
+  // A21: family of two, 84,600 = 400% of 21,150:
   // 9.96% × 84,600 = 8,426.16; 20,000 − 8,426.16 = 11,573.84.
-  it.todo(`ret/A21: blocked on ${CREDIT} (then N4, exactly 400%)`);
+  it.todo(`ret/A21: blocked on ${CREDIT}`);
   // P21-P25: Reg. 1.36B-3(g) Examples 1 and 2, 1.36B-3(d)(2) Examples 1
   // and 2, Pub 974 (Andrew). A3, A5-A17, A19, A20, A23-A25, A27-A29: the
   // spec's § 14.9 (percentages, the 133% step, 2027's table, Alaska, MFS
