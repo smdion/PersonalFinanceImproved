@@ -298,49 +298,47 @@ export function yearRothConversion(
   }
 
   // The Roth conversion; its tax is paid from retirement brokerage money (at its basis ratio).
-  const rothResult = followDraws(
-    indAccounts,
-    indKey,
-    indBalance,
-    brokBasis,
-    () =>
-      performRothConversion({
-        brokerageBasisRatio: holdsAccounts
-          ? retirementBrokerageBasisRatio(
-              indAccounts,
-              indKey,
-              indBalance,
-              brokBasis,
-            )
-          : undefined,
-        enableRothConversions: taxRates.enableRothConversions,
-        taxBrackets: grownTaxBrackets,
-        taxMultiplier: taxRates.taxMultiplier,
-        standardDeduction: grownStandardDeduction,
-        rothConversionTarget: config.rothConversionTarget,
-        // The fallback with no rothConversionTarget: the routing reservation's chain
-        // (engine-snapshot fixtures 31/41/54/55/61 pin its order).
-        rothBracketTarget: resolvedConversionTarget,
-        totalTraditionalWithdrawal,
-        taxableSS,
-        rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
-        brokerageGainsPortion,
-        irmaaAwareRothConversions:
-          input.irmaaAwareRothConversions ??
-          (enableIrmaaAwareness ? true : undefined),
-        irmaaBrackets: grownIrmaaBracketsForCap,
-        filingStatus,
-        balances,
-        accountBalance,
-        // Portfolio-parented money stays out of the conversion and its tax.
-        nonRetirement,
-        indAccounts: holdsAccounts ? indAccounts : undefined,
-        indBalance: holdsAccounts ? indBalance : undefined,
-        indKey: holdsAccounts ? indKey : undefined,
-        rmdSmoothingTarget,
-        rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
-      }),
-  );
+  const rothResult = performRothConversion({
+    brokerageBasisRatio: holdsAccounts
+      ? retirementBrokerageBasisRatio(
+          indAccounts,
+          indKey,
+          indBalance,
+          brokBasis,
+        )
+      : undefined,
+    enableRothConversions: taxRates.enableRothConversions,
+    taxBrackets: grownTaxBrackets,
+    taxMultiplier: taxRates.taxMultiplier,
+    standardDeduction: grownStandardDeduction,
+    rothConversionTarget: config.rothConversionTarget,
+    // The fallback with no rothConversionTarget: the routing reservation's chain
+    // (engine-snapshot fixtures 31/41/54/55/61 pin its order).
+    rothBracketTarget: resolvedConversionTarget,
+    totalTraditionalWithdrawal,
+    taxableSS,
+    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
+    brokerageGainsPortion,
+    irmaaAwareRothConversions:
+      input.irmaaAwareRothConversions ??
+      (enableIrmaaAwareness ? true : undefined),
+    irmaaBrackets: grownIrmaaBracketsForCap,
+    filingStatus,
+    balances,
+    accountBalance,
+    // Portfolio-parented money stays out of the conversion and its tax.
+    nonRetirement,
+    parts: holdsAccounts
+      ? {
+          accounts: indAccounts,
+          balances: indBalance,
+          keyOf: indKey,
+          basis: brokBasis,
+        }
+      : undefined,
+    rmdSmoothingTarget,
+    rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
+  });
   const {
     rothConversionAmount,
     rothConversionTaxCost,

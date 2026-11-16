@@ -660,9 +660,12 @@ describe("performRothConversion (nonRetirement scope)", () => {
       makeRothInput({
         balances,
         accountBalance,
-        indAccounts: ia,
-        indBalance: indBalFor(ia),
-        indKey,
+        parts: {
+          accounts: ia,
+          balances: indBalFor(ia),
+          keyOf: indKey,
+          basis: new Map(),
+        },
         nonRetirement: nonRetirementFor(400000), // Portfolio 401k's balance
       }),
     );
@@ -688,9 +691,12 @@ describe("performRothConversion (nonRetirement scope)", () => {
       makeRothInput({
         balances,
         accountBalance,
-        indAccounts: ia,
-        indBalance,
-        indKey,
+        parts: {
+          accounts: ia,
+          balances: indBalance,
+          keyOf: indKey,
+          basis: new Map(),
+        },
         nonRetirement: nonRetirementFor(400000),
       }),
     );
@@ -716,9 +722,12 @@ describe("performRothConversion (nonRetirement scope)", () => {
       makeRothInput({
         balances,
         accountBalance,
-        indAccounts: ia,
-        indBalance: indBalFor(ia),
-        indKey,
+        parts: {
+          accounts: ia,
+          balances: indBalFor(ia),
+          keyOf: indKey,
+          basis: new Map(),
+        },
         nonRetirement: nonRetirementFor(0),
       }),
     );
@@ -764,9 +773,12 @@ describe("performRothConversion (nonRetirement scope)", () => {
       makeRothInput({
         balances,
         accountBalance,
-        indAccounts: ia,
-        indBalance: indBalFor(ia),
-        indKey,
+        parts: {
+          accounts: ia,
+          balances: indBalFor(ia),
+          keyOf: indKey,
+          basis: new Map(),
+        },
         nonRetirement,
       }),
     );

@@ -8,12 +8,15 @@ import { isRetirementMoney } from "../../../config/account-types";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { roundToCents } from "../../../utils/math";
+import { followDraws, type BrokerageBasis } from "../brokerage-basis";
 
-/** The account parts a conversion moves money on, and their balances. */
+/** The account parts a conversion moves money on, their balances and each
+ *  brokerage part's basis. */
 export type ConversionParts = {
   accounts: readonly IndividualAccountInput[];
   balances: Map<string, number>;
   keyOf: IndKeyFn;
+  basis: BrokerageBasis;
 };
 
 /** Takes `amount` from `accounts` by balance (the first absorbs the rounding
@@ -69,11 +72,14 @@ export function debitConvertedParts(
 }
 
 /** The conversion's tax, from the overflow category's Retirement-parented
- *  accounts by balance. */
+ *  accounts by balance, each giving up basis at its own ratio. */
 export function payConversionTaxFromParts(
   parts: ConversionParts,
   category: AccountCategory,
   tax: number,
 ): void {
-  debitByBalance(parts, retirementParts(parts, category), tax);
+  const { accounts, keyOf, balances, basis } = parts;
+  followDraws(accounts, keyOf, balances, basis, () =>
+    debitByBalance(parts, retirementParts(parts, category), tax),
+  );
 }

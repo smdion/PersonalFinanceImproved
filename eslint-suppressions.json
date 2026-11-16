@@ -4153,7 +4153,7 @@
   },
   "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": {
     "ratchet/no-abbreviation": {
-      "count": 11
+      "count": 8
     },
     "ratchet/no-history-comment": {
       "count": 2
@@ -4214,7 +4214,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 12
+      "count": 6
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1

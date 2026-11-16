@@ -6,7 +6,6 @@ import type { AccountCategory } from "../../config/account-types";
 import type {
   TaxBuckets,
   AccountBalances,
-  IndividualAccountInput,
 } from "../accounts/account-balances.types";
 import { roundToCents } from "../../utils/math";
 import { getAllCategories, isOverflowTarget } from "../../config/account-types";
@@ -23,6 +22,7 @@ import { irmaaConversionHeadroom } from "./conversion-irmaa-cap";
 import {
   debitConvertedParts,
   payConversionTaxFromParts,
+  type ConversionParts,
 } from "./individual-accounts/conversion";
 import {
   estimateEffectiveTaxRate,
@@ -30,7 +30,6 @@ import {
 } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
-import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 export interface RothConversionInput {
@@ -65,14 +64,11 @@ export interface RothConversionInput {
   /** Per-account balances (mutated in place). */
   accountBalance: AccountBalances;
   /** Portfolio-parented exclusion: caps the conversion source and tax-payment capacity to
-   *  Retirement money. With `indAccounts`/`indBalance`/`indKey` too, the debit goes straight to
-   *  Retirement-parented accounts. The caller passes all four or none. */
+   *  Retirement money. With `parts` too, the debit goes straight to Retirement-parented
+   *  accounts. The caller passes both or neither. */
   nonRetirement?: NonRetirementExclusion;
-  /** Individual accounts, per-account balances and the key function; used only with
-   *  `nonRetirement`. */
-  indAccounts?: IndividualAccountInput[];
-  indBalance?: Map<string, number>;
-  indKey?: IndKeyFn;
+  /** The account parts, their balances and basis; used only with `nonRetirement`. */
+  parts?: ConversionParts;
   /** This year's household RMD-smoothing minimum (`computeRmdSmoothingTargets`). When positive it
    *  runs even with `enableRothConversions` off and may raise the target rate up to
    *  `rmdSmoothingMaxBracketTarget`; `rothConversionTarget === 0` still wins. */
@@ -113,17 +109,11 @@ export function performRothConversion(
     balances,
     accountBalance,
     nonRetirement,
-    indAccounts,
-    indBalance,
-    indKey,
+    parts,
     rmdSmoothingTarget,
     rmdSmoothingMaxBracketTarget,
   } = input;
-  const hasIndTracking =
-    nonRetirement != null &&
-    indAccounts != null &&
-    indBalance != null &&
-    indKey != null;
+  const hasIndTracking = nonRetirement != null && parts != null;
   // The isOverflowTarget category (brokerage today), found once for the
   // tax-payment capacity gate and the per-account debit loop.
   const overflowCat = getAllCategories().find((c) => isOverflowTarget(c));
@@ -356,11 +346,7 @@ export function performRothConversion(
     }
   }
 
-  if (hasIndTracking)
-    debitConvertedParts(
-      { accounts: indAccounts, balances: indBalance, keyOf: indKey },
-      categoryShare,
-    );
+  if (hasIndTracking) debitConvertedParts(parts, categoryShare);
 
   // Update brokerage per-account balance for tax payment
   for (const cat of getAllCategories()) {
@@ -381,13 +367,9 @@ export function performRothConversion(
       }
       // As above: the aggregate moves full-category-sized; with individual
       // tracking, the tax comes from this category's Retirement-parented
-      // accounts by balance.
+      // accounts by balance, each giving up basis at its own ratio.
       if (hasIndTracking)
-        payConversionTaxFromParts(
-          { accounts: indAccounts, balances: indBalance, keyOf: indKey },
-          cat,
-          taxCostOfConversion,
-        );
+        payConversionTaxFromParts(parts, cat, taxCostOfConversion);
       break;
     }
   }
