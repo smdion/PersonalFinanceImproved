@@ -3,11 +3,7 @@ import { roundToCents } from "../../../utils/math";
 import { ageInYear } from "../../../utils/date";
 import { isOverflowTarget, isPreTaxType } from "../../../config/account-types";
 import { soleBeneficiarySpouseAges } from "../../../config/rmd-tables";
-import {
-  followDraws,
-  followInflows,
-  retirementBrokerageBasisRatio,
-} from "../brokerage-basis";
+import { followDraws, followInflows } from "../brokerage-basis";
 import {
   clampBalances,
   deductWithdrawals,
@@ -297,16 +293,8 @@ export function yearRothConversion(
     }
   }
 
-  // The Roth conversion; its tax is paid from retirement brokerage money (at its basis ratio).
+  // The Roth conversion; its tax is paid from retirement brokerage money.
   const rothResult = performRothConversion({
-    brokerageBasisRatio: holdsAccounts
-      ? retirementBrokerageBasisRatio(
-          indAccounts,
-          indKey,
-          indBalance,
-          brokBasis,
-        )
-      : undefined,
     enableRothConversions: taxRates.enableRothConversions,
     taxBrackets: grownTaxBrackets,
     taxMultiplier: taxRates.taxMultiplier,

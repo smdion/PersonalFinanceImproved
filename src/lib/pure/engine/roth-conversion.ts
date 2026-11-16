@@ -58,9 +58,6 @@ export interface RothConversionInput {
   filingStatus?: ReturnFilingStatus | null;
   /** Current balances (mutated in place). */
   balances: TaxBuckets;
-  /** Basis ratio of the brokerage money that pays the conversion's tax (the
-   *  Retirement brokerages' own, brokerage-basis.ts). Omitted: aggregate. */
-  brokerageBasisRatio?: number;
   /** Per-account balances (mutated in place). */
   accountBalance: AccountBalances;
   /** Portfolio-parented exclusion: caps the conversion source and tax-payment capacity to
@@ -282,14 +279,12 @@ export function performRothConversion(
   balances.taxFree = roundToCents(balances.taxFree + conversion);
   // Pay tax from brokerage
   balances.afterTax = roundToCents(balances.afterTax - taxCostOfConversion);
-  // Reduce basis proportionally
-  if (balances.afterTax > 0 && balances.afterTaxBasis > 0) {
-    const basisRatio =
-      input.brokerageBasisRatio ??
-      Math.min(
-        1,
-        balances.afterTaxBasis / (balances.afterTax + taxCostOfConversion),
-      );
+  // Reduce basis proportionally (with parts: by the basis they sell, below)
+  if (!hasIndTracking && balances.afterTax > 0 && balances.afterTaxBasis > 0) {
+    const basisRatio = Math.min(
+      1,
+      balances.afterTaxBasis / (balances.afterTax + taxCostOfConversion),
+    );
     balances.afterTaxBasis = roundToCents(
       Math.max(0, balances.afterTaxBasis - taxCostOfConversion * basisRatio),
     );
@@ -357,7 +352,13 @@ export function performRothConversion(
           getTotalBalance(accountBalance[cat]) - taxCostOfConversion,
         ),
       );
-      if (accountBalance[cat].structure === "basis_tracking") {
+      // With parts, the tax comes from them and every track gives up their basis sold.
+      if (hasIndTracking)
+        payConversionTaxFromParts(parts, cat, taxCostOfConversion, {
+          balances,
+          category: accountBalance[cat],
+        });
+      else if (accountBalance[cat].structure === "basis_tracking") {
         const currentBasis = getBasis(accountBalance[cat]);
         const currentBalance = getTotalBalance(accountBalance[cat]);
         setBasis(
@@ -365,11 +366,6 @@ export function performRothConversion(
           roundToCents(Math.min(currentBasis, currentBalance)),
         );
       }
-      // As above: the aggregate moves full-category-sized; with individual
-      // tracking, the tax comes from this category's Retirement-parented
-      // accounts by balance, each giving up basis at its own ratio.
-      if (hasIndTracking)
-        payConversionTaxFromParts(parts, cat, taxCostOfConversion);
       break;
     }
   }

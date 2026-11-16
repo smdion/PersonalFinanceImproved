@@ -32,6 +32,9 @@ import type { WithholdingBracket } from "@/lib/pure/engine/tax-estimation";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
 import type { TaxBuckets } from "@/lib/pure/accounts/account-balances.types";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
+import { getBasis } from "@/lib/pure/accounts/account-balance";
+import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
+import { makeIndividualAccount } from "../fixtures/engine-fixtures";
 
 const y2026 = readTaxData().years["2026"]!;
 const mfjTable = y2026.withholding.tables.MFJ!.standard as WithholdingBracket[];
@@ -159,6 +162,106 @@ describe("answer key: the conversion amount and its tax", () => {
     cents(
       { gains: gainsTax, rate: r.postConversionLtcgRate, niit: r.niitAmount },
       { gains: 6_000, rate: 0.15, niit: 0 },
+    );
+  });
+});
+
+describe("answer key: the conversion's tax from a Retirement brokerage part", () => {
+  /** RET10-1's year, the money held in parts: an IRA's Traditional part
+   *  (500,000; its Roth part declared at $0) and a Retirement brokerage
+   *  part (50,000 at a 20,000 basis). */
+  function convertParts() {
+    const ira = makeIndividualAccount({
+      name: "IRA",
+      category: "ira",
+      taxType: "preTax",
+      startingBalance: 500_000,
+      parentCategory: "Retirement",
+    });
+    const iraRoth = { ...ira, taxType: "taxFree", startingBalance: 0 };
+    const brokerage = makeIndividualAccount({
+      name: "Brokerage",
+      category: "brokerage",
+      taxType: "afterTax",
+      startingBalance: 50_000,
+      startingBasis: 20_000,
+      parentCategory: "Retirement",
+    });
+    const parts = [ira, iraRoth, brokerage];
+    const indKey = makeIndKey();
+    const indBalance = new Map(
+      parts.map((p) => [indKey(p), p.startingBalance]),
+    );
+    const brokBasis = new Map([[indKey(brokerage), 20_000]]);
+    const balances: TaxBuckets = {
+      preTax: 500_000,
+      taxFree: 0,
+      hsa: 0,
+      afterTax: 50_000,
+      afterTaxBasis: 20_000,
+    };
+    const accountBalance = accountBalancesFromTaxBuckets(balances);
+    accountBalance.ira = {
+      structure: "roth_traditional",
+      traditional: 500_000,
+      roth: 0,
+    };
+    accountBalance["401k"] = {
+      structure: "roth_traditional",
+      traditional: 0,
+      roth: 0,
+    };
+    const none = { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 };
+    const r = performRothConversion({
+      enableRothConversions: true,
+      taxBrackets: mfjTable,
+      taxMultiplier: 1,
+      standardDeduction: 32_200,
+      rothConversionTarget: 0.12,
+      rothBracketTarget: undefined,
+      totalTraditionalWithdrawal: 50_000,
+      taxableSS: 0,
+      brokerageGainsPortion: 0,
+      rothTaxableGrowth: 0,
+      irmaaBrackets: {},
+      filingStatus: "MFJ",
+      balances,
+      accountBalance,
+      nonRetirement: { total: none, trad: none, roth: none, grandTotal: 0 },
+      parts: {
+        accounts: parts,
+        balances: indBalance,
+        keyOf: indKey,
+        basis: brokBasis,
+      },
+    });
+    return {
+      r,
+      balances,
+      accountBalance,
+      indBalance,
+      brokBasis,
+      indKey,
+      ira,
+      iraRoth,
+      brokerage,
+    };
+  }
+
+  it("ret/RET11-4 [ENG-20] the brokerage's basis falls by the part's basis sold, on every track", () => {
+    // RET11-1's tax, 9,820, sells 9,820 of the brokerage part at its own
+    // basis ratio 20,000 / 50,000 = 0.4 (average cost; IRC 1012): basis out
+    // 9,820 × 0.4 = 3,928.00, so the part's basis is 16,072.00. The tax
+    // buckets' brokerage basis and the brokerage category's basis are the
+    // same money, so each falls by the same 3,928.00.
+    const t = convertParts();
+    cents(
+      {
+        part: t.brokBasis.get(t.indKey(t.brokerage))!,
+        buckets: t.balances.afterTaxBasis,
+        category: getBasis(t.accountBalance.brokerage),
+      },
+      { part: 16_072, buckets: 16_072, category: 16_072 },
     );
   });
 });

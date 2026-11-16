@@ -299,7 +299,7 @@
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 454,
     "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": 59,
     "src/lib/pure/engine/projection-year-handlers/rmd-step.ts": 236,
-    "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 355,
+    "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 343,
     "src/lib/pure/engine/projection-year-handlers/year-cliffs.ts": 47,
     "src/lib/pure/engine/projection-year-handlers/year-deduction.ts": 57,
     "src/lib/pure/engine/projection-year-handlers/year-draws.ts": 181,
@@ -308,7 +308,7 @@
     "src/lib/pure/engine/projection-year-handlers/year-need.ts": 77,
     "src/lib/pure/engine/projection-year-handlers/year-tax-tables.ts": 80,
     "src/lib/pure/engine/rmd-enforcement.ts": 431,
-    "src/lib/pure/engine/roth-conversion.ts": 389,
+    "src/lib/pure/engine/roth-conversion.ts": 385,
     "src/lib/pure/engine/tax-estimation.ts": 401,
     "src/lib/pure/engine/types/accumulation.ts": 121,
     "src/lib/pure/engine/types/contribution-spec.ts": 92,
@@ -979,7 +979,7 @@
       "enforceOwnerRmds": 152
     },
     "src/lib/pure/engine/roth-conversion.ts": {
-      "performRothConversion": 292
+      "performRothConversion": 291
     },
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
       "rankWithdrawalTiers": 217

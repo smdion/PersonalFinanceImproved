@@ -5,9 +5,14 @@
  */
 import type { AccountCategory } from "../../../config/account-types";
 import { isRetirementMoney } from "../../../config/account-types";
-import type { IndividualAccountInput } from "../../accounts/account-balances.types";
+import type {
+  IndividualAccountInput,
+  TaxBuckets,
+} from "../../accounts/account-balances.types";
+import type { AccountBalance } from "../../../config/account-types.types";
+import { getBasis, setBasis } from "../../accounts/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
-import { roundToCents } from "../../../utils/math";
+import { roundToCents, sumBy } from "../../../utils/math";
 import { followDraws, type BrokerageBasis } from "../brokerage-basis";
 
 /** The account parts a conversion moves money on, their balances and each
@@ -72,14 +77,27 @@ export function debitConvertedParts(
 }
 
 /** The conversion's tax, from the overflow category's Retirement-parented
- *  accounts by balance, each giving up basis at its own ratio. */
+ *  accounts by balance, each giving up basis at its own ratio; the tax
+ *  buckets and the category give up the same basis (average cost, IRC 1012). */
 export function payConversionTaxFromParts(
   parts: ConversionParts,
   category: AccountCategory,
   tax: number,
+  totals: { balances: TaxBuckets; category: AccountBalance },
 ): void {
   const { accounts, keyOf, balances, basis } = parts;
+  const held = () => sumBy(accounts, (ia) => basis.get(keyOf(ia)) ?? 0);
+  const before = held();
   followDraws(accounts, keyOf, balances, basis, () =>
     debitByBalance(parts, retirementParts(parts, category), tax),
   );
+  const sold = roundToCents(before - held());
+  totals.balances.afterTaxBasis = roundToCents(
+    Math.max(0, totals.balances.afterTaxBasis - sold),
+  );
+  if (totals.category.structure === "basis_tracking")
+    setBasis(
+      totals.category,
+      roundToCents(Math.max(0, getBasis(totals.category) - sold)),
+    );
 }
