@@ -4,7 +4,7 @@
  * input while it has its accounts, so lump sums follow `resolveLumpSumTarget`.
  */
 import {
-  getAllCategories,
+  buildCategoryRecord,
   isOverflowTarget,
   isRetirementMoney,
   zeroBalance,
@@ -12,8 +12,6 @@ import {
 import { roundToCents } from "../../utils/math";
 import { rampIsPortfolioSaving } from "../accounts/brokerage-ramp";
 import { resolveLumpSumTarget } from "../engine/projection-year-handlers/lump-sum";
-import type { AccountBalance } from "../../config/account-types.types";
-import type { AccountCategory } from "../../config/account-types";
 import type {
   AccumulationDefaults,
   ProjectionInput,
@@ -77,18 +75,11 @@ export function toSimpleTaxMode(
       afterTax: total,
       afterTaxBasis: total,
     },
-    startingAccountBalances: Object.fromEntries(
-      getAllCategories().map((cat) => [
-        cat,
-        isOverflowTarget(cat)
-          ? {
-              structure: "basis_tracking" as const,
-              balance: total,
-              basis: total,
-            }
-          : zeroBalance(cat),
-      ]),
-    ) as Record<AccountCategory, AccountBalance>,
+    startingAccountBalances: buildCategoryRecord((cat) =>
+      isOverflowTarget(cat)
+        ? { structure: "basis_tracking" as const, balance: total, basis: total }
+        : zeroBalance(cat),
+    ),
     accumulationDefaults: {
       ...input.accumulationDefaults,
       accountSplits: parts.defaults.accountSplits,

@@ -825,9 +825,9 @@ export function defaultDecumulationConfig(): {
 
 /** Build an empty record keyed by all engine categories with a factory. */
 export function buildCategoryRecord<T>(
-  factory: () => T,
+  factory: (category: AccountCategory) => T,
 ): Record<AccountCategory, T> {
   return Object.fromEntries(
-    getEngineCategories().map((c) => [c, factory()]),
+    getEngineCategories().map((c) => [c, factory(c)]),
   ) as Record<AccountCategory, T>;
 }

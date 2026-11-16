@@ -4699,9 +4699,6 @@
     }
   },
   "src/lib/pure/tax/simple-tax-mode.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 3
     },
