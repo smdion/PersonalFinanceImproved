@@ -5,6 +5,11 @@ import { isPreTaxType } from "../../../config/account-types";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
+/** Each owner takes their own RMD: a real account and someone's RMD age. */
+export function perOwnerRmds(ctx: ProjectionContext): boolean {
+  return ctx.holdsAccounts && ctx.rmdStartAgeByPerson.size > 0;
+}
+
 /**
  * Refresh the per-person prior-year Traditional balance map after a year's
  * individual-account balances settle. Used by both accumulation-year and
@@ -14,7 +19,7 @@ export function updatePerPersonTradBalance(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
 ): void {
-  if (ctx.rmdStartAgeByPerson.size === 0 || !ctx.holdsAccounts) return;
+  if (!perOwnerRmds(ctx)) return;
   state.priorYearEndTradByPerson.clear();
   for (const ia of ctx.indAccounts) {
     const owner = rmdOwnerOf(ia, ctx.primaryPersonId);

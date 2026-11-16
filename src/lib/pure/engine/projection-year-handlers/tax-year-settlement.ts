@@ -20,6 +20,7 @@ import { rmdOwnerOf } from "../rmd-enforcement";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
 import { applyLumpSums } from "./lump-sum";
+import { perOwnerRmds } from "./helpers";
 import type { yearNeed } from "./year-need";
 import type { distributeYearDraws, routeYearDraw } from "./year-draws";
 import type { enforceYearRmd } from "./rmd-step";
@@ -254,11 +255,7 @@ export function yearRothConversion(
   const { brokerageGainsPortion } = flow.parts;
   // RMD-aware conversion smoothing (rmd-smoothing.ts): per owner, so tracked accounts only.
   let rmdSmoothingTarget: number | undefined;
-  if (
-    config.rmdSmoothingEnabled &&
-    ctx.holdsAccounts &&
-    rmdStartAgeByPerson.size > 0
-  ) {
+  if (config.rmdSmoothingEnabled && perOwnerRmds(ctx)) {
     const smoothingPeople = Array.from(rmdStartAgeByPerson.entries()).map(
       ([personId, { startAge, birthYear }]) => {
         const personTraditionalBalance = indAccounts

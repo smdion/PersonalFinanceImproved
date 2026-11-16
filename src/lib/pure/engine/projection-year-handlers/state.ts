@@ -15,6 +15,7 @@ import { buildSpecToAccountMapping } from "../individual-accounts/spec-accounts"
 import { initRothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
+import { perOwnerRmds } from "./helpers";
 import type { YearIncome } from "@/lib/pure/tax/year-income";
 
 /**
@@ -51,7 +52,7 @@ export function buildProjectionState(
 
   // Per-person Traditional balance for per-person RMD (from individual accounts)
   const priorYearEndTradByPerson = new Map<number, number>();
-  if (ctx.rmdStartAgeByPerson.size > 0 && ctx.holdsAccounts) {
+  if (perOwnerRmds(ctx)) {
     for (const ia of ctx.indAccounts) {
       const owner = rmdOwnerOf(ia, ctx.primaryPersonId);
       if (owner != null && isPreTaxType(ia.taxType)) {
