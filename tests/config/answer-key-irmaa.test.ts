@@ -52,7 +52,12 @@
  */
 import { describe, expect, it } from "vitest";
 import { cents, runOneYear } from "../fixtures/answer-key";
-import { getIrmaaCost, getNextIrmaaCliff } from "@/lib/config/irmaa-tables";
+import {
+  getIrmaaCost,
+  getNextIrmaaCliff,
+  irmaaTopTierVintage,
+} from "@/lib/config/irmaa-tables";
+import { growIrmaaBrackets } from "@/lib/pure/engine/bracket-growth";
 import { engineHousehold } from "../fixtures/answer-key-household";
 import { shippedTaxTables } from "../helpers/tax-data";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
@@ -170,6 +175,54 @@ describe("answer key: IRMAA tiers, married filing jointly, 2026 (CMS26)", () => 
   it("ret/I13 [RET-14] 750,000: 6,936.00 each (the top joint tier starts at its threshold)", () => {
     // 418.1115(c)(3)(v): "greater than or equal to" 750,000: 6,936.00 each.
     cents(irmaa(750_000, "MFJ"), 6936);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// B2. A year whose table hasn't shipped: the top tier is held through 2027
+// ---------------------------------------------------------------------------
+
+describe("answer key: the top tier's threshold before indexing starts", () => {
+  it("ret/IM21:2027 [RET-16] 2027 premiums from the 2026 table at 3% inflation, Single 505,000: the top tier, 7,144.08", () => {
+    // 42 USC 1395r(i)(5)(C) (spec IM-21): 500,000 and 750,000 aren't
+    // indexed before 2028, so a 2027 premium year keeps 500,000 while the
+    // lower thresholds grow (205,000 × 1.03 = 211,150). 505,000 ≥ 500,000
+    // is the top tier; Ledgr grows the surcharge with inflation like every
+    // other tier: 6,936.00 × 1.03 = 7,144.08. Growing the top threshold too
+    // (515,000) would put 505,000 in the fourth tier, 6,355.20 × 1.03 =
+    // 6,545.86.
+    const tables = shippedTaxTables(2026).irmaaBrackets;
+    const vintage = irmaaTopTierVintage(2026);
+    expect(vintage).toBe(2027);
+    const topGrowth = Math.pow(1.03, Math.max(0, 2027 - vintage!));
+    const grown = growIrmaaBrackets(tables, 1.03, topGrowth);
+    cents(getIrmaaCost(505_000, "Single", grown), 7144.08);
+    // From 2028 the top tier indexes from 2027's: a 2027 table grows it
+    // like the rest, and a current table (no year) doesn't grow at all.
+    expect(irmaaTopTierVintage(2028)).toBe(2028);
+    expect(irmaaTopTierVintage(undefined)).toBeUndefined();
+  });
+
+  it("through the engine: a 2027 year read from the 2026 table keeps the top threshold at 500,000", () => {
+    // Single, 69 in 2027, 3% inflation, the 2026 tables: the year's own
+    // MAGI (no lookback yet) is its IRA draw, between 500,000 and 515,000.
+    const year = runOneYear(
+      {
+        ...engineHousehold({
+          status: "Single",
+          people: [{ birthYear: 1958 }],
+          traditionalIra: 10_000_000,
+          spending: 355_000,
+          endYear: 2028,
+        }),
+        inflationRate: 0.03,
+      },
+      2027,
+    );
+    if (year.phase !== "decumulation") throw new Error("not retired");
+    expect(year.totalTraditionalWithdrawal).toBeGreaterThanOrEqual(500_000);
+    expect(year.totalTraditionalWithdrawal).toBeLessThan(515_000);
+    cents(year.irmaaCost, 7144.08);
   });
 });
 

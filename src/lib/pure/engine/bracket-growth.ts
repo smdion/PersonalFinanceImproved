@@ -75,18 +75,20 @@ export function growLtcgBrackets(
 
 /**
  * Grows IRMAA brackets: `magiThreshold` and `annualSurcharge` both scale, so the surcharge keeps
- * its weight against grown tax terms in the bracket optimizer's `lifetimeTax`. Every tier has a
- * finite threshold.
+ * its weight against grown tax terms in the bracket optimizer's `lifetimeTax`. The top tier's
+ * threshold grows by `topThresholdGrowth` (it is held until indexing starts: `irmaaTopTierVintage`).
  */
 export function growIrmaaBrackets(
   brackets: IrmaaBracketTable,
   growthFactor: number,
+  topThresholdGrowth: number,
 ): IrmaaBracketTable {
-  const source = brackets;
   const grown: IrmaaBracketTable = {};
-  for (const [filingStatus, entries] of Object.entries(source)) {
-    grown[filingStatus] = entries.map((b) => ({
-      magiThreshold: b.magiThreshold * growthFactor,
+  for (const [filingStatus, entries] of Object.entries(brackets)) {
+    grown[filingStatus] = entries.map((b, i) => ({
+      magiThreshold:
+        b.magiThreshold *
+        (i === entries.length - 1 ? topThresholdGrowth : growthFactor),
       annualSurcharge: b.annualSurcharge * growthFactor,
     }));
   }

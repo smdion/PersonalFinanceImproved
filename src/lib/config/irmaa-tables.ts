@@ -11,6 +11,21 @@ export type IrmaaBracket = {
   annualSurcharge: number;
 };
 
+/** The top tier's thresholds ($500,000 / $750,000 jointly) aren't indexed
+ *  before 2028 (42 USC 1395r(i)(5)(C); 20 CFR 418.1115(e)(2)); later years
+ *  index from 2027's. */
+const IRMAA_TOP_TIER_HELD_THROUGH = 2027;
+
+/** The year the top tier's threshold grows from, given its table's year
+ *  (`undefined`, current data, stays `undefined`: no growth). */
+export function irmaaTopTierVintage(
+  tableYear: number | undefined,
+): number | undefined {
+  return tableYear == null
+    ? undefined
+    : Math.max(tableYear, IRMAA_TOP_TIER_HELD_THROUGH);
+}
+
 /** IRMAA brackets by filing status, as stored (`irmaa_brackets`): the
  *  surcharge applies once MAGI is above a bracket's threshold (the top
  *  bracket: at or above it). Cliff-based — $1 over triggers the whole tier. */

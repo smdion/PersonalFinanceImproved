@@ -691,7 +691,7 @@ describe("growIrmaaBrackets", () => {
   };
 
   it("is a no-op at growthFactor 1", () => {
-    expect(growIrmaaBrackets(DB_BRACKETS, 1)).toEqual(DB_BRACKETS);
+    expect(growIrmaaBrackets(DB_BRACKETS, 1, 1)).toEqual(DB_BRACKETS);
   });
 
   // Unlike growLtcgBrackets (threshold only), BOTH fields scale here --
@@ -699,16 +699,16 @@ describe("growIrmaaBrackets", () => {
   // weight in withdrawal-bracket-optimizer.ts's lifetimeTax objective
   // consistent with the now-grown taxCost/rothConversionTaxCost terms it's
   // summed against (see growIrmaaBrackets' own docblock).
-  it("scales both magiThreshold and annualSurcharge by the growth factor", () => {
-    const grown = growIrmaaBrackets(DB_BRACKETS, 1.5);
+  it("scales both magiThreshold and annualSurcharge by the growth factor, the top threshold by its own", () => {
+    const grown = growIrmaaBrackets(DB_BRACKETS, 1.5, 1.2);
     expect(grown.MFJ![0]!.magiThreshold).toBeCloseTo(206000 * 1.5, 5);
     expect(grown.MFJ![0]!.annualSurcharge).toBeCloseTo(1056 * 1.5, 5);
-    expect(grown.MFJ![1]!.magiThreshold).toBeCloseTo(258000 * 1.5, 5);
+    expect(grown.MFJ![1]!.magiThreshold).toBeCloseTo(258000 * 1.2, 5);
     expect(grown.MFJ![1]!.annualSurcharge).toBeCloseTo(2640 * 1.5, 5);
   });
 
   it("grows the shipped table", () => {
-    const grown = growIrmaaBrackets(IRMAA_BRACKETS, 1.5);
+    const grown = growIrmaaBrackets(IRMAA_BRACKETS, 1.5, 1.5);
     expect(grown.MFJ![0]!.magiThreshold).toBeCloseTo(
       IRMAA_BRACKETS.MFJ![0]!.magiThreshold * 1.5,
       5,
@@ -716,7 +716,7 @@ describe("growIrmaaBrackets", () => {
   });
 
   it("maps over every filing-status key, not just one", () => {
-    const grown = growIrmaaBrackets(IRMAA_BRACKETS, 1.5);
+    const grown = growIrmaaBrackets(IRMAA_BRACKETS, 1.5, 1.5);
     expect(Object.keys(grown).sort()).toEqual(["HOH", "MFJ", "Single"]);
   });
 });

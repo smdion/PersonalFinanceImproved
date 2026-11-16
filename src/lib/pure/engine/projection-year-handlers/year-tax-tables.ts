@@ -5,6 +5,7 @@ import {
   growWithholdingBrackets,
   taxTableYears,
 } from "../bracket-growth";
+import { irmaaTopTierVintage } from "../../../config/irmaa-tables";
 import { yearStandardDeduction } from "./year-deduction";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
@@ -58,13 +59,17 @@ export function growYearTaxTables(
     tableYears.irmaa,
     2,
   );
+  // The top tier's threshold grows only from its first indexed year.
+  const topVintage = irmaaTopTierVintage(tableYears.irmaa);
   const grownIrmaaBracketsForCheck = growIrmaaBrackets(
     taxRates.irmaaBrackets,
     irmaaGrowthCheck,
+    ctx.inflation.growthSinceVintage(year, topVintage),
   );
   const grownIrmaaBracketsForCap = growIrmaaBrackets(
     taxRates.irmaaBrackets,
     irmaaGrowthCap,
+    ctx.inflation.growthSinceVintage(year, topVintage, 2),
   );
 
   // The ACA cliff (400% FPL) from its coverage year: one factor, since the
