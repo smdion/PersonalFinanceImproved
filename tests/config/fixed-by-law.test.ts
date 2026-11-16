@@ -50,7 +50,7 @@ describe("fixed by law", () => {
     expect(ADDITIONAL_STANDARD_DEDUCTION_AGE).toBe(65);
     expect(AGE_RULES.medicare.age).toBe(65);
     expect(HSA_NON_MEDICAL_PENALTY_AGE).toBe(65);
-    expect(AGE_RULES.qcd.age).toBe(70);
+    expect(AGE_RULES.qcd).toEqual({ age: 70.5, measuredOn: "dec31ByMonth" });
     expect([1950, 1951, 1959, 1960].map(getRmdStartAge)).toEqual([
       72, 73, 73, 75,
     ]);

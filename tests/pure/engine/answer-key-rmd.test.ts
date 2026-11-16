@@ -38,9 +38,10 @@
  * checked cell by cell in `tests/config/rmd-tables.test.ts`; the cases
  * here test the functions.
  *
- * The engine judges age as `year − birthYear` (no birth date), so a case
- * whose rule turns on a date (Q1-Q3, the QCD's 70½) enters only through
- * its year; the date is in the comment. The QCD age gate lives in the
+ * The engine judges age as `year − birthYear`, plus the birth month for
+ * the QCD's 70½ (reached by Dec 31: a QCD that year can follow the date),
+ * so a QCD age case (Q2, Q3) enters through its year and birth month; the
+ * date is in the comment. The QCD age gate lives in the
  * engine (`decumulation-year.ts`), so the QCD age cases run one engine
  * year; the limit cases call `computeQcdAmounts` with the shipped
  * year's limit.
@@ -58,7 +59,7 @@
  * Blocked with an item that unblocks them: the `it.todo`s at the end.
  */
 import { describe, expect, it } from "vitest";
-import { cents, runOneYear, xfail } from "../../fixtures/answer-key";
+import { cents, runOneYear } from "../../fixtures/answer-key";
 import {
   computeRmdAmount,
   getRmdFactor,
@@ -104,7 +105,12 @@ const qcdOf = (iraBalance: number, year: 2025 | 2026) =>
  *  Spending comes from a large brokerage first, so the Traditional
  *  balances move only by the RMD and the QCD. */
 function engineYear(
-  people: { personId: number; name: string; birthYear: number }[],
+  people: {
+    personId: number;
+    name: string;
+    birthYear: number;
+    birthMonth?: number;
+  }[],
   accounts: IndividualAccountInput[],
   year = 2026,
 ): EngineDecumulationYear {
@@ -121,6 +127,12 @@ function engineYear(
         annualAmount: 0,
       })),
       perPersonBirthYears: people.map((p) => p.birthYear),
+      people: people.map((p) => ({
+        personId: p.personId,
+        birthYear: p.birthYear,
+        // A case that states no month is born in January (70½ in the year of 70).
+        birthMonth: p.birthMonth ?? 1,
+      })),
       filingStatus: people.length > 1 ? "MFJ" : "Single",
       annualExpenses: 10_000,
       decumulationAnnualExpenses: 10_000,
@@ -136,7 +148,9 @@ function engineYear(
   return row as EngineDecumulationYear;
 }
 
-const ann = (birthYear: number) => [{ personId: 1, name: "Ann", birthYear }];
+const ann = (birthYear: number, birthMonth?: number) => [
+  { personId: 1, name: "Ann", birthYear, birthMonth },
+];
 
 /** Account balances for `enforceOwnerRmds`: Traditional IRA money only. */
 function iraBalances(traditional: number): AccountBalances {
@@ -182,9 +196,6 @@ function ownerRmds(
     indBalance: new Map(accounts.map((a) => [a.name, a.startingBalance])),
   });
 }
-
-const QCD_AGE =
-  'v0.11 Retirement rules "Retirement rules the skeptic confirmed" (verdict K-C: QCD gate is 70 in the year, not 70½ on the date)';
 
 // ---------------------------------------------------------------------------
 // A. When RMDs start (IRC 401(a)(9)(C)(v); SECURE 2.0 § 107)
@@ -459,25 +470,24 @@ describe("answer key: the RMD amount", () => {
 
 describe("answer key: QCD at 70½", () => {
   // Each owner holds a 5,000 IRA and gives it all, in 2026. The engine's
-  // gate is 70 in the year (`AGE_RULES.qcd`, disclosed at
-  // `fixed-by-law.ts:175`): owners born in 1956 or earlier get the QCD.
+  // gate is 70½ reached by Dec 31 (`AGE_RULES.qcd`, by birth month; verdict
+  // K-C fixed): born January–June 1956 or earlier, a QCD in 2026.
   it("ret/Q2 [RET-09] DOB 1955-08-15, QCD on 2026-02-15 (70½ that day): a QCD", () => {
     // 70½ on 2026-02-15 (six months after the 70th birthday on
     // 2025-08-15; the day itself is UNSOURCED-1): a QCD of 5,000. Ledgr
-    // gets it by the year model (2026 − 1955 = 71), and still would with
-    // a month split (decision D12.4).
+    // gets it: 70½ falls in 2026.
     cents(
-      engineYear(ann(1955), [acct("IRA", "ira", 5_000, 1)]).qcdAmount,
+      engineYear(ann(1955, 8), [acct("IRA", "ira", 5_000, 1)]).qcdAmount,
       5_000,
     );
   });
 
   it("ret/Q2:70 [RET-09] DOB 1956-03-01, QCD in December 2026, 70 in the year: a QCD (RT11)", () => {
     // 70 on 2026-03-01, 70½ on 2026-09-01: a December QCD is allowed in
-    // the year of 70. With Q2:69 this pins the year the engine's gate
-    // opens: a gate moved to 71 (the RT11 mutant) gives 0 here.
+    // the year of 70. With Q2:69 and Q3 this pins the year the engine's
+    // gate opens: a gate moved to 71 (the RT11 mutant) gives 0 here.
     cents(
-      engineYear(ann(1956), [acct("IRA", "ira", 5_000, 1)]).qcdAmount,
+      engineYear(ann(1956, 3), [acct("IRA", "ira", 5_000, 1)]).qcdAmount,
       5_000,
     );
   });
@@ -485,7 +495,10 @@ describe("answer key: QCD at 70½", () => {
   it("ret/Q2:69 [RET-09] DOB 1957-03-01, 69 in 2026: no QCD", () => {
     // 70½ on 2027-09-01: no date in 2026 qualifies under any reading, so
     // nothing comes out as a QCD.
-    cents(engineYear(ann(1957), [acct("IRA", "ira", 5_000, 1)]).qcdAmount, 0);
+    cents(
+      engineYear(ann(1957, 3), [acct("IRA", "ira", 5_000, 1)]).qcdAmount,
+      0,
+    );
   });
 
   // ret/Q1 [RET-09]: same owner as Q2, QCD on 2026-02-14, a day before
@@ -499,18 +512,14 @@ describe("answer key: QCD at 70½", () => {
     'ret/Q1: blocked on v0.11 Retirement rules "Add: survivor benefit and first death" (its "a chosen QCD amount", with the QCD date), then v0.11 "Retirement rules the skeptic confirmed" (K-C)',
   );
 
-  describe("ret/Q3 [RET-09]", () => {
-    // DOB 1956-11-20, QCD in December 2026: 70 on 2026-11-20, 70½ only on
-    // 2027-05-20, so not a QCD. The year model's "70 in the year" passes
-    // it (a July-December birth gets one year of QCD the law bars): 5,000.
-    xfail({
-      id: "ret/Q3 [RET-09]",
-      todo: QCD_AGE,
-      run: () =>
-        engineYear(ann(1956), [acct("IRA", "ira", 5_000, 1)]).qcdAmount,
-      expected: 0,
-      today: 5_000,
-    });
+  it("ret/Q3 [RET-09] DOB 1956-11-20, QCD in December 2026 (70, not yet 70½): no QCD", () => {
+    // 70 on 2026-11-20, 70½ only on 2027-05-20, so no December 2026 QCD
+    // (408(d)(8)(B)(ii)). The year model's "70 in the year" passed it (a
+    // July-December birth got one year of QCD the law bars): 5,000.
+    cents(
+      engineYear(ann(1956, 11), [acct("IRA", "ira", 5_000, 1)]).qcdAmount,
+      0,
+    );
   });
 
   it("ret/Q9 [RET-09] 72, before the FDCY, QCD 10,000 in 2026: allowed, and no credit against the 2027 RMD", () => {

@@ -8,13 +8,20 @@ import {
   parseLocalDateOnly,
 } from "@/lib/utils/date";
 
-/** Whether someone born in `birthYear` meets `rule` in `year`. */
+/** Whether someone born in `birthYear` (and `birthMonth`, 1–12, when
+ *  known) meets `rule` by Dec 31 of `year`. */
 export function reachesAgeRule(
   birthYear: number,
   rule: AgeRuleKey,
   year: number,
+  birthMonth?: number,
 ): boolean {
-  return ageInYear(birthYear, year) >= AGE_RULES[rule].age;
+  const { age, measuredOn } = AGE_RULES[rule];
+  if (measuredOn === "dec31") return ageInYear(birthYear, year) >= age;
+  if (birthMonth == null)
+    throw new Error(`reachesAgeRule: "${rule}" is measured by birth month`);
+  // Whole months of age at Dec 31, counting from the birth month.
+  return ageInYear(birthYear, year) * 12 + 12 - birthMonth >= age * 12;
 }
 
 /**

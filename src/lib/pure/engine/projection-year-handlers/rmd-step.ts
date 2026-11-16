@@ -31,14 +31,18 @@ export function qcdStep(
   const { decumulationDefaults } = ctx.input;
   const { indBalance, balances, accountBalance } = state;
   // A QCD satisfies part of an owner's RMD tax-free, so it runs before the
-  // tax estimate. Eligibility is the QCD age (AGE_RULES.qcd), not the RMD
-  // start age, so it reads every tracked person, not only rmdByPerson.
+  // tax estimate. Eligibility is the QCD age (AGE_RULES.qcd, 70½ by birth
+  // month), not the RMD start age: every tracked person, not rmdByPerson.
+  const monthOf = (id: number) =>
+    ctx.input.people.find((p) => p.personId === id)?.birthMonth;
   let totalQcd = 0;
   let qcdByPerson: { personId: number; qcdAmount: number }[] = [];
   const qcdEligiblePersonIds =
     holdsAccounts && rmdStartAgeByPerson.size > 0
       ? Array.from(rmdStartAgeByPerson.entries())
-          .filter(([, { birthYear }]) => reachesAgeRule(birthYear, "qcd", year))
+          .filter(([id, p]) =>
+            reachesAgeRule(p.birthYear, "qcd", year, monthOf(id)),
+          )
           .map(([personId]) => personId)
       : [];
   if (qcdEligiblePersonIds.length > 0) {
@@ -48,8 +52,7 @@ export function qcdStep(
         isQcdEligible(ia.category) &&
         rmdOwnerOf(ia, ctx.primaryPersonId) != null &&
         isPreTaxType(ia.taxType) &&
-        // A Portfolio-parented IRA (nothing prevents one existing)
-        // isn't retirement money -- must not inflate QCD-eligible capacity.
+        // A Portfolio-parented IRA isn't retirement money: no QCD capacity.
         isRetirementMoney(ia.parentCategory)
       ) {
         const balance = indBalance.get(indKey(ia)) ?? 0;
@@ -57,8 +60,7 @@ export function qcdStep(
         iraTradByPerson.set(owner, (iraTradByPerson.get(owner) ?? 0) + balance);
       }
     }
-    // The per-person QCD limit is CPI-indexed (IRC 408(d)(8)(G)): grown
-    // from the limits year like the standard deduction.
+    // The QCD limit is CPI-indexed (IRC 408(d)(8)(G)), grown like the standard deduction.
     const { qcdAnnualLimit, taxDataYear } =
       decumulationDefaults.distributionTaxRates;
     qcdByPerson = computeQcdAmounts(
@@ -75,9 +77,8 @@ export function qcdStep(
       balances.preTax = roundToCents(balances.preTax - totalQcd);
       const qcdCategory = ctx.ACCOUNT_CATEGORIES.find(isQcdEligible)!;
       addTraditional(accountBalance[qcdCategory], -totalQcd);
-      // A QCD leaves one owner's own IRAs: debit each person's amount from
-      // only their Retirement-parented IRAs, by balance, never pooled (the
-      // reconcile step would spread it over every IRA in the category).
+      // A QCD leaves one owner's own Retirement-parented IRAs, by balance,
+      // never pooled over every IRA in the category.
       for (const { personId, qcdAmount } of qcdByPerson) {
         if (qcdAmount <= 0) continue;
         const personIraAccounts = indAccounts.filter(
@@ -101,8 +102,7 @@ export function qcdStep(
           indBalance.set(k, roundToCents(balance - capped));
           distributed += capped;
         }
-        // Rounding remainder mop-up, same convention as elsewhere in this
-        // file (e.g. Roth conversion's tradAccounts loop).
+        // Rounding remainder mop-up, as Roth conversion's tradAccounts loop.
         const remainder = roundToCents(qcdAmount - distributed);
         if (remainder > 0.005 && personIraAccounts.length > 0) {
           const first = personIraAccounts[0]!;

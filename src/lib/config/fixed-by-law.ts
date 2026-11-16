@@ -162,7 +162,7 @@ export function fixedByLawGroups(): FixedByLawGroup[] {
         },
         {
           label: "Charitable distributions (QCDs) from IRAs",
-          value: `70½ (Ledgr counts from the year you turn ${AGE_RULES.qcd.age})`,
+          value: "70½ (Ledgr counts from the year you reach it)",
           citation: "IRC §408(d)(8)(B)(ii)",
         },
         {

@@ -7,9 +7,16 @@ import {
 } from "@/lib/pure/household/age";
 
 describe("reachesAgeRule (age at Dec 31)", () => {
-  it("QCD from the year the person turns 70", () => {
-    expect(reachesAgeRule(1957, "qcd", 2026)).toBe(false);
-    expect(reachesAgeRule(1956, "qcd", 2026)).toBe(true);
+  it("QCD from the year the person reaches 70½, by birth month", () => {
+    // Born June 1956: 70½ in December 2026. Born July 1956: January 2027.
+    expect(reachesAgeRule(1956, "qcd", 2026, 6)).toBe(true);
+    expect(reachesAgeRule(1956, "qcd", 2026, 7)).toBe(false);
+    expect(reachesAgeRule(1956, "qcd", 2027, 12)).toBe(true);
+    expect(reachesAgeRule(1957, "qcd", 2026, 1)).toBe(false);
+  });
+
+  it("QCD refuses a person with no birth month", () => {
+    expect(() => reachesAgeRule(1956, "qcd", 2026)).toThrow(/birth month/);
   });
 
   it("Medicare from the year the person turns 65", () => {
