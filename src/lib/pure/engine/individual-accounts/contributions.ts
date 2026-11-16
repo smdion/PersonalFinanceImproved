@@ -9,10 +9,10 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
   getAllCategories,
-  isPreTaxType,
   isRetirementMoney,
 } from "../../../config/account-types";
 import { projectSpecAmount } from "../contribution-projection";
+import { taxTypeOnSide } from "../../../config/tax-treatment-buckets";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { rampBrokerages } from "@/lib/pure/accounts/brokerage-ramp";
 import { credit, retirementFirst, specKeyOf } from "./ledger";
@@ -199,11 +199,11 @@ export function distributeContributions(
   }
 
   // --- Step 3: Route employer match to individual accounts ---
-  // A pool's match goes to its pre-tax accounts (all of them when it has
-  // none), those with specs of their own first, weighted by balance.
+  // A pool's match: its parts of the totals' match tax type, those with specs first, by balance.
   const spreadMatch = (pool: IndividualAccountInput[], amount: number) => {
-    const preTax = pool.filter((ia) => isPreTaxType(ia.taxType));
-    const candidates = preTax.length > 0 ? preTax : pool;
+    const candidates = pool.filter(
+      (ia) => ia.taxType === taxTypeOnSide(ia.category, "traditional"),
+    );
     const withSpecs = candidates.filter((ia) =>
       accountsWithSpecs.has(indKey(ia)),
     );

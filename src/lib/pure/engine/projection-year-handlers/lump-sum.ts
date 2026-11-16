@@ -9,7 +9,7 @@ import {
   isTaxFreeBucket,
   isRetirementMoney,
 } from "../../../config/account-types";
-import { lumpSumTaxType } from "../../../config/tax-treatment-buckets";
+import { taxTypeOnSide } from "../../../config/tax-treatment-buckets";
 import {
   addTraditional,
   addRoth,
@@ -35,7 +35,7 @@ export function applyLumpSums(
   for (const ls of lumpSums) {
     const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
     if (bs === "roth_traditional") {
-      if (isTaxFreeBucket(lumpSumTaxType(ls.targetAccount, ls.taxType))) {
+      if (isTaxFreeBucket(taxTypeOnSide(ls.targetAccount, ls.taxType))) {
         balances.taxFree += ls.amount;
         addRoth(accountBalance[ls.targetAccount], ls.amount);
       } else {
@@ -84,7 +84,7 @@ export function resolveLumpSumTargets(
   ls: LumpSum,
   indAccounts: readonly IndividualAccountInput[],
 ): IndividualAccountInput[] {
-  const taxType = lumpSumTaxType(ls.targetAccount, ls.taxType);
+  const taxType = taxTypeOnSide(ls.targetAccount, ls.taxType);
   const parts = indAccounts.filter(
     (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
   );

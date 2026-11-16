@@ -45,9 +45,9 @@ export const ROTH_SPLIT_PARTS: Readonly<
   roth: TAX_TREATMENT_TO_TAX_TYPE.tax_free,
 };
 
-/** The tax type of the part a lump sum lands in: in a Roth-capable account,
- *  its side's (Traditional unless it names Roth); otherwise the category's. */
-export function lumpSumTaxType(
+/** The tax type of the part money on `side` lands in: in a Roth-capable
+ *  account, that side's (Traditional unless Roth); otherwise the category's. */
+export function taxTypeOnSide(
   category: AccountCategory,
   side: RothSplitSide | undefined,
 ): PortfolioTaxType {
