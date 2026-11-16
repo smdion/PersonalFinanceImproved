@@ -1,35 +1,35 @@
 {
   "$comment": "Engine golden fixtures' reviews, keyed by the sha256 of each fixture's engine input (tests/pure/engine/engine-golden.test.ts). A changed input drops out of this file and fails the test until its figures are re-derived by hand and its new hash recorded here.",
   "inputs": {
-    "cbe5a1709984e992450699eaaf19d98bb67f7313bf1060b6cac61435f2f08517": {
+    "d998b2334186ea57c0c68bc6772815a93b650d98596c0fc2a98e3821883e3eaa": {
       "fixture": "engine/GOLD-1",
-      "reviewed": "2026-11-13",
-      "checked": "every year's balance and draw, the 2031 depletion: (start \u2212 40,000) \u00d7 1.05 by hand; gains under the 0% band; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
+      "reviewed": "2026-11-15",
+      "checked": "every year's balance and draw, the 2031 depletion: (start \u2212 40,000) \u00d7 1.05 by hand; gains under the 0% band; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged; its input states its people (RR7: the field is required), the one person it always described, figures unchanged"
     },
-    "46cf15ee2492afcbb1a31a126c240d2577a517672a118f2dd3a565fd7ea73d9d": {
+    "cd174b70298a6b82b9ffd93a03bf08a72f49d8ee22b7d58dbe371996bfc03941": {
       "fixture": "engine/GOLD-2",
-      "reviewed": "2026-11-13",
-      "checked": "spending inflated 3% a year from 2026; balances (start \u2212 spending) \u00d7 1.04 by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
+      "reviewed": "2026-11-15",
+      "checked": "spending inflated 3% a year from 2026; balances (start \u2212 spending) \u00d7 1.04 by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged; its input states its people (RR7: the field is required), the one person it always described, figures unchanged"
     },
-    "ba5cc8433af38e2c57c4caeb9e8959ac5e24ce359a60638a22ca05fb37ea3fe9": {
+    "02791023b036b19b55d05757adfaf6fcff609928c878b799c69620cf0d9551ff": {
       "fixture": "engine/GOLD-3",
-      "reviewed": "2026-11-13",
-      "checked": "two working years (start + 10,000) \u00d7 1.05, then draws of 60,000 and the 2029 depletion, by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
+      "reviewed": "2026-11-15",
+      "checked": "two working years (start + 10,000) \u00d7 1.05, then draws of 60,000 and the 2029 depletion, by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged; its input states its people (RR7: the field is required), the one person it always described, figures unchanged"
     },
-    "10c4c23587faecbaf9a686c6feb0cf058f70c5005d93a63799929d36121d283e": {
+    "73d45283f762ea373dda32fcb24ba91ddab2ac478911186da52c48e9a8fd756e": {
       "fixture": "engine/GOLD-4",
-      "reviewed": "2026-11-13",
-      "checked": "draw = spending \u2212 Social Security (16,000); provisional income under $25,000 so no tax; by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
+      "reviewed": "2026-11-15",
+      "checked": "draw = spending \u2212 Social Security (16,000); provisional income under $25,000 so no tax; by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged; its input states its people (RR7: the field is required), the one person it always described, figures unchanged"
     },
-    "d6351178da3c9149db5f8578248d94bd0b66b1b388f00aa39124560b88425867": {
+    "5319b69f1733c0d86f1a452070d0b065e05cc814f528b997f13f7ab80b3bcd3a": {
       "fixture": "engine/GOLD-5",
-      "reviewed": "2026-11-13",
-      "checked": "the IRA gross-up W = 42,977.27 from the 2026 Single standard deduction and 10%/12% bands; balances by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; re-keyed when the household's projected brokerage's flag became origin: projected (no money in the input changed; the hand figures above pass unchanged); its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
+      "reviewed": "2026-11-15",
+      "checked": "the IRA gross-up W = 42,977.27 from the 2026 Single standard deduction and 10%/12% bands; balances by hand; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; re-keyed when the household's projected brokerage's flag became origin: projected (no money in the input changed; the hand figures above pass unchanged); its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged; its input states its people (RR7: the field is required), the one person it always described, figures unchanged"
     },
-    "7a53320b6b93792c3dee962bd1a1c190a073dbce0e10cce4fd16ebf56817f30c": {
+    "0231809b550d10dd93d75f36ea5bdf8be0f5ad3c412aa849aaf70b5daa4d07da": {
       "fixture": "engine/GOLD-6",
-      "reviewed": "2026-11-13",
-      "checked": "the $2,000-a-month budget from 2028 sticks forward; balances by hand at 0% return; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged"
+      "reviewed": "2026-11-15",
+      "checked": "the $2,000-a-month budget from 2028 sticks forward; balances by hand at 0% return; its input states distributionTaxRates.rothBracketOverlay on, the overlay it always ran with; its input states decumulationAnnualExpenses equal to annualExpenses (SM1F: the field is required), the spending it always retired on, figures unchanged; its input states its people (RR7: the field is required), the one person it always described, figures unchanged"
     }
   }
 }

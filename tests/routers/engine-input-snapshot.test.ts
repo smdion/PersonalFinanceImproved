@@ -190,6 +190,7 @@ describe("engine input snapshot guard", () => {
         "irsLimitCaps",
         "limitGrowthRate",
         "payrollTax",
+        "people",
         "perPersonBirthYears",
         "perPersonSalaryOverrides",
         "postRetirementInflationRate",
@@ -213,6 +214,11 @@ describe("engine input snapshot guard", () => {
         "workingYearsByPerson",
       ]
     `);
+
+    // The standard dataset's person, born 1990-06-15, is the one person listed.
+    expect(bei.people.map((p) => [p.birthYear, p.birthMonth])).toEqual([
+      [1990, 6],
+    ]);
 
     // Shape-only invariants — field types, not values. The `currentAge`
     // field was originally in this snapshot but it's not a good drift

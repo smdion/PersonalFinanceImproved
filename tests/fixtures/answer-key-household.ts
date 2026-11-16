@@ -268,6 +268,12 @@ export function engineHousehold(h: KeyHousehold): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: YEAR - primary.birthYear,
+    // Each person born in January: 70½ falls in the year of 70.
+    people: people.map((p) => ({
+      personId: p.id,
+      birthYear: p.birthYear,
+      birthMonth: 1,
+    })),
     retirementYear,
     retirementYearByPerson: multi
       ? Object.fromEntries(earners.map((p) => [p.id, p.job!.lastYear + 1]))

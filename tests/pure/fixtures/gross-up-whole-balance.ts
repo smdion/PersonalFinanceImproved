@@ -15,6 +15,7 @@
  *  it withdrew all $1,643,726.52 and the plan failed in 2059. */
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { makeAccumulationDefaults } from "./engine-fixtures";
+import { onePerson } from "../../fixtures/engine-people";
 
 const CAPTURED: Omit<ProjectionInput, "asOfDate" | "employerMatchByParentCat"> =
   {
@@ -34,6 +35,7 @@ const CAPTURED: Omit<ProjectionInput, "asOfDate" | "employerMatchByParentCat"> =
       },
     }),
     currentAge: 57,
+    people: onePerson(1969),
     retirementYear: 2025,
     projectionEndYear: 2069,
     payrollTax: {

@@ -38,6 +38,7 @@ import type {
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { readTaxData, shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
+import { calendarMonth } from "@/lib/utils/date";
 
 const HERE = __dirname;
 const YEAR = 2026;
@@ -453,6 +454,11 @@ export function ledgerInput(
     }),
     decumulationOverrides: [],
     currentAge: YEAR - yearOf(primary.birthDate),
+    people: people.map((p) => ({
+      personId: PERSON_ID[p.id]!,
+      birthYear: yearOf(p.birthDate),
+      birthMonth: calendarMonth(p.birthDate),
+    })),
     retirementYear,
     retirementYearByPerson: multi
       ? Object.fromEntries(

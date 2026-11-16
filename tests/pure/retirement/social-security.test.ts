@@ -20,6 +20,7 @@ import type {
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
+import { onePerson } from "../../fixtures/engine-people";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -73,6 +74,7 @@ function makeSingleHousehold(): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 62,
+    people: onePerson(AS_OF.getFullYear() - 62),
     retirementYear: AS_OF.getFullYear() + 0,
     projectionEndYear: AS_OF.getFullYear() + 33,
     currentSalary: 0,
@@ -570,6 +572,10 @@ describe("sweepClaimingAges", () => {
     ): ProjectionInput {
       return {
         ...base,
+        people: [
+          { personId: 1, birthYear: 1963, birthMonth: 6 },
+          { personId: 2, birthYear: 1965, birthMonth: 1 },
+        ],
         socialSecurityEntries: [
           {
             personId: 1,

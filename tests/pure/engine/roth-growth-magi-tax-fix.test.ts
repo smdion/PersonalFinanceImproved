@@ -27,6 +27,7 @@ import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
+import { onePerson } from "../../fixtures/engine-people";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -76,6 +77,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 50,
+    people: onePerson(AS_OF.getFullYear() - 50),
     retirementYear: AS_OF.getFullYear() + 0,
     projectionEndYear: AS_OF.getFullYear() + 8,
     currentSalary: 0,

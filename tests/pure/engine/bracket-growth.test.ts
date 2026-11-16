@@ -24,6 +24,7 @@ import { calculateProjection } from "@/lib/pure/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
+import { onePerson } from "../../fixtures/engine-people";
 
 /** The shipped 2026 tables these tests grow. */
 const SHIPPED = shippedTaxTables(2026);
@@ -312,6 +313,7 @@ function makeInput(
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 60,
+    people: onePerson(AS_OF.getFullYear() - 60),
     retirementYear: AS_OF.getFullYear() + 0,
     projectionEndYear: AS_OF.getFullYear() + 15,
     currentSalary: 0,
@@ -495,6 +497,7 @@ function makeLtcgHeavyInput(
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 60,
+    people: onePerson(AS_OF.getFullYear() - 60),
     retirementYear: AS_OF.getFullYear() + 0,
     projectionEndYear: AS_OF.getFullYear() + 20,
     currentSalary: 0,
@@ -802,6 +805,7 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 65,
+    people: onePerson(new Date("2025-03-07").getFullYear() - 65),
     retirementYear: new Date("2025-03-07").getFullYear() + 0,
     projectionEndYear: new Date("2025-03-07").getFullYear() + 30,
     currentSalary: 0,
@@ -971,6 +975,7 @@ function makeAcaHouseholdInput(): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 60,
+    people: onePerson(new Date("2025-03-07").getFullYear() - 60),
     retirementYear: new Date("2025-03-07").getFullYear() + 0,
     projectionEndYear: new Date("2025-03-07").getFullYear() + 30,
     currentSalary: 0,

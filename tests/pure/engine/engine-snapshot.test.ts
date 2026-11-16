@@ -27,6 +27,7 @@ import type {
 import type { AccountCategory } from "@/lib/config/account-types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
+import { onePerson } from "../../fixtures/engine-people";
 
 /** Every projection here is checked for indBalance/accountBalance drift (end of file). */
 const drift = recordDrift(runEngine);
@@ -76,6 +77,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 35,
+      people: onePerson(AS_OF.getFullYear() - 35),
       retirementYear: AS_OF.getFullYear() + 30,
       projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,
@@ -2983,6 +2985,7 @@ describe("engine snapshot parity", () => {
     // Very large traditional balance → RMD forces withdrawals above G-K spending level
     const input = makeInput({
       currentAge: 75,
+      people: onePerson(1950),
       retirementYear: AS_OF.getFullYear() - 10,
       projectionEndYear: AS_OF.getFullYear() + 20,
       birthYear: 1950,
@@ -3485,6 +3488,7 @@ describe("engine snapshot parity", () => {
   const qcdHousehold = () =>
     makeInput({
       currentAge: 75,
+      people: onePerson(1950),
       retirementYear: AS_OF.getFullYear() - 10,
       projectionEndYear: AS_OF.getFullYear() + 10,
       birthYear: 1950,
@@ -3668,6 +3672,7 @@ describe("engine snapshot parity", () => {
   it("fixture 66: qcdMaximize capped below a large RMD — remainder still forces a taxable distribution + reinvested excess", () => {
     const input = makeInput({
       currentAge: 75,
+      people: onePerson(1950),
       retirementYear: AS_OF.getFullYear() - 10,
       projectionEndYear: AS_OF.getFullYear() + 3,
       birthYear: 1950,
@@ -3796,6 +3801,7 @@ describe("engine snapshot parity", () => {
   it("fixture 67: same as fixture 66 but rmdExcessHandling='spend' — lower end balance, by design", () => {
     const input = makeInput({
       currentAge: 75,
+      people: onePerson(1950),
       retirementYear: AS_OF.getFullYear() - 10,
       projectionEndYear: AS_OF.getFullYear() + 3,
       birthYear: 1950,

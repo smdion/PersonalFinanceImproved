@@ -39,6 +39,12 @@ export function calendarYear(date: string): number {
   return Number(date.slice(0, 4));
 }
 
+/** The month (1–12) of a YYYY-MM-DD date, read from the text as
+ *  `calendarYear` reads the year. */
+export function calendarMonth(date: string): number {
+  return Number(date.slice(5, 7));
+}
+
 /**
  * Parse a bare date-only string as LOCAL midnight (as UTC it reads as the prior
  * day behind UTC); a value with a "T" time part or a Date passes through unchanged.

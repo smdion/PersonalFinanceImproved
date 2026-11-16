@@ -19,6 +19,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
+import { onePerson } from "../../fixtures/engine-people";
 
 const AS_OF = new Date("2025-01-01");
 
@@ -58,6 +59,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 40,
+    people: onePerson(AS_OF.getFullYear() - 40),
     retirementYear: AS_OF.getFullYear() + 25,
     projectionEndYear: AS_OF.getFullYear() + 50,
     currentSalary: 150000,

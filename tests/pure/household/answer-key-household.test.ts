@@ -46,6 +46,7 @@ import {
 } from "../fixtures/engine-fixtures";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
+import { onePerson } from "../../fixtures/engine-people";
 
 const AS_OF = new Date("2026-06-01T12:00:00Z");
 
@@ -291,6 +292,7 @@ describe("household: Coast FIRE reads retirement money only", () => {
         accumulationOverrides: [],
         decumulationOverrides: [],
         currentAge: 40,
+        people: onePerson(new Date("2026-01-01T12:00:00Z").getFullYear() - 40),
         retirementYear: 2026 + 25,
         projectionEndYear: 2026 + 55,
         currentSalary: 100_000,

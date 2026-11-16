@@ -36,6 +36,7 @@ import {
 import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
+import { onePerson } from "../../fixtures/engine-people";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -95,6 +96,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 35,
+      people: onePerson(AS_OF.getFullYear() - 35),
       retirementYear: AS_OF.getFullYear() + 30,
       projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,

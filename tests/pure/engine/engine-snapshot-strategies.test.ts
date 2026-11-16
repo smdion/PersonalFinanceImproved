@@ -39,6 +39,7 @@ import {
 } from "../fixtures/engine-fixtures";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
+import { onePerson } from "../../fixtures/engine-people";
 
 /** Every projection here is checked for indBalance/accountBalance drift (end of file). */
 const drift = recordDrift(runEngine);
@@ -102,6 +103,7 @@ function retiree(strategy: WithdrawalStrategyType): ProjectionInput {
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: CURRENT_AGE,
+      people: onePerson(AS_OF.getFullYear() - CURRENT_AGE),
       birthYear: 1960,
       filingStatus: "Single",
       retirementYear: AS_OF.getFullYear() - 1,

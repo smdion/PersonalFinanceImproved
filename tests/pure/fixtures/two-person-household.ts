@@ -8,6 +8,7 @@ import {
   withConsistentStart,
   makeAccumulationDefaults,
 } from "./engine-fixtures";
+import { onePerson } from "../../fixtures/engine-people";
 
 const AS_OF = new Date("2026-03-07");
 
@@ -148,6 +149,14 @@ export function household(
     filingStatus: "MFJ",
     ...overrides,
   };
+  // Unless stated, the people are the Social Security entries' (or the one
+  // person by birth year), each born in January: 70½ in the year of 70.
+  input.people ??=
+    input.socialSecurityEntries?.map((e) => ({
+      personId: e.personId,
+      birthYear: e.birthYear,
+      birthMonth: 1,
+    })) ?? onePerson(input.birthYear!, input.primaryPersonId);
   return withConsistentStart(
     withCapsAge(input as ProjectionInput),
     input,

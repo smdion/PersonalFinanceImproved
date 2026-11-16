@@ -12,6 +12,7 @@ import type { ProjectionInput } from "@/lib/pure/engine/types";
 import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
+import { onePerson } from "../fixtures/engine-people";
 
 export const AS_OF = new Date("2026-03-01");
 
@@ -113,6 +114,7 @@ export function makePureGrowthInput(
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 35,
+      people: onePerson(AS_OF.getFullYear() - 35),
       retirementYear: AS_OF.getFullYear() + 30,
       projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 0,
@@ -185,6 +187,7 @@ export function makeTrinityInput(
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 65,
+    people: onePerson(AS_OF.getFullYear() - 65),
     retirementYear: AS_OF.getFullYear() + 0,
     projectionEndYear: AS_OF.getFullYear() + 30,
     currentSalary: 0,
@@ -247,6 +250,7 @@ export function makeStandardInput(
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 35,
+      people: onePerson(AS_OF.getFullYear() - 35),
       retirementYear: AS_OF.getFullYear() + 30,
       projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,

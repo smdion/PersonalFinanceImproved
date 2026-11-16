@@ -52,6 +52,7 @@ import { accountBalancesFromTaxBuckets } from "../../pure/fixtures/tax-bucket-sp
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
+import { onePerson } from "../engine-people";
 
 export const RETIRING_MIDYEAR_AS_OF = new Date("2026-04-14T12:00:00Z");
 
@@ -98,6 +99,7 @@ export function makeRetiringMidyearInput(
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 65,
+    people: onePerson(RETIRING_MIDYEAR_AS_OF.getFullYear() - 65),
     retirementYear: RETIRING_MIDYEAR_AS_OF.getFullYear() + 0,
     projectionEndYear: RETIRING_MIDYEAR_AS_OF.getFullYear() + 25,
     currentSalary: 100000,

@@ -180,11 +180,15 @@ describe("perPersonSettingsFor", () => {
       { id: 1, name: "Avery", dateOfBirth: "1980-04-02" },
       { id: 2, name: "Blake", dateOfBirth: "1982-09-15" },
     ] as Parameters<typeof perPersonSettingsFor>[0];
-    const { perPersonSettings } = perPersonSettingsFor(
+    const { perPersonSettings, enginePeople } = perPersonSettingsFor(
       people,
       rows({ profilePeople: [profilePerson({})] }),
       { retirementAgeDelta: 2 },
     );
+    expect(enginePeople).toEqual([
+      { personId: 1, birthYear: 1980, birthMonth: 4 },
+      { personId: 2, birthYear: 1982, birthMonth: 9 },
+    ]);
     expect(perPersonSettings).toEqual([
       {
         personId: 1,

@@ -195,7 +195,7 @@ export async function buildEnginePayload(
     settings,
     primaryRaiseRate,
   };
-  const { perPersonSettings } = perPersonSettingsFor(
+  const { perPersonSettings, enginePeople } = perPersonSettingsFor(
     people,
     activeProfileRows,
     opts,
@@ -712,9 +712,8 @@ export async function buildEnginePayload(
       perPersonSettings.length === 1
         ? perPersonSettings[0]!.ssStartAge
         : settings.ssStartAge,
-    // Entries only for multi-person households: they also feed rmdStartAgeByPerson,
-    // which switches on per-person RMDs, so a single person's SS goes through
-    // socialSecurityAnnual above. No start-age shift: this is the real plan.
+    // Multi-person households only: they feed rmdStartAgeByPerson (per-person RMDs), so
+    // one person's SS goes through socialSecurityAnnual. No start-age shift: the real plan.
     socialSecurityEntries:
       perPersonSettings.length > 1
         ? buildSocialSecurityEntries(perPersonSettings, filingStatus)
@@ -728,7 +727,8 @@ export async function buildEnginePayload(
     primaryPersonId: primaryPerson.id,
     enableAcaAwareness: settings.enableAcaAwareness,
     householdSize: settings.householdSize,
-    perPersonBirthYears: perPersonSettings.map((p) => p.birthYear),
+    people: enginePeople,
+    perPersonBirthYears: enginePeople.map((p) => p.birthYear),
     stockShareByAge:
       stockShareByAge(
         defaultPreset.glidePath,

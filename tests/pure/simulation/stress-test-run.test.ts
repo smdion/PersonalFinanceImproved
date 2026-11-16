@@ -4,6 +4,7 @@ import { runStressTestScenarios } from "@/lib/pure/simulation/stress-test-run";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
+import { onePerson } from "../../fixtures/engine-people";
 
 type ProjectionInputArg = Parameters<
   typeof runStressTestScenarios
@@ -44,6 +45,7 @@ describe("runStressTestScenarios (M2)", () => {
         },
       }),
       currentAge: 35,
+      people: onePerson(AS_OF.getFullYear() - 35),
       retirementYear: AS_OF.getFullYear() + 30,
       projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,

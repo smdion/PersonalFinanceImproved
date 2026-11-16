@@ -652,6 +652,7 @@ import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
+import { onePerson } from "../fixtures/engine-people";
 
 const EMPTY_ACCOUNT_BALANCES = {
   "401k": { structure: "roth_traditional" as const, traditional: 0, roth: 0 },
@@ -718,6 +719,7 @@ function makeBaseProjection(
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 35,
+    people: onePerson(JAN_1.getFullYear() - 35),
     retirementYear: JAN_1.getFullYear() + 30,
     projectionEndYear: JAN_1.getFullYear() + 55,
     currentSalary: 0,

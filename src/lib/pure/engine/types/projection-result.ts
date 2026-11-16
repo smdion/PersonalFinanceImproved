@@ -194,8 +194,7 @@ export type ProjectionInput = {
   inflationShocks?: readonly number[];
   /** Age-indexed return rates (from return_rate_table). */
   returnRates: { label: string; rate: number }[];
-  /** Social Security annual income (kicks in at ssStartAge).
-   *  When socialSecurityEntries is provided, this is ignored. */
+  /** Social Security annual income from ssStartAge; ignored with socialSecurityEntries. */
   socialSecurityAnnual: number;
   /** Age at which Social Security income begins (default 67).
    *  When socialSecurityEntries is provided, this is ignored. */
@@ -232,8 +231,7 @@ export type ProjectionInput = {
   gapYearStopSaving?: boolean;
   /** False: a gap year doesn't draw; spending is cut to what's coming in. */
   gapYearDraws?: boolean;
-  /** The household's primary person: an account with no owner counts toward
-   *  this person's RMD. */
+  /** The primary person: an account with no owner counts toward their RMD. */
   primaryPersonId?: number;
   /** When true, cap Roth conversions to stay below the next IRMAA cliff (default: true when IRMAA awareness is on). */
   irmaaAwareRothConversions?: boolean;
@@ -241,9 +239,11 @@ export type ProjectionInput = {
   enableAcaAwareness?: boolean;
   /** Household size for ACA FPL calculation (none sent: `acaHouseholdSize`). */
   householdSize?: number;
-  /** Per-person birth years for age-gated checks (IRMAA at 65+, ACA below 65).
-   *  IRMAA applies when ANY person is ≥65; ACA applies when ALL persons are <65.
-   *  Falls back to deriving age from `currentAge` if not provided. */
+  /** The household's people, one person included: each one's id and birth
+   *  year and month (the month for rules measured on a half birthday). */
+  people: { personId: number; birthYear: number; birthMonth: number }[];
+  /** Per-person birth years (IRMAA when ANY is ≥65, ACA when ALL are <65);
+   *  without them, ages come from `currentAge`. */
   perPersonBirthYears?: number[];
   /** The Retirement budget (today's $): spending resets to it, inflated, at retirement. */
   decumulationAnnualExpenses: number;

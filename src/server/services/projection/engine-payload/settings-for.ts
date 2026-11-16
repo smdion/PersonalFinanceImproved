@@ -4,7 +4,7 @@
  */
 import { toNumber } from "@/lib/utils/numbers";
 import type * as schema from "@/lib/db/schema";
-import { calendarYear } from "@/lib/utils/date";
+import { calendarMonth, calendarYear } from "@/lib/utils/date";
 import type { RetirementData } from "./load";
 
 type SettingsRow = typeof schema.retirementSettings.$inferSelect;
@@ -83,5 +83,11 @@ export function perPersonSettingsFor(
     };
   });
 
-  return { perPersonSettings };
+  // The engine's list of the household's people, one person included.
+  const enginePeople = perPersonSettings.map((p) => ({
+    personId: p.personId,
+    birthYear: p.birthYear,
+    birthMonth: calendarMonth(p.dateOfBirth),
+  }));
+  return { perPersonSettings, enginePeople };
 }
