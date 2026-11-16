@@ -354,4 +354,20 @@ Changes by year
 ?
 + Add a change
 No changes — every year uses the page settings
+What this plan doesn't include
+State and local income tax: every tax figure is federal.
+Pensions, annuities, and the dividends and interest a taxable brokerage pays each year: none of it is counted as income.
+A first death: both spouses are planned to the end, with no survivor benefit, no single filing status and no lower spending.
+Itemized deductions: every year takes the standard deduction.
+Working income in the first two IRMAA years: a Medicare surcharge reads income from two years before, but the plan's first two retired years read their own.
+Standard Medicare Part B and D premiums: only the income-based surcharge is counted, so put the premiums in your Retirement budget.
+Married filing separately, which isn't a supported filing status.
+Required minimum distributions before withdrawals start: a year with no withdrawals takes none.
+Tax credits, such as the child tax credit: none is subtracted, so the tax shown can be more than you'd owe.
+Two jobs at once for one person: the contribution limits count every job, but pay follows one job at a time.
+The extra standard deduction for blindness.
+Payroll stopping at the 401(k) limit, and an employer's match true-up: a year's contributions are spread over all its paychecks.
+HSA coverage after a job ends (COBRA or a spouse's plan): the HSA limit ends with the job's HSA.
+Each spouse's share of a family HSA limit when one spouse's HSA job ends during the year.
+Brokerage cost basis by lot: a sale's gain is its share of the account's whole gain (average cost), and losses aren't realized.
 Estimates from the figures and assumptions you entered. Not financial, tax or legal advice.

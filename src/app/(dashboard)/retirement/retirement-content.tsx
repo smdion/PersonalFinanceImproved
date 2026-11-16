@@ -40,6 +40,7 @@ const WithdrawalComparisonCard = dynamic(
 );
 import { CardBoundary } from "@/components/dashboard/utils";
 import { PlanHealthCard } from "@/components/retirement/plan-health";
+import { PlanExclusions } from "@/components/retirement/plan-exclusions";
 import { SK_RETIREMENT_COMPARISON_EXPANDED } from "@/lib/constants/settings-keys";
 
 export function RetirementContent() {
@@ -330,12 +331,7 @@ export function RetirementContent() {
               onDollarModeChange={setDollarMode}
             />
           </CardBoundary>
-
-          {/* Strategy Comparison moved to page-level tab */}
-
-          {/* Projection Assumptions moved to Budget page's Retirement
-              Profile tab — see
-              src/components/profiles/retirement/retirement-profile-tab.tsx. */}
+          <PlanExclusions />
         </>
       )}
       {/* Projection Health's card carries its own. */}

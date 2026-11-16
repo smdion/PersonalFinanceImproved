@@ -496,7 +496,7 @@
       "RecommendationsContent": 185
     },
     "src/app/(dashboard)/retirement/retirement-content.tsx": {
-      "RetirementContent": 301
+      "RetirementContent": 296
     },
     "src/app/(dashboard)/savings/savings-content.tsx": {
       "SavingsContent": 782
