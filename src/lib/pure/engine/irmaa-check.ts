@@ -16,7 +16,7 @@ export interface IrmaaInput {
    * when available, or current-year MAGI as a fallback for the first 2 years.
    */
   projectedMagi: number;
-  /** Current-year Roth conversion amount (for cliff warning logic). */
+  /** The Roth conversion inside `projectedMagi`'s year (the cliff warning's). */
   rothConversionAmount: number;
   /** IRMAA brackets grown to year N's vintage (this year's surcharge schedule); a different
    *  vintage than `RothConversionInput.irmaaBrackets`, see that docblock. */
@@ -52,8 +52,8 @@ export function checkIrmaa(input: IrmaaInput): IrmaaResult {
   const irmaaCost = getIrmaaCost(projectedMagi, filingStatus, irmaaBrackets);
 
   // If a Roth conversion pushed MAGI over a cliff, check whether less would
-  // help. Lookback MAGI includes the conversion from 2 years ago; the first
-  // 2 years fall back to current-year MAGI.
+  // help. The conversion is the one in the year the MAGI was read from: two
+  // years back, or this year's when the MAGI is this year's.
   if (rothConversionAmount > 0 && irmaaCost > 0) {
     const magiWithoutConversion = projectedMagi - rothConversionAmount;
     const irmaaCostWithout = getIrmaaCost(

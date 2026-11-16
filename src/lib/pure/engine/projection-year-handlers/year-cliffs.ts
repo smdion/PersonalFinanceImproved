@@ -29,7 +29,7 @@ export function yearCliffChecks(
     filingStatus: input.filingStatus,
     personsAge65Plus,
     projectedMagi: lookback.magi,
-    rothConversionAmount: flow.conversion.rothConversionAmount,
+    rothConversionAmount: lookback.rothConversion,
     irmaaBrackets: thisYear.tables.grownIrmaaBracketsForCheck,
   });
   const irmaaCost = irmaaResult.irmaaCost;
