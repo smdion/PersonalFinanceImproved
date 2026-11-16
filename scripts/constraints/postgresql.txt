@@ -158,6 +158,7 @@ paycheck_deductions: primary key (id)
 paycheck_earnings: foreign key (job_id) references jobs(id) on delete cascade on update no action
 paycheck_earnings: index paycheck_earnings_job_id_idx (job_id)
 paycheck_earnings: primary key (id)
+people: foreign key (spouse_person_id) references people(id) on delete set null on update no action
 people: primary key (id)
 performance_accounts: foreign key (owner_person_id) references people(id) on delete restrict on update no action
 performance_accounts: index idx_perf_accounts_inst_label (institution, account_label)
