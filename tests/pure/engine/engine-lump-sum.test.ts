@@ -111,7 +111,7 @@ describe("applyLumpSums", () => {
     expect(brok.basis).toBe(20000);
   });
 
-  it("updates indBal when hasIndividualAccounts and targetAccountName matches", () => {
+  it("updates indBal when some part is held and targetAccountName matches", () => {
     const indBalance = new Map<string, number>([["myBrokerage", 100000]]);
     const indAccounts = [
       { name: "myBrokerage", category: "brokerage", taxType: "afterTax" },
