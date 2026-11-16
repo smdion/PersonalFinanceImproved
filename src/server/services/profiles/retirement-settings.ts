@@ -24,6 +24,7 @@ import {
 } from "@/server/services/profiles/first-retirement-profile";
 import { firstRow } from "@/lib/utils/first-row";
 import {
+  DEFAULT_IRMAA_ON_TOP_OF_BUDGET,
   DEFAULT_ROTH_BRACKET_OVERLAY,
   newRowAcaHouseholdSize,
   type RetirementSettingsInsert,
@@ -204,6 +205,9 @@ export async function upsertRetirementSettings(
               rothBracketOverlay:
                 resolvedInput.rothBracketOverlay ??
                 DEFAULT_ROTH_BRACKET_OVERLAY,
+              irmaaOnTopOfBudget:
+                resolvedInput.irmaaOnTopOfBudget ??
+                DEFAULT_IRMAA_ON_TOP_OF_BUDGET,
             } satisfies RetirementSettingsInsert)
             .returning()
             .then(firstRow);
