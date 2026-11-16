@@ -3,14 +3,15 @@ import { roundToCents } from "../../../utils/math";
 import { shortfallFloor } from "../gap-year-draw";
 import type { DecumulationYear } from "./types";
 import type { RepricedFlow } from "./conversion-year-reprice";
+import type { IrmaaCharge } from "./irmaa-charge";
 
-/** unmetNeedRaw (the response's unmetNeed; its routed branch isn't
- *  floor-filtered) and unmetNeedMaterial, the verdict once a no-gross-up
- *  household's own tax is netted out. Which one screens read is v0.11's. */
+/** unmetNeedRaw (the response's unmetNeed; its routed branch isn't floor-
+ *  filtered), unmetNeedMaterial, and the IRMAA the year pays on top. */
 export function fundingShortfallForYear(
   state: { portfolioWithdrawal: number | null },
   thisYear: DecumulationYear,
   flow: RepricedFlow,
+  { irmaa }: { irmaa: IrmaaCharge },
 ) {
   const { totalWithdrawal } = flow.rmd;
   const { taxCost } = flow.repriced;
@@ -37,22 +38,21 @@ export function fundingShortfallForYear(
     fundingShortfall > shortfallMaterialityFloor
       ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
       : routedUnmetNeed;
-  // unmetNeedMaterial: the one materiality verdict for alerting (the routed
-  // branch above is never floor-filtered). A no-gross-up household's own tax
-  // and penalty are netted out first: that gap is by design, every year.
+  // unmetNeedMaterial: the one materiality verdict for alerting. A no-gross-up
+  // household's own tax and penalty are netted out: that gap is by design.
   const shouldGrossUp = thisYear.taxRates.grossUpForTaxes !== false;
   const grossUpExplainedGap = shouldGrossUp
     ? 0
     : roundToCents(Math.min(taxCost + penaltyCost, fundingShortfall));
-  const netFundingShortfall = Math.max(
-    0,
-    roundToCents(fundingShortfall - grossUpExplainedGap),
+  const netFundingShortfall = roundToCents(
+    Math.max(0, fundingShortfall - grossUpExplainedGap),
   );
   const unmetNeedMaterial =
     Math.max(routedUnmetNeed ?? 0, netFundingShortfall) >
     shortfallMaterialityFloor;
 
   return {
+    irmaaPaid: irmaa.onTop,
     deliveredAfterTax,
     shortfallMaterialityFloor,
     unmetNeedRaw,

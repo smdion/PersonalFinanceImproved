@@ -64,8 +64,8 @@ export function decumulationYearRow(
   const { totalQcd, qcdByPerson } = parts.qcd;
   const { rmdExcessAmount } = parts.settle;
   const { deliveredAfterTax, shortfallMaterialityFloor } = parts.shortfall;
-  const { unmetNeedRaw, unmetNeedMaterial } = parts.shortfall;
-  const { irmaaCost, irmaaPaid, acaStatus, acaMagiHeadroom } = parts.cliffs;
+  const { unmetNeedRaw, unmetNeedMaterial, irmaaPaid } = parts.shortfall;
+  const { irmaa, acaStatus, acaMagiHeadroom } = parts.cliffs;
   const { yearEnd } = parts.closed;
 
   return {
@@ -149,7 +149,7 @@ export function decumulationYearRow(
     rothConversionIrmaaCapped,
     strategyAction,
     niitAmount,
-    irmaaCost,
+    irmaaCost: irmaa.cost,
     ...(irmaaPaid > 0 ? { irmaaPaid } : {}),
     acaStatus,
     acaSubsidyPreserved: acaStatus === "kept",

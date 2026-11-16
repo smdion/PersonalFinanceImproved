@@ -1,5 +1,4 @@
 /** The decumulation year's IRMAA and ACA cliff checks. */
-import { checkHouseholdIrmaa } from "../household-irmaa";
 import { checkAca } from "../aca-check";
 import { acaHouseholdSize } from "@/lib/config/aca-tables";
 import type {
@@ -9,32 +8,26 @@ import type {
 } from "./types";
 import type { RepricedFlow } from "./conversion-year-reprice";
 import { irmaaTaxYearFor } from "./irmaa-lookback";
+import { settleIrmaaCharge, type IrmaaCharge } from "./irmaa-charge";
 
-/** Records this year's income, then IRMAA from year N−2's MAGI and the ACA cliff. */
+/** Records this year's income; the year's IRMAA charge (the year-start one,
+ *  else settled from this year's own MAGI) and the ACA cliff. */
 export function yearCliffChecks(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
   thisYear: DecumulationYear,
   flow: RepricedFlow,
+  yearStartIrmaa: IrmaaCharge | undefined,
 ) {
   const { input } = ctx;
   const { incomeHistory, irmaaTaxYears } = state;
-  const { year, personsAge65Plus, personsUnder65 } = thisYear;
+  const { year, personsUnder65 } = thisYear;
   const { routeWarnings } = flow.route;
   const { income } = flow.repriced;
   incomeHistory.push(income);
-  const lookback = irmaaTaxYearFor(irmaaTaxYears, year, income);
-  const irmaaResult = checkHouseholdIrmaa({
-    filingStatus: input.filingStatus,
-    personsAge65Plus,
-    projectedMagi: lookback.magi,
-    magiTaxYear: lookback.year,
-    rothConversionAmount: lookback.rothConversion,
-    irmaaBrackets: thisYear.tables.grownIrmaaBracketsForCheck,
-  });
-  const irmaaCost = irmaaResult.irmaaCost;
-  const irmaaPaid = input.irmaaOnTopOfBudget === true ? irmaaCost : 0;
-  routeWarnings.push(...irmaaResult.warnings);
+  const taxYear = irmaaTaxYearFor(irmaaTaxYears, year, income);
+  const irmaa = yearStartIrmaa ?? settleIrmaaCharge(ctx, thisYear, taxYear);
+  routeWarnings.push(...irmaa.warnings);
 
   // ACA: checked while anyone is under 65 (AGE_RULES.medicare, as IRMAA).
   const acaResult = checkAca({
@@ -50,5 +43,5 @@ export function yearCliffChecks(
   const { acaStatus, acaMagiHeadroom } = acaResult;
   routeWarnings.push(...acaResult.warnings);
 
-  return { irmaaCost, irmaaPaid, acaStatus, acaMagiHeadroom };
+  return { irmaa, acaStatus, acaMagiHeadroom };
 }

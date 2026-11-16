@@ -132,15 +132,15 @@ spending-strategies/         the eight spending strategies, each (params, input)
 2. `rmdIncomeByOwner` (`decumulation-income.ts`) — each owner's RMD for the year
 3. `qcdStep` (`rmd-step.ts`) — charitable distributions against the RMD
 4. `growYearTaxTables` (`year-tax-tables.ts`, with `yearStandardDeduction` from `year-deduction.ts`) — the year's brackets, standard deduction with the 65+ and senior add-ons, LTCG thresholds, each grown from its own table year
-5. `yearNeed` (`year-need.ts`) — the after-tax need (IRMAA in it) and `estimateWithdrawalTaxCost`, which sizes the withdrawal to cover its own tax (`met`, or `capped` with its shortfall)
+5. `yearStartIrmaaCharge` (`irmaa-charge.ts`) — the year's IRMAA charge, once its tax year (N−2) is recorded; then `yearNeed` (`year-need.ts`) — the after-tax need (that charge in it, `irmaaInNeed`) and `estimateWithdrawalTaxCost`, which sizes the withdrawal to cover its own tax (`met`, or `capped` with its shortfall)
 6. `routeYearDraw` (`year-draws.ts`) — `routeForMode` routes the draw
 7. `enforceYearRmd` (`rmd-step.ts`) — each RMD enforced on the routed draw
 8. `distributeYearDraws` (`year-draws.ts`) — the draw followed to each account (Roth split, early-withdrawal penalty), worked out on copies of the per-account maps
 9. `priceYearTax`, `pricedYearParts` (`tax-year-settlement.ts`) — the year's tax priced from the post-RMD totals (an RMD can add Traditional to the routed draw); when the RMD overrode routing, the reported gross-up factor is recomputed from them
 10. `settleYearDraws` — the accounts' draws from stage 8 landed with `deductWithdrawals`, `clampBalances`, lump sums, `reinvestRmdExcess` (or the excess spent), `trackDepletions`
 11. `yearRothConversion` — `computeRmdSmoothingTargets`, `performRothConversion`; `repriceConversionYear` (`conversion-year-reprice.ts`) re-prices the year's tax after it
-12. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine) and whether it's material
-13. `yearCliffChecks` (`year-cliffs.ts`) — `checkHouseholdIrmaa` (per person `checkIrmaa` × people 65+), `checkAca`
+12. `yearCliffChecks` (`year-cliffs.ts`) — records the year's tax year for later IRMAA years (`irmaaTaxYearFor`); the year's IRMAA charge (the year-start one, else `settleIrmaaCharge` from this year's own MAGI; `checkHouseholdIrmaa`, per person `checkIrmaa` × people 65+) and its warnings; `checkAca`
+13. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine), whether it's material, and the IRMAA paid on top
 14. `decumulationPortfolioContributions` (`portfolio-contributions.ts`) — Portfolio contributions after retirement, reported only
 15. `closeDecumulationYear` (`year-end.ts`) — `applyGrowth`, `cleanupDust`, `reconcileIndividualToAggregate`, `syncAggregateBasis`, the year's row
 

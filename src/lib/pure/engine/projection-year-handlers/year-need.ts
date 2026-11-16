@@ -1,8 +1,7 @@
 /** The decumulation year's after-tax need, and the withdrawal that meets it. */
 import { roundToCents } from "../../../utils/math";
-import { checkHouseholdIrmaa } from "../household-irmaa";
 import { estimateWithdrawalTaxCost } from "../withdrawal-solver";
-import { irmaaLookbackYear } from "./irmaa-lookback";
+import { irmaaInNeed, type IrmaaCharge } from "./irmaa-charge";
 import type {
   DecumulationYear,
   ProjectionContext,
@@ -16,50 +15,32 @@ export function yearNeed(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
   thisYear: DecumulationYear,
+  irmaa: IrmaaCharge | undefined,
 ) {
   const { input, holdsAccounts, indAccounts, indKey } = ctx;
   const { filingStatus } = input;
   const { balances, accountBalance, indBalance, indBasis } = state;
   const { year, config, eligibility, taxRates, ssIncome } = thisYear;
-  const { personsAge65Plus, retirementBasisRatio } = thisYear;
+  const { retirementBasisRatio } = thisYear;
   const { totalBalance, nonRetirement } = thisYear.setup;
-  const { grownIrmaaBracketsForCheck, grownTaxBrackets } = thisYear.tables;
+  const { grownTaxBrackets } = thisYear.tables;
   const { grownStandardDeduction, grownLtcgBrackets } = thisYear.tables;
-  // The year's after-tax need: spending less Social Security — or, when
-  // the strategy sized the gross withdrawal (Social Security on top), what
-  // that withdrawal delivers after tax (set from the estimate below).
+  // IRMAA on top of the budget joins a need-sized year's need (never
+  // projectedExpenses or taxCost) when the year starts knowing it.
+  const inNeed = irmaaInNeed(irmaa, state);
+  // The after-tax need: spending (and that IRMAA) less Social Security — or,
+  // for a withdrawal the strategy sized (Social Security on top), what that
+  // withdrawal delivers after tax (set from the estimate below).
   let afterTaxNeed = roundToCents(
-    Math.max(0, state.projectedExpenses - ssIncome),
+    Math.max(0, state.projectedExpenses + inNeed - ssIncome),
   );
   // Social Security beyond spending pays the year's tax first — only the
   // rest needs a withdrawal (withdrawal-solver.ts solves with the same credit).
   // A withdrawal-sized year has Social Security on top by definition.
-  let ssSurplus =
+  const ssSurplus =
     state.portfolioWithdrawal === null
-      ? Math.max(0, ssIncome - state.projectedExpenses)
+      ? Math.max(0, ssIncome - state.projectedExpenses - inNeed)
       : 0;
-
-  // IRMAA paid on top joins a need-sized year's need (never projectedExpenses
-  // or taxCost) once year N−2 is recorded; otherwise it lowers what's spent.
-  const lookback = irmaaLookbackYear(state.irmaaTaxYears, year);
-  if (
-    input.irmaaOnTopOfBudget === true &&
-    state.portfolioWithdrawal === null &&
-    lookback
-  ) {
-    const irmaaInNeed = checkHouseholdIrmaa({
-      filingStatus,
-      personsAge65Plus,
-      projectedMagi: lookback.magi,
-      magiTaxYear: lookback.year,
-      rothConversionAmount: 0,
-      irmaaBrackets: grownIrmaaBracketsForCheck,
-    }).irmaaCost;
-    afterTaxNeed = roundToCents(
-      Math.max(0, state.projectedExpenses + irmaaInNeed - ssIncome),
-    );
-    ssSurplus = Math.max(0, ssIncome - state.projectedExpenses - irmaaInNeed);
-  }
 
   const taxEstimate = estimateWithdrawalTaxCost({
     afterTaxNeed,

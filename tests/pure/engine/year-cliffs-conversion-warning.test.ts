@@ -1,11 +1,13 @@
 /**
- * `yearCliffChecks`' conversion warning reads the conversion inside the MAGI
- * it was given: the tax year two back (RR9), not this year's. Self-derived
+ * The year's IRMAA charge (`yearStartIrmaaCharge`, warned through
+ * `yearCliffChecks`) reads the conversion inside the MAGI it read: the tax
+ * year two back (RR9), not this year's. Self-derived
  * on the 2026 joint table (> 218,000 the first tier, 1,148.40 a person;
  * > 274,000 the second, 2,884.80).
  */
 import { describe, expect, it } from "vitest";
 import { yearCliffChecks } from "@/lib/pure/engine/projection-year-handlers/year-cliffs";
+import { yearStartIrmaaCharge } from "@/lib/pure/engine/projection-year-handlers/irmaa-charge";
 import type { IrmaaTaxYears } from "@/lib/pure/engine/projection-year-handlers/irmaa-lookback";
 import type { YearIncome } from "@/lib/pure/tax/year-income";
 import { shippedTaxTables } from "../../helpers/tax-data";
@@ -27,26 +29,32 @@ function run2028(
     [2026, { year: 2026, ...year2026 }],
   ]);
   const routeWarnings: string[] = [];
+  const ctx = {
+    input: { filingStatus: "MFJ", irmaaOnTopOfBudget: true },
+  } as never;
+  const state = { incomeHistory: [], irmaaTaxYears } as never;
+  const thisYear = {
+    year: 2028,
+    personsAge65Plus: 1,
+    personsUnder65: 0,
+    tables: {
+      grownIrmaaBracketsForCheck: shippedTaxTables(2026).irmaaBrackets,
+      fplGrowthFactor: 1,
+    },
+    taxRates: { fplByHousehold: {} },
+  } as never;
   const result = yearCliffChecks(
-    { input: { filingStatus: "MFJ", irmaaOnTopOfBudget: true } } as never,
-    { incomeHistory: [], irmaaTaxYears } as never,
-    {
-      year: 2028,
-      personsAge65Plus: 1,
-      personsUnder65: 0,
-      tables: {
-        grownIrmaaBracketsForCheck: shippedTaxTables(2026).irmaaBrackets,
-        fplGrowthFactor: 1,
-      },
-      taxRates: { fplByHousehold: {} },
-    } as never,
+    ctx,
+    state,
+    thisYear,
     {
       route: { routeWarnings },
       repriced: { income: income(thisYearsConversion) },
       conversion: { rothConversionAmount: thisYearsConversion },
     } as never,
+    yearStartIrmaaCharge(ctx, state, thisYear),
   );
-  return { irmaaCost: result.irmaaCost, routeWarnings };
+  return { irmaaCost: result.irmaa.cost, routeWarnings };
 }
 
 describe("yearCliffChecks: the conversion warning", () => {

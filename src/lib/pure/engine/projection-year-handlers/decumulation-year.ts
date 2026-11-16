@@ -21,6 +21,7 @@ import { yearNeed } from "./year-need";
 import { growYearTaxTables } from "./year-tax-tables";
 import { decumulationPortfolioContributions } from "./portfolio-contributions";
 import { yearCliffChecks } from "./year-cliffs";
+import { yearStartIrmaaCharge } from "./irmaa-charge";
 import { closeDecumulationYear } from "./year-end";
 import { decumulationYearRow } from "./decumulation-row";
 
@@ -85,12 +86,10 @@ export function runDecumulationYear(
     ctx.inflation.growth(year - input.asOfDate.getFullYear()),
   );
   const owed = rmdIncomeByOwner(ctx, state, year);
-
   const qcd = qcdStep(ctx, state, year, config);
 
-  // The brokerage basis ratio of this year's retirement withdrawals: the
-  // Retirement brokerages' own (start of year). One ratio for the
-  // estimate, the ranking and the real tax.
+  // This year's retirement withdrawals' basis ratio: the Retirement
+  // brokerages' own (start of year), for the estimate, ranking and tax.
   const retirementBasisRatio = holdsAccounts
     ? retirementBrokerageBasisRatio(indAccounts, indKey, indBalance, brokBasis)
     : undefined;
@@ -131,15 +130,16 @@ export function runDecumulationYear(
     estTraditionalPortion,
     priorYearEndTradBalance: state.priorYearEndTradBalance,
   };
-  const need = yearNeed(ctx, state, thisYear);
+  const irmaa = yearStartIrmaaCharge(ctx, state, thisYear);
+  const need = yearNeed(ctx, state, thisYear, irmaa);
   const route = routeYearDraw(ctx, state, thisYear, need, rothDivergence);
   const rmd = enforceYearRmd(ctx, state, thisYear, route, owed, qcd);
   const drawn = distributeYearDraws(ctx, state, thisYear, { route, rmd });
   const drawnFlow = { need, route, rmd, drawn };
   const { settle, ...taxed } = settleYearTax(ctx, state, thisYear, drawnFlow);
   const flow = { ...drawnFlow, ...taxed };
-  const shortfall = fundingShortfallForYear(state, thisYear, flow);
-  const cliffs = yearCliffChecks(ctx, state, thisYear, flow);
+  const cliffs = yearCliffChecks(ctx, state, thisYear, flow, irmaa);
+  const shortfall = fundingShortfallForYear(state, thisYear, flow, cliffs);
 
   const contributions = decumulationPortfolioContributions(
     ctx,
