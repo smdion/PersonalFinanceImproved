@@ -18,6 +18,7 @@ import {
 } from "../../accounts/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 import { portfolioFirst, retirementFirst } from "../individual-accounts/ledger";
+import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
 
 /**
  * Apply one-time lump-sum injections for the current year.
@@ -51,60 +52,62 @@ export function applyLumpSums(
       addBalance(accountBalance[ls.targetAccount], ls.amount);
       addBasis(accountBalance[ls.targetAccount], ls.amount);
     }
-    // Update individual account tracking for the lump sum
+    // Its parts take it, by balance when a name resolved to none
     if (holdsAccounts) {
-      const target = resolveLumpSumTarget(ls, indAccounts);
-      if (target) {
-        const key = indKey(target);
-        indBalance.set(key, (indBalance.get(key) ?? 0) + ls.amount);
-      }
+      const targets = resolveLumpSumTargets(ls, indAccounts);
+      const balanceOf = (ia: IndividualAccountInput) =>
+        Math.max(0, indBalance.get(indKey(ia)) ?? 0);
+      const total = sumBy(targets, balanceOf);
+      let left = ls.amount;
+      targets.forEach((ia, i) => {
+        const share =
+          i === targets.length - 1
+            ? left
+            : roundToCents(
+                ls.amount *
+                  safeDivide(balanceOf(ia), total, 1 / targets.length),
+              );
+        left = roundToCents(left - share);
+        const key = indKey(ia);
+        indBalance.set(key, (indBalance.get(key) ?? 0) + share);
+      });
     }
   }
 }
 
 /**
- * A lump sum's account: the named one (matching `targetOwnerName` when set, else first by name);
- * else by whose money it is (Brokerage page → Portfolio first, projection → Retirement first),
- * then matching tax type. Shared with Simple tax mode.
+ * A lump sum's parts, of its category and tax type: the named one, else (a name none carries)
+ * the first parent's, Retirement first, shared by balance; unnamed, the first by whose money it
+ * is (Brokerage page: Portfolio first; projection: Retirement first). Simple tax mode shares it.
  */
-export function resolveLumpSumTarget(
+export function resolveLumpSumTargets(
   ls: LumpSum,
   indAccounts: readonly IndividualAccountInput[],
-): IndividualAccountInput | undefined {
-  if (ls.targetAccountName)
-    return (
-      (ls.targetOwnerName
-        ? indAccounts.find(
-            (ia) =>
-              ia.name === ls.targetAccountName &&
-              ia.ownerName === ls.targetOwnerName,
-          )
-        : undefined) ??
-      indAccounts.find((ia) => ia.name === ls.targetAccountName)
-    );
-  const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
-  const taxType =
-    ls.taxType ??
-    (bs === "single_bucket"
-      ? "hsa"
-      : bs === "roth_traditional"
-        ? "preTax"
-        : "afterTax");
-  const parentOf = (ia: IndividualAccountInput) => ia.parentCategory;
-  const byParent = (accounts: readonly IndividualAccountInput[]) => {
-    if (isRetirementMoney(ls.targetParentCategory))
-      return retirementFirst(accounts, parentOf);
-    // Portfolio savings never go to the projection-only account unless
-    // there's nowhere else for them.
-    const real = accounts.filter((ia) => ia.origin !== "projected");
-    return real.length > 0 ? portfolioFirst(real, parentOf) : [...accounts];
-  };
-  return (
-    byParent(
-      indAccounts.filter(
-        (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
-      ),
-    )[0] ??
-    byParent(indAccounts.filter((ia) => ia.category === ls.targetAccount))[0]
+): IndividualAccountInput[] {
+  const taxType = lumpSumTaxType(ls.targetAccount, ls.taxType);
+  const parts = indAccounts.filter(
+    (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
   );
+  const parentOf = (ia: IndividualAccountInput) => ia.parentCategory;
+  if (ls.targetAccountName) {
+    const named = parts.filter((ia) => ia.name === ls.targetAccountName);
+    const owned = named.find((ia) => ia.ownerName === ls.targetOwnerName);
+    if (ls.targetOwnerName && owned) return [owned];
+    if (named.length > 0) return [named[0]!];
+    const ordered = retirementFirst(parts, parentOf);
+    const first = ordered[0];
+    return first
+      ? ordered.filter(
+          (ia) =>
+            isRetirementMoney(ia.parentCategory) ===
+            isRetirementMoney(first.parentCategory),
+        )
+      : [];
+  }
+  if (isRetirementMoney(ls.targetParentCategory))
+    return retirementFirst(parts, parentOf).slice(0, 1);
+  // Portfolio savings never go to the projection-only account unless
+  // there's nowhere else for them.
+  const real = parts.filter((ia) => ia.origin !== "projected");
+  return (real.length > 0 ? portfolioFirst(real, parentOf) : parts).slice(0, 1);
 }

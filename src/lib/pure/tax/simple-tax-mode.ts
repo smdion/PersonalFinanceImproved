@@ -1,7 +1,7 @@
 /**
  * Simple tax mode (simulation only, cFIREsim-comparable): retirement money as one tax-free pot,
  * with nothing that lands in Portfolio money in the Advanced projection. Built from the Advanced
- * input while it has its accounts, so lump sums follow `resolveLumpSumTarget`.
+ * input while it has its accounts, so lump sums follow `resolveLumpSumTargets`.
  */
 import {
   buildCategoryRecord,
@@ -11,7 +11,7 @@ import {
 } from "../../config/account-types";
 import { roundToCents } from "../../utils/math";
 import { rampIsPortfolioSaving } from "../accounts/brokerage-ramp";
-import { resolveLumpSumTarget } from "../engine/projection-year-handlers/lump-sum";
+import { resolveLumpSumTargets } from "../engine/projection-year-handlers/lump-sum";
 import { syntheticOpeningParts } from "../engine";
 import { isHeldPart } from "../accounts/account-part";
 import type {
@@ -46,7 +46,7 @@ function withRetirementLumpSums<T extends { lumpSums?: LumpSum[] }>(
   return {
     ...override,
     lumpSums: override.lumpSums.filter((ls) => {
-      const target = resolveLumpSumTarget(ls, indAccounts);
+      const [target] = resolveLumpSumTargets(ls, indAccounts);
       return target
         ? isRetirementMoney(target.parentCategory)
         : isRetirementMoney(ls.targetParentCategory);

@@ -466,7 +466,6 @@
     "src/lib/pure/engine/individual-accounts/withdrawals.ts:goalFundingAccounts",
     "src/lib/pure/engine/individual-accounts/withdrawals.ts:goalFundingBalance",
     "src/lib/pure/engine/projection-year-handlers/helpers.ts:updatePerPersonTradBalance",
-    "src/lib/pure/engine/projection-year-handlers/lump-sum.ts:resolveLumpSumTarget",
     "src/lib/pure/engine/qcd.ts:totalQcdAmount",
     "src/lib/pure/engine/rmd-enforcement.ts:rmdOwnerOf",
     "src/lib/pure/engine/tax-estimation.ts:marginalRateAboveTarget",
