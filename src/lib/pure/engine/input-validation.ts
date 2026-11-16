@@ -23,7 +23,7 @@ export function validateEngineInputs(
   warnings.push(...(input.inputWarnings ?? []));
   // The opening parts are the starting money: the engine has nothing to
   // start from without them (synthetic parts stand in for no account).
-  if (!input.individualAccounts?.length)
+  if (input.individualAccounts.length === 0)
     throw new Error("The engine input has no account parts to start from");
   // A NaN age would read as "nobody 65+" and turn on the ACA logic.
   const ages = [input.currentAge, ...(input.perPersonBirthYears ?? [])];

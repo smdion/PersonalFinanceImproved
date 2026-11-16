@@ -550,7 +550,7 @@ describe("a run whose parts are all synthetic takes the household path", () => {
   // marked synthetic: the money is unchanged, no real account stands behind it.
   const synthetic = (input: ProjectionInput): ProjectionInput => ({
     ...input,
-    individualAccounts: input.individualAccounts!.map((p) => ({
+    individualAccounts: input.individualAccounts.map((p) => ({
       ...p,
       origin: "synthetic" as const,
     })),

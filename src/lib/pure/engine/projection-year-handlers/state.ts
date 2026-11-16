@@ -37,9 +37,7 @@ export function buildProjectionState(
 
   // Running balances: the per-category balances and the tax buckets the
   // opening parts hold (the one starting input).
-  const { accountBalance, balances } = openingTotals(
-    input.individualAccounts ?? [],
-  );
+  const { accountBalance, balances } = openingTotals(input.individualAccounts);
 
   // RMD tracking: prior year-end Traditional balance (used to compute RMD for current year)
   // Initialized from starting balances -- sum of all Traditional (pre-tax) across accounts.

@@ -385,7 +385,7 @@ function sumSlotWithdrawals(slots: EngineDecumulationYear["slots"]): number {
  *  percent-of-pay contribution spec per account, so the per-account track
  *  carries every flow the aggregate does. */
 function withAccountsAndSpecs(input: ProjectionInput): ProjectionInput {
-  const start = openingTotals(input.individualAccounts!).accountBalance;
+  const start = openingTotals(input.individualAccounts).accountBalance;
   const k = start["401k"] as { traditional: number; roth: number };
   const ira = start.ira as { traditional: number; roth: number };
   const hsa = start.hsa as { balance: number };
@@ -2159,7 +2159,7 @@ describe("engine invariants", () => {
       const input: ProjectionInput = {
         ...base,
         // Portfolio brokerage listed first: the old first-match picked it.
-        individualAccounts: [...base.individualAccounts!].reverse(),
+        individualAccounts: [...base.individualAccounts].reverse(),
         accumulationOverrides: [
           { year, lumpSums: [{ amount: 50000, targetAccount: "brokerage" }] },
         ] as ProjectionInput["accumulationOverrides"],
@@ -2526,7 +2526,7 @@ describe("engine invariants", () => {
         const withPortfolio: ProjectionInput = {
           ...withSwitch([...switchSpecs, portfolioSpec]),
           contributionSpecs: base.contributionSpecs,
-          individualAccounts: base.individualAccounts!.map((ia) =>
+          individualAccounts: base.individualAccounts.map((ia) =>
             ia.parentCategory === "Portfolio"
               ? { ...ia, startingBalance: 1010000 }
               : ia,
@@ -2583,7 +2583,7 @@ describe("engine invariants", () => {
           contributionSpecs: base.contributionSpecs!.filter(
             (sp) => sp.parentCategory !== "Portfolio",
           ),
-          individualAccounts: base.individualAccounts!.filter(
+          individualAccounts: base.individualAccounts.filter(
             (ia) => ia.parentCategory !== "Portfolio",
           ),
         };
@@ -2676,7 +2676,7 @@ describe("engine invariants", () => {
         const simple = toSimpleTaxMode(overflowInput(), parts);
         // The pot, and every other part at $0, all synthetic (no real
         // account behind them, so no per-account rows).
-        expect(openingTotals(simple.individualAccounts!).balances).toEqual({
+        expect(openingTotals(simple.individualAccounts).balances).toEqual({
           preTax: 0,
           taxFree: 0,
           hsa: 0,
@@ -2684,7 +2684,7 @@ describe("engine invariants", () => {
           afterTaxBasis: 110000,
         });
         expect(
-          simple.individualAccounts!.every((ia) => ia.origin === "synthetic"),
+          simple.individualAccounts.every((ia) => ia.origin === "synthetic"),
         ).toBe(true);
         expect(simple.brokerageGoals).toEqual([]);
         expect(
@@ -2955,7 +2955,7 @@ describe("engine invariants", () => {
         noBasisDrift({
           ...base,
           contributionSpecs: undefined,
-          individualAccounts: base.individualAccounts!.map((ia) =>
+          individualAccounts: base.individualAccounts.map((ia) =>
             ia.category === "brokerage"
               ? { ...ia, startingBasis: ia.startingBalance }
               : ia,
@@ -2978,7 +2978,7 @@ describe("engine invariants", () => {
         const year = base.asOfDate.getFullYear() + 2;
         const withBasis = (input: ProjectionInput): ProjectionInput => ({
           ...input,
-          individualAccounts: input.individualAccounts!.map((ia) =>
+          individualAccounts: input.individualAccounts.map((ia) =>
             ia.category === "brokerage"
               ? { ...ia, startingBasis: ia.startingBalance / 2 }
               : ia,

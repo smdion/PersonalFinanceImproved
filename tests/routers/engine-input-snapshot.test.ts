@@ -239,7 +239,7 @@ describe("engine input snapshot guard", () => {
 
   it("individualAccounts entries carry ruleOf55/rothBasisMeta (v0.7.8 Group 1.1)", () => {
     const bei = payload.baseEngineInput;
-    const acct = bei.individualAccounts?.find((a) => a.category === "401k");
+    const acct = bei.individualAccounts.find((a) => a.category === "401k");
     expect(acct).toBeDefined();
     expect(acct!.ownerPersonId).toBe(1);
 

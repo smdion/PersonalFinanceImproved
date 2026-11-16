@@ -59,7 +59,7 @@ export function toSimpleTaxMode(
   parts: SimpleTaxModeParts,
 ): ProjectionInput {
   // The real accounts: a household with none passes synthetic parts.
-  const indAccounts = (input.individualAccounts ?? []).filter(isHeldPart);
+  const indAccounts = input.individualAccounts.filter(isHeldPart);
   const b = parts.retirementBuckets;
   const total = roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
   const isRetirementSpec = (s: { parentCategory?: string }) =>

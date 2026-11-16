@@ -34,9 +34,7 @@ export function engineInput<T extends StartingMoney>(
 ): Omit<T, keyof StartingMoney> & {
   individualAccounts: IndividualAccountInput[];
 };
-export function engineInput(fixture: StartingMoney): {
-  individualAccounts?: IndividualAccountInput[];
-} {
+export function engineInput(fixture: StartingMoney) {
   const {
     startingBalances,
     startingAccountBalances,

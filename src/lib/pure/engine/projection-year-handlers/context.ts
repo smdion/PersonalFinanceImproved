@@ -152,7 +152,7 @@ export function buildProjectionContext(
     }
   }
 
-  const parts = input.individualAccounts ?? [];
+  const parts = input.individualAccounts;
   const hasIndividualAccounts = parts.some(isHeldPart);
   const indAccounts = hasIndividualAccounts ? declareOpeningParts(parts) : [];
   const indKey = makeIndKey();

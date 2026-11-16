@@ -137,7 +137,7 @@ function withPortfolioBrokerage(input: ProjectionInput): ProjectionInput {
   return {
     ...input,
     individualAccounts: [
-      ...input.individualAccounts!,
+      ...input.individualAccounts,
       account("Long-term brokerage", "brokerage", "afterTax", amount, {
         startingBasis: basis,
         parentCategory: "Portfolio",

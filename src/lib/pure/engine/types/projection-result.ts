@@ -173,7 +173,7 @@ export type ProjectionInput = {
   // --- Starting money ---
   /** The ledger's opening state, the one starting input: every account part
    *  with its money and basis (synthetic parts where no account is held). */
-  individualAccounts?: IndividualAccountInput[];
+  individualAccounts: IndividualAccountInput[];
 
   // --- Expenses & return rates ---
   annualExpenses: number;
