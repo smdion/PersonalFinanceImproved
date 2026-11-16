@@ -21,6 +21,7 @@ import type {
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { roundToCents } from "@/lib/utils/math";
 import { acct, household } from "../fixtures/two-person-household";
+import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
 
 const FILE = path.join(__dirname, "__pins__", "unreached-paths.json");
 const WRITE = process.env.LEDGR_BASELINE_WRITE === "1";
@@ -543,4 +544,64 @@ describe("a gap year in year 0, drawn from a 401k with no owner's age", () => {
   });
 
   it("pins the year", () => pin("gap-year-0-unowned", [y]));
+});
+
+describe("a run whose parts are all synthetic takes the household path", () => {
+  // Unreached until such a run keeps its own ledger: per-owner RMDs, QCDs,
+  // penalty eligibility and RMD smoothing, a synthetic part's hidden row,
+  // and each slot's credit to its own part with no specs (ownPartCredits).
+  const parts = (owned: boolean) =>
+    [
+      acct("Ann IRA", "ira", 500000, owned ? 1 : undefined),
+      acct("Bo 401k", "401k", 500000, owned ? 2 : undefined),
+    ].map((p) => ({
+      ...p,
+      parentCategory: "Retirement",
+      origin: "synthetic" as const,
+    }));
+  const retired = (owned: boolean) =>
+    household(
+      parts(owned),
+      {
+        socialSecurityEntries: [ss(1, 1948), ss(2, 1950)],
+        perPersonBirthYears: [1948, 1950],
+      },
+      { qcdMaximize: true, rmdSmoothingEnabled: true },
+    );
+  const working = (owned: boolean) =>
+    household(parts(owned), {
+      currentAge: 50,
+      birthYear: 1976,
+      retirementYear: 2036,
+      projectionEndYear: 2030,
+      currentSalary: 100000,
+      accumulationDefaults: makeAccumulationDefaults({
+        contributionRate: 0.1,
+        accountSplits: {
+          "401k": 0.5,
+          "403b": 0,
+          hsa: 0,
+          ira: 0.5,
+          brokerage: 0,
+        },
+        taxSplits: { "401k": 0.5, ira: 1 },
+      }),
+      socialSecurityEntries: [ss(1, 1976), ss(2, 1977)],
+      perPersonBirthYears: [1976, 1977],
+    });
+
+  it.each([
+    ["retired, RMDs, QCDs and smoothing on", retired],
+    ["working, saving with no specs", working],
+  ])("%s: owners change nothing and no per-account row shows", (_, make) => {
+    const years = run(make(true));
+    expect(years).toEqual(run(make(false)));
+    for (const y of years) expect(y.individualAccountBalances).toEqual([]);
+    for (const y of years.filter(
+      (r): r is EngineDecumulationYear => r.phase === "decumulation",
+    )) {
+      expect(y.rmdByPerson).toBeUndefined();
+      expect(y.qcdByPerson).toBeUndefined();
+    }
+  });
 });

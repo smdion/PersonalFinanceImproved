@@ -152,10 +152,9 @@ export type ProjectionContext = {
   sortedProfileSwitches: ProfileSwitch[];
 
   // Individual account setup
+  /** Some part belongs to a real account (`isHeldPart`); without one the run
+   *  takes the household path and `indAccounts` is empty. */
   hasIndividualAccounts: boolean;
-  /** Some part is a held account (`origin` absent): per-owner RMDs, QCDs and
-   *  penalty eligibility need one; synthetic parts keep the household's path. */
-  holdsAccounts: boolean;
   indAccounts: IndividualAccountInput[];
   indKey: ReturnType<typeof makeIndKey>;
   indParentCat: Map<string, string>;

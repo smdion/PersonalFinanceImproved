@@ -76,7 +76,7 @@ export function runGapYearDraw(
     decumulationDefaults,
     ctx.sortedDecumulationOverrides,
   );
-  const eligibility = ctx.holdsAccounts
+  const eligibility = ctx.hasIndividualAccounts
     ? computeWithdrawalEligibility({
         year,
         indAccounts,

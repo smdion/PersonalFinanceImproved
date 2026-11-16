@@ -152,8 +152,9 @@ export function buildProjectionContext(
     }
   }
 
-  const indAccounts = declareOpeningParts(input.individualAccounts ?? []);
-  const hasIndividualAccounts = indAccounts.length > 0;
+  const parts = input.individualAccounts ?? [];
+  const hasIndividualAccounts = parts.some(isHeldPart);
+  const indAccounts = hasIndividualAccounts ? declareOpeningParts(parts) : [];
   const indKey = makeIndKey();
   const indParentCat = new Map<string, string>();
   for (const ia of indAccounts) {
@@ -184,7 +185,6 @@ export function buildProjectionContext(
     sortedDecumulationOverrides,
     sortedProfileSwitches,
     hasIndividualAccounts,
-    holdsAccounts: indAccounts.some(isHeldPart),
     indAccounts,
     indKey,
     indParentCat,
