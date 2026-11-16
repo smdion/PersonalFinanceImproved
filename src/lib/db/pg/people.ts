@@ -9,6 +9,7 @@ import {
   date,
   uniqueIndex,
   index,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -21,6 +22,13 @@ export const people = pgTable("people", {
   name: text("name").notNull(),
   dateOfBirth: date("date_of_birth").notNull(),
   isPrimaryUser: boolean("is_primary_user").notNull().default(false),
+  /** Their spouse on the joint return, on both rows (one writer keeps it mutual; a one-sided
+   *  link reads as none). Null = none stored: `spousePair` takes a joint return of exactly two
+   *  people. SET NULL: deleting a spouse unlinks the other. */
+  spousePersonId: integer("spouse_person_id").references(
+    (): AnyPgColumn => people.id,
+    { onDelete: "set null" },
+  ),
 });
 
 export const jobs = pgTable(

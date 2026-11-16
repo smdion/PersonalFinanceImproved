@@ -169,6 +169,13 @@
       "when": 1794532089547,
       "tag": "0023_v0111_lump_sum_targets",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1794789679944,
+      "tag": "0024_v0111_spouse_link",
+      "breakpoints": true
     }
   ]
 }

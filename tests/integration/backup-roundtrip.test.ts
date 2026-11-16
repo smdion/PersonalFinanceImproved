@@ -13,7 +13,7 @@
  */
 import "../routers/setup-mocks";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   createTestCaller,
   seedStandardDataset,
@@ -49,7 +49,22 @@ async function snapshotTables(db: TestCtx["rawDb"]) {
 
 async function seedHousehold(db: TestCtx["db"]) {
   seedStandardDataset(db);
-  await seedPerson(db, "Second Person", "1992-03-01");
+  const second = await seedPerson(db, "Second Person", "1992-03-01");
+  // A stored spouse pair (tag 0024): each row points at the other, so the
+  // restore's insert holds a self-reference to a row later in the batch.
+  const first = db
+    .select({ id: sqliteSchema.people.id })
+    .from(sqliteSchema.people)
+    .orderBy(sqliteSchema.people.id)
+    .get()!.id;
+  db.update(sqliteSchema.people)
+    .set({ spousePersonId: second })
+    .where(eq(sqliteSchema.people.id, first))
+    .run();
+  db.update(sqliteSchema.people)
+    .set({ spousePersonId: first })
+    .where(eq(sqliteSchema.people.id, second))
+    .run();
   // A structured JSON setting exercises jsonb encoding on the way through.
   db.insert(sqliteSchema.appSettings)
     .values({

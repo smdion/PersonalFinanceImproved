@@ -86,7 +86,7 @@ describe("SQLite table recreates in the real migrator", () => {
     return addMigration(
       [
         "PRAGMA foreign_keys=OFF;",
-        "CREATE TABLE `__new_people` (\n\t`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,\n\t`name` text NOT NULL,\n\t`date_of_birth` text NOT NULL,\n\t`is_primary_user` integer DEFAULT false NOT NULL\n);",
+        "CREATE TABLE `__new_people` (\n\t`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,\n\t`name` text NOT NULL,\n\t`date_of_birth` text NOT NULL,\n\t`is_primary_user` integer DEFAULT false NOT NULL,\n\t`spouse_person_id` integer,\n\tFOREIGN KEY (`spouse_person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE set null\n);",
         copy,
         "DROP TABLE `people`;",
         "ALTER TABLE `__new_people` RENAME TO `people`;",
@@ -95,7 +95,7 @@ describe("SQLite table recreates in the real migrator", () => {
     );
   }
   const COPY =
-    'INSERT INTO `__new_people`("id", "name", "date_of_birth", "is_primary_user") SELECT "id", "name", "date_of_birth", "is_primary_user" FROM `people`;';
+    'INSERT INTO `__new_people`("id", "name", "date_of_birth", "is_primary_user", "spouse_person_id") SELECT "id", "name", "date_of_birth", "is_primary_user", "spouse_person_id" FROM `people`;';
   const counts = () => {
     const db = open();
     const n = (t: string) =>

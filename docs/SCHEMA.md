@@ -6,7 +6,7 @@
 
 ## Schema version
 
-**Schema version: `0023_v0111_lump_sum_targets`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
+**Schema version: `0024_v0111_spouse_link`** (the latest tag in both `drizzle/meta/_journal.json` and `drizzle-sqlite/meta/_journal.json`).
 
 | Tag  | Name                      | PostgreSQL | SQLite |
 | ---- | ------------------------- | ---------- | ------ |
@@ -34,6 +34,7 @@
 | 0021 | v0110_job_entries         | yes        | yes    |
 | 0022 | v0111_roth_overlay        | yes        | yes    |
 | 0023 | v0111_lump_sum_targets    | yes        | yes    |
+| 0024 | v0111_spouse_link         | yes        | yes    |
 
 ## Relations
 
@@ -521,6 +522,7 @@ erDiagram
     text name
     date date_of_birth
     boolean is_primary_user
+    integer spouse_person_id FK
   }
   performance_accounts {
     serial id PK
@@ -997,6 +999,7 @@ erDiagram
   mortgage_what_if_scenarios }o--o| mortgage_loans : "loan_id"
   paycheck_deductions }o--|| jobs : "job_id"
   paycheck_earnings }o--|| jobs : "job_id"
+  people }o--o| people : "spouse_person_id"
   performance_accounts }o--o| people : "owner_person_id"
   portfolio_accounts }o--|| portfolio_snapshots : "snapshot_id"
   portfolio_accounts }o--o| people : "owner_person_id"
@@ -1719,12 +1722,13 @@ erDiagram
 
 ### people
 
-| Column          | Type    | Not null | Default | Notes |
-| --------------- | ------- | -------- | ------- | ----- |
-| id              | serial  | yes      |         | PK    |
-| name            | text    | yes      |         |       |
-| date_of_birth   | date    | yes      |         |       |
-| is_primary_user | boolean | yes      | `false` |       |
+| Column           | Type    | Not null | Default | Notes                               |
+| ---------------- | ------- | -------- | ------- | ----------------------------------- |
+| id               | serial  | yes      |         | PK                                  |
+| name             | text    | yes      |         |                                     |
+| date_of_birth    | date    | yes      |         |                                     |
+| is_primary_user  | boolean | yes      | `false` |                                     |
+| spouse_person_id | integer |          |         | FK → people.id (on delete set null) |
 
 ### performance_accounts
 

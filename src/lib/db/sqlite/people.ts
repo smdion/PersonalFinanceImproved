@@ -7,6 +7,7 @@ import {
   integer,
   uniqueIndex,
   index,
+  type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
@@ -21,6 +22,13 @@ export const people = sqliteTable("people", {
   isPrimaryUser: integer("is_primary_user", { mode: "boolean" })
     .notNull()
     .default(false),
+  /** Their spouse on the joint return, on both rows (one writer keeps it mutual; a one-sided
+   *  link reads as none). Null = none stored: `spousePair` takes a joint return of exactly two
+   *  people. SET NULL: deleting a spouse unlinks the other. */
+  spousePersonId: integer("spouse_person_id").references(
+    (): AnySQLiteColumn => people.id,
+    { onDelete: "set null" },
+  ),
 });
 
 export const jobs = sqliteTable(
