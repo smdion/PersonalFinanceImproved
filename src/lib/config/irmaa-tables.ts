@@ -1,7 +1,8 @@
 // IRMAA tiers from yearly `irmaa_brackets` passed in by the caller; 2-year MAGI lookback;
-// per-person annual surcharges (Part B + D). Tiers apply at `magi > threshold`, so a MAGI exactly
-// at CMS's top tier (≥ $750,000 jointly / $500,000) lands one tier low (a $1 edge, kept).
+// per-person annual surcharges (Part B + D). Each tier applies above its threshold, the top one
+// at or above it (20 CFR 418.1115: "greater than or equal to" $500,000 / $750,000 jointly).
 
+import { roundToCents } from "../utils/math";
 import { filingRules, type ReturnFilingStatus } from "./filing-status";
 
 export type IrmaaBracket = {
@@ -11,8 +12,8 @@ export type IrmaaBracket = {
 };
 
 /** IRMAA brackets by filing status, as stored (`irmaa_brackets`): the
- *  surcharge applies once MAGI is above a bracket's threshold. Cliff-based —
- *  $1 over triggers the whole tier. */
+ *  surcharge applies once MAGI is above a bracket's threshold (the top
+ *  bracket: at or above it). Cliff-based — $1 over triggers the whole tier. */
 export type IrmaaBracketTable = Record<string, IrmaaBracket[]>;
 
 function bracketsFor(
@@ -36,15 +37,24 @@ export function getIrmaaCost(
   filingStatus: ReturnFilingStatus,
   brackets: IrmaaBracketTable,
 ): number {
+  const tiers = bracketsFor(brackets, filingStatus);
   let surcharge = 0;
-  for (const b of bracketsFor(brackets, filingStatus)) {
-    if (magi > b.magiThreshold) surcharge = b.annualSurcharge;
-  }
+  tiers.forEach((b, i) => {
+    if (reachesTier(magi, b, i === tiers.length - 1))
+      surcharge = b.annualSurcharge;
+  });
   return surcharge;
 }
 
+/** Whether `magi` is in tier `b`: above its threshold, or at it for the top
+ *  tier (20 CFR 418.1115(b)(3)(v), (c)(3)(v)). */
+function reachesTier(magi: number, b: IrmaaBracket, top: boolean): boolean {
+  return top ? magi >= b.magiThreshold : magi > b.magiThreshold;
+}
+
 /**
- * Get the nearest IRMAA cliff above the current MAGI, or null if already above all tiers.
+ * The most MAGI can be and stay under the next tier: a lower tier's threshold,
+ * the top tier's less a cent; null in the top tier.
  *
  * @param brackets The year's IRMAA brackets (`irmaa_brackets`, resolved).
  */
@@ -53,8 +63,11 @@ export function getNextIrmaaCliff(
   filingStatus: ReturnFilingStatus,
   brackets: IrmaaBracketTable,
 ): number | null {
-  for (const b of bracketsFor(brackets, filingStatus)) {
-    if (magi <= b.magiThreshold) return b.magiThreshold;
+  const tiers = bracketsFor(brackets, filingStatus);
+  for (const [i, b] of tiers.entries()) {
+    const top = i === tiers.length - 1;
+    if (!reachesTier(magi, b, top))
+      return top ? roundToCents(b.magiThreshold - 0.01) : b.magiThreshold;
   }
-  return null; // above all tiers
+  return null; // in the top tier
 }

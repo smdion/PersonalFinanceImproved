@@ -51,7 +51,7 @@
  * Blocked with an item that unblocks them: the `it.todo`s at the end.
  */
 import { describe, expect, it } from "vitest";
-import { cents, runOneYear, xfail } from "../fixtures/answer-key";
+import { cents, runOneYear } from "../fixtures/answer-key";
 import { getIrmaaCost, getNextIrmaaCliff } from "@/lib/config/irmaa-tables";
 import { engineHousehold } from "../fixtures/answer-key-household";
 import { shippedTaxTables } from "../helpers/tax-data";
@@ -69,12 +69,6 @@ const irmaa = (
 
 const nextCliff = (magi: number, status: ReturnFilingStatus) =>
   getNextIrmaaCliff(magi, status, shippedTaxTables(2026).irmaaBrackets);
-
-/** The top tier compares with `>`, so MAGI exactly at 500,000 / 750,000
- *  lands a tier low (verdict K-D). The fix is placed in v0.10.x "Split
- *  IRMAA into Part B and D" and ships with v0.11's IRMAA items. */
-const TOP_TIER =
-  'v0.11 Retirement rules "top IRMAA tier grown until 2027.json ships" (verdict K-D: the top tier starts at its threshold)';
 
 // ---------------------------------------------------------------------------
 // A. Single, 2026: every tier edge
@@ -120,18 +114,17 @@ describe("answer key: IRMAA tiers, Single, 2026 (CMS26)", () => {
     cents(irmaa(499_999, "Single"), 6355.2);
   });
 
-  describe("ret/I8 [RET-14]", () => {
-    // 418.1115(b)(5): the top tier is MAGI "greater than or equal to"
-    // 500,000: 578.00 a month × 12 = 6,936.00. Today the tier below,
-    // 6,355.20 (580.80 a person short; spec "Wrong, reusing greater
-    // than").
-    xfail({
-      id: "ret/I8 [RET-14]",
-      todo: TOP_TIER,
-      run: () => irmaa(500_000, "Single"),
-      expected: 6936,
-      today: 6355.2,
-    });
+  it("ret/I8 [RET-14] 500,000: 6,936.00 (the top tier starts at its threshold; 578.00 a month)", () => {
+    // 418.1115(b)(3)(v): the top tier is MAGI "greater than or equal to"
+    // 500,000: 578.00 a month × 12 = 6,936.00.
+    cents(irmaa(500_000, "Single"), 6936);
+  });
+
+  it("ret/I8:cliff [RET-14] below the top tier the most MAGI that stays under it is 499,999.99", () => {
+    // The top tier starts at 500,000 itself, so the cliff a conversion may
+    // reach is a cent below it; at 500,000 there is no cliff above.
+    expect(nextCliff(499_999, "Single")).toBe(499_999.99);
+    expect(nextCliff(500_000, "Single")).toBeNull();
   });
 
   it("ret/I15 [RET-14] head of household, 150,000: the individual table, 2,884.80", () => {
@@ -174,15 +167,9 @@ describe("answer key: IRMAA tiers, married filing jointly, 2026 (CMS26)", () => 
     cents(irmaa(749_999, "MFJ"), 6355.2);
   });
 
-  describe("ret/I13 [RET-14]", () => {
-    // 418.1115(c)(5): "greater than or equal to" 750,000: 6,936.00 each.
-    xfail({
-      id: "ret/I13 [RET-14]",
-      todo: TOP_TIER,
-      run: () => irmaa(750_000, "MFJ"),
-      expected: 6936,
-      today: 6355.2,
-    });
+  it("ret/I13 [RET-14] 750,000: 6,936.00 each (the top joint tier starts at its threshold)", () => {
+    // 418.1115(c)(3)(v): "greater than or equal to" 750,000: 6,936.00 each.
+    cents(irmaa(750_000, "MFJ"), 6936);
   });
 });
 
