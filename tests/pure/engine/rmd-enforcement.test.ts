@@ -23,11 +23,20 @@ function baseInput(
     totalTraditionalWithdrawal: 0,
     totalWithdrawal: 0,
     accountBalance: makeAccountBalances({ preTax: 500000, afterTax: 0 }),
+    qcdCredit: 0,
     ...overrides,
   };
 }
 
 describe("enforceRmd", () => {
+  it("draws only the RMD the year's QCDs leave, and reports the full RMD", () => {
+    // 100,000 at 75: 100,000 / 24.6 = 4,065.04 (Table III); a 3,000 QCD
+    // meets that much of it, so 1,065.04 is drawn.
+    const result = enforceRmd(baseInput({ qcdCredit: 3000 }));
+    expect(result.rmdAmount).toBeCloseTo(4065.04, 2);
+    expect(result.totalTraditionalWithdrawal).toBeCloseTo(1065.04, 2);
+  });
+
   it("rmdShortfallAmount is 0 when the RMD is fully forced through", () => {
     const accountBalance = makeAccountBalances({ preTax: 0, afterTax: 0 });
     accountBalance["401k"] = {

@@ -102,6 +102,8 @@ const qcdOf = (iraBalance: number, year: 2025 | 2026) =>
 
 /** One engine year (2026, the fixture's first) for owners with the given
  *  birth years, `qcdMaximize` on, flat returns and no Social Security.
+ *  `onePerson`: the input a one-person household's payload builds, with no
+ *  Social Security entries, so the household RMD path runs.
  *  Spending comes from a large brokerage first, so the Traditional
  *  balances move only by the RMD and the QCD. */
 function engineYear(
@@ -113,19 +115,22 @@ function engineYear(
   }[],
   accounts: IndividualAccountInput[],
   year = 2026,
+  onePerson = false,
 ): EngineDecumulationYear {
   const input = household(
     [...accounts, acct("Brokerage", "brokerage", 2_000_000, 1, "afterTax")],
     {
       birthYear: people[0]!.birthYear,
       currentAge: 2026 - people[0]!.birthYear,
-      socialSecurityEntries: people.map((p) => ({
-        personId: p.personId,
-        personName: p.name,
-        birthYear: p.birthYear,
-        startAge: 70,
-        annualAmount: 0,
-      })),
+      socialSecurityEntries: onePerson
+        ? undefined
+        : people.map((p) => ({
+            personId: p.personId,
+            personName: p.name,
+            birthYear: p.birthYear,
+            startAge: 70,
+            annualAmount: 0,
+          })),
       perPersonBirthYears: people.map((p) => p.birthYear),
       people: people.map((p) => ({
         personId: p.personId,
@@ -520,6 +525,39 @@ describe("answer key: QCD at 70½", () => {
       engineYear(ann(1956, 11), [acct("IRA", "ira", 5_000, 1)]).qcdAmount,
       0,
     );
+  });
+
+  it("ret/QS1 [RET-09] one person, DOB 1955-08-15, 70½ in February 2026, IRA 5,000: a QCD of 5,000", () => {
+    // A one-person household (no Social Security entries, as its payload
+    // sends): 70½ on 2026-02-15, so the whole 5,000 IRA is given
+    // (408(d)(8)(B)(ii)); 71 is before the first RMD (73 for 1955), so no
+    // RMD. One person once got no QCD at all: 0.
+    const row = engineYear(
+      ann(1955, 8),
+      [acct("IRA", "ira", 5_000, 1)],
+      2026,
+      true,
+    );
+    cents(row.qcdAmount, 5_000);
+    cents(row.rmdAmount, 0);
+  });
+
+  it("ret/QS2 [RET-09] one person at 75, IRA 3,000,000: QCD 111,000 counts toward the 121,951.22 RMD", () => {
+    // Born 1951-03-10: 75 in 2026, RMD from 73 (born 1951). RMD = 3,000,000
+    // ÷ 24.6 (Table III, 75) = 121,951.219… → 121,951.22. The QCD is the
+    // 2026 limit, 111,000 (Notice 2025-67), and counts toward the RMD
+    // (Pub 590-B), so only 121,951.22 − 111,000 = 10,951.22 is drawn as
+    // Traditional; spending comes from the brokerage. Not the full RMD
+    // plus the QCD.
+    const row = engineYear(
+      ann(1951, 3),
+      [acct("IRA", "ira", 3_000_000, 1)],
+      2026,
+      true,
+    );
+    cents(row.qcdAmount, 111_000);
+    cents(row.rmdAmount, 121_951.22);
+    cents(row.totalTraditionalWithdrawal, 10_951.22);
   });
 
   it("ret/Q9 [RET-09] 72, before the FDCY, QCD 10,000 in 2026: allowed, and no credit against the 2027 RMD", () => {

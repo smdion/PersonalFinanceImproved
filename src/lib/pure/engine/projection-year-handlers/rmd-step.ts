@@ -27,24 +27,19 @@ export function qcdStep(
   year: number,
   config: ReturnType<typeof resolveDecumulationConfig>,
 ) {
-  const { holdsAccounts, rmdStartAgeByPerson, indAccounts, indKey } = ctx;
+  const { holdsAccounts, indAccounts, indKey } = ctx;
   const { decumulationDefaults } = ctx.input;
   const { indBalance, balances, accountBalance } = state;
   // A QCD satisfies part of an owner's RMD tax-free, so it runs before the
   // tax estimate. Eligibility is the QCD age (AGE_RULES.qcd, 70½ by birth
-  // month), not the RMD start age: every tracked person, not rmdByPerson.
-  const monthOf = (id: number) =>
-    ctx.input.people.find((p) => p.personId === id)?.birthMonth;
+  // month), not the RMD start age: every person, one included.
   let totalQcd = 0;
   let qcdByPerson: { personId: number; qcdAmount: number }[] = [];
-  const qcdEligiblePersonIds =
-    holdsAccounts && rmdStartAgeByPerson.size > 0
-      ? Array.from(rmdStartAgeByPerson.entries())
-          .filter(([id, p]) =>
-            reachesAgeRule(p.birthYear, "qcd", year, monthOf(id)),
-          )
-          .map(([personId]) => personId)
-      : [];
+  const qcdEligiblePersonIds = holdsAccounts
+    ? ctx.input.people
+        .filter((p) => reachesAgeRule(p.birthYear, "qcd", year, p.birthMonth))
+        .map((p) => p.personId)
+    : [];
   if (qcdEligiblePersonIds.length > 0) {
     const iraTradByPerson = new Map<number, number>();
     for (const ia of indAccounts) {
@@ -137,7 +132,7 @@ export function enforceYearRmd(
   const { nonRetirement } = thisYear.setup;
   const { slots, routeWarnings } = route;
   const { perOwnerRmd, rmdByPerson, perPersonRmdTotal } = owed;
-  const { qcdByPerson } = qcd;
+  const { qcdByPerson, totalQcd } = qcd;
   let totalWithdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));
   const totalRothWithdrawal = roundToCents(
     sumBy(slots, (s) => s.rothWithdrawal),
@@ -196,6 +191,7 @@ export function enforceYearRmd(
       totalWithdrawal,
       accountBalance,
       nonRetirement,
+      qcdCredit: totalQcd,
     });
   const { rmdOverrodeRouting, rmdShortfallAmount } = rmdResult;
   totalTraditionalWithdrawal = rmdResult.totalTraditionalWithdrawal;

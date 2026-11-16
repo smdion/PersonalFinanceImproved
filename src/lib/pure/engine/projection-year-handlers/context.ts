@@ -139,7 +139,7 @@ export function buildProjectionContext(
   const rmdStartAge =
     input.birthYear != null ? getRmdStartAge(input.birthYear) : null;
 
-  // Per-person RMD start ages (from SS entries or individual accounts with ownerPersonId)
+  // Per-person RMD start ages, from the Social Security entries.
   const rmdStartAgeByPerson = new Map<
     number,
     { startAge: number; birthYear: number }

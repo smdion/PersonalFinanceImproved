@@ -35,6 +35,8 @@ export interface RmdEnforcementInput {
   /** When provided, overrides the internal RMD calculation. Tests only:
    *  multi-person households go through `enforceOwnerRmds`. */
   overrideRmdRequired?: number;
+  /** The year's QCDs, which meet that much of the RMD (IRC 408(d)(8)). */
+  qcdCredit: number;
   /** Portfolio-parented exclusion for this year. The RMD requirement stays on the full balance;
    *  only the shortfall's per-category capacity is scoped, so Portfolio accounts never cover a
    *  Retirement-plan RMD shortfall. */
@@ -72,10 +74,8 @@ function routedTraditionalDraw(slots: DecumulationSlot[]): number {
 }
 
 /**
- * Enforce IRS Required Minimum Distribution on Traditional withdrawals.
- *
- * Mutates `slots` in place (adds RMD shortfall to existing slots or creates
- * new ones). Returns updated totals and diagnostic info.
+ * Enforces the RMD on Traditional withdrawals. Mutates `slots` (adds the
+ * shortfall to existing slots or creates new ones); returns the totals.
  */
 export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
   const { age, rmdStartAge, priorYearEndTradBalance, slots, accountBalance } =
@@ -95,14 +95,14 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
     if (input.overrideRmdRequired != null || computedRmd != null) {
       const rmdRequired = input.overrideRmdRequired ?? computedRmd!;
       rmdAmount = rmdRequired;
+      const toDraw = roundToCents(Math.max(0, rmdRequired - input.qcdCredit));
       // Only Traditional money meets an RMD: an HSA draw also sits in the
       // total (single-bucket, pre-tax) but doesn't count toward it.
       const routedTraditional = routedTraditionalDraw(slots);
-      if (routedTraditional < rmdRequired) {
-        const rmdShortfall = roundToCents(rmdRequired - routedTraditional);
+      if (routedTraditional < toDraw) {
+        const rmdShortfall = roundToCents(toDraw - routedTraditional);
         rmdOverrodeRouting = true;
-        // Distribute shortfall proportionally across roth_traditional accounts
-        // based on their current Traditional balance.
+        // Spread the shortfall over Traditional balances, by balance.
         const tradCategories = categoriesWithTaxPreference();
         // Compute available capacity per category: balance minus what routing already took
         const tradBalByCategory = tradCategories.map((cat) => {
@@ -203,12 +203,12 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
           // What actually met the RMD: Traditional money only, not the HSA
           // draw counted in totalTraditionalWithdrawal.
           const met = roundToCents(routedTraditional + distributed);
-          rmdShortfallAmount = roundToCents(rmdRequired - met);
+          rmdShortfallAmount = roundToCents(toDraw - met);
           const penalty = roundToCents(
             rmdShortfallAmount * RMD_EXCISE_TAX_RATE,
           );
           warnings.push(
-            `RMD SHORTFALL: $${rmdRequired.toFixed(0)} of Traditional distribution still required this year but only $${met.toFixed(0)} available. ` +
+            `RMD SHORTFALL: $${toDraw.toFixed(0)} of Traditional distribution still required this year but only $${met.toFixed(0)} available. ` +
               `IRS penalty (25% excise tax) on the $${rmdShortfallAmount.toFixed(0)} shortfall would be ~$${penalty.toFixed(0)}. ` +
               `The rest of the balance is held as Portfolio money, in accounts Ledgr doesn't draw for retirement — take it from there to meet the RMD.`,
           );
