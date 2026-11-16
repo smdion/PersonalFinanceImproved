@@ -3,12 +3,8 @@
  */
 import { seedBrokerageBasis } from "../brokerage-basis";
 import type { ProjectionInput } from "../types/projection-result";
-import type {
-  AccountBalances,
-  TaxBuckets,
-} from "../../accounts/account-balances.types";
 import { isPreTaxType, isTaxFreeBucket } from "../../../config/account-types";
-import { cloneAccountBalances } from "../balance-utils";
+import { openingTotals } from "../opening-state";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { initialCrossYearState } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-accounts/spec-accounts";
@@ -39,12 +35,11 @@ export function buildProjectionState(
   const activeBaseYearEmployerMatch = input.baseYearEmployerMatch;
   const activeEmployerMatchByParentCat = input.employerMatchByParentCat;
 
-  // Running balances -- AccountBalances is the source of truth;
-  // TaxBuckets is derived for backward compatibility.
-  const accountBalance: AccountBalances = cloneAccountBalances(
-    input.startingAccountBalances,
+  // Running balances: the per-category balances and the tax buckets the
+  // opening parts hold (the one starting input).
+  const { accountBalance, balances } = openingTotals(
+    input.individualAccounts ?? [],
   );
-  const balances: TaxBuckets = { ...input.startingBalances };
 
   // RMD tracking: prior year-end Traditional balance (used to compute RMD for current year)
   // Initialized from starting balances -- sum of all Traditional (pre-tax) across accounts.
@@ -89,7 +84,7 @@ export function buildProjectionState(
   const brokBasis = seedBrokerageBasis(
     ctx.indAccounts,
     ctx.indKey,
-    input.startingBalances.afterTaxBasis,
+    balances.afterTaxBasis,
   );
 
   const { specToAccount, accountsWithSpecs } =

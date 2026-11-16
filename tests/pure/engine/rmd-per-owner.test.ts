@@ -180,11 +180,6 @@ describe("per-owner RMDs with an HSA draw and real returns", () => {
     );
     return {
       ...base,
-      startingBalances: { ...base.startingBalances, hsa: 20000 },
-      startingAccountBalances: {
-        ...base.startingAccountBalances!,
-        hsa: { structure: "single_bucket" as const, balance: 20000 },
-      },
     };
   };
 

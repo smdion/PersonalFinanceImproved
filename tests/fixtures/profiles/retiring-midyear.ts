@@ -53,12 +53,16 @@ import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
 import { onePerson } from "../engine-people";
+import {
+  engineInput,
+  type FixtureInput,
+} from "../../pure/fixtures/engine-input";
 
 export const RETIRING_MIDYEAR_AS_OF = new Date("2026-04-14T12:00:00Z");
 
 /** Minimal input with retirementAge === currentAge on 2026-04-14. */
 export function makeRetiringMidyearInput(
-  overrides: Partial<ProjectionInput> = {},
+  overrides: Partial<FixtureInput> = {},
 ): ProjectionInput {
   const startingBalances = {
     preTax: 500000,
@@ -67,79 +71,81 @@ export function makeRetiringMidyearInput(
     afterTaxBasis: 0,
     hsa: 0,
   };
-  return withCapsAge({
-    budgetContributionLines: 0,
-    accumulationDefaults: makeAccumulationDefaults({
-      contributionRate: 0.1,
-      accountOrder: ["401k"],
-      accountSplits: { "401k": 1.0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
-      taxSplits: { "401k": 1.0 },
-    }),
-    decumulationDefaults: {
-      withdrawalRate: 0.04,
-      withdrawalRoutingMode: "waterfall",
-      withdrawalOrder: ["401k"],
-      withdrawalSplits: {
-        "401k": 1.0,
-        "403b": 0,
-        hsa: 0,
-        ira: 0,
-        brokerage: 0,
+  return engineInput(
+    withCapsAge({
+      budgetContributionLines: 0,
+      accumulationDefaults: makeAccumulationDefaults({
+        contributionRate: 0.1,
+        accountOrder: ["401k"],
+        accountSplits: { "401k": 1.0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
+        taxSplits: { "401k": 1.0 },
+      }),
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["401k"],
+        withdrawalSplits: {
+          "401k": 1.0,
+          "403b": 0,
+          hsa: 0,
+          ira: 0,
+          brokerage: 0,
+        },
+        withdrawalTaxPreference: { "401k": "traditional" },
+        distributionTaxRates: {
+          rothBracketOverlay: true,
+          ...shippedTaxTables(),
+          traditionalFallbackRate: 0.22,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
       },
-      withdrawalTaxPreference: { "401k": "traditional" },
-      distributionTaxRates: {
-        rothBracketOverlay: true,
-        ...shippedTaxTables(),
-        traditionalFallbackRate: 0.22,
-        roth: 0,
-        hsa: 0,
-        brokerage: 0.15,
-      },
-    },
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 65,
-    people: onePerson(RETIRING_MIDYEAR_AS_OF.getFullYear() - 65),
-    retirementYear: RETIRING_MIDYEAR_AS_OF.getFullYear() + 0,
-    projectionEndYear: RETIRING_MIDYEAR_AS_OF.getFullYear() + 25,
-    currentSalary: 100000,
-    salaryGrowthRate: 0.03,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    irsLimitCaps: capsFromBaseLimits({
-      baseLimits: {
-        "401k": 24500,
-        "403b": 0,
-        hsa: 0,
-        ira: 0,
-        brokerage: 0,
-      },
-      catchupLimits: { "401k": 8000 },
+      accumulationOverrides: [],
+      decumulationOverrides: [],
       currentAge: 65,
-    }),
-    limitGrowthRate: 0.02,
+      people: onePerson(RETIRING_MIDYEAR_AS_OF.getFullYear() - 65),
+      retirementYear: RETIRING_MIDYEAR_AS_OF.getFullYear() + 0,
+      projectionEndYear: RETIRING_MIDYEAR_AS_OF.getFullYear() + 25,
+      currentSalary: 100000,
+      salaryGrowthRate: 0.03,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 24500,
+          "403b": 0,
+          hsa: 0,
+          ira: 0,
+          brokerage: 0,
+        },
+        catchupLimits: { "401k": 8000 },
+        currentAge: 65,
+      }),
+      limitGrowthRate: 0.02,
 
-    employerMatchRateByCategory: {
-      "401k": 0,
-      "403b": 0,
-      hsa: 0,
-      ira: 0,
-      brokerage: 0,
-    },
-    startingBalances,
-    // The engine's own split of those buckets, which it used when this
-    // field was optional and absent.
-    startingAccountBalances: accountBalancesFromTaxBuckets(
-      overrides.startingBalances ?? startingBalances,
-    ),
-    annualExpenses: 40000,
-    decumulationAnnualExpenses: 40000,
-    inflationRate: 0.03,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 24000,
-    ssStartAge: 67,
-    asOfDate: RETIRING_MIDYEAR_AS_OF,
-    ...overrides,
-  });
+      employerMatchRateByCategory: {
+        "401k": 0,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 0,
+      },
+      startingBalances,
+      // The engine's own split of those buckets, which it used when this
+      // field was optional and absent.
+      startingAccountBalances: accountBalancesFromTaxBuckets(
+        overrides.startingBalances ?? startingBalances,
+      ),
+      annualExpenses: 40000,
+      decumulationAnnualExpenses: 40000,
+      inflationRate: 0.03,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 24000,
+      ssStartAge: 67,
+      asOfDate: RETIRING_MIDYEAR_AS_OF,
+      ...overrides,
+    }),
+  );
 }

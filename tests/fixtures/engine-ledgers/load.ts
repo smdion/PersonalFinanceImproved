@@ -39,6 +39,10 @@ import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balance
 import { readTaxData, shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
 import { calendarMonth } from "@/lib/utils/date";
+import {
+  engineInput,
+  type FixtureInput,
+} from "../../pure/fixtures/engine-input";
 
 const HERE = __dirname;
 const YEAR = 2026;
@@ -379,7 +383,7 @@ export function ledgerInput(
               roth: sum((a) => a.category === c && a.tax === "roth"),
             },
     ]),
-  ) as ProjectionInput["startingAccountBalances"];
+  ) as FixtureInput["startingAccountBalances"];
 
   // The waterfall as a category order, plus each category's Traditional
   // or Roth preference.
@@ -401,7 +405,7 @@ export function ledgerInput(
   splits[order[0] ?? "brokerage"] = 1;
   const totalSaving = Object.values(contribByCat).reduce((a, b) => a + b, 0);
 
-  return {
+  return engineInput<FixtureInput>({
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: totalPay > 0 ? retirementSaving / totalPay : 0,
       accountSplits: Object.fromEntries(
@@ -567,5 +571,5 @@ export function ledgerInput(
     householdSize: people.length,
     perPersonBirthYears: people.map((p) => yearOf(p.birthDate)),
     asOfDate: new Date(Date.UTC(YEAR, 0, 1, 12)),
-  };
+  });
 }

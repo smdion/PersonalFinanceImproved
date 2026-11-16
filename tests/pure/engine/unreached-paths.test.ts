@@ -294,15 +294,6 @@ describe("a Roth conversion year with brokerage gains and NIIT (A2 L3.4)", () =>
   const d = base.decumulationDefaults;
   const input: ProjectionInput = {
     ...base,
-    startingAccountBalances: {
-      ...base.startingAccountBalances!,
-      brokerage: {
-        structure: "basis_tracking",
-        balance: 1500000,
-        basis: 150000,
-      },
-    },
-    startingBalances: { ...base.startingBalances, afterTaxBasis: 150000 },
     decumulationDefaults: {
       ...d,
       distributionTaxRates: {
@@ -554,11 +545,16 @@ describe("a run whose parts are all synthetic takes the household path", () => {
     [
       acct("Ann IRA", "ira", 500000, owned ? 1 : undefined),
       acct("Bo 401k", "401k", 500000, owned ? 2 : undefined),
-    ].map((p) => ({
+    ].map((p) => ({ ...p, parentCategory: "Retirement" }));
+  // The household as built with its accounts held, then the same parts
+  // marked synthetic: the money is unchanged, no real account stands behind it.
+  const synthetic = (input: ProjectionInput): ProjectionInput => ({
+    ...input,
+    individualAccounts: input.individualAccounts!.map((p) => ({
       ...p,
-      parentCategory: "Retirement",
       origin: "synthetic" as const,
-    }));
+    })),
+  });
   const retired = (owned: boolean) =>
     household(
       parts(owned),
@@ -594,8 +590,8 @@ describe("a run whose parts are all synthetic takes the household path", () => {
     ["retired, RMDs, QCDs and smoothing on", retired],
     ["working, saving with no specs", working],
   ])("%s: owners change nothing and no per-account row shows", (_, make) => {
-    const years = run(make(true));
-    expect(years).toEqual(run(make(false)));
+    const years = run(synthetic(make(true)));
+    expect(years).toEqual(run(synthetic(make(false))));
     for (const y of years) expect(y.individualAccountBalances).toEqual([]);
     for (const y of years.filter(
       (r): r is EngineDecumulationYear => r.phase === "decumulation",

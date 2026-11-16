@@ -11,7 +11,6 @@
  * in an answer-key file.
  */
 import {
-  startingBalanceGaps,
   withConsistentStart,
   makeAccumulationDefaults,
 } from "../fixtures/engine-fixtures";
@@ -28,6 +27,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { onePerson } from "../../fixtures/engine-people";
+import type { FixtureInput } from "../fixtures/engine-input";
 
 /** Every projection here is checked for indBalance/accountBalance drift (end of file). */
 const drift = recordDrift(runEngine);
@@ -40,7 +40,7 @@ const AS_OF = new Date("2025-03-07");
 // ---------------------------------------------------------------------------
 
 /** Build a minimal valid engine input with sensible defaults. */
-function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
+function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
       budgetContributionLines: 0,
@@ -177,8 +177,6 @@ function carriedBudget(
 }
 
 function extractMetrics(result: ReturnType<typeof calculateProjection>) {
-  // Every fixture's starting money agrees with itself.
-  expect(startingBalanceGaps(result)).toEqual([]);
   const years = result.projectionByYear;
   const firstYear = years[0];
   const retirementYear = years.find((y) => y.phase === "decumulation");

@@ -4032,11 +4032,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/engine/input-validation.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 3
-    }
-  },
   "src/lib/pure/engine/override-resolution.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 3

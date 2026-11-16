@@ -653,6 +653,7 @@ import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
 import { onePerson } from "../fixtures/engine-people";
+import { engineInput, type FixtureInput } from "../pure/fixtures/engine-input";
 
 const EMPTY_ACCOUNT_BALANCES = {
   "401k": { structure: "roth_traditional" as const, traditional: 0, roth: 0 },
@@ -696,60 +697,62 @@ const DEFAULT_DECUMULATION = {
 };
 
 function makeBaseProjection(
-  overrides: Partial<ProjectionInput> = {},
+  overrides: Partial<FixtureInput> = {},
 ): ProjectionInput {
-  return withCapsAge({
-    budgetContributionLines: 0,
-    accumulationDefaults: makeAccumulationDefaults({
-      contributionRate: 0,
-      accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
-      taxSplits: {},
-    }),
-    decumulationDefaults: {
-      ...DEFAULT_DECUMULATION,
-      distributionTaxRates: {
-        rothBracketOverlay: true,
-        ...shippedTaxTables(),
-        traditionalFallbackRate: 0,
-        roth: 0,
-        hsa: 0,
-        brokerage: 0,
+  return engineInput(
+    withCapsAge({
+      budgetContributionLines: 0,
+      accumulationDefaults: makeAccumulationDefaults({
+        contributionRate: 0,
+        accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
+        taxSplits: {},
+      }),
+      decumulationDefaults: {
+        ...DEFAULT_DECUMULATION,
+        distributionTaxRates: {
+          rothBracketOverlay: true,
+          ...shippedTaxTables(),
+          traditionalFallbackRate: 0,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0,
+        },
       },
-    },
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 35,
-    people: onePerson(JAN_1.getFullYear() - 35),
-    retirementYear: JAN_1.getFullYear() + 30,
-    projectionEndYear: JAN_1.getFullYear() + 55,
-    currentSalary: 0,
-    salaryGrowthRate: 0,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    irsLimitCaps: capsFromBaseLimits({
-      baseLimits: ZERO_LIMITS,
+      accumulationOverrides: [],
+      decumulationOverrides: [],
       currentAge: 35,
+      people: onePerson(JAN_1.getFullYear() - 35),
+      retirementYear: JAN_1.getFullYear() + 30,
+      projectionEndYear: JAN_1.getFullYear() + 55,
+      currentSalary: 0,
+      salaryGrowthRate: 0,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: ZERO_LIMITS,
+        currentAge: 35,
+      }),
+      limitGrowthRate: 0,
+      employerMatchRateByCategory: ZERO_MATCH,
+      startingBalances: {
+        preTax: 0,
+        taxFree: 0,
+        hsa: 0,
+        afterTax: 0,
+        afterTaxBasis: 0,
+      },
+      startingAccountBalances: { ...EMPTY_ACCOUNT_BALANCES },
+      annualExpenses: 0,
+      decumulationAnnualExpenses: 0,
+      inflationRate: 0,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 0,
+      ssStartAge: 67,
+      asOfDate: JAN_1,
+      ...overrides,
     }),
-    limitGrowthRate: 0,
-    employerMatchRateByCategory: ZERO_MATCH,
-    startingBalances: {
-      preTax: 0,
-      taxFree: 0,
-      hsa: 0,
-      afterTax: 0,
-      afterTaxBasis: 0,
-    },
-    startingAccountBalances: { ...EMPTY_ACCOUNT_BALANCES },
-    annualExpenses: 0,
-    decumulationAnnualExpenses: 0,
-    inflationRate: 0,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 0,
-    ssStartAge: 67,
-    asOfDate: JAN_1,
-    ...overrides,
-  });
+  );
 }
 
 describe("retirement projection edge cases", () => {

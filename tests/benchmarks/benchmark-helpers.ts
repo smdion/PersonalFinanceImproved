@@ -13,6 +13,7 @@ import type { MonteCarloInput } from "@/lib/pure/simulation/monte-carlo.types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 import { onePerson } from "../fixtures/engine-people";
+import { engineInput, type FixtureInput } from "../pure/fixtures/engine-input";
 
 export const AS_OF = new Date("2026-03-01");
 
@@ -90,7 +91,7 @@ const DEFAULT_DECUMULATION = {
  * Zero contributions, zero tax, zero SS — just lump-sum growth.
  */
 export function makePureGrowthInput(
-  overrides: Partial<ProjectionInput> = {},
+  overrides: Partial<FixtureInput> = {},
 ): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
@@ -161,70 +162,72 @@ export function makePureGrowthInput(
  * Designed to match Trinity Study / cFIREsim assumptions for direct comparison.
  */
 export function makeTrinityInput(
-  overrides: Partial<ProjectionInput> = {},
+  overrides: Partial<FixtureInput> = {},
 ): ProjectionInput {
   const withdrawalRate = overrides.decumulationDefaults?.withdrawalRate ?? 0.04;
   const startingBalance = 1_000_000;
-  return withCapsAge({
-    budgetContributionLines: 0,
-    accumulationDefaults: makeAccumulationDefaults({
-      contributionRate: 0,
-      accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
-      taxSplits: {},
-    }),
-    decumulationDefaults: {
-      ...DEFAULT_DECUMULATION,
-      withdrawalRate,
-      distributionTaxRates: {
-        rothBracketOverlay: true,
-        ...shippedTaxTables(),
-        traditionalFallbackRate: 0,
-        roth: 0,
-        hsa: 0,
-        brokerage: 0,
+  return engineInput(
+    withCapsAge({
+      budgetContributionLines: 0,
+      accumulationDefaults: makeAccumulationDefaults({
+        contributionRate: 0,
+        accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
+        taxSplits: {},
+      }),
+      decumulationDefaults: {
+        ...DEFAULT_DECUMULATION,
+        withdrawalRate,
+        distributionTaxRates: {
+          rothBracketOverlay: true,
+          ...shippedTaxTables(),
+          traditionalFallbackRate: 0,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0,
+        },
       },
-    },
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 65,
-    people: onePerson(AS_OF.getFullYear() - 65),
-    retirementYear: AS_OF.getFullYear() + 0,
-    projectionEndYear: AS_OF.getFullYear() + 30,
-    currentSalary: 0,
-    salaryGrowthRate: 0,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    irsLimitCaps: capsFromBaseLimits({
-      baseLimits: ZERO_LIMITS,
+      accumulationOverrides: [],
+      decumulationOverrides: [],
       currentAge: 65,
-    }),
-    limitGrowthRate: 0,
-    employerMatchRateByCategory: ZERO_MATCH,
-    startingBalances: {
-      preTax: 0,
-      taxFree: 0,
-      hsa: 0,
-      afterTax: startingBalance,
-      afterTaxBasis: startingBalance,
-    },
-    startingAccountBalances: {
-      ...EMPTY_ACCOUNT_BALANCES,
-      brokerage: {
-        structure: "basis_tracking",
-        balance: startingBalance,
-        basis: startingBalance,
+      people: onePerson(AS_OF.getFullYear() - 65),
+      retirementYear: AS_OF.getFullYear() + 0,
+      projectionEndYear: AS_OF.getFullYear() + 30,
+      currentSalary: 0,
+      salaryGrowthRate: 0,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: ZERO_LIMITS,
+        currentAge: 65,
+      }),
+      limitGrowthRate: 0,
+      employerMatchRateByCategory: ZERO_MATCH,
+      startingBalances: {
+        preTax: 0,
+        taxFree: 0,
+        hsa: 0,
+        afterTax: startingBalance,
+        afterTaxBasis: startingBalance,
       },
-    },
-    annualExpenses: startingBalance * withdrawalRate,
-    decumulationAnnualExpenses: startingBalance * withdrawalRate,
-    inflationRate: 0.03,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 0,
-    ssStartAge: 99,
-    asOfDate: AS_OF,
-    ...overrides,
-  });
+      startingAccountBalances: {
+        ...EMPTY_ACCOUNT_BALANCES,
+        brokerage: {
+          structure: "basis_tracking",
+          balance: startingBalance,
+          basis: startingBalance,
+        },
+      },
+      annualExpenses: startingBalance * withdrawalRate,
+      decumulationAnnualExpenses: startingBalance * withdrawalRate,
+      inflationRate: 0.03,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 0,
+      ssStartAge: 99,
+      asOfDate: AS_OF,
+      ...overrides,
+    }),
+  );
 }
 
 /**
@@ -232,7 +235,7 @@ export function makeTrinityInput(
  * Age 35, retire 65, end 90, $150k salary, $72k expenses.
  */
 export function makeStandardInput(
-  overrides: Partial<ProjectionInput> = {},
+  overrides: Partial<FixtureInput> = {},
 ): ProjectionInput {
   return withConsistentStart(
     withCapsAge({

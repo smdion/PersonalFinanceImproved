@@ -28,6 +28,7 @@ import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balance
 import { readTaxData, shippedTaxTables } from "../helpers/tax-data";
 import { runOneYear } from "./answer-key";
 import { makeAccumulationDefaults } from "../pure/fixtures/engine-fixtures";
+import { engineInput, type FixtureInput } from "../pure/fixtures/engine-input";
 
 const YEAR = 2026;
 
@@ -118,6 +119,11 @@ function taxRates(h: KeyHousehold, limits: Record<string, number>) {
 
 /** The household as the engine's input. */
 export function engineHousehold(h: KeyHousehold): ProjectionInput {
+  return engineInput(engineHouseholdFixture(h));
+}
+
+/** `engineHousehold` as the fixture writes it: buckets and categories. */
+export function engineHouseholdFixture(h: KeyHousehold): FixtureInput {
   const limits = limits2026();
   const cats = getAllCategories();
   const zero = () =>
@@ -325,7 +331,7 @@ export function engineHousehold(h: KeyHousehold): ProjectionInput {
       afterTaxBasis: brokerage.basis,
     },
     startingAccountBalances:
-      accountBalances as ProjectionInput["startingAccountBalances"],
+      accountBalances as FixtureInput["startingAccountBalances"],
     individualAccounts: accounts,
     annualExpenses: h.spending,
     decumulationAnnualExpenses: h.spending,

@@ -9,8 +9,7 @@
  * Runs use a fixed seed so CI is repeatable; FAST_CHECK_SEED=random explores.
  */
 import {
-  startingBalanceGaps,
-  withConsistentStart,
+  consistentStart,
   makeAccumulationDefaults,
 } from "../fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
@@ -38,6 +37,8 @@ import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { onePerson } from "../../fixtures/engine-people";
+import { engineInput, type FixtureInput } from "../fixtures/engine-input";
+import { openingTotals } from "@/lib/pure/engine/opening-state";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -59,8 +60,14 @@ function asAccumulation(y: EngineYearProjection): EngineAccumulationYear {
   return y;
 }
 
-function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return withConsistentStart(
+function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
+  return engineInput(makeFixture(overrides));
+}
+
+/** `makeInput` as the fixture writes it (buckets and categories), for tests
+ *  that reshape the money. */
+function makeFixture(overrides: Partial<FixtureInput> = {}): FixtureInput {
+  return consistentStart(
     withCapsAge({
       budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
@@ -378,7 +385,7 @@ function sumSlotWithdrawals(slots: EngineDecumulationYear["slots"]): number {
  *  percent-of-pay contribution spec per account, so the per-account track
  *  carries every flow the aggregate does. */
 function withAccountsAndSpecs(input: ProjectionInput): ProjectionInput {
-  const start = input.startingAccountBalances!;
+  const start = openingTotals(input.individualAccounts!).accountBalance;
   const k = start["401k"] as { traditional: number; roth: number };
   const ira = start.ira as { traditional: number; roth: number };
   const hsa = start.hsa as { balance: number };
@@ -940,20 +947,6 @@ describe("engine invariants", () => {
       );
     });
 
-    it("generated inputs describe their starting money the same way in every form", () => {
-      for (const arb of [
-        arbitraryInput(),
-        arbitraryRetiredInput(),
-        arbitraryRmdInput(),
-      ])
-        fc.assert(
-          fc.property(arb, (input) => {
-            expect(startingBalanceGaps(calculateProjection(input))).toEqual([]);
-          }),
-          { numRuns: NUM_RUNS },
-        );
-    });
-
     it("28 — engine is deterministic: running twice produces identical output", () => {
       fc.assert(
         fc.property(arbitraryInput(), (input) => {
@@ -1466,23 +1459,10 @@ describe("engine invariants", () => {
           expect(input.projectionEndYear).toBe(snapshot.projectionEndYear);
           expect(input.currentSalary).toBe(snapshot.currentSalary);
           expect(input.annualExpenses).toBe(snapshot.annualExpenses);
-          expect(input.startingBalances.preTax).toBe(
-            snapshot.startingBalances.preTax,
+          // The opening parts (the starting money) are left as given.
+          expect(JSON.stringify(input.individualAccounts)).toBe(
+            JSON.stringify(snapshot.individualAccounts),
           );
-          expect(input.startingBalances.taxFree).toBe(
-            snapshot.startingBalances.taxFree,
-          );
-          expect(input.startingBalances.afterTax).toBe(
-            snapshot.startingBalances.afterTax,
-          );
-          expect(input.startingBalances.hsa).toBe(
-            snapshot.startingBalances.hsa,
-          );
-          if (input.startingAccountBalances) {
-            expect(JSON.stringify(input.startingAccountBalances)).toBe(
-              JSON.stringify(snapshot.startingAccountBalances),
-            );
-          }
         }),
         { numRuns: NUM_RUNS },
       );
@@ -1790,8 +1770,8 @@ describe("engine invariants", () => {
     // involved). The extra $1M sits in a Portfolio-parented brokerage at the
     // same basis ratio as the household's brokerage, so nothing but the
     // Portfolio balance itself differs.
-    const retired = (portfolio: number): ProjectionInput => {
-      const base = makeInput({
+    const retiredFixture = (portfolio: number): FixtureInput => {
+      const base = makeFixture({
         currentAge: 66,
         retirementYear: AS_OF.getFullYear(),
       });
@@ -1860,6 +1840,8 @@ describe("engine invariants", () => {
         },
       };
     };
+    const retired = (portfolio: number) =>
+      engineInput(retiredFixture(portfolio));
     const spending = (input: ProjectionInput) =>
       calculateProjection(input)
         .projectionByYear.filter((y) => y.phase === "decumulation")
@@ -1883,8 +1865,8 @@ describe("engine invariants", () => {
       // No HSA: it isn't drawn for general spending here, so it would keep
       // the balance above $1 (unmet need is the plan judge's business).
       const spendy = (portfolio: number): ProjectionInput => {
-        const input = retired(portfolio);
-        return {
+        const input = retiredFixture(portfolio);
+        return engineInput({
           ...input,
           annualExpenses: 150000,
           decumulationAnnualExpenses: 150000,
@@ -1903,7 +1885,7 @@ describe("engine invariants", () => {
             ...input.startingAccountBalances!,
             hsa: { structure: "single_bucket", balance: 0 },
           },
-        };
+        });
       };
       const without = calculateProjection(spendy(0));
       const withPortfolio = calculateProjection(spendy(1_000_000));
@@ -1945,8 +1927,8 @@ describe("engine invariants", () => {
       // +$1M Traditional IRA tagged Portfolio (before RMD age, so RMDs —
       // which do count it — don't enter the first years).
       const withPortfolioIra = (): ProjectionInput => {
-        const input = retired(0);
-        return {
+        const input = retiredFixture(0);
+        return engineInput({
           ...input,
           individualAccounts: [
             ...input.individualAccounts!,
@@ -1970,7 +1952,7 @@ describe("engine invariants", () => {
               roth: 20000,
             },
           },
-        };
+        });
       };
       const firstYear = (input: ProjectionInput) =>
         calculateProjection(input).projectionByYear.find(
@@ -2000,55 +1982,32 @@ describe("engine invariants", () => {
   });
 
   describe("penalty-locked money stays locked", () => {
-    it("money in a category no tracked account holds isn't drawn before 59½", () => {
-      // Retired at 55; the 401(k) account (Traditional) is locked until
-      // 59½ (no Rule of 55). The category also holds $50k of Roth 401(k)
-      // money no account tracks — it was drawn penalty-free as if reachable.
+    it("neither tax part of a locked 401(k) is drawn before 59½", () => {
+      // Retired at 55; the 401(k) (no Rule of 55) holds Traditional and Roth
+      // money, both locked until 59½; the brokerage is reachable.
       const birthYear = AS_OF.getFullYear() - 55;
       const base = makeInput({
         currentAge: 55,
         retirementYear: AS_OF.getFullYear(),
       });
+      const k401 = {
+        name: "401k",
+        category: "401k" as const,
+        ownerPersonId: 1,
+        ownerName: "Alex",
+        ownerBirthYear: birthYear,
+        ruleOf55ForceIneligible: true,
+        parentCategory: "Retirement",
+      };
       const input: ProjectionInput = {
         ...base,
         decumulationDefaults: {
           ...base.decumulationDefaults,
           avoidPenalizedWithdrawals: true,
         },
-        startingBalances: {
-          preTax: 500000,
-          taxFree: 50000,
-          hsa: 0,
-          afterTax: 400000,
-          afterTaxBasis: 300000,
-        },
-        startingAccountBalances: {
-          "401k": {
-            structure: "roth_traditional",
-            traditional: 500000,
-            roth: 50000,
-          },
-          "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-          hsa: { structure: "single_bucket", balance: 0 },
-          ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
-          brokerage: {
-            structure: "basis_tracking",
-            balance: 400000,
-            basis: 300000,
-          },
-        },
         individualAccounts: [
-          {
-            name: "401k",
-            category: "401k",
-            taxType: "preTax",
-            startingBalance: 500000,
-            ownerPersonId: 1,
-            ownerName: "Alex",
-            ownerBirthYear: birthYear,
-            ruleOf55ForceIneligible: true,
-            parentCategory: "Retirement",
-          },
+          { ...k401, taxType: "preTax", startingBalance: 500000 },
+          { ...k401, taxType: "taxFree", startingBalance: 50000 },
           {
             name: "Brokerage",
             category: "brokerage",
@@ -2074,8 +2033,8 @@ describe("engine invariants", () => {
     // $40k to a 401(k) (over the IRS limit → overflow), $5k each to a
     // Retirement and a Portfolio brokerage, no targets; no growth so the
     // balances are pure contributions.
-    const overflowInput = (): ProjectionInput => ({
-      ...makeInput({
+    const overflowFixture = (): FixtureInput => ({
+      ...makeFixture({
         currentAge: 40,
         retirementYear: AS_OF.getFullYear() + 25,
         currentSalary: 200000,
@@ -2163,6 +2122,7 @@ describe("engine invariants", () => {
         },
       ],
     });
+    const overflowInput = () => engineInput(overflowFixture());
 
     it("IRS overflow is added once, to Retirement accounts, and per-account balances add up", () => {
       const years = calculateProjection(overflowInput()).projectionByYear.slice(
@@ -2396,9 +2356,9 @@ describe("engine invariants", () => {
       const withoutRetirementBrokerage = (
         keepPortfolio: boolean,
       ): ProjectionInput => {
-        const base = overflowInput();
+        const base = overflowFixture();
         const afterTax = keepPortfolio ? 10000 : 0;
-        return {
+        return engineInput({
           ...base,
           startingBalances: {
             ...base.startingBalances,
@@ -2430,7 +2390,7 @@ describe("engine invariants", () => {
             ),
             projected,
           ],
-        };
+        });
       };
 
       it("only a Portfolio brokerage: the Portfolio one gets none of it", () => {
@@ -2714,8 +2674,18 @@ describe("engine invariants", () => {
 
       it("collapses only retirement money into one tax-free pot", () => {
         const simple = toSimpleTaxMode(overflowInput(), parts);
-        expect(simple.startingBalances.afterTax).toBe(110000);
-        expect(simple.individualAccounts).toEqual([]);
+        // The pot, and every other part at $0, all synthetic (no real
+        // account behind them, so no per-account rows).
+        expect(openingTotals(simple.individualAccounts!).balances).toEqual({
+          preTax: 0,
+          taxFree: 0,
+          hsa: 0,
+          afterTax: 110000,
+          afterTaxBasis: 110000,
+        });
+        expect(
+          simple.individualAccounts!.every((ia) => ia.origin === "synthetic"),
+        ).toBe(true);
         expect(simple.brokerageGoals).toEqual([]);
         expect(
           simple.contributionSpecs!.some(
@@ -2764,8 +2734,8 @@ describe("engine invariants", () => {
     describe("brokerage basis per account", () => {
       // Retired; a Retirement brokerage at 28% basis and a Portfolio one at
       // 55%; withdrawals take brokerage first.
-      const twoBrokerages = (): ProjectionInput => {
-        const base = makeInput({
+      const twoBrokeragesFixture = (): FixtureInput => {
+        const base = makeFixture({
           currentAge: 66,
           retirementYear: AS_OF.getFullYear(),
         });
@@ -2843,6 +2813,7 @@ describe("engine invariants", () => {
           ],
         };
       };
+      const twoBrokerages = () => engineInput(twoBrokeragesFixture());
 
       it("a retirement brokerage withdrawal is priced at the Retirement brokerage's own basis", () => {
         const first = calculateProjection(
@@ -2907,8 +2878,8 @@ describe("engine invariants", () => {
       it("Roth conversions paid from brokerage leave no basis drift", () => {
         // A Retirement brokerage big enough to keep paying conversion tax,
         // and Traditional money worth converting.
-        const small = twoBrokerages();
-        const base: ProjectionInput = {
+        const small = twoBrokeragesFixture();
+        const base = engineInput({
           ...small,
           startingBalances: {
             ...small.startingBalances,
@@ -2936,7 +2907,7 @@ describe("engine invariants", () => {
                 ? { ...ia, startingBalance: 570000 }
                 : ia,
           ),
-        };
+        });
         const years = noBasisDrift({
           ...base,
           decumulationDefaults: {
@@ -3045,7 +3016,7 @@ describe("engine invariants", () => {
         brokerages: IndividualAccountInput[],
         handling: "reinvest" | "spend" = "reinvest",
       ): ProjectionInput => {
-        const base = makeInput({
+        const base = makeFixture({
           currentAge: 75,
           retirementYear: AS_OF.getFullYear() - 10,
           projectionEndYear: AS_OF.getFullYear() + 3,
@@ -3061,7 +3032,7 @@ describe("engine invariants", () => {
           (t, b) => t + (b.startingBasis ?? 0),
           0,
         );
-        return {
+        return engineInput({
           ...base,
           individualAccounts: [
             {
@@ -3102,7 +3073,7 @@ describe("engine invariants", () => {
             withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
             rmdExcessHandling: handling,
           },
-        };
+        });
       };
       const brok = (
         name: string,
@@ -3330,7 +3301,7 @@ describe("Social Security switch on portfolio-sized strategies", () => {
 
   it("VPW sizes by the glide path's stock share and the younger spouse's age", () => {
     const base = makeInput();
-    const vpwFirst = (over: Partial<ProjectionInput>) =>
+    const vpwFirst = (over: Partial<FixtureInput>) =>
       calculateProjection(
         makeInput({
           decumulationDefaults: {

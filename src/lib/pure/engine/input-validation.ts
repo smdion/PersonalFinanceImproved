@@ -5,11 +5,6 @@
 import type { ProjectionInput } from "./types/projection-result";
 import { formatPercent } from "../../utils/percent";
 import { MAX_INFLATION_RATE, MIN_INFLATION_RATE } from "../../constants";
-import {
-  getAccountTypeConfig,
-  isTaxFreeBucket,
-} from "../../config/account-types";
-import { emptyTaxBucketMap } from "../../config/tax-treatment-buckets";
 
 /**
  * Validate and clamp engine inputs. Pushes warnings for any clamped values.
@@ -26,42 +21,10 @@ export function validateEngineInputs(
   // Setup notes the caller resolved while building the input (e.g. a
   // chosen account that doesn't qualify) — shown with the result's.
   warnings.push(...(input.inputWarnings ?? []));
-  // Aggregate buckets, per-category balances and individual accounts must
-  // describe the same money: a gap counts as retirement money the router
-  // may never reach.
-  const categoryTotals = emptyTaxBucketMap();
-  for (const balance of Object.values(input.startingAccountBalances)) {
-    if (balance.structure === "roth_traditional") {
-      categoryTotals.preTax += balance.traditional;
-      categoryTotals.taxFree += balance.roth;
-    } else if (balance.structure === "single_bucket")
-      categoryTotals.hsa += balance.balance;
-    else categoryTotals.afterTax += balance.balance;
-  }
-  for (const [key, sum] of Object.entries(categoryTotals)) {
-    const start = input.startingBalances[key as keyof typeof categoryTotals];
-    if (Math.abs(sum - start) > 1)
-      warnings.push(
-        `[DIAG] starting balances: ${key} is $${start.toFixed(2)} but the account categories hold $${sum.toFixed(2)}`,
-      );
-  }
-  if (input.individualAccounts?.length) {
-    const byBucket = emptyTaxBucketMap();
-    for (const ia of input.individualAccounts) {
-      const key = isTaxFreeBucket(ia.taxType)
-        ? "taxFree"
-        : getAccountTypeConfig(ia.category).taxBucketKey;
-      if (key in byBucket)
-        byBucket[key as keyof typeof byBucket] += ia.startingBalance;
-    }
-    for (const [key, sum] of Object.entries(byBucket)) {
-      const start = input.startingBalances[key as keyof typeof byBucket];
-      if (Math.abs(sum - start) > 1)
-        warnings.push(
-          `[DIAG] starting balances: ${key} is $${start.toFixed(2)} but the accounts hold $${sum.toFixed(2)}`,
-        );
-    }
-  }
+  // The opening parts are the starting money: the engine has nothing to
+  // start from without them (synthetic parts stand in for no account).
+  if (!input.individualAccounts?.length)
+    throw new Error("The engine input has no account parts to start from");
   // A NaN age would read as "nobody 65+" and turn on the ACA logic.
   const ages = [input.currentAge, ...(input.perPersonBirthYears ?? [])];
   if (!ages.every(Number.isFinite))

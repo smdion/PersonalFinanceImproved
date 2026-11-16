@@ -34,7 +34,6 @@ import {
   makeAccumulationDefaults,
   makeDecumulationDefaults,
   makeTaxBuckets,
-  startingBalanceGaps,
   withConsistentStart,
 } from "../fixtures/engine-fixtures";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
@@ -150,8 +149,6 @@ const money = (n: number) => n.toFixed(2);
 /** One line per year, so a review reads the whole path at a glance. */
 function strategyPath(input: ProjectionInput) {
   const result = calculateProjection(input);
-  // The household's starting money agrees with itself.
-  expect(startingBalanceGaps(result)).toEqual([]);
   const years = result.projectionByYear.map((y) => {
     const end = `end ${money(y.allAccountsBalance)}`;
     if (y.phase !== "decumulation") return `${y.year} age ${y.age} ${end}`;

@@ -20,6 +20,8 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import { accountBalancesFromTaxBuckets } from "./tax-bucket-split";
 import { buildCategoryRecord } from "@/lib/config/account-types";
 import { roundToCents } from "@/lib/utils/math";
+import type { ProjectionInput } from "@/lib/pure/engine/types";
+import { engineInput, type FixtureInput } from "./engine-input";
 import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "@/lib/constants";
 import type { WithholdingBracket } from "@/lib/pure/engine/tax-estimation";
 
@@ -385,38 +387,26 @@ function rescaleAccountBalances(
 }
 
 /**
- * A test input whose starting money says the same thing in each form the
- * engine reads — the tax buckets and the per-category balances (the engine
- * flags any gap with a `[DIAG] starting balances` warning, and routing
- * treats it as money it may never reach). `input` is the merged fixture,
- * `overrides` what the test set: buckets set alone rescale the fixture's
- * per-category balances to them; per-category balances set alone set the
- * buckets. Setting both keeps both — the test's own choice.
- * `individualAccounts` are left as given; `startingBalanceGaps` (asserted
- * by the engine suites) catches any that disagree.
+ * A fixture whose starting money says the same thing in each form: `input`
+ * is the merged fixture, `overrides` what the test set. Buckets set alone
+ * rescale the fixture's per-category balances to them; per-category
+ * balances set alone set the buckets. Setting both keeps both.
  */
-export function withConsistentStart<
-  T extends {
-    startingBalances: TaxBuckets;
-    startingAccountBalances?: AccountBalances;
-  },
->(
-  input: T,
+export function consistentStart(
+  input: FixtureInput,
   overrides: {
     startingBalances?: TaxBuckets;
     startingAccountBalances?: AccountBalances;
   },
-): T {
+): FixtureInput {
   if (overrides.startingBalances && !overrides.startingAccountBalances)
-    return input.startingAccountBalances
-      ? {
-          ...input,
-          startingAccountBalances: rescaleAccountBalances(
-            input.startingAccountBalances,
-            input.startingBalances,
-          ),
-        }
-      : input;
+    return {
+      ...input,
+      startingAccountBalances: rescaleAccountBalances(
+        input.startingAccountBalances,
+        input.startingBalances,
+      ),
+    };
   if (overrides.startingAccountBalances && !overrides.startingBalances)
     return {
       ...input,
@@ -427,11 +417,14 @@ export function withConsistentStart<
   return input;
 }
 
-/** The engine's starting-balance gap warnings (`[DIAG] starting
- *  balances`): a fixture whose money disagrees with itself. Engine suites
- *  assert none, so a gap can't creep back into a fixture. */
-export function startingBalanceGaps(result: { warnings: string[] }): string[] {
-  return result.warnings.filter((w) =>
-    w.startsWith("[DIAG] starting balances"),
-  );
+/** `consistentStart`, as the engine input (its starting money as account
+ *  parts, `engineInput`). */
+export function withConsistentStart(
+  input: FixtureInput,
+  overrides: {
+    startingBalances?: TaxBuckets;
+    startingAccountBalances?: AccountBalances;
+  },
+): ProjectionInput {
+  return engineInput(consistentStart(input, overrides));
 }

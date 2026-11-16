@@ -31,124 +31,127 @@ import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
 import { onePerson } from "../../fixtures/engine-people";
+import { engineInput, type FixtureInput } from "../fixtures/engine-input";
 
 const AS_OF = new Date("2025-03-07");
 
-function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return withCapsAge({
-    budgetContributionLines: 0,
-    accumulationDefaults: makeAccumulationDefaults({
-      accountSplits: {
-        "401k": 0.4,
-        "403b": 0,
-        hsa: 0.1,
-        ira: 0.15,
-        brokerage: 0.35,
+function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
+  return engineInput(
+    withCapsAge({
+      budgetContributionLines: 0,
+      accumulationDefaults: makeAccumulationDefaults({
+        accountSplits: {
+          "401k": 0.4,
+          "403b": 0,
+          hsa: 0.1,
+          ira: 0.15,
+          brokerage: 0.35,
+        },
+      }),
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "bracket_filling",
+        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        distributionTaxRates: {
+          rothBracketOverlay: true,
+          ...shippedTaxTables(),
+          traditionalFallbackRate: 0.22,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+          enableRothConversions: true,
+          // Household's own deliberate, conservative conversion ceiling —
+          // separate from (and lower than) their withdrawal bracket target.
+          rothConversionTarget: 0.12,
+          rothBracketTarget: 0.24,
+          taxBrackets: [
+            { threshold: 0, baseWithholding: 0, rate: 0.1 },
+            { threshold: 23200, baseWithholding: 2320, rate: 0.12 },
+            { threshold: 94300, baseWithholding: 10852, rate: 0.22 },
+            { threshold: 201050, baseWithholding: 34337, rate: 0.24 },
+            { threshold: 383900, baseWithholding: 78221, rate: 0.32 },
+          ],
+          grossUpForTaxes: true,
+          taxMultiplier: 1.0,
+        },
       },
-    }),
-    decumulationDefaults: {
-      withdrawalRate: 0.04,
-      withdrawalRoutingMode: "bracket_filling",
-      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-      withdrawalSplits: {
-        "401k": 0.35,
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+      currentAge: 60,
+      people: onePerson(AS_OF.getFullYear() - 60),
+      retirementYear: AS_OF.getFullYear() + 0,
+      projectionEndYear: AS_OF.getFullYear() + 8,
+      currentSalary: 0,
+      salaryGrowthRate: 0.03,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 23500,
+          "403b": 23500,
+          hsa: 4300,
+          ira: 7000,
+          brokerage: 0,
+        },
+        catchupLimits: {
+          "401k": 7500,
+          ira: 1000,
+          hsa: 1000,
+          "401k_super": 11250,
+        },
+        currentAge: 60,
+      }),
+      limitGrowthRate: 0.02,
+
+      employerMatchRateByCategory: {
+        "401k": 0.03,
         "403b": 0,
-        ira: 0.25,
-        brokerage: 0.3,
-        hsa: 0.1,
-      },
-      withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
-      distributionTaxRates: {
-        rothBracketOverlay: true,
-        ...shippedTaxTables(),
-        traditionalFallbackRate: 0.22,
-        roth: 0,
         hsa: 0,
-        brokerage: 0.15,
-        enableRothConversions: true,
-        // Household's own deliberate, conservative conversion ceiling —
-        // separate from (and lower than) their withdrawal bracket target.
-        rothConversionTarget: 0.12,
-        rothBracketTarget: 0.24,
-        taxBrackets: [
-          { threshold: 0, baseWithholding: 0, rate: 0.1 },
-          { threshold: 23200, baseWithholding: 2320, rate: 0.12 },
-          { threshold: 94300, baseWithholding: 10852, rate: 0.22 },
-          { threshold: 201050, baseWithholding: 34337, rate: 0.24 },
-          { threshold: 383900, baseWithholding: 78221, rate: 0.32 },
-        ],
-        grossUpForTaxes: true,
-        taxMultiplier: 1.0,
-      },
-    },
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 60,
-    people: onePerson(AS_OF.getFullYear() - 60),
-    retirementYear: AS_OF.getFullYear() + 0,
-    projectionEndYear: AS_OF.getFullYear() + 8,
-    currentSalary: 0,
-    salaryGrowthRate: 0.03,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    irsLimitCaps: capsFromBaseLimits({
-      baseLimits: {
-        "401k": 23500,
-        "403b": 23500,
-        hsa: 4300,
-        ira: 7000,
+        ira: 0,
         brokerage: 0,
       },
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
+      startingBalances: {
+        preTax: 700000,
+        taxFree: 100000,
+        afterTax: 80000,
+        afterTaxBasis: 50000,
+        hsa: 30000,
       },
-      currentAge: 60,
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 650000,
+          roth: 50000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 30000 },
+        ira: { structure: "roth_traditional", traditional: 50000, roth: 50000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 80000,
+          basis: 50000,
+        },
+      },
+      annualExpenses: 60000,
+      decumulationAnnualExpenses: 60000,
+      inflationRate: 0.025,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 0,
+      ssStartAge: 67,
+      filingStatus: "MFJ",
+      asOfDate: AS_OF,
+      ...overrides,
     }),
-    limitGrowthRate: 0.02,
-
-    employerMatchRateByCategory: {
-      "401k": 0.03,
-      "403b": 0,
-      hsa: 0,
-      ira: 0,
-      brokerage: 0,
-    },
-    startingBalances: {
-      preTax: 700000,
-      taxFree: 100000,
-      afterTax: 80000,
-      afterTaxBasis: 50000,
-      hsa: 30000,
-    },
-    startingAccountBalances: {
-      "401k": {
-        structure: "roth_traditional",
-        traditional: 650000,
-        roth: 50000,
-      },
-      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-      hsa: { structure: "single_bucket", balance: 30000 },
-      ira: { structure: "roth_traditional", traditional: 50000, roth: 50000 },
-      brokerage: {
-        structure: "basis_tracking",
-        balance: 80000,
-        basis: 50000,
-      },
-    },
-    annualExpenses: 60000,
-    decumulationAnnualExpenses: 60000,
-    inflationRate: 0.025,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 0,
-    ssStartAge: 67,
-    filingStatus: "MFJ",
-    asOfDate: AS_OF,
-    ...overrides,
-  });
+  );
 }
 
 describe("Roth conversion target priority (rothBracketTarget fallback in performRothConversion)", () => {

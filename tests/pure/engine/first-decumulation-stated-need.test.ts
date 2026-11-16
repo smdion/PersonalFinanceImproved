@@ -14,112 +14,115 @@ import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
 import { onePerson } from "../../fixtures/engine-people";
+import { engineInput, type FixtureInput } from "../fixtures/engine-input";
 
 const AS_OF = new Date("2025-03-07");
 
-function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return withCapsAge({
-    budgetContributionLines: 0,
-    accumulationDefaults: makeAccumulationDefaults({
-      accountSplits: {
-        "401k": 0.4,
-        "403b": 0,
-        hsa: 0.1,
-        ira: 0.15,
-        brokerage: 0.35,
+function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
+  return engineInput(
+    withCapsAge({
+      budgetContributionLines: 0,
+      accumulationDefaults: makeAccumulationDefaults({
+        accountSplits: {
+          "401k": 0.4,
+          "403b": 0,
+          hsa: 0.1,
+          ira: 0.15,
+          brokerage: 0.35,
+        },
+      }),
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        distributionTaxRates: {
+          ...shippedTaxTables(),
+          traditionalFallbackRate: 0.22,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
       },
-    }),
-    decumulationDefaults: {
-      withdrawalRate: 0.04,
-      withdrawalRoutingMode: "waterfall",
-      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-      withdrawalSplits: {
-        "401k": 0.35,
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+      currentAge: 60,
+      people: onePerson(AS_OF.getFullYear() - 60),
+      retirementYear: AS_OF.getFullYear() + 5,
+      projectionEndYear: AS_OF.getFullYear() + 30,
+      currentSalary: 150000,
+      salaryGrowthRate: 0.03,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 23500,
+          "403b": 23500,
+          hsa: 4300,
+          ira: 7000,
+          brokerage: 0,
+        },
+        catchupLimits: {
+          "401k": 7500,
+          ira: 1000,
+          hsa: 1000,
+          "401k_super": 11250,
+        },
+        currentAge: 60,
+      }),
+      limitGrowthRate: 0.02,
+
+      employerMatchRateByCategory: {
+        "401k": 0.03,
         "403b": 0,
-        ira: 0.25,
-        brokerage: 0.3,
-        hsa: 0.1,
-      },
-      withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
-      distributionTaxRates: {
-        ...shippedTaxTables(),
-        traditionalFallbackRate: 0.22,
-        roth: 0,
         hsa: 0,
-        brokerage: 0.15,
-      },
-    },
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 60,
-    people: onePerson(AS_OF.getFullYear() - 60),
-    retirementYear: AS_OF.getFullYear() + 5,
-    projectionEndYear: AS_OF.getFullYear() + 30,
-    currentSalary: 150000,
-    salaryGrowthRate: 0.03,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    irsLimitCaps: capsFromBaseLimits({
-      baseLimits: {
-        "401k": 23500,
-        "403b": 23500,
-        hsa: 4300,
-        ira: 7000,
+        ira: 0,
         brokerage: 0,
       },
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
+      startingBalances: {
+        preTax: 900000,
+        taxFree: 300000,
+        afterTax: 200000,
+        afterTaxBasis: 150000,
+        hsa: 60000,
       },
-      currentAge: 60,
-    }),
-    limitGrowthRate: 0.02,
-
-    employerMatchRateByCategory: {
-      "401k": 0.03,
-      "403b": 0,
-      hsa: 0,
-      ira: 0,
-      brokerage: 0,
-    },
-    startingBalances: {
-      preTax: 900000,
-      taxFree: 300000,
-      afterTax: 200000,
-      afterTaxBasis: 150000,
-      hsa: 60000,
-    },
-    startingAccountBalances: {
-      "401k": {
-        structure: "roth_traditional",
-        traditional: 700000,
-        roth: 200000,
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 700000,
+          roth: 200000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 60000 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 200000,
+          roth: 100000,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 200000,
+          basis: 150000,
+        },
       },
-      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-      hsa: { structure: "single_bucket", balance: 60000 },
-      ira: {
-        structure: "roth_traditional",
-        traditional: 200000,
-        roth: 100000,
-      },
-      brokerage: {
-        structure: "basis_tracking",
-        balance: 200000,
-        basis: 150000,
-      },
-    },
-    annualExpenses: 72000,
-    decumulationAnnualExpenses: 72000,
-    inflationRate: 0.025,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 24000,
-    ssStartAge: 67,
-    asOfDate: AS_OF,
-    ...overrides,
-  }) as ProjectionInput;
+      annualExpenses: 72000,
+      decumulationAnnualExpenses: 72000,
+      inflationRate: 0.025,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 24000,
+      ssStartAge: 67,
+      asOfDate: AS_OF,
+      ...overrides,
+    }) as FixtureInput,
+  );
 }
 
 describe("firstDecumulationYearStatedNeed", () => {

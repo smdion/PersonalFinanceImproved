@@ -92,7 +92,8 @@ import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { categoryChartHex } from "@/lib/utils/colors";
 import { accountDisplayName } from "@/lib/utils/format";
-import { engineHousehold } from "../fixtures/answer-key-household";
+import { engineHouseholdFixture } from "../fixtures/answer-key-household";
+import { engineInput } from "../pure/fixtures/engine-input";
 import {
   DOLLAR_BASIS_VALUES,
   PAY_PERIOD_VALUES,
@@ -2151,7 +2152,7 @@ function scanModuleLoadLists(): string[] {
 /** A household working in 2026 and retired in 2027, with all its money in
  *  the synthetic category: contributions and withdrawals both go there. */
 function twoYearHousehold(): ProjectionInput {
-  const input = engineHousehold({
+  const input = engineHouseholdFixture({
     status: "Single",
     people: [{ birthYear: 1961, job: { salary: 100_000, lastYear: 2026 } }],
     spending: 40_000,
@@ -2176,7 +2177,6 @@ function twoYearHousehold(): ProjectionInput {
     SYNTHETIC_CATEGORY,
   );
   input.decumulationDefaults.withdrawalSplits = only();
-  if (!input.startingAccountBalances) throw new Error("no account balances");
   Reflect.set(input.startingAccountBalances, SYNTHETIC_CATEGORY, {
     structure: "basis_tracking",
     balance: 500_000,
@@ -2184,7 +2184,7 @@ function twoYearHousehold(): ProjectionInput {
   });
   input.startingBalances.afterTax += 500_000;
   input.startingBalances.afterTaxBasis += 500_000;
-  return input;
+  return engineInput(input);
 }
 
 // ── UI structure known lists (owner Q4, v0.10.4) ────────────────────

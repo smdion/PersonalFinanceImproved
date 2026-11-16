@@ -15,6 +15,7 @@ import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
 import { onePerson } from "../../fixtures/engine-people";
+import { engineInput, type FixtureInput } from "../fixtures/engine-input";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -23,104 +24,110 @@ const AS_OF = new Date("2025-03-07");
 // ---------------------------------------------------------------------------
 
 /** Build a minimal valid engine input with sensible defaults. */
-function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return withCapsAge({
-    budgetContributionLines: 0,
-    accumulationDefaults: makeAccumulationDefaults({
-      accountSplits: {
-        "401k": 0.4,
-        "403b": 0,
-        hsa: 0.1,
-        ira: 0.15,
-        brokerage: 0.35,
+function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
+  return engineInput(
+    withCapsAge({
+      budgetContributionLines: 0,
+      accumulationDefaults: makeAccumulationDefaults({
+        accountSplits: {
+          "401k": 0.4,
+          "403b": 0,
+          hsa: 0.1,
+          ira: 0.15,
+          brokerage: 0.35,
+        },
+      }),
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        distributionTaxRates: {
+          rothBracketOverlay: true,
+          ...shippedTaxTables(),
+          traditionalFallbackRate: 0.22,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
       },
-    }),
-    decumulationDefaults: {
-      withdrawalRate: 0.04,
-      withdrawalRoutingMode: "waterfall",
-      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-      withdrawalSplits: {
-        "401k": 0.35,
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+      currentAge: 35,
+      people: onePerson(AS_OF.getFullYear() - 35),
+      retirementYear: AS_OF.getFullYear() + 30,
+      projectionEndYear: AS_OF.getFullYear() + 55,
+      currentSalary: 150000,
+      salaryGrowthRate: 0.03,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 23500,
+          "403b": 23500,
+          hsa: 4300,
+          ira: 7000,
+          brokerage: 0,
+        },
+        catchupLimits: {
+          "401k": 7500,
+          ira: 1000,
+          hsa: 1000,
+          "401k_super": 11250,
+        },
+        currentAge: 35,
+      }),
+      limitGrowthRate: 0.02,
+
+      employerMatchRateByCategory: {
+        "401k": 0.03,
         "403b": 0,
-        ira: 0.25,
-        brokerage: 0.3,
-        hsa: 0.1,
-      },
-      withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
-      distributionTaxRates: {
-        rothBracketOverlay: true,
-        ...shippedTaxTables(),
-        traditionalFallbackRate: 0.22,
-        roth: 0,
         hsa: 0,
-        brokerage: 0.15,
-      },
-    },
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 35,
-    people: onePerson(AS_OF.getFullYear() - 35),
-    retirementYear: AS_OF.getFullYear() + 30,
-    projectionEndYear: AS_OF.getFullYear() + 55,
-    currentSalary: 150000,
-    salaryGrowthRate: 0.03,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    irsLimitCaps: capsFromBaseLimits({
-      baseLimits: {
-        "401k": 23500,
-        "403b": 23500,
-        hsa: 4300,
-        ira: 7000,
+        ira: 0,
         brokerage: 0,
       },
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
+      // Buckets match the per-account balances below (they were $10k off,
+      // leaving money the router could never reach).
+      startingBalances: {
+        preTax: 110000,
+        taxFree: 40000,
+        afterTax: 30000,
+        afterTaxBasis: 20000,
+        hsa: 15000,
       },
-      currentAge: 35,
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 80000,
+          roth: 20000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 15000 },
+        ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 30000,
+          basis: 20000,
+        },
+      },
+      annualExpenses: 72000,
+      decumulationAnnualExpenses: 72000,
+      inflationRate: 0.025,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 36000,
+      ssStartAge: 67,
+      asOfDate: AS_OF,
+      ...overrides,
     }),
-    limitGrowthRate: 0.02,
-
-    employerMatchRateByCategory: {
-      "401k": 0.03,
-      "403b": 0,
-      hsa: 0,
-      ira: 0,
-      brokerage: 0,
-    },
-    // Buckets match the per-account balances below (they were $10k off,
-    // leaving money the router could never reach).
-    startingBalances: {
-      preTax: 110000,
-      taxFree: 40000,
-      afterTax: 30000,
-      afterTaxBasis: 20000,
-      hsa: 15000,
-    },
-    startingAccountBalances: {
-      "401k": {
-        structure: "roth_traditional",
-        traditional: 80000,
-        roth: 20000,
-      },
-      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-      hsa: { structure: "single_bucket", balance: 15000 },
-      ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
-      brokerage: { structure: "basis_tracking", balance: 30000, basis: 20000 },
-    },
-    annualExpenses: 72000,
-    decumulationAnnualExpenses: 72000,
-    inflationRate: 0.025,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 36000,
-    ssStartAge: 67,
-    asOfDate: AS_OF,
-    ...overrides,
-  });
+  );
 }
 
 // Round all numbers in an object to avoid floating-point noise
@@ -463,21 +470,10 @@ describe("monte carlo integration", () => {
     expect(seed7Run.medianEndBalance).not.toBe(seed42Run1.medianEndBalance);
   });
 
-  it("Simple tax mode (collapsed startingBalances) does not report bogus per-account balances, in either accumulation or decumulation (live-user finding + advisor review, 2026-08-28)", () => {
-    // Reproduces monte-carlo.ts's "Simple" tax-mode transform by hand:
-    // startingBalances/startingAccountBalances collapsed into one after-tax
-    // bucket for the AGGREGATE engine math. The fix is that
-    // computeSimulation also empties `individualAccounts` in this
-    // mode (below) -- a first attempt instead kept individualAccounts real
-    // and skipped the yearly indBalance/accountBalance reconciliation, which stopped
-    // the reconciliation from bleeding real balances into the fake bucket
-    // in ACCUMULATION years, but in DECUMULATION years silently caused the
-    // opposite failure: withdrawals only ever route against the collapsed
-    // brokerage category, so a real Traditional/IRA account never gets
-    // drawn down while the real brokerage account gets exhausted, and the
-    // per-account total ends up OVERSTATING the real portfolio (not
-    // visible from a warnings-string check alone -- hence this test
-    // asserts on the actual balance numbers).
+  it("Simple tax mode (the pot as synthetic parts) does not report bogus per-account balances, in either accumulation or decumulation (live-user finding + advisor review, 2026-08-28)", () => {
+    // Simple tax mode's collapse: every retirement dollar in one after-tax
+    // pot, held by synthetic parts (no real account behind them), so the run
+    // shows no per-account rows and draws against the pot only.
     const totalBalance = 1500000 + 1000000 + 300000; // 401k + IRA + brokerage
     const engineInput = makeInput({
       currentAge: 60,
@@ -485,32 +481,6 @@ describe("monte carlo integration", () => {
       projectionEndYear: AS_OF.getFullYear() + 10,
       annualExpenses: 120000,
       decumulationAnnualExpenses: 120000,
-      individualAccounts: [
-        {
-          name: "Alice 401k",
-          category: "401k",
-          taxType: "preTax",
-          startingBalance: 1500000,
-          ownerName: "Alice",
-          ownerPersonId: 1,
-        },
-        {
-          name: "Alice IRA",
-          category: "ira",
-          taxType: "preTax",
-          startingBalance: 1000000,
-          ownerName: "Alice",
-          ownerPersonId: 1,
-        },
-        {
-          name: "Alice Brokerage",
-          category: "brokerage",
-          taxType: "afterTax",
-          startingBalance: 300000,
-          ownerName: "Alice",
-          ownerPersonId: 1,
-        },
-      ],
       // Simple tax mode's collapse: real per-category money forced into one
       // fictional after-tax bucket for the aggregate engine's tax math.
       startingBalances: {
@@ -534,13 +504,10 @@ describe("monte carlo integration", () => {
     });
 
     const mcInput: MonteCarloInput = {
-      // The real fix: Simple tax mode collapses individualAccounts to
-      // empty too, matching what monte-carlo.ts now does. Also set
-      // rateSeededDecumulationYear1 (Rate-Seeded's own flag) since that's
-      // the exact combination the live bug report was under.
+      // Rate-Seeded's own flag: the combination the live bug report was
+      // under.
       engineInput: {
         ...engineInput,
-        individualAccounts: [],
         rateSeededDecumulationYear1: true,
       },
       numTrials: 5,
@@ -578,20 +545,6 @@ describe("monte carlo integration", () => {
     // starting total, not a phantom inflated/deflated figure.
     expect(year1.allAccountsBalance).toBeGreaterThan(totalBalance * 0.9);
     expect(year1.allAccountsBalance).toBeLessThan(totalBalance * 1.3);
-
-    // Regression guard: WITHOUT the fix (real individualAccounts left in
-    // place under a collapsed aggregate -- i.e. monte-carlo.ts's Simple-mode
-    // block stops emptying individualAccounts), the SAME household produces
-    // real "indBal/acctBal reconciliation" diagnostics as the reconciliation
-    // bleeds real per-account money into the fake collapsed bucket -- proving
-    // this test would actually catch that regression, not just assert a
-    // tautology.
-    const brokenResult = calculateMonteCarlo({ ...mcInput, engineInput });
-    const brokenReconcileWarnings =
-      brokenResult.deterministicProjection.projectionByYear
-        .flatMap((y) => y.warnings)
-        .filter((w) => w.includes("indBal/acctBal reconciliation"));
-    expect(brokenReconcileWarnings.length).toBeGreaterThan(0);
   });
 
   it("budget stability isn't fooled by a guardrail-mutated baseline (advisor review, 2026-08-29)", () => {

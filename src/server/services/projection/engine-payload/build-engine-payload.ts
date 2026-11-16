@@ -28,6 +28,7 @@ import {
 } from "@/lib/pure/household/compensation";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
+import { openingParts } from "@/lib/pure/engine";
 import { toNumber } from "@/lib/utils/numbers";
 import {
   resolveRetirementProfileIdFrom,
@@ -686,9 +687,7 @@ export async function buildEnginePayload(
       targetYear: g.targetYear,
       priority: g.priority,
     })),
-    startingBalances: portfolioByTaxType,
-    startingAccountBalances: portfolioByAccount,
-    individualAccounts,
+    individualAccounts: openingParts(individualAccounts, portfolioByAccount),
     ...(inputWarnings.length > 0 ? { inputWarnings } : {}),
     annualExpenses: annualExpensesVal,
     expenseEndings,

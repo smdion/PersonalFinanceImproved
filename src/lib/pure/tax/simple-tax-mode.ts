@@ -12,6 +12,8 @@ import {
 import { roundToCents } from "../../utils/math";
 import { rampIsPortfolioSaving } from "../accounts/brokerage-ramp";
 import { resolveLumpSumTarget } from "../engine/projection-year-handlers/lump-sum";
+import { syntheticOpeningParts } from "../engine";
+import { isHeldPart } from "../accounts/account-part";
 import type {
   AccumulationDefaults,
   ProjectionInput,
@@ -56,7 +58,8 @@ export function toSimpleTaxMode(
   input: ProjectionInput,
   parts: SimpleTaxModeParts,
 ): ProjectionInput {
-  const indAccounts = input.individualAccounts ?? [];
+  // The real accounts: a household with none passes synthetic parts.
+  const indAccounts = (input.individualAccounts ?? []).filter(isHeldPart);
   const b = parts.retirementBuckets;
   const total = roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
   const isRetirementSpec = (s: { parentCategory?: string }) =>
@@ -67,19 +70,6 @@ export function toSimpleTaxMode(
 
   return {
     ...input,
-    // One tax-free pot: every retirement dollar in the brokerage bucket.
-    startingBalances: {
-      preTax: 0,
-      taxFree: 0,
-      hsa: 0,
-      afterTax: total,
-      afterTaxBasis: total,
-    },
-    startingAccountBalances: buildCategoryRecord((cat) =>
-      isOverflowTarget(cat)
-        ? { structure: "basis_tracking" as const, balance: total, basis: total }
-        : zeroBalance(cat),
-    ),
     accumulationDefaults: {
       ...input.accumulationDefaults,
       accountSplits: parts.defaults.accountSplits,
@@ -129,9 +119,19 @@ export function toSimpleTaxMode(
     decumulationOverrides: input.decumulationOverrides.map((o) =>
       withRetirementLumpSums(o, indAccounts),
     ),
-    // Simple discards account identity: the one pot is the only
-    // representation (per-account tracking would route withdrawals against
-    // real accounts the aggregate doesn't have).
-    individualAccounts: [],
+    // Simple discards account identity: one tax-free pot, every retirement
+    // dollar in the brokerage category, held by synthetic parts (the
+    // household's rules, no per-account rows).
+    individualAccounts: syntheticOpeningParts(
+      buildCategoryRecord((cat) =>
+        isOverflowTarget(cat)
+          ? {
+              structure: "basis_tracking" as const,
+              balance: total,
+              basis: total,
+            }
+          : zeroBalance(cat),
+      ),
+    ),
   };
 }

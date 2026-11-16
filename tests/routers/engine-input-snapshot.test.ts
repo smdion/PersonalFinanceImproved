@@ -208,8 +208,6 @@ describe("engine input snapshot guard", () => {
         "socialSecurityAnnual",
         "socialSecurityEntries",
         "ssStartAge",
-        "startingAccountBalances",
-        "startingBalances",
         "stockShareByAge",
         "workingYearsByPerson",
       ]

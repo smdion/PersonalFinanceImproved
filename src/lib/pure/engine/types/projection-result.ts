@@ -170,15 +170,9 @@ export type ProjectionInput = {
     priority: number;
   }[];
 
-  // --- Starting balances (for decumulation projection) ---
-  /** Starting portfolio balances per tax bucket (includes afterTaxBasis for cost basis tracking). */
-  startingBalances: TaxBuckets;
-  /** Per-account starting balances (401k/IRA split), tracked through both
-   *  phases. Built from portfolio_accounts snapshot. */
-  startingAccountBalances: AccountBalances;
-
-  /** Starting balances per named account; when given, each is tracked through both phases
-   *  (contributions matched by spec name, growth per account). */
+  // --- Starting money ---
+  /** The ledger's opening state, the one starting input: every account part
+   *  with its money and basis (synthetic parts where no account is held). */
   individualAccounts?: IndividualAccountInput[];
 
   // --- Expenses & return rates ---

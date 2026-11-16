@@ -109,13 +109,6 @@ function household(): ProjectionInput {
         taxBrackets: MFJ_BRACKETS,
       },
     },
-    startingBalances: {
-      preTax: 110000,
-      taxFree: 40000,
-      hsa: 15000,
-      afterTax: 30000,
-      afterTaxBasis: 20000,
-    },
     individualAccounts: [
       account("401k", "401k", "preTax", 80000),
       account("401k", "401k", "taxFree", 20000),
@@ -143,19 +136,6 @@ function withPortfolioBrokerage(input: ProjectionInput): ProjectionInput {
   const basis = 600_000;
   return {
     ...input,
-    startingBalances: {
-      ...input.startingBalances,
-      afterTax: input.startingBalances.afterTax + amount,
-      afterTaxBasis: input.startingBalances.afterTaxBasis + basis,
-    },
-    startingAccountBalances: {
-      ...input.startingAccountBalances!,
-      brokerage: {
-        structure: "basis_tracking",
-        balance: getBrokerage(input) + amount,
-        basis: getBrokerageBasis(input) + basis,
-      },
-    },
     individualAccounts: [
       ...input.individualAccounts!,
       account("Long-term brokerage", "brokerage", "afterTax", amount, {
@@ -177,15 +157,6 @@ function withPortfolioSavings(input: ProjectionInput): ProjectionInput {
     ],
     baseYearContributions: { ...p.baseYearContributions!, brokerage: 12000 },
   };
-}
-
-function getBrokerage(input: ProjectionInput): number {
-  const b = input.startingAccountBalances!.brokerage;
-  return b.structure === "basis_tracking" ? b.balance : 0;
-}
-function getBrokerageBasis(input: ProjectionInput): number {
-  const b = input.startingAccountBalances!.brokerage;
-  return b.structure === "basis_tracking" ? b.basis : 0;
 }
 
 const variants: [string, (i: ProjectionInput) => ProjectionInput][] = [

@@ -24,10 +24,11 @@ import { calculateProjection } from "@/lib/pure/engine";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { onePerson } from "../../fixtures/engine-people";
+import { engineInput, type FixtureInput } from "../fixtures/engine-input";
 
 const AS_OF = new Date("2025-03-07");
 
-function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
+function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
       budgetContributionLines: 0,
@@ -523,162 +524,167 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
   const AS_OF_2 = new Date("2025-03-07");
 
   function makeGapInput(
-    overrides: Partial<ProjectionInput> = {},
+    overrides: Partial<FixtureInput> = {},
   ): ProjectionInput {
-    return withCapsAge({
-      accumulationDefaults: makeAccumulationDefaults({
-        contributionRate: 0.29,
-        accountSplits: {
-          "401k": 0.5,
-          "403b": 0,
-          hsa: 0.05,
-          ira: 0.15,
-          brokerage: 0.3,
+    return engineInput(
+      withCapsAge({
+        accumulationDefaults: makeAccumulationDefaults({
+          contributionRate: 0.29,
+          accountSplits: {
+            "401k": 0.5,
+            "403b": 0,
+            hsa: 0.05,
+            ira: 0.15,
+            brokerage: 0.3,
+          },
+        }),
+        decumulationDefaults: {
+          withdrawalRate: 0.04,
+          withdrawalRoutingMode: "percentage",
+          withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+          withdrawalSplits: {
+            "401k": 0.35,
+            "403b": 0,
+            ira: 0.25,
+            brokerage: 0.3,
+            hsa: 0.1,
+          },
+          withdrawalTaxPreference: {
+            "401k": "traditional",
+            ira: "traditional",
+          },
+          distributionTaxRates: {
+            ...shippedTaxTables(),
+            traditionalFallbackRate: 0.22,
+            roth: 0,
+            hsa: 0,
+            brokerage: 0.15,
+          },
+          avoidPenalizedWithdrawals: true,
         },
-      }),
-      decumulationDefaults: {
-        withdrawalRate: 0.04,
-        withdrawalRoutingMode: "percentage",
-        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-        withdrawalSplits: {
-          "401k": 0.35,
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+        currentAge: 37,
+        people: onePerson(AS_OF_2.getFullYear() - 37),
+        retirementYear: AS_OF_2.getFullYear() + 18,
+        projectionEndYear: AS_OF_2.getFullYear() + 58,
+        currentSalary: 300000,
+        salaryGrowthRate: 0.03,
+        salaryCap: null,
+        salaryOverrides: [],
+        budgetOverrides: [],
+        irsLimitCaps: capsFromBaseLimits({
+          baseLimits: {
+            "401k": 23500,
+            "403b": 23500,
+            hsa: 4300,
+            ira: 7000,
+            brokerage: 0,
+          },
+          catchupLimits: {
+            "401k": 7500,
+            ira: 1000,
+            hsa: 1000,
+            "401k_super": 11250,
+          },
+          currentAge: 37,
+        }),
+        limitGrowthRate: 0.02,
+
+        employerMatchRateByCategory: {
+          "401k": 0.03,
           "403b": 0,
-          ira: 0.25,
-          brokerage: 0.3,
-          hsa: 0.1,
-        },
-        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
-        distributionTaxRates: {
-          ...shippedTaxTables(),
-          traditionalFallbackRate: 0.22,
-          roth: 0,
           hsa: 0,
-          brokerage: 0.15,
-        },
-        avoidPenalizedWithdrawals: true,
-      },
-      accumulationOverrides: [],
-      decumulationOverrides: [],
-      currentAge: 37,
-      people: onePerson(AS_OF_2.getFullYear() - 37),
-      retirementYear: AS_OF_2.getFullYear() + 18,
-      projectionEndYear: AS_OF_2.getFullYear() + 58,
-      currentSalary: 300000,
-      salaryGrowthRate: 0.03,
-      salaryCap: null,
-      salaryOverrides: [],
-      budgetOverrides: [],
-      irsLimitCaps: capsFromBaseLimits({
-        baseLimits: {
-          "401k": 23500,
-          "403b": 23500,
-          hsa: 4300,
-          ira: 7000,
+          ira: 0,
           brokerage: 0,
         },
-        catchupLimits: {
-          "401k": 7500,
-          ira: 1000,
-          hsa: 1000,
-          "401k_super": 11250,
+        startingBalances: {
+          preTax: 900000,
+          taxFree: 1700000,
+          afterTax: 30000,
+          afterTaxBasis: 20000,
+          hsa: 260000,
         },
-        currentAge: 37,
-      }),
-      limitGrowthRate: 0.02,
-
-      employerMatchRateByCategory: {
-        "401k": 0.03,
-        "403b": 0,
-        hsa: 0,
-        ira: 0,
-        brokerage: 0,
-      },
-      startingBalances: {
-        preTax: 900000,
-        taxFree: 1700000,
-        afterTax: 30000,
-        afterTaxBasis: 20000,
-        hsa: 260000,
-      },
-      startingAccountBalances: {
-        "401k": {
-          structure: "roth_traditional",
-          traditional: 900000,
-          roth: 0,
-        },
-        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-        hsa: { structure: "single_bucket", balance: 260000 },
-        ira: { structure: "roth_traditional", traditional: 0, roth: 1700000 },
-        brokerage: {
-          structure: "basis_tracking",
-          balance: 30000,
-          basis: 20000,
-        },
-      },
-      annualExpenses: 94000,
-      decumulationAnnualExpenses: 94000,
-      inflationRate: 0.03,
-      returnRates: [{ label: "7%", rate: 0.0727 }],
-      socialSecurityAnnual: 0,
-      ssStartAge: 67,
-      asOfDate: AS_OF_2,
-      // Every account tracked, so the 401(k) (locked until 59½ — no Rule of
-      // 55 separation) and the HSA (non-medical penalty until 65) are
-      // penalty-exposed like the Roth growth: only the brokerage and the
-      // Roth basis are reachable before 59½ — the real gap.
-      individualAccounts: [
-        {
-          name: "401k",
-          category: "401k",
-          taxType: "preTax",
-          startingBalance: 900000,
-          ownerName: "Owner",
-          ownerPersonId: 1,
-          ownerBirthYear: 1990,
-          parentCategory: "Retirement",
-        },
-        {
-          name: "HSA",
-          category: "hsa",
-          taxType: "hsa",
-          startingBalance: 260000,
-          ownerName: "Owner",
-          ownerPersonId: 1,
-          ownerBirthYear: 1990,
-          parentCategory: "Retirement",
-        },
-        {
-          name: "Brokerage",
-          category: "brokerage",
-          taxType: "afterTax",
-          startingBalance: 30000,
-          startingBasis: 20000,
-          ownerName: "Owner",
-          ownerPersonId: 1,
-          ownerBirthYear: 1990,
-          parentCategory: "Retirement",
-        },
-        {
-          name: "Roth IRA",
-          category: "ira",
-          taxType: "taxFree",
-          startingBalance: 1700000,
-          ownerName: "Owner",
-          ownerPersonId: 1,
-          ownerBirthYear: 1990,
-          parentCategory: "Retirement",
-          rothBasisMeta: {
-            year: 2025,
-            contributionBasis: 40000,
-            conversionBasis: 0,
-            latestConversionYear: null,
-            isSeeded: false,
-            updatedAt: new Date("2025-01-01"),
+        startingAccountBalances: {
+          "401k": {
+            structure: "roth_traditional",
+            traditional: 900000,
+            roth: 0,
+          },
+          "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+          hsa: { structure: "single_bucket", balance: 260000 },
+          ira: { structure: "roth_traditional", traditional: 0, roth: 1700000 },
+          brokerage: {
+            structure: "basis_tracking",
+            balance: 30000,
+            basis: 20000,
           },
         },
-      ],
-      ...overrides,
-    }) as ProjectionInput;
+        annualExpenses: 94000,
+        decumulationAnnualExpenses: 94000,
+        inflationRate: 0.03,
+        returnRates: [{ label: "7%", rate: 0.0727 }],
+        socialSecurityAnnual: 0,
+        ssStartAge: 67,
+        asOfDate: AS_OF_2,
+        // Every account tracked, so the 401(k) (locked until 59½ — no Rule of
+        // 55 separation) and the HSA (non-medical penalty until 65) are
+        // penalty-exposed like the Roth growth: only the brokerage and the
+        // Roth basis are reachable before 59½ — the real gap.
+        individualAccounts: [
+          {
+            name: "401k",
+            category: "401k",
+            taxType: "preTax",
+            startingBalance: 900000,
+            ownerName: "Owner",
+            ownerPersonId: 1,
+            ownerBirthYear: 1990,
+            parentCategory: "Retirement",
+          },
+          {
+            name: "HSA",
+            category: "hsa",
+            taxType: "hsa",
+            startingBalance: 260000,
+            ownerName: "Owner",
+            ownerPersonId: 1,
+            ownerBirthYear: 1990,
+            parentCategory: "Retirement",
+          },
+          {
+            name: "Brokerage",
+            category: "brokerage",
+            taxType: "afterTax",
+            startingBalance: 30000,
+            startingBasis: 20000,
+            ownerName: "Owner",
+            ownerPersonId: 1,
+            ownerBirthYear: 1990,
+            parentCategory: "Retirement",
+          },
+          {
+            name: "Roth IRA",
+            category: "ira",
+            taxType: "taxFree",
+            startingBalance: 1700000,
+            ownerName: "Owner",
+            ownerPersonId: 1,
+            ownerBirthYear: 1990,
+            parentCategory: "Retirement",
+            rothBasisMeta: {
+              year: 2025,
+              contributionBasis: 40000,
+              conversionBasis: 0,
+              latestConversionYear: null,
+              isSeeded: false,
+              updatedAt: new Date("2025-01-01"),
+            },
+          },
+        ],
+        ...overrides,
+      }) as FixtureInput,
+    );
   }
 
   it("does not report already_coast (stopping today) for a plan with a real, unfunded 55->59½ penalty-free gap", () => {
@@ -725,144 +731,153 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
   // projectedExpenses in year 1 alone, so neither existing check would
   // ever catch this.
   function makePortfolioParentedGapInput(
-    overrides: Partial<ProjectionInput> = {},
+    overrides: Partial<FixtureInput> = {},
   ): ProjectionInput {
-    return withCapsAge({
-      accumulationDefaults: makeAccumulationDefaults({
-        accountSplits: {
-          "401k": 0.4,
-          "403b": 0,
-          hsa: 0.1,
-          ira: 0.15,
-          brokerage: 0.35,
+    return engineInput(
+      withCapsAge({
+        accumulationDefaults: makeAccumulationDefaults({
+          accountSplits: {
+            "401k": 0.4,
+            "403b": 0,
+            hsa: 0.1,
+            ira: 0.15,
+            brokerage: 0.35,
+          },
+        }),
+        decumulationDefaults: {
+          withdrawalRate: 0.04,
+          withdrawalRoutingMode: "waterfall",
+          withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+          withdrawalSplits: {
+            "401k": 0.35,
+            "403b": 0,
+            ira: 0.25,
+            brokerage: 0.3,
+            hsa: 0.1,
+          },
+          withdrawalTaxPreference: {
+            "401k": "traditional",
+            ira: "traditional",
+          },
+          distributionTaxRates: {
+            ...shippedTaxTables(),
+            traditionalFallbackRate: 0.22,
+            roth: 0,
+            hsa: 0,
+            brokerage: 0.15,
+          },
         },
-      }),
-      decumulationDefaults: {
-        withdrawalRate: 0.04,
-        withdrawalRoutingMode: "waterfall",
-        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-        withdrawalSplits: {
-          "401k": 0.35,
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+        currentAge: 66,
+        people: onePerson(AS_OF_3.getFullYear() - 66),
+        retirementYear: AS_OF_3.getFullYear() + 1,
+        projectionEndYear: AS_OF_3.getFullYear() + 24,
+        currentSalary: 150000,
+        salaryGrowthRate: 0.03,
+        salaryCap: null,
+        salaryOverrides: [],
+        budgetOverrides: [],
+        irsLimitCaps: capsFromBaseLimits({
+          baseLimits: {
+            "401k": 23500,
+            "403b": 23500,
+            hsa: 4300,
+            ira: 7000,
+            brokerage: 0,
+          },
+          catchupLimits: {
+            "401k": 7500,
+            ira: 1000,
+            hsa: 1000,
+            "401k_super": 11250,
+          },
+          currentAge: 66,
+        }),
+        limitGrowthRate: 0.02,
+
+        employerMatchRateByCategory: {
+          "401k": 0.03,
           "403b": 0,
-          ira: 0.25,
-          brokerage: 0.3,
-          hsa: 0.1,
-        },
-        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
-        distributionTaxRates: {
-          ...shippedTaxTables(),
-          traditionalFallbackRate: 0.22,
-          roth: 0,
           hsa: 0,
-          brokerage: 0.15,
-        },
-      },
-      accumulationOverrides: [],
-      decumulationOverrides: [],
-      currentAge: 66,
-      people: onePerson(AS_OF_3.getFullYear() - 66),
-      retirementYear: AS_OF_3.getFullYear() + 1,
-      projectionEndYear: AS_OF_3.getFullYear() + 24,
-      currentSalary: 150000,
-      salaryGrowthRate: 0.03,
-      salaryCap: null,
-      salaryOverrides: [],
-      budgetOverrides: [],
-      irsLimitCaps: capsFromBaseLimits({
-        baseLimits: {
-          "401k": 23500,
-          "403b": 23500,
-          hsa: 4300,
-          ira: 7000,
+          ira: 0,
           brokerage: 0,
         },
-        catchupLimits: {
-          "401k": 7500,
-          ira: 1000,
-          hsa: 1000,
-          "401k_super": 11250,
+        startingBalances: {
+          preTax: 80000,
+          taxFree: 600000,
+          afterTax: 40000,
+          afterTaxBasis: 32000,
+          hsa: 20000,
         },
-        currentAge: 66,
-      }),
-      limitGrowthRate: 0.02,
-
-      employerMatchRateByCategory: {
-        "401k": 0.03,
-        "403b": 0,
-        hsa: 0,
-        ira: 0,
-        brokerage: 0,
-      },
-      startingBalances: {
-        preTax: 80000,
-        taxFree: 600000,
-        afterTax: 40000,
-        afterTaxBasis: 32000,
-        hsa: 20000,
-      },
-      startingAccountBalances: {
-        "401k": { structure: "roth_traditional", traditional: 80000, roth: 0 },
-        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-        hsa: { structure: "single_bucket", balance: 20000 },
-        ira: { structure: "roth_traditional", traditional: 0, roth: 600000 },
-        brokerage: {
-          structure: "basis_tracking",
-          balance: 40000,
-          basis: 32000,
+        startingAccountBalances: {
+          "401k": {
+            structure: "roth_traditional",
+            traditional: 80000,
+            roth: 0,
+          },
+          "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+          hsa: { structure: "single_bucket", balance: 20000 },
+          ira: { structure: "roth_traditional", traditional: 0, roth: 600000 },
+          brokerage: {
+            structure: "basis_tracking",
+            balance: 40000,
+            basis: 32000,
+          },
         },
-      },
-      annualExpenses: 90000,
-      decumulationAnnualExpenses: 90000,
-      inflationRate: 0.025,
-      returnRates: [{ label: "7%", rate: 0.07 }],
-      socialSecurityAnnual: 65000,
-      ssStartAge: 67,
-      asOfDate: AS_OF_3,
-      individualAccounts: [
-        {
-          name: "401k",
-          category: "401k",
-          taxType: "preTax",
-          startingBalance: 80000,
-          ownerName: "Owner",
-          ownerPersonId: 1,
-          ownerBirthYear: 1958,
-          parentCategory: "Retirement",
-        },
-        {
-          name: "HSA",
-          category: "hsa",
-          taxType: "hsa",
-          startingBalance: 20000,
-          ownerName: "Owner",
-          ownerPersonId: 1,
-          ownerBirthYear: 1958,
-          parentCategory: "Retirement",
-        },
-        {
-          name: "Brokerage",
-          category: "brokerage",
-          taxType: "afterTax",
-          startingBalance: 40000,
-          startingBasis: 32000,
-          ownerName: "Owner",
-          ownerPersonId: 1,
-          ownerBirthYear: 1958,
-          parentCategory: "Retirement",
-        },
-        {
-          name: "Roth IRA",
-          category: "ira",
-          taxType: "taxFree",
-          startingBalance: 600000,
-          ownerName: "Owner",
-          ownerPersonId: 1,
-          ownerBirthYear: 1958,
-          parentCategory: "Portfolio",
-        },
-      ],
-      ...overrides,
-    }) as ProjectionInput;
+        annualExpenses: 90000,
+        decumulationAnnualExpenses: 90000,
+        inflationRate: 0.025,
+        returnRates: [{ label: "7%", rate: 0.07 }],
+        socialSecurityAnnual: 65000,
+        ssStartAge: 67,
+        asOfDate: AS_OF_3,
+        individualAccounts: [
+          {
+            name: "401k",
+            category: "401k",
+            taxType: "preTax",
+            startingBalance: 80000,
+            ownerName: "Owner",
+            ownerPersonId: 1,
+            ownerBirthYear: 1958,
+            parentCategory: "Retirement",
+          },
+          {
+            name: "HSA",
+            category: "hsa",
+            taxType: "hsa",
+            startingBalance: 20000,
+            ownerName: "Owner",
+            ownerPersonId: 1,
+            ownerBirthYear: 1958,
+            parentCategory: "Retirement",
+          },
+          {
+            name: "Brokerage",
+            category: "brokerage",
+            taxType: "afterTax",
+            startingBalance: 40000,
+            startingBasis: 32000,
+            ownerName: "Owner",
+            ownerPersonId: 1,
+            ownerBirthYear: 1958,
+            parentCategory: "Retirement",
+          },
+          {
+            name: "Roth IRA",
+            category: "ira",
+            taxType: "taxFree",
+            startingBalance: 600000,
+            ownerName: "Owner",
+            ownerPersonId: 1,
+            ownerBirthYear: 1958,
+            parentCategory: "Portfolio",
+          },
+        ],
+        ...overrides,
+      }) as FixtureInput,
+    );
   }
 
   it("does not report already_coast when a Portfolio-parented account leaves a real, recurring shortfall", () => {

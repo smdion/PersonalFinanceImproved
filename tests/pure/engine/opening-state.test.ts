@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
 import { acct, household } from "../fixtures/two-person-household";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
-import { declareOpeningParts } from "@/lib/pure/engine/opening-state";
+import {
+  declareOpeningParts,
+  openingParts,
+  openingTotals,
+  syntheticOpeningParts,
+} from "@/lib/pure/engine/opening-state";
+import type { AccountBalances } from "@/lib/pure/accounts/account-balances.types";
 import { accountKeyOf } from "@/lib/pure/accounts/account-part";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { PROJECTED_RETIREMENT_BROKERAGE_LABEL } from "@/lib/config/display-labels";
@@ -220,7 +226,7 @@ describe("parts no real account stands behind", () => {
   });
 });
 
-describe("a run whose parts are all synthetic (EN14 rule 2)", () => {
+describe("a run whose parts are all synthetic", () => {
   const parts = [
     { ...acct("Ann IRA", "ira", 400000, 1), parentCategory: "Retirement" },
     { ...acct("Bo IRA", "ira", 300000, 2), parentCategory: "Retirement" },
@@ -238,5 +244,71 @@ describe("a run whose parts are all synthetic (EN14 rule 2)", () => {
     expect(firstRetiredYear(false).rmdByPerson).toBeDefined();
     expect(firstRetiredYear(true).rmdByPerson).toBeUndefined();
     expect(firstRetiredYear(true).rmdDivisor).toBeDefined();
+  });
+});
+
+describe("the starting money as parts", () => {
+  const byCategory: AccountBalances = {
+    "401k": { structure: "roth_traditional", traditional: 100000, roth: 50000 },
+    "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+    hsa: { structure: "single_bucket", balance: 20000 },
+    ira: { structure: "roth_traditional", traditional: 0, roth: 7000 },
+    brokerage: { structure: "basis_tracking", balance: 30000, basis: 12000 },
+  };
+
+  it("synthetic parts hold each category's money in its tax parts, as Retirement money", () => {
+    const parts = syntheticOpeningParts(byCategory);
+    const of = (category: string, taxType: string) =>
+      parts.find((p) => p.category === category && p.taxType === taxType);
+    expect(parts.every((p) => p.origin === "synthetic")).toBe(true);
+    expect(parts.every((p) => p.parentCategory === "Retirement")).toBe(true);
+    expect(of("401k", "preTax")?.startingBalance).toBe(100000);
+    expect(of("401k", "taxFree")?.startingBalance).toBe(50000);
+    expect(of("hsa", "hsa")?.startingBalance).toBe(20000);
+    expect(of("brokerage", "afterTax")).toMatchObject({
+      startingBalance: 30000,
+      startingBasis: 12000,
+    });
+  });
+
+  it("the parts' totals are the money they were built from", () => {
+    const { accountBalance, balances } = openingTotals(
+      syntheticOpeningParts(byCategory),
+    );
+    expect(accountBalance).toEqual(byCategory);
+    expect(balances).toEqual({
+      preTax: 100000,
+      taxFree: 57000,
+      hsa: 20000,
+      afterTax: 30000,
+      afterTaxBasis: 12000,
+    });
+  });
+
+  it("a held Roth part counts as Roth, any other part of a Roth-capable account as Traditional, to the cent", () => {
+    const { accountBalance, balances } = openingTotals([
+      { ...roth401k, startingBalance: 1000.006 },
+      { ...roth401k, taxType: "preTax", startingBalance: 2000 },
+    ]);
+    expect(accountBalance["401k"]).toEqual({
+      structure: "roth_traditional",
+      traditional: 2000,
+      roth: 1000.01,
+    });
+    expect(balances.taxFree).toBe(1000.01);
+    expect(balances.preTax).toBe(2000);
+  });
+
+  it("a part whose tax type is no tax bucket throws, naming the part", () => {
+    expect(() => openingTotals([{ ...roth401k, taxType: "roth401k" }])).toThrow(
+      /Alice 401\(k\).*"roth401k"/,
+    );
+  });
+
+  it("the opening parts are the held accounts, or synthetic parts when none is held", () => {
+    expect(openingParts([roth401k], byCategory)).toEqual([roth401k]);
+    expect(openingParts([], byCategory)).toEqual(
+      syntheticOpeningParts(byCategory),
+    );
   });
 });

@@ -9,6 +9,7 @@ import {
   makeAccumulationDefaults,
 } from "./engine-fixtures";
 import { onePerson } from "../../fixtures/engine-people";
+import type { FixtureInput } from "./engine-input";
 
 const AS_OF = new Date("2026-03-07");
 
@@ -31,7 +32,7 @@ export const acct = (
  *  straight. */
 export function household(
   accounts: IndividualAccountInput[],
-  overrides: Partial<ProjectionInput> = {},
+  overrides: Partial<FixtureInput> = {},
   decumulation: Partial<ProjectionInput["decumulationDefaults"]> = {},
 ): ProjectionInput {
   const sum = (cat: string, type: string) =>
@@ -44,7 +45,7 @@ export function household(
     roth: sum(cat, "taxFree"),
   });
   const afterTax = sum("brokerage", "afterTax");
-  const input: Partial<ProjectionInput> = {
+  const input: Partial<FixtureInput> = {
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0,
       accountSplits: { "401k": 1, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
@@ -157,8 +158,5 @@ export function household(
       birthYear: e.birthYear,
       birthMonth: 1,
     })) ?? onePerson(input.birthYear!, input.primaryPersonId);
-  return withConsistentStart(
-    withCapsAge(input as ProjectionInput),
-    input,
-  ) as ProjectionInput;
+  return withConsistentStart(withCapsAge(input as FixtureInput), input);
 }

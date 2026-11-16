@@ -34,6 +34,7 @@ import { fetchRetirementData } from "@/server/services/projection/engine-payload
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import type { Db } from "@/lib/db";
+import { openingTotals } from "@/lib/pure/engine/opening-state";
 
 async function getSchema() {
   return await import("@/lib/db/schema");
@@ -249,7 +250,10 @@ describe("buildEnginePayload — single-person household", () => {
     });
 
     expect(payload!.portfolioTotal).toBe(250000);
-    expect(payload!.baseEngineInput.startingBalances.preTax).toBe(250000);
+    expect(
+      openingTotals(payload!.baseEngineInput.individualAccounts).balances
+        .preTax,
+    ).toBe(250000);
   });
 
   it("builds a contribution spec with the seeded personId", async () => {

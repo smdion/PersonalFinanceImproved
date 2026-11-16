@@ -18,7 +18,6 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
 import { clearSimulationPresets } from "../helpers/db-harness";
-import { startingBalanceGaps } from "../pure/fixtures/engine-fixtures";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -429,9 +428,6 @@ describe("projection router — computeProjection", () => {
     expect(response.primaryPersonId).toBe(response.people![0]!.id);
     expect(response.annualExpenses).toBeGreaterThan(0);
     expect(response.result!.projectionByYear.length).toBeGreaterThan(0);
-    // The payload's buckets, per-category balances and accounts describe
-    // the same money.
-    expect(startingBalanceGaps(response.result!)).toEqual([]);
   });
 
   it("omitted Changes by year = the saved rows; an explicit list replaces them", async () => {
