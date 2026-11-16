@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**396 procedures across 29 routers.**
+**397 procedures across 29 routers.**
 
 Each procedure is listed by its client path (`trpc.<path>`); Source is its file under `src/server/routers/`.
 
@@ -234,12 +234,13 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `people`
 
-| Procedure       | Kind     | Auth                 | Source      | Description                                                                                                                                                       |
-| --------------- | -------- | -------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `people.create` | mutation | `adminProcedure`     | `people.ts` | Add a person with their speculative-job peg and their rows in every Retirement profile (cloned from the primary person's); returns the person.                    |
-| `people.delete` | mutation | `adminProcedure`     | `people.ts` | Refused while they own a debt, are the primary person, or have a real job or Roth basis; their speculative job, retirement rows and changes by year go with them. |
-| `people.list`   | query    | `protectedProcedure` | `people.ts` | Every person in the household, by id.                                                                                                                             |
-| `people.update` | mutation | `adminProcedure`     | `people.ts` |                                                                                                                                                                   |
+| Procedure          | Kind     | Auth                 | Source      | Description                                                                                                                                                               |
+| ------------------ | -------- | -------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `people.create`    | mutation | `adminProcedure`     | `people.ts` | Add a person with their speculative-job peg and their rows in every Retirement profile (cloned from the primary person's); returns the person.                            |
+| `people.delete`    | mutation | `adminProcedure`     | `people.ts` | Refused while they own a debt, are the primary person, or have a real job or Roth basis; their speculative job, retirement rows and changes by year go with them.         |
+| `people.list`      | query    | `protectedProcedure` | `people.ts` | Every person in the household, by id.                                                                                                                                     |
+| `people.setSpouse` | mutation | `adminProcedure`     | `people.ts` | Stores (or with null clears) a person's spouse on the household's joint return: one pair, each row naming the other; linking replaces any earlier pair. Returns everyone. |
+| `people.update`    | mutation | `adminProcedure`     | `people.ts` |                                                                                                                                                                           |
 
 ## `performance`
 
