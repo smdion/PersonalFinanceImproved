@@ -9,11 +9,7 @@ import type {
   IndividualAccountInput,
 } from "../accounts/account-balances.types";
 import { roundToCents } from "../../utils/math";
-import {
-  getAllCategories,
-  isOverflowTarget,
-  isRetirementMoney,
-} from "../../config/account-types";
+import { getAllCategories, isOverflowTarget } from "../../config/account-types";
 import {
   getTotalBalance,
   getBasis,
@@ -24,6 +20,10 @@ import {
 } from "../accounts/account-balance";
 import type { IrmaaBracket } from "../../config/irmaa-tables";
 import { irmaaConversionHeadroom } from "./conversion-irmaa-cap";
+import {
+  debitConvertedParts,
+  payConversionTaxFromParts,
+} from "./individual-accounts/conversion";
 import {
   estimateEffectiveTaxRate,
   incomeCapForMarginalRate,
@@ -356,38 +356,11 @@ export function performRothConversion(
     }
   }
 
-  // Each `categoryShare` fits its Retirement-parented accounts, so debit them
-  // directly; reconcile would otherwise spread the difference by balance and
-  // could pull it from a Portfolio-parented account.
-  if (hasIndTracking) {
-    for (const [cat, amount] of categoryShare) {
-      if (amount <= 0) continue;
-      const catAccounts = indAccounts.filter(
-        (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
-      );
-      const catTotal = catAccounts.reduce(
-        (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
-        0,
-      );
-      if (catTotal <= 0) continue;
-      let accountDistributed = 0;
-      for (const ia of catAccounts) {
-        const k = indKey(ia);
-        const balance = Math.max(0, indBalance.get(k) ?? 0);
-        const share = roundToCents(amount * (balance / catTotal));
-        const capped = Math.min(share, balance);
-        indBalance.set(k, roundToCents(balance - capped));
-        accountDistributed += capped;
-      }
-      const remainder = roundToCents(amount - accountDistributed);
-      if (remainder > 0.005 && catAccounts.length > 0) {
-        const first = catAccounts[0]!;
-        const k = indKey(first);
-        const balance = Math.max(0, indBalance.get(k) ?? 0);
-        indBalance.set(k, roundToCents(Math.max(0, balance - remainder)));
-      }
-    }
-  }
+  if (hasIndTracking)
+    debitConvertedParts(
+      { accounts: indAccounts, balances: indBalance, keyOf: indKey },
+      categoryShare,
+    );
 
   // Update brokerage per-account balance for tax payment
   for (const cat of getAllCategories()) {
@@ -409,35 +382,12 @@ export function performRothConversion(
       // As above: the aggregate moves full-category-sized; with individual
       // tracking, the tax comes from this category's Retirement-parented
       // accounts by balance.
-      if (hasIndTracking) {
-        const catAccounts = indAccounts.filter(
-          (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
+      if (hasIndTracking)
+        payConversionTaxFromParts(
+          { accounts: indAccounts, balances: indBalance, keyOf: indKey },
+          cat,
+          taxCostOfConversion,
         );
-        const catTotal = catAccounts.reduce(
-          (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
-          0,
-        );
-        if (catTotal > 0) {
-          let taxDistributed = 0;
-          for (const ia of catAccounts) {
-            const k = indKey(ia);
-            const balance = Math.max(0, indBalance.get(k) ?? 0);
-            const share = roundToCents(
-              taxCostOfConversion * (balance / catTotal),
-            );
-            const capped = Math.min(share, balance);
-            indBalance.set(k, roundToCents(balance - capped));
-            taxDistributed += capped;
-          }
-          const remainder = roundToCents(taxCostOfConversion - taxDistributed);
-          if (remainder > 0.005 && catAccounts.length > 0) {
-            const first = catAccounts[0]!;
-            const k = indKey(first);
-            const balance = Math.max(0, indBalance.get(k) ?? 0);
-            indBalance.set(k, roundToCents(Math.max(0, balance - remainder)));
-          }
-        }
-      }
       break;
     }
   }
