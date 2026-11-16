@@ -6,6 +6,7 @@ const income: YearIncome = {
   traditionalDraws: 30_000,
   rothConversions: 5_000,
   rothTaxableGrowth: 1_000,
+  wages: 0,
   realizedGains: 2_000,
   socialSecurity: { gross: 24_000, taxable: 12_000 },
 };
@@ -19,6 +20,7 @@ describe("yearMagi", () => {
       traditionalDraws: 15_821.05,
       rothConversions: 46_201.95,
       rothTaxableGrowth: 3_097.57,
+      wages: 0,
       realizedGains: 7_842.51,
       socialSecurity: { gross: 11_636.92, taxable: 0 },
     };
@@ -36,6 +38,15 @@ describe("yearMagi", () => {
     },
   );
 
+  it.each(["irmaa", "aca", "niit", "seniorDeduction"] as const)(
+    "%s counts W-2 wages: AGI starts from them",
+    (rule) => {
+      expect(yearMagi({ ...income, wages: 90_000 }, rule)).toBe(
+        yearMagi(income, rule) + 90_000,
+      );
+    },
+  );
+
   it("counts non-qualified Roth growth like any other ordinary income", () => {
     const withoutGrowth = { ...income, rothTaxableGrowth: 0 };
     expect(yearMagi(income, "aca")).toBe(
@@ -47,6 +58,7 @@ describe("yearMagi", () => {
     const streams = {
       traditionalDraws: 10_000,
       rothConversions: 0,
+      wages: 0,
       realizedGains: 0,
       rothTaxableGrowth: 0,
     };

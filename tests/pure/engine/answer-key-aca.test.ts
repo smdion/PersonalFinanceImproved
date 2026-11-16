@@ -75,6 +75,7 @@ function cliff(opts: {
       traditionalDraws: opts.ordinary,
       rothTaxableGrowth: 0,
       rothConversions: opts.conversion ?? 0,
+      wages: 0,
       realizedGains: 0,
       socialSecurity: { gross: 0 },
     },
@@ -169,6 +170,7 @@ describe("answer key: the poverty line and household income", () => {
         {
           traditionalDraws: 35_000 + 2_000,
           rothConversions: 0,
+          wages: 0,
           realizedGains: 0,
           rothTaxableGrowth: 0,
           socialSecurity: { gross: 30_000 },

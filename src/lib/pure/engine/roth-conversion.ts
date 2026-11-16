@@ -124,9 +124,8 @@ export function performRothConversion(
     indAccounts != null &&
     indBalance != null &&
     indKey != null;
-  // Single isOverflowTarget category (brokerage today) — hoisted so both
-  // the tax-payment capacity gate and the later per-account debit loop can
-  // use it without duplicating the search.
+  // The isOverflowTarget category (brokerage today), found once for the
+  // tax-payment capacity gate and the per-account debit loop.
   const overflowCat = getAllCategories().find((c) => isOverflowTarget(c));
   // Smoothing is its own reason to proceed (no enableRothConversions
   // needed); `zero()` carries rmdSmoothingShortfall on every early return
@@ -231,6 +230,7 @@ export function performRothConversion(
   if (input.irmaaAwareRothConversions && input.filingStatus && conversion > 0) {
     const maxConversionForCliff = irmaaConversionHeadroom(
       {
+        wages: 0,
         traditionalDraws: totalTraditionalWithdrawal,
         rothConversions: 0,
         rothTaxableGrowth,

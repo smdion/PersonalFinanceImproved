@@ -453,6 +453,7 @@ function makeAcaInput(overrides: Partial<AcaFixture> = {}): AcaInput {
       traditionalDraws: totalTraditionalWithdrawal,
       rothTaxableGrowth,
       rothConversions: rothConversionAmount,
+      wages: 0,
       realizedGains: brokerageGainsPortion,
       socialSecurity: { gross: ssIncome },
     },

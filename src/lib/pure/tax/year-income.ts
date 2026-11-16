@@ -7,6 +7,8 @@ import { MAGI_DEFINITIONS, type MagiRule } from "../../config/magi-definitions";
 import { roundToCents } from "../../utils/math";
 
 export type YearIncome = {
+  /** W-2 wages (box 1): pay less the payroll money income tax skips. */
+  readonly wages: number;
   readonly traditionalDraws: number;
   readonly rothConversions: number;
   /** Non-qualified Roth earnings: ordinary income. */
@@ -38,7 +40,8 @@ export function yearMagi<R extends MagiRule>(
 ): number {
   const reading: SocialSecurityFor<R> = MAGI_DEFINITIONS[rule].socialSecurity;
   return roundToCents(
-    income.traditionalDraws +
+    income.wages +
+      income.traditionalDraws +
       income.rothTaxableGrowth +
       income.rothConversions +
       income.realizedGains +

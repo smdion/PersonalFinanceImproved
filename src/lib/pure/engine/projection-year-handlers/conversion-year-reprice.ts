@@ -24,6 +24,7 @@ function pricedYearIncome(
   rothConversions: number,
 ): YearIncome {
   return {
+    wages: 0,
     traditionalDraws: flow.rmd.totalTraditionalWithdrawal,
     rothTaxableGrowth: flow.priced.taxFromSlots.rothTaxableGrowth,
     rothConversions,

@@ -226,10 +226,10 @@ function evaluateCost(
     taxableSS = taxableSSFor(input.ssIncome, taxResult, filingStatus);
     taxResult = price(taxableSS);
   }
-  // NIIT, priced as the year handler charges it (decumulation-year.ts).
-  // Roth conversions run later and stay out of MAGI here.
+  // NIIT as the year handler charges it; conversions (later) stay out of MAGI.
   const niitMagi = yearMagi(
     {
+      wages: 0,
       traditionalDraws: taxResult.totalTraditionalWithdrawal,
       rothTaxableGrowth: taxResult.rothTaxableGrowth,
       rothConversions: 0,

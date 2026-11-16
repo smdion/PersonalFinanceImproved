@@ -16,6 +16,7 @@ const income = (rothConversions: number): YearIncome => ({
   traditionalDraws: 50_000,
   rothConversions,
   rothTaxableGrowth: 0,
+  wages: 0,
   realizedGains: 0,
   socialSecurity: { gross: 0, taxable: 0 },
 });
