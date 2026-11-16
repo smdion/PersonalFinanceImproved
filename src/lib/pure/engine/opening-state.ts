@@ -20,7 +20,7 @@ import {
 } from "../../config/display-labels";
 import {
   emptyTaxBucketMap,
-  TAX_TREATMENT_TO_TAX_TYPE,
+  ROTH_SPLIT_PARTS,
 } from "../../config/tax-treatment-buckets";
 import { roundToCents } from "../../utils/math";
 import { accountKeyOf } from "../accounts/account-part";
@@ -31,10 +31,7 @@ import type {
 } from "../accounts/account-balances.types";
 
 /** The two tax parts of an account type that `supportsRothSplit`. */
-const ROTH_SPLIT_PARTS: readonly string[] = [
-  TAX_TREATMENT_TO_TAX_TYPE.pre_tax,
-  TAX_TREATMENT_TO_TAX_TYPE.tax_free,
-];
+const SPLIT_TAX_TYPES: readonly string[] = Object.values(ROTH_SPLIT_PARTS);
 
 /**
  * The held parts, then the projected Retirement brokerage when none is held,
@@ -59,7 +56,7 @@ export function declareOpeningParts(
     });
   for (const ia of held) {
     if (!getAccountTypeConfig(ia.category).supportsRothSplit) continue;
-    if (!ROTH_SPLIT_PARTS.includes(ia.taxType)) continue;
+    if (!SPLIT_TAX_TYPES.includes(ia.taxType)) continue;
     // The account's facts; the held part's money, basis and RMD target stay with it.
     const {
       startingBasis: _basis,
@@ -67,7 +64,7 @@ export function declareOpeningParts(
       rmdExcessTarget: _target,
       ...facts
     } = ia;
-    for (const taxType of ROTH_SPLIT_PARTS) {
+    for (const taxType of SPLIT_TAX_TYPES) {
       // A synthetic account's sibling is synthetic too: no real account.
       const part = {
         ...facts,
@@ -104,7 +101,7 @@ export function syntheticOpeningParts(
       origin: "synthetic" as const,
     });
     if (balance.structure === "roth_traditional")
-      return ROTH_SPLIT_PARTS.map((taxType) =>
+      return SPLIT_TAX_TYPES.map((taxType) =>
         part(
           taxType,
           isTaxFreeBucket(taxType) ? balance.roth : balance.traditional,

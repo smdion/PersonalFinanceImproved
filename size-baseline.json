@@ -182,7 +182,7 @@
     "src/components/retirement-projection/spending-stability-chart.tsx": 525,
     "src/components/retirement-projection/table/account-notes.ts": 223,
     "src/components/retirement-projection/table/bucket-slots.ts": 165,
-    "src/components/retirement-projection/table/lump-sums.ts": 39,
+    "src/components/retirement-projection/table/lump-sums.ts": 32,
     "src/components/retirement-projection/table/projection-columns.ts": 204,
     "src/components/retirement-projection/table/projection-table-accum-balances.model.ts": 235,
     "src/components/retirement-projection/table/projection-table-accum-contributions.model.ts": 253,

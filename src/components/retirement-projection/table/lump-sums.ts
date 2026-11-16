@@ -1,20 +1,13 @@
 /** Lump sums in the projection table: the tax bucket a lump sum lands in, and its per-bucket, per-category and total sums. */
 import type { LumpSum } from "@/lib/pure/engine/types";
-import {
-  type AccountCategory,
-  getAccountTypeConfig,
-  isRothType,
-} from "@/lib/config/account-types";
+import type { AccountCategory } from "@/lib/config/account-types";
+import { lumpSumTaxType } from "@/lib/config/tax-treatment-buckets";
 
 type PortfolioTaxBucket = "preTax" | "taxFree" | "hsa" | "afterTax";
 
 /** Determine which tax bucket a lump sum targets, using config-driven balance structure. */
 export function lumpSumTaxBucket(ls: LumpSum): PortfolioTaxBucket {
-  const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
-  if (bs === "roth_traditional")
-    return isRothType(ls.taxType ?? "") ? "taxFree" : "preTax";
-  if (bs === "single_bucket") return "hsa";
-  return "afterTax";
+  return lumpSumTaxType(ls.targetAccount, ls.taxType);
 }
 
 /** Sum lump sums targeting a specific tax bucket. */

@@ -2,6 +2,7 @@
  *  salary or budget overrides. */
 
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { RothSplitSide } from "@/lib/config/tax-treatment-buckets";
 
 /**
  * A one-time dollar-amount injection or withdrawal in a specific year.
@@ -11,7 +12,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 export type LumpSum = {
   amount: number;
   targetAccount: AccountCategory;
-  taxType?: "traditional" | "roth";
+  taxType?: RothSplitSide;
   /** Specific individual account name (e.g., "Long Term Brokerage (Vanguard)").
    *  When set, the engine adds the lump sum to this exact account in indBalance. */
   targetAccountName?: string;

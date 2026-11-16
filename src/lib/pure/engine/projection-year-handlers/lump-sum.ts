@@ -6,9 +6,10 @@ import type { IndividualAccountInput } from "../../accounts/account-balances.typ
 import type { LumpSum } from "../types/year-overrides";
 import {
   getAccountTypeConfig,
-  isRothType,
+  isTaxFreeBucket,
   isRetirementMoney,
 } from "../../../config/account-types";
+import { lumpSumTaxType } from "../../../config/tax-treatment-buckets";
 import {
   addTraditional,
   addRoth,
@@ -33,7 +34,7 @@ export function applyLumpSums(
   for (const ls of lumpSums) {
     const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
     if (bs === "roth_traditional") {
-      if (isRothType(ls.taxType ?? "")) {
+      if (isTaxFreeBucket(lumpSumTaxType(ls.targetAccount, ls.taxType))) {
         balances.taxFree += ls.amount;
         addRoth(accountBalance[ls.targetAccount], ls.amount);
       } else {
