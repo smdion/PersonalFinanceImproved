@@ -157,12 +157,7 @@ describe(`conversion variant: ${KEY}`, () => {
     expect(years().some((y) => (y.rmdAmount ?? 0) > 0)).toBe(true);
   });
 
-  // A conversion credits no Roth part, so each owner's declared Roth part
-  // can't take the converted money (RULES § Known Gaps).
-  it.fails(
-    "the two balance tracks agree (v0.11 Engine: a conversion moves money between account parts)",
-    () => {
-      expect(driftIn(output)).toEqual([]);
-    },
-  );
+  it("the two balance tracks agree: a conversion moves money between account parts", () => {
+    expect(driftIn(output)).toEqual([]);
+  });
 });

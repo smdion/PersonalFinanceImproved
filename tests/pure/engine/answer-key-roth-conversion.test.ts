@@ -206,11 +206,12 @@ describe("answer key: the conversion's tax from a Retirement brokerage part", ()
       traditional: 500_000,
       roth: 0,
     };
-    accountBalance["401k"] = {
-      structure: "roth_traditional",
-      traditional: 0,
-      roth: 0,
-    };
+    for (const other of ["401k", "403b"] as const)
+      accountBalance[other] = {
+        structure: "roth_traditional",
+        traditional: 0,
+        roth: 0,
+      };
     const none = { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 };
     const r = performRothConversion({
       enableRothConversions: true,
@@ -262,6 +263,19 @@ describe("answer key: the conversion's tax from a Retirement brokerage part", ()
         category: getBasis(t.accountBalance.brokerage),
       },
       { part: 16_072, buckets: 16_072, category: 16_072 },
+    );
+  });
+  it("ret/RET10-4 [ENG-19] the converted money moves from the Traditional part to the same account's Roth part", () => {
+    // RET10-1's 83,000 leaves the IRA's Traditional part (500,000 →
+    // 417,000) and lands on its own Roth part (0 → 83,000), as the tax
+    // buckets move it (IRC 408A(d)(3): the same account's money, taxed).
+    const t = convertParts();
+    cents(
+      {
+        traditional: t.indBalance.get(t.indKey(t.ira))!,
+        roth: t.indBalance.get(t.indKey(t.iraRoth))!,
+      },
+      { traditional: 417_000, roth: 83_000 },
     );
   });
 });

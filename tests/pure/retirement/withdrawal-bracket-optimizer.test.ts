@@ -403,7 +403,7 @@ describe("optimizeRothBracketTarget", () => {
     // scenario, not this one.
     expect(
       "rmdAmount" in rmdYears[0]! ? rmdYears[0].rmdAmount : undefined,
-    ).toBeCloseTo(6632.52, 0);
+    ).toBeCloseTo(4913.39, 0);
   });
 
   it("a household where every candidate carries the same non-depleting shortfall still produces a sensible ranking", () => {

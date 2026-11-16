@@ -555,6 +555,27 @@
       "penaltyExposedAmount": 0,
       "allowPenalizedWithdrawals": false
      }
+    },
+    {
+     "name": "Ann 401k",
+     "balance": 495000,
+     "contribution": 0,
+     "draw": {
+      "withdrawal": 0,
+      "eligibilityLocked": false,
+      "reason": {
+       "kind": "no_owner"
+      },
+      "penaltyFreeAmount": 0,
+      "penaltyExposedAmount": 0,
+      "allowPenalizedWithdrawals": false
+     },
+     "roth": {
+      "basisRemaining": 0,
+      "contributionBasisRemaining": 0,
+      "conversionBasisRemaining": 0,
+      "basisUncertain": false
+     }
     }
    ]
   }

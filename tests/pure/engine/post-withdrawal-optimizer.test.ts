@@ -13,6 +13,7 @@ import {
   TEST_BRACKETS,
 } from "../fixtures/engine-fixtures";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
+import { declareOpeningParts } from "@/lib/pure/engine/opening-state";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { shippedTaxTables } from "../../helpers/tax-data";
 
@@ -599,8 +600,10 @@ describe("checkAca", () => {
 describe("performRothConversion (nonRetirement scope)", () => {
   const indKey = makeIndKey();
 
+  // Each Roth-capable account's Roth part is declared, as the engine's
+  // opening state does.
   function accts(): IndividualAccountInput[] {
-    return [
+    return declareOpeningParts([
       makeIndividualAccount({
         name: "Retirement 401k",
         category: "401k",
@@ -622,7 +625,7 @@ describe("performRothConversion (nonRetirement scope)", () => {
         startingBalance: 300000,
         parentCategory: "Retirement",
       }),
-    ];
+    ]);
   }
 
   function indBalFor(ia: IndividualAccountInput[]) {
@@ -740,7 +743,7 @@ describe("performRothConversion (nonRetirement scope)", () => {
       preTax: 100000,
       afterTax: 300000,
     });
-    const ia = [
+    const ia = declareOpeningParts([
       makeIndividualAccount({
         name: "Retirement 401k",
         category: "401k",
@@ -762,7 +765,7 @@ describe("performRothConversion (nonRetirement scope)", () => {
         startingBalance: 299500, // makes blended afterTax look fully funded
         parentCategory: "Portfolio",
       }),
-    ];
+    ]);
     const nonRetirement = {
       total: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 299500 },
       trad: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },

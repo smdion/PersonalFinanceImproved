@@ -1,7 +1,7 @@
 /**
- * A Roth conversion's per-account side: each category's share comes from its
- * Retirement-parented accounts by balance, and its tax from the Retirement
- * brokerage's.
+ * A Roth conversion's per-account side: each category's share moves from its
+ * Retirement-parented Traditional parts to their Roth parts, and its tax comes
+ * from the Retirement brokerage's.
  */
 import type { AccountCategory } from "../../../config/account-types";
 import { isRetirementMoney } from "../../../config/account-types";
@@ -14,6 +14,7 @@ import { getBasis, setBasis } from "../../accounts/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { roundToCents, sumBy } from "../../../utils/math";
 import { followDraws, type BrokerageBasis } from "../brokerage-basis";
+import { ROTH_SPLIT_PARTS } from "../../../config/tax-treatment-buckets";
 
 /** The account parts a conversion moves money on, their balances and each
  *  brokerage part's basis. */
@@ -63,16 +64,34 @@ function retirementParts(
   );
 }
 
-/** Each `categoryShare` fits its Retirement-parented accounts, so debit them
- *  directly; reconcile would otherwise spread the difference by balance and
- *  could pull it from a Portfolio-parented account. */
+/** Each `categoryShare` comes from its Retirement-parented Traditional parts
+ *  by balance, and each part's converted money lands on the same account's
+ *  Roth part, which the opening state declares (a missing one throws). */
 export function debitConvertedParts(
   parts: ConversionParts,
   categoryShare: Map<AccountCategory, number>,
 ): void {
+  const { accounts, balances, keyOf } = parts;
+  const declared = new Set(accounts.map((ia) => keyOf(ia)));
   for (const [category, amount] of categoryShare) {
     if (amount <= 0) continue;
-    debitByBalance(parts, retirementParts(parts, category), amount);
+    const traditional = retirementParts(parts, category).filter(
+      (ia) => ia.taxType === ROTH_SPLIT_PARTS.traditional,
+    );
+    const before = traditional.map((ia) =>
+      Math.max(0, balances.get(keyOf(ia)) ?? 0),
+    );
+    debitByBalance(parts, traditional, amount);
+    traditional.forEach((ia, i) => {
+      const moved = roundToCents(before[i]! - (balances.get(keyOf(ia)) ?? 0));
+      if (moved <= 0) return;
+      const roth = keyOf({ ...ia, taxType: ROTH_SPLIT_PARTS.roth });
+      if (!declared.has(roth))
+        throw new Error(
+          `Roth conversion: "${ia.name}" (${ia.category}) has no Roth part to receive it`,
+        );
+      balances.set(roth, roundToCents((balances.get(roth) ?? 0) + moved));
+    });
   }
 }
 

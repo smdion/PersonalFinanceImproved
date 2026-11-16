@@ -1599,39 +1599,28 @@ describe("engine invariants", () => {
       expect(conservationMisses(input)).toEqual([]);
     });
 
-    // v0.11 bug: a Roth conversion moves no money between the accounts.
-    // performRothConversion (roth-conversion.ts) debits the conversion from
-    // every Retirement account in the category by balance, Roth accounts
-    // included, and credits no Roth account; the year's account rows are
-    // built before reconcileIndividualToAggregate (year-end.ts), so the
-    // conversion year's rows show the Roth money missing (a "[DIAG]
-    // indBal/acctBal reconciliation" drift) and the next year's rows jump.
-    // Here, 2025 converts $94,352.94: the Traditional rows lose $67,094.92
-    // and the Roth rows lose $27,258.02; in 2026 the 401(k) Roth row gains
-    // $85,183.73 and the IRA Roth row $44,940 that no flow explains.
-    it.fails(
-      "33 — v0.11 a Roth conversion moves its amount from Traditional to Roth accounts",
-      () => {
-        const input = withRothConversions(
-          withAccountsAndSpecs(
-            makeInput({
-              currentAge: 67,
-              retirementYear: AS_OF.getFullYear() - 1,
-              projectionEndYear: AS_OF.getFullYear() + 15,
-              currentSalary: 0,
-              annualExpenses: 50000,
-              decumulationAnnualExpenses: 50000,
-              birthYear: AS_OF.getFullYear() - 67,
-            }),
-          ),
-        );
-        const converted = calculateProjection(input)
-          .projectionByYear.filter((y) => y.phase === "decumulation")
-          .reduce((s, y) => s + y.rothConversionAmount, 0);
-        expect(converted).toBeGreaterThan(0);
-        expect(conservationMisses(input)).toEqual([]);
-      },
-    );
+    // A Roth conversion moves its amount from each Traditional part to the
+    // same account's Roth part, so every year's rows conserve the money.
+    it("33 — a Roth conversion moves its amount from Traditional to Roth accounts", () => {
+      const input = withRothConversions(
+        withAccountsAndSpecs(
+          makeInput({
+            currentAge: 67,
+            retirementYear: AS_OF.getFullYear() - 1,
+            projectionEndYear: AS_OF.getFullYear() + 15,
+            currentSalary: 0,
+            annualExpenses: 50000,
+            decumulationAnnualExpenses: 50000,
+            birthYear: AS_OF.getFullYear() - 67,
+          }),
+        ),
+      );
+      const converted = calculateProjection(input)
+        .projectionByYear.filter((y) => y.phase === "decumulation")
+        .reduce((s, y) => s + y.rothConversionAmount, 0);
+      expect(converted).toBeGreaterThan(0);
+      expect(conservationMisses(input)).toEqual([]);
+    });
   });
 
   // ---------------------------------------------------------------------------
