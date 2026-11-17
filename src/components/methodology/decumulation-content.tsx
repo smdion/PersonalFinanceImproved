@@ -813,8 +813,8 @@ export function DecumulationMethodologyContent() {
           Roth conversion to stay under the cliff. In Healthcare you choose
           whether the surcharge is in your budget (nothing more is withdrawn) or
           on top of it (it&apos;s added to what the year needs). The first two
-          retirement years have no income from two years prior to look back on,
-          so there it lowers what&apos;s spent instead. Standard Part B and D
+          retirement years read your last working years&apos; wages, as Social
+          Security does until you file Form SSA-44. Standard Part B and D
           premiums aren&apos;t modeled: put them in your budget.
         </p>
         <p>

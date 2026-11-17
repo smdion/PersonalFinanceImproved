@@ -7,8 +7,10 @@
 import { describe, expect, it } from "vitest";
 import {
   payIrmaaCharge,
+  settleIrmaaCharge,
   type IrmaaCharge,
 } from "@/lib/pure/engine/projection-year-handlers/irmaa-charge";
+import { shippedTaxTables } from "../../helpers/tax-data";
 import { fundingShortfallForYear } from "@/lib/pure/engine/projection-year-handlers/funding-shortfall";
 
 const charge = (atYearStart: boolean): IrmaaCharge => ({
@@ -112,5 +114,36 @@ describe("fundingShortfallForYear: a withdrawal-sized year that runs out", () =>
     expect(result.irmaaPayment.unpaid).toBe(3936);
     expect(result.unmetNeedRaw).toBe(40_936);
     expect(result.unmetNeedMaterial).toBe(true);
+  });
+});
+
+describe("settleIrmaaCharge: a surcharge read from a working year", () => {
+  const settle = (worked: boolean, magi: number) =>
+    settleIrmaaCharge(
+      {
+        input: { filingStatus: "Single", irmaaOnTopOfBudget: true },
+      } as never,
+      {
+        year: 2028,
+        personsAge65Plus: 1,
+        tables: {
+          grownIrmaaBracketsForCheck: shippedTaxTables(2026).irmaaBrackets,
+        },
+      } as never,
+      { year: 2026, magi, rothConversion: 0, worked },
+    );
+
+  it("names Form SSA-44 (20 CFR 418.1205)", () => {
+    // 300,000 Single: the fourth tier, 6,355.20 (CMS 2026).
+    const charge = settle(true, 300_000);
+    expect(charge.cost).toBeCloseTo(6355.2, 2);
+    expect(charge.warnings).toEqual([
+      "IRMAA 2028: $6,355 surcharge from 2026 working-year income ($300,000 MAGI). Stopping work is a life-changing event: file Form SSA-44 and Social Security can use your lower income instead.",
+    ]);
+  });
+
+  it("says nothing for a retired year, or with no surcharge", () => {
+    expect(settle(false, 300_000).warnings).toEqual([]);
+    expect(settle(true, 100_000).warnings).toEqual([]);
   });
 });
