@@ -961,7 +961,7 @@
       "routePercentage": 189
     },
     "src/lib/pure/engine/gap-year-draw.ts": {
-      "runGapYearDraw": 221
+      "runGapYearDraw": 217
     },
     "src/lib/pure/engine/individual-accounts/contributions.ts": {
       "distributeContributions": 318

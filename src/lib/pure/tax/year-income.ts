@@ -18,6 +18,10 @@ export type YearIncome = {
   readonly socialSecurity: { readonly gross: number; readonly taxable: number };
 };
 
+/** A year's income beside its wages and conversions: a gap year's draw
+ *  and Social Security. */
+export type IncomeBesideWages = Omit<YearIncome, "wages" | "rothConversions">;
+
 type SocialSecurityFor<R extends MagiRule> =
   (typeof MAGI_DEFINITIONS)[R]["socialSecurity"];
 

@@ -86,6 +86,7 @@ export function sizeYearContributions(
   const {
     useRealContributions,
     proRate,
+    lateYearCut,
     targetContribution,
     personPay,
     contribution,
@@ -123,6 +124,7 @@ export function sizeYearContributions(
 
   return {
     proRate,
+    lateYearCut,
     targetContribution,
     personPay,
     contribution,
@@ -213,6 +215,7 @@ function routeYearContributions(
   return {
     useRealContributions,
     proRate,
+    lateYearCut,
     targetContribution,
     personPay,
     contribution,

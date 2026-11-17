@@ -29,6 +29,7 @@ import type {
   ProjectionContext,
   ProjectionLoopState,
 } from "./projection-year-handlers/types";
+import type { IncomeBesideWages } from "@/lib/pure/tax/year-income";
 
 /** Each account's part of the draw, for the year's account rows. Not on
  *  the year row itself (Maps don't serialize). */
@@ -36,6 +37,14 @@ export type GapYearAccounts = {
   withdrawal: Map<string, number>;
   draws: Map<string, BasisDraw>;
   eligibility: EligibilityRecord | undefined;
+};
+
+/** A gap year's draw, its accounts, and its income beside wages (the draw's
+ *  streams and the year's Social Security) as its IRMAA tax year reads it. */
+export type GapYearRun = {
+  draw: GapYearDraw;
+  accounts: GapYearAccounts | null;
+  income: IncomeBesideWages;
 };
 
 /** Below this a gap or retirement year counts as funded: rounding, not a
@@ -49,7 +58,7 @@ export function runGapYearDraw(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
   sized: GapYearNeed,
-): { draw: GapYearDraw; accounts: GapYearAccounts | null } {
+): GapYearRun {
   const { input, holdsAccounts, indAccounts, indKey } = ctx;
   const { balances, accountBalance, indBalance, indBasis, brokBasis } = state;
   const { year, need, figures, wages, incomeAlone, taxOnIncome } = sized;
@@ -66,10 +75,11 @@ export function runGapYearDraw(
     slots: [],
     warnings: [],
   };
+  const undrawn = { accounts: null, income: besideWages(sized) };
   if (need < shortfallFloor(need))
-    return { draw: { ...noDraw, need: 0 }, accounts: null };
+    return { draw: { ...noDraw, need: 0 }, ...undrawn };
   if (input.gapYearDraws === false)
-    return { draw: { ...noDraw, spendingCut: need }, accounts: null };
+    return { draw: { ...noDraw, spendingCut: need }, ...undrawn };
 
   const config = resolveDecumulationConfig(
     year,
@@ -124,8 +134,7 @@ export function runGapYearDraw(
       eligibility,
       nonRetirement,
     );
-  // Each account's actual share of a routed draw, on the balances given:
-  // needed to size the draw (on copies) and to take it.
+  // Each account's share of a routed draw: sizes the draw (on copies), takes it.
   const shareOut = (
     slots: DecumulationSlot[],
     balance: typeof indBalance,
@@ -174,8 +183,7 @@ export function runGapYearDraw(
         : 0,
     };
   };
-  // What the draw adds to the year's tax (and any penalty). The draw can
-  // make more Social Security taxable, so that's settled first.
+  // The draw's added tax (and penalty), with the Social Security it makes taxable.
   const price = (
     slots: DecumulationSlot[],
     rothTaxableGrowth: number,
@@ -195,17 +203,13 @@ export function runGapYearDraw(
     const first = pricedWith(incomeAlone);
     const drawIncome =
       first.actualTaxableIncome - incomeAlone + first.brokerageGainsPortion;
-    const priced = pricedWith(wages + taxableSsOn(wages + drawIncome));
-    return {
-      priced,
-      cost: roundToCents(
-        Math.max(0, priced.taxCost - taxOnIncome) + penaltyCost,
-      ),
-    };
+    const taxableSS = taxableSsOn(wages + drawIncome);
+    const priced = pricedWith(wages + taxableSS);
+    const added = Math.max(0, priced.taxCost - taxOnIncome) + penaltyCost;
+    return { priced, taxableSS, cost: roundToCents(added) };
   };
 
-  // Tax on the draw is paid from the draw; a few passes settle it, as that
-  // tax is small beside the need.
+  // The draw pays its own tax; a few passes settle it (small beside the need).
   let result = route(need);
   for (let pass = 0; pass < 3; pass++) {
     const trial = shareOut(
@@ -224,7 +228,8 @@ export function runGapYearDraw(
   const taken = followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
     shareOut(slots, indBalance, indBasis),
   );
-  const { priced, cost } = price(slots, taken.rothGrowth, taken.penalty);
+  const settled = price(slots, taken.rothGrowth, taken.penalty);
+  const { priced, cost } = settled;
 
   deductWithdrawals({
     slots,
@@ -264,5 +269,31 @@ export function runGapYearDraw(
         ),
     ],
   };
-  return { draw, accounts };
+  return { draw, accounts, income: besideWages(sized, settled) };
+}
+
+/** The year's income beside wages: the draw's Traditional draws, taxable
+ *  Roth growth and gains, as its tax is priced, and its Social Security. */
+function besideWages(
+  sized: GapYearNeed,
+  drawn?: {
+    priced: ReturnType<typeof computeTaxFromSlots>;
+    taxableSS: number;
+  },
+): IncomeBesideWages {
+  const gross = sized.figures.ssIncome;
+  if (!drawn)
+    return {
+      traditionalDraws: 0,
+      rothTaxableGrowth: 0,
+      realizedGains: 0,
+      socialSecurity: { gross, taxable: sized.taxableSsOn(sized.wages) },
+    };
+  const { priced, taxableSS } = drawn;
+  return {
+    traditionalDraws: priced.totalTraditionalWithdrawal,
+    rothTaxableGrowth: priced.rothTaxableGrowth,
+    realizedGains: priced.brokerageGainsPortion,
+    socialSecurity: { gross, taxable: taxableSS },
+  };
 }
