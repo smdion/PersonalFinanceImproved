@@ -171,6 +171,18 @@ describe("categoriesWithTaxPreference", () => {
   });
 });
 
+describe("supportsRothSplit", () => {
+  // The engine declares a Roth part beside every Traditional part of these
+  // types and a conversion credits it, so the flag and the two-part balance
+  // shape must name the same types.
+  it("holds exactly for the types whose balance has Traditional and Roth parts", () => {
+    for (const c of getAllCategories())
+      expect(getAccountTypeConfig(c).supportsRothSplit).toBe(
+        getAccountTypeConfig(c).balanceStructure === "roth_traditional",
+      );
+  });
+});
+
 describe("tradPreferenceEngineCategories", () => {
   // Asserts the intersection directly, not just "these two arrays happen to be equal
   // today" — categoriesWithTaxPreference() filters by supportsRothSplit
