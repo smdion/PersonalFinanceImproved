@@ -10,8 +10,6 @@ export const PLAN_EXCLUSIONS: readonly string[] = [
   "A first death: both spouses are planned to the end, with no survivor benefit, no single filing status and no lower spending.",
   // TAX-03; `lib/pure/tax/tax.ts`.
   "Itemized deductions: every year takes the standard deduction.",
-  // RET-16 Gaps.
-  "Working income in the first two IRMAA years: a Medicare surcharge reads income from two years before, but the plan's first two retired years read their own.",
   // CALCULATIONS § Rules Ledgr doesn't model: Medicare Part B and D base premiums.
   "Standard Medicare Part B and D premiums: only the income-based surcharge is counted, so put the premiums in your Retirement budget.",
   // TAX-01 Gaps: no MFS.

@@ -39,14 +39,18 @@ export function settleIrmaaCharge(
   return { cost: irmaaCost, onTop, taxYear, atYearStart, warnings };
 }
 
-/** The charge known at the year's start: its tax year (year − 2) is
- *  recorded. Absent until then; the year then settles it from its own. */
+/** The charge known at the year's start, from the tax year it reads.
+ *  Absent until one is known; the year then settles it from its own. */
 export function yearStartIrmaaCharge(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
   thisYear: DecumulationYear,
 ): IrmaaCharge | undefined {
-  const taxYear = irmaaLookbackYear(state.irmaaTaxYears, thisYear.year);
+  const taxYear = irmaaLookbackYear(
+    state.irmaaTaxYears,
+    thisYear.year,
+    ctx.input.asOfDate.getFullYear(),
+  );
   return taxYear && settleIrmaaCharge(ctx, thisYear, taxYear);
 }
 

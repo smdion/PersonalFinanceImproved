@@ -7,7 +7,7 @@ import type {
   ProjectionLoopState,
 } from "./types";
 import type { RepricedFlow } from "./conversion-year-reprice";
-import { irmaaTaxYearFor } from "./irmaa-lookback";
+import { recordIrmaaTaxYear } from "./irmaa-lookback";
 import { settleIrmaaCharge, type IrmaaCharge } from "./irmaa-charge";
 
 /** Records this year's income; the year's IRMAA charge (the year-start one,
@@ -25,7 +25,7 @@ export function yearCliffChecks(
   const { routeWarnings } = flow.route;
   const { income } = flow.repriced;
   incomeHistory.push(income);
-  const taxYear = irmaaTaxYearFor(irmaaTaxYears, year, income);
+  const taxYear = recordIrmaaTaxYear(irmaaTaxYears, year, income);
   const irmaa = yearStartIrmaa ?? settleIrmaaCharge(ctx, thisYear, taxYear);
   routeWarnings.push(...irmaa.warnings);
 

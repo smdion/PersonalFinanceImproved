@@ -52,6 +52,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { cents, runOneYear } from "../fixtures/answer-key";
+import { calculateProjection } from "@/lib/pure/engine";
 import {
   getIrmaaCost,
   getNextIrmaaCliff,
@@ -319,6 +320,81 @@ describe("answer key: the two-year lookback", () => {
     expect(year.phase).toBe("decumulation");
     if (year.phase !== "decumulation") return;
     cents(year.irmaaCost, 2884.8);
+  });
+
+  it("ret/I30:engine [RET-16] through the engine: the first two retired years read the working years' wages", () => {
+    // Invented: Single, born 1962, paid 300,000 a year through 2027 (no
+    // pre-tax deferrals, so AGI = MAGI = 300,000), retired from 2028 (66),
+    // spending 60,000 from a Traditional IRA, no Social Security, the 2026
+    // tables at 0% inflation, the surcharge on top of the budget.
+    //
+    // IM-2 and IM-16 (1395r(i)(4)(B)(i), 418.1135(a)): 2028 reads 2026 and
+    // 2029 reads 2027, both working years: 205,000 < 300,000 < 500,000 is
+    // the individual table's fourth tier, (446.30 + 83.30) × 12 =
+    // 6,355.20. 2030 reads 2028, whose MAGI is its IRA draw: spending
+    // 60,000 plus the 6,355.20 on top, grossed up for tax, is far below
+    // 109,000, so 0. On top of the budget, a surcharge joins the year's
+    // need (decision E1): 2028's after-tax need is 60,000 + 6,355.20.
+    const years = calculateProjection({
+      ...engineHousehold({
+        status: "Single",
+        people: [{ birthYear: 1962, job: { salary: 300_000, lastYear: 2027 } }],
+        traditionalIra: 1_000_000,
+        spending: 60_000,
+        endYear: 2031,
+      }),
+      irmaaOnTopOfBudget: true,
+    }).projectionByYear;
+    const retired = (y: number) => {
+      const row = years.find((r) => r.year === y);
+      if (row?.phase !== "decumulation") throw new Error(`${y} not retired`);
+      return row;
+    };
+    cents(retired(2028).irmaaCost, 6355.2);
+    cents(retired(2028).irmaaPaid ?? Number.NaN, 6355.2);
+    cents(retired(2028).afterTaxNeed, 66_355.2);
+    cents(retired(2029).irmaaCost, 6355.2);
+    expect(retired(2028).totalTraditionalWithdrawal).toBeLessThan(109_000);
+    cents(retired(2030).irmaaCost, 0);
+  });
+
+  it("ret/I30:gap [RET-16] through the engine: a gap year's tax year holds the retired spouse's Social Security as well as the other's wages", () => {
+    // Invented: MFJ. A, born 1959, stopped work before 2026 and claims
+    // 40,000 a year of Social Security; B, born 1962, is paid 200,000 a
+    // year through 2027 (no pre-tax deferrals); spending 100,000, which pay
+    // and Social Security cover, so no gap-year draw; 2026 tables, 0%
+    // inflation and COLA; the surcharge on top.
+    //
+    // 2026 and 2027 are gap years. Their MAGI (418.1010): wages 200,000
+    // plus taxable Social Security, 85% of 40,000 = 34,000 (provisional
+    // income far over 44,000, IRC 86(a)(2)) = 234,000, over the joint
+    // first tier's 218,000 and under 274,000: 1,148.40 a person. 2028 and
+    // 2029 read 2026 and 2027 with both 65+: 2 × 1,148.40 = 2,296.80
+    // (reading the wages alone, 200,000, would charge nothing).
+    const years = calculateProjection({
+      ...engineHousehold({
+        status: "MFJ",
+        people: [
+          {
+            birthYear: 1959,
+            socialSecurity: 40_000,
+            job: { salary: 0, lastYear: 2025 },
+          },
+          { birthYear: 1962, job: { salary: 200_000, lastYear: 2027 } },
+        ],
+        traditionalIra: 1_000_000,
+        spending: 100_000,
+        endYear: 2031,
+      }),
+      irmaaOnTopOfBudget: true,
+    }).projectionByYear;
+    const retired = (y: number) => {
+      const row = years.find((r) => r.year === y);
+      if (row?.phase !== "decumulation") throw new Error(`${y} not retired`);
+      return row;
+    };
+    cents(retired(2028).irmaaCost, 2296.8);
+    cents(retired(2029).irmaaCost, 2296.8);
   });
 });
 

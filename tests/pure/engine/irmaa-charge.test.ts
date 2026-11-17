@@ -14,7 +14,7 @@ import { fundingShortfallForYear } from "@/lib/pure/engine/projection-year-handl
 const charge = (atYearStart: boolean): IrmaaCharge => ({
   cost: 6936,
   onTop: 6936,
-  taxYear: { year: 2028, magi: 600_000, rothConversion: 0 },
+  taxYear: { year: 2028, magi: 600_000, rothConversion: 0, worked: false },
   atYearStart,
   warnings: [],
 });

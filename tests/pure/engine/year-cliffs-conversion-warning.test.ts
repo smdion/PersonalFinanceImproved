@@ -27,11 +27,15 @@ function run2028(
   thisYearsConversion: number,
 ) {
   const irmaaTaxYears: IrmaaTaxYears = new Map([
-    [2026, { year: 2026, ...year2026 }],
+    [2026, { year: 2026, ...year2026, worked: false }],
   ]);
   const routeWarnings: string[] = [];
   const ctx = {
-    input: { filingStatus: "MFJ", irmaaOnTopOfBudget: true },
+    input: {
+      filingStatus: "MFJ",
+      irmaaOnTopOfBudget: true,
+      asOfDate: new Date(2026, 0, 1),
+    },
   } as never;
   const state = { incomeHistory: [], irmaaTaxYears } as never;
   const thisYear = {

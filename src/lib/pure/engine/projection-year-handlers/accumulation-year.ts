@@ -18,6 +18,8 @@ import {
   distributeYearContributions,
 } from "./contribution-credits";
 import { closeYearAccounts } from "./year-end-accounts";
+import { recordIrmaaTaxYear } from "./irmaa-lookback";
+import { fullYearWages, workingYearIncome } from "./working-year-wages";
 
 /**
  * Runs a single working year: mutates state in place and pushes the year's
@@ -64,24 +66,19 @@ export function runAccumulationYear(
     accountsWithSpecs,
   } = state;
 
-  const {
-    currentSalary,
-    limitGrowthRate,
-    decumulationDefaults,
-    retirementYear,
-  } = input;
+  const { currentSalary, limitGrowthRate } = input;
+  const { decumulationDefaults, retirementYear } = input;
 
   const config = resolveAccumulationConfig(
     year,
     accumulationDefaults,
     sortedAccOverrides,
   );
-
-  // IRS limits grow annually
-  const lgf = Math.pow(1 + limitGrowthRate, yearIndex);
+  const lgf = Math.pow(1 + limitGrowthRate, yearIndex); // IRS limits' growth
 
   const {
     proRate,
+    lateYearCut,
     targetContribution,
     personPay,
     slots,
@@ -141,6 +138,9 @@ export function runAccumulationYear(
     year,
     routeWarnings,
   );
+  const wages = fullYearWages(projectedSalary, slots, proRate, lateYearCut);
+  const income = workingYearIncome(wages, gapRun?.income);
+  recordIrmaaTaxYear(state.irmaaTaxYears, year, income);
 
   // The year's growth, pro-rated in year 0 (UD-01).
   const effectiveReturn =

@@ -332,7 +332,6 @@ State and local income tax: every tax figure is federal.
 Pensions, annuities, and the dividends and interest a taxable brokerage pays each year: none of it is counted as income.
 A first death: both spouses are planned to the end, with no survivor benefit, no single filing status and no lower spending.
 Itemized deductions: every year takes the standard deduction.
-Working income in the first two IRMAA years: a Medicare surcharge reads income from two years before, but the plan's first two retired years read their own.
 Standard Medicare Part B and D premiums: only the income-based surcharge is counted, so put the premiums in your Retirement budget.
 Married filing separately, which isn't a supported filing status.
 Required minimum distributions before withdrawals start: a year with no withdrawals takes none.
