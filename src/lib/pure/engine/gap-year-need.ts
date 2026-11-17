@@ -20,7 +20,8 @@ export function gapYearNeed(
     /** The year's pay, per person, and budget: scaled to `fraction`. */
     payByPerson: readonly number[];
     budget: number;
-    /** The employee's contributions, and the Traditional part of them. */
+    /** The employee's contributions, and the part W-2 wages leave out
+     *  (`payrollTaxSkipped`: pre-tax and HSA payroll money). */
     employeeContributions: number;
     pretaxContributions: number;
   },

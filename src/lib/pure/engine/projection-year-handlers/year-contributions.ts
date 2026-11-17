@@ -9,6 +9,7 @@ import { fundGapYearSaving } from "./gap-year-saving";
 import { rampIsPortfolioSaving } from "@/lib/pure/accounts/brokerage-ramp";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { gapYearNeed } from "../gap-year-need";
+import { payrollTaxSkipped } from "./working-year-wages";
 import type { ContributionState } from "@/lib/pure/contributions/contribution-state";
 import type {
   PreYearSetup,
@@ -58,9 +59,7 @@ export function sizeYearContributions(
       budget: state.projectedExpenses * first.proRate,
       employeeContributions:
         roundToCents(sumBy(slots, (s) => s.employeeContrib)) + ramp,
-      pretaxContributions: roundToCents(
-        sumBy(slots, (s) => s.traditionalContrib),
-      ),
+      pretaxContributions: payrollTaxSkipped(slots),
     });
   const firstRamp = yearRampAmount(
     yearIndex,
