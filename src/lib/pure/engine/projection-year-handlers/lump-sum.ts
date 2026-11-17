@@ -6,6 +6,7 @@ import type { IndividualAccountInput } from "../../accounts/account-balances.typ
 import type { LumpSum } from "../types/year-overrides";
 import {
   getAccountTypeConfig,
+  getDisplayConfig,
   isTaxFreeBucket,
   isRetirementMoney,
 } from "../../../config/account-types";
@@ -17,6 +18,7 @@ import {
   addBasis,
 } from "../../accounts/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
+import { isHeldPart } from "../../accounts/account-part";
 import { portfolioFirst, retirementFirst } from "../individual-accounts/ledger";
 import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
 
@@ -76,9 +78,9 @@ export function applyLumpSums(
 }
 
 /**
- * A lump sum's parts, of its category and tax type: the named one, else (a name none carries)
- * the first parent's, Retirement first, shared by balance; unnamed, the first by whose money it
- * is (Brokerage page: Portfolio first; projection: Retirement first). Simple tax mode shares it.
+ * A lump sum's parts, of its category and tax type, ordered by whose money it is (its parent; unset:
+ * Retirement first; Portfolio money skips the projection-only part while another exists): the
+ * named one, else (a name none carries) the first parent's, shared by balance; unnamed, the first.
  */
 export function resolveLumpSumTargets(
   ls: LumpSum,
@@ -89,25 +91,39 @@ export function resolveLumpSumTargets(
     (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
   );
   const parentOf = (ia: IndividualAccountInput) => ia.parentCategory;
-  if (ls.targetAccountName) {
-    const named = parts.filter((ia) => ia.name === ls.targetAccountName);
-    const owned = named.find((ia) => ia.ownerName === ls.targetOwnerName);
-    if (ls.targetOwnerName && owned) return [owned];
-    if (named.length > 0) return [named[0]!];
-    const ordered = retirementFirst(parts, parentOf);
-    const first = ordered[0];
-    return first
-      ? ordered.filter(
-          (ia) =>
-            isRetirementMoney(ia.parentCategory) ===
-            isRetirementMoney(first.parentCategory),
-        )
-      : [];
-  }
-  if (isRetirementMoney(ls.targetParentCategory))
-    return retirementFirst(parts, parentOf).slice(0, 1);
-  // Portfolio savings never go to the projection-only account unless
-  // there's nowhere else for them.
   const real = parts.filter((ia) => ia.origin !== "projected");
-  return (real.length > 0 ? portfolioFirst(real, parentOf) : parts).slice(0, 1);
+  const ordered = isRetirementMoney(ls.targetParentCategory)
+    ? retirementFirst(parts, parentOf)
+    : real.length > 0
+      ? portfolioFirst(real, parentOf)
+      : parts;
+  const first = ordered[0];
+  if (!ls.targetAccountName || !first) return ordered.slice(0, 1);
+  const named = parts.filter((ia) => ia.name === ls.targetAccountName);
+  const owned = named.find((ia) => ia.ownerName === ls.targetOwnerName);
+  if (ls.targetOwnerName && owned) return [owned];
+  if (named.length > 0) return [named[0]!];
+  return ordered.filter(
+    (ia) =>
+      isRetirementMoney(ia.parentCategory) ===
+      isRetirementMoney(first.parentCategory),
+  );
+}
+
+/** Each lump sum with no account part of its category and tax type: the
+ *  totals take it, no account's row can, so the run says so. */
+export function unplacedLumpSumWarnings(
+  overrides: readonly { year: number; lumpSums?: LumpSum[] }[],
+  accounts: readonly IndividualAccountInput[],
+): string[] {
+  if (!accounts.some(isHeldPart)) return [];
+  return overrides.flatMap(({ year, lumpSums }) =>
+    (lumpSums ?? [])
+      .filter((ls) => resolveLumpSumTargets(ls, accounts).length === 0)
+      .map((ls) => {
+        const label = getDisplayConfig(ls.targetAccount).displayLabel;
+        const amount = Math.round(ls.amount).toLocaleString();
+        return `${year}: a $${amount} lump sum for ${label} has no ${label} account to land in, so no account's row shows it.`;
+      }),
+  );
 }
