@@ -6,15 +6,16 @@
  * - RP26: Rev. Proc. 2026-35 § 3 (2027 items),
  *   https://www.irs.gov/pub/irs-drop/rp-26-35.pdf. Pages are the PDF's
  *   (no printed page numbers in the text layer).
+ * - CMS27: CMS fact sheet, 2027 Medicare Parts A & B Premiums and
+ *   Deductibles (Nov 17, 2026; read 2026-11-17), https://www.cms.gov/newsroom/fact-sheets/2027-medicare-parts-b-premiums-deductibles
  * - HHS26: 2026 HHS Poverty Guidelines, 91 FR 1797 (Jan 15, 2026),
  *   https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf
  *
- * STILL BLANK (unpublished as of 2026-11-09): Pub 15-T (2027) § 1 annual
- * percentage-method tables, both columns (irs.gov/pub/irs-pdf/p15t.pdf is
- * still "For use in 2026"); CMS's 2027 Medicare Parts A & B fact sheet
- * (Part B and Part D IRMAA tables). Key them from those documents, then
- * add this year to PUBLISHED in tests/tax-data/irs-published.test.ts;
- * that test lists any blank left.
+ * STILL BLANK (final unpublished as of 2026-11-17): Pub 15-T (2027) § 1
+ * annual percentage-method tables, both columns (irs.gov/pub/irs-pdf/p15t.pdf
+ * is still "For use in 2026"; only an early-release draft exists). Key them
+ * from the final, then add this year to PUBLISHED in
+ * tests/tax-data/irs-published.test.ts; that test lists any blank left.
  */
 import type { PublishedYear } from "./types";
 
@@ -185,27 +186,29 @@ export const PUBLISHED_2027: PublishedYear = {
       },
     },
   },
-  // BLANK: CMS 2027 Medicare Parts A & B fact sheet not yet published
-  // (checked 2026-11-09).
+  // CMS fact sheet "2027 Medicare Parts A & B Premiums and Deductibles"
+  // (Nov 17, 2026; 2025 MAGI). Part B from its "Full Part B Coverage"
+  // table, Part D from its Part D table; each tier's MAGI is the lower
+  // edge printed ("greater than", "greater than or equal to" at the top).
   irmaa: {
     individual: {
-      cite: "",
+      cite: "CMS, 2027 Medicare Parts A & B Premiums and Deductibles (Nov 17, 2026), Part B (Full Part B Coverage) and Part D IRMAA tables, individual tax returns",
       value: [
-        { over: NaN, partB: NaN, partD: NaN },
-        { over: NaN, partB: NaN, partD: NaN },
-        { over: NaN, partB: NaN, partD: NaN },
-        { over: NaN, partB: NaN, partD: NaN },
-        { over: NaN, partB: NaN, partD: NaN },
+        { over: 112_000, partB: 83.7, partD: 15.4 },
+        { over: 141_000, partB: 209.4, partD: 39.7 },
+        { over: 177_000, partB: 335.0, partD: 64.0 },
+        { over: 212_000, partB: 460.6, partD: 88.3 },
+        { over: 500_000, partB: 502.4, partD: 96.4 },
       ],
     },
     joint: {
-      cite: "",
+      cite: "CMS, 2027 Medicare Parts A & B Premiums and Deductibles (Nov 17, 2026), Part B (Full Part B Coverage) and Part D IRMAA tables, joint tax returns",
       value: [
-        { over: NaN, partB: NaN, partD: NaN },
-        { over: NaN, partB: NaN, partD: NaN },
-        { over: NaN, partB: NaN, partD: NaN },
-        { over: NaN, partB: NaN, partD: NaN },
-        { over: NaN, partB: NaN, partD: NaN },
+        { over: 224_000, partB: 83.7, partD: 15.4 },
+        { over: 282_000, partB: 209.4, partD: 39.7 },
+        { over: 354_000, partB: 335.0, partD: 64.0 },
+        { over: 424_000, partB: 460.6, partD: 88.3 },
+        { over: 750_000, partB: 502.4, partD: 96.4 },
       ],
     },
   },

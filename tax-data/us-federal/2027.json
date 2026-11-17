@@ -1,8 +1,9 @@
 {
   "$schema": "../schema/year.schema.json",
   "revision": 1,
-  "source": "IRS Rev. Proc. 2026-24; IRC 223(b)(3); IRC 3101(a); IRC 3101(b)(1); IRC 3101(b)(2); IRC 3102(f)(1); IRS Rev. Proc. 2026-35; OBBBA §70103; HHS 2026 Poverty Guidelines",
+  "source": "IRS Notice 2026-66; IRS Rev. Proc. 2026-24; IRC 223(b)(3); IRC 3101(a); IRC 3101(b)(1); IRC 3101(b)(2); IRC 3102(f)(1); IRS Rev. Proc. 2026-35; OBBBA §70103; CMS 2027 Medicare Parts A & B Premiums and Deductibles; HHS 2026 Poverty Guidelines",
   "sources": {
+    "IRS Notice 2026-66": "https://www.irs.gov/pub/irs-drop/n-26-66.pdf",
     "IRS Rev. Proc. 2026-24": "https://www.irs.gov/pub/irs-drop/rp-26-24.pdf",
     "IRC 223(b)(3)": "https://www.law.cornell.edu/uscode/text/26/223",
     "IRC 3101(a)": "https://www.law.cornell.edu/uscode/text/26/3101",
@@ -11,6 +12,7 @@
     "IRC 3102(f)(1)": "https://www.law.cornell.edu/uscode/text/26/3102",
     "IRS Rev. Proc. 2026-35": "https://www.irs.gov/pub/irs-drop/rp-26-35.pdf",
     "OBBBA §70103": "https://www.govinfo.gov/app/details/PLAW-119publ21",
+    "CMS 2027 Medicare Parts A & B Premiums and Deductibles": "https://www.cms.gov/newsroom/fact-sheets/2027-medicare-parts-b-premiums-deductibles",
     "HHS 2026 Poverty Guidelines": "https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf"
   },
   "limits": {
@@ -512,73 +514,73 @@
     }
   },
   "irmaa": {
-    "source": "",
+    "source": "CMS 2027 Medicare Parts A & B Premiums and Deductibles",
     "notes": "Part B + Part D income-related adjustments, per person, a year (monthly × 12). 2027 premiums use 2025 MAGI.",
     "brackets": {
       "MFJ": [
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 224000,
+          "annualSurcharge": 1189.2
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 282000,
+          "annualSurcharge": 2989.2
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 354000,
+          "annualSurcharge": 4788.0
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 424000,
+          "annualSurcharge": 6586.8
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 750000,
+          "annualSurcharge": 7185.6
         }
       ],
       "Single": [
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 112000,
+          "annualSurcharge": 1189.2
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 141000,
+          "annualSurcharge": 2989.2
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 177000,
+          "annualSurcharge": 4788.0
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 212000,
+          "annualSurcharge": 6586.8
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 500000,
+          "annualSurcharge": 7185.6
         }
       ],
       "HOH": [
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 112000,
+          "annualSurcharge": 1189.2
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 141000,
+          "annualSurcharge": 2989.2
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 177000,
+          "annualSurcharge": 4788.0
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 212000,
+          "annualSurcharge": 6586.8
         },
         {
-          "magiThreshold": null,
-          "annualSurcharge": null
+          "magiThreshold": 500000,
+          "annualSurcharge": 7185.6
         }
       ]
     }
