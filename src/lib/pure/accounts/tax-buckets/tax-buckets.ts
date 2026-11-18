@@ -26,6 +26,7 @@ import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { toNumber } from "@/lib/utils/numbers";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
+import { accountKeyOf } from "@/lib/pure/accounts/account-part";
 
 /** parentCategory values the projection engine includes in starting balances. */
 const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
@@ -56,7 +57,7 @@ type TaxBucketPerfAccount = {
 
 /** Per-(name, category, taxType, owner) rollup that lets the Tax Buckets tool attach
  *  `rothBasis` rows and early-access flags to balances. Same key as
- *  `accountBreakdownByCategory` (and the engine), not `performanceAccountId`. */
+ *  `accountBreakdownByCategory` and the engine (`accountKeyOf`). */
 type AccountRollupEntry = {
   name: string;
   /** Null only when a merged group spans several performance accounts sharing a name;
@@ -66,6 +67,8 @@ type AccountRollupEntry = {
   taxType: string;
   category: string;
   amount: number;
+  /** The snapshot rows this entry holds (`portfolio_accounts.id`). */
+  portfolioAccountIds: number[];
 };
 
 type AccountBreakdownEntry = {
@@ -287,10 +290,10 @@ export function computeTaxBucketBreakdown(
 }
 
 /** Merges one snapshot row into its breakdown entry and, for Retirement money, its
- *  rollup entry: rows of one (display name, category, tax type, owner) are one entry. */
+ *  rollup entry: rows with one engine key (`accountKeyOf`) are one entry. */
 function mergeRowIntoEntries(
   a: TaxBucketSnapshotAccount,
-  row: {
+  facts: {
     category: AccountCategory;
     displayName: string;
     ownerName: string | undefined;
@@ -303,16 +306,14 @@ function mergeRowIntoEntries(
   rollupByKey: Map<string, AccountRollupEntry>,
 ): void {
   const { category, displayName, ownerName, isRetirement, knownBasis, basis } =
-    row;
+    facts;
   if (!accountBreakdownByCategory[category])
     accountBreakdownByCategory[category] = [];
-  // Owner is in the merge key: same-named accounts of different people stay
+  // Owner is in the key: same-named accounts of different people stay
   // separate rows, so per-owner eligibility (Rule of 55, 59½) sees the right owner.
+  const key = accountKeyOf({ ...a, name: displayName, category });
   const existing = accountBreakdownByCategory[category].find(
-    (e) =>
-      e.name === displayName &&
-      e.taxType === a.taxType &&
-      e.ownerPersonId === (a.ownerPersonId ?? undefined),
+    (e) => accountKeyOf({ ...e, category }) === key,
   );
   if (existing) {
     existing.amount += a.amount;
@@ -344,25 +345,25 @@ function mergeRowIntoEntries(
     });
   }
 
-  // Rollup on the same tuple as accountBreakdownByCategory so both merge alike.
   // Retirement-only: early-access rules don't apply to Portfolio brokerage, and
-  // the "at retirement" join on this tuple excludes it too.
+  // the "at retirement" join on this key excludes it too.
   if (isRetirement) {
-    const rollupKey = `${displayName}|${category}|${a.taxType}|${a.ownerPersonId ?? "null"}`;
-    const rollupExisting = rollupByKey.get(rollupKey);
+    const rollupExisting = rollupByKey.get(key);
     if (rollupExisting) {
       rollupExisting.amount += a.amount;
+      rollupExisting.portfolioAccountIds.push(a.portfolioAccountId);
       if (rollupExisting.performanceAccountId !== a.performanceAccountId) {
         rollupExisting.performanceAccountId = null;
       }
     } else {
-      rollupByKey.set(rollupKey, {
+      rollupByKey.set(key, {
         name: displayName,
         performanceAccountId: a.performanceAccountId,
         ownerPersonId: a.ownerPersonId,
         taxType: a.taxType,
         category,
         amount: a.amount,
+        portfolioAccountIds: [a.portfolioAccountId],
       });
     }
   }

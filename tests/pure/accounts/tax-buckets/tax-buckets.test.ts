@@ -78,6 +78,14 @@ describe("computeTaxBucketBreakdown", () => {
       first.portfolioAccountId,
       second.portfolioAccountId,
     ]);
+    // The rollup merges on the same key, and keeps the rows its account id loses.
+    expect(result.accountRollup).toEqual([
+      expect.objectContaining({
+        performanceAccountId: null,
+        amount: 3000,
+        portfolioAccountIds: entry!.portfolioAccountIds,
+      }),
+    ]);
   });
 
   it("splits a joint Roth IRA into two owner-scoped rollup entries", () => {
