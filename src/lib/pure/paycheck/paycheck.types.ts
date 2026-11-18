@@ -171,7 +171,7 @@ export type PaycheckResult = {
   postTaxDeductions: DeductionLine[];
   netPay: number;
   bonusEstimate: BonusEstimate;
-  bonusPeriod: number | null; // which period number the bonus lands in (null if no bonusMonth)
+  bonusPeriod: number | null; // the check the bonus is paid on (null if no bonusMonth)
   extraPaycheckMonths: string[];
   yearSchedule: PeriodBreakdown[];
   /** The year's paydays (yearPaydays): the year schedule's rows. */
@@ -184,9 +184,9 @@ export type PaycheckResult = {
   /** The bonus is dated before the job started — not this job's, so not
    *  in this year's pay (bonusPeriod is null then too). */
   bonusBeforeStart: boolean;
-  /** The bonus's check is after the job's last check this year (dated
-   *  after its last day, or undated for a job ending this year) — not in
-   *  this year's pay (bonusPeriod is null then too). */
+  /** Dated after the job's last day this year, or undated for a job ending
+   *  this year: not this year's pay (bonusPeriod is null then too). A bonus
+   *  dated inside the job but paid after its last check rides on that check. */
   bonusAfterEnd: boolean;
   /** A bonus amount with no month set (bonusPeriod is null then too). */
   bonusUndated: boolean;
