@@ -7,6 +7,7 @@ import { calendarYear } from "@/lib/utils/date";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { tracksCostBasis } from "@/lib/config/account-types";
+import { accountKeyOf } from "@/lib/pure/accounts/account-part";
 import type { resolveRmdExcessTarget } from "@/lib/pure/retirement/rmd-excess-target";
 import type { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
@@ -62,16 +63,14 @@ export function buildIndividualAccounts({
     })),
     currentDate: asOfDate,
   });
-  // Local join key (name, category, taxType, ownerPersonId), the tuple
-  // `accountRollup` merges on; not the engine's `makeIndKey()`, since this data
-  // attaches directly onto each `individualAccounts` entry below.
+  // The key `accountRollup` merges on and the engine keys parts by.
   function eligibilityJoinKey(
     name: string,
     category: string,
     taxType: string,
     ownerPersonId: number | null,
   ): string {
-    return `${name}|${category}|${taxType}|${ownerPersonId ?? "null"}`;
+    return accountKeyOf({ name, category, taxType, ownerPersonId });
   }
   const eligibilityByJoinKey = new Map<
     string,
@@ -134,7 +133,7 @@ export function buildIndividualAccounts({
         : undefined;
       return {
         name: a.name,
-        performanceAccountId: soleAccountId(a.performanceAccountIds),
+        ...accountIds(a),
         category: cat as AccountCategory,
         taxType: a.taxType,
         accountType: a.accountType,
@@ -170,7 +169,18 @@ export function buildIndividualAccounts({
   );
 }
 
-/** A part's performance account, when it has exactly one. */
-function soleAccountId(ids: readonly number[] | undefined): number | undefined {
-  return ids?.length === 1 ? ids[0] : undefined;
+/** A part's performance account, when it has exactly one; else its first
+ *  snapshot row, which names it for this run. */
+function accountIds(entry: {
+  performanceAccountIds?: number[];
+  portfolioAccountIds: number[];
+}): Pick<
+  IndividualAccountInput,
+  "performanceAccountId" | "portfolioAccountId"
+> {
+  const ids = entry.performanceAccountIds;
+  const performanceAccountId = ids?.length === 1 ? ids[0] : undefined;
+  return performanceAccountId != null
+    ? { performanceAccountId }
+    : { portfolioAccountId: entry.portfolioAccountIds[0] };
 }

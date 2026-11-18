@@ -5,7 +5,10 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalance } from "@/lib/config/account-types.types";
 import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 import type { SeparationSource } from "@/lib/pure/accounts/early-access";
-import type { AccountKey } from "@/lib/pure/accounts/account-part";
+
+/** One account part's identity in the engine's ledger and on its per-account
+ *  rows. Opaque: compared only for equality, built only by `account-part.ts`. */
+export type AccountKey = string & { readonly __brand: "AccountKey" };
 
 export type RothBasisMeta = {
   year: number;
@@ -49,6 +52,9 @@ export type IndividualAccountInput = {
   name: string;
   /** The account's performance account, only when this part has exactly one. */
   performanceAccountId?: number;
+  /** The part's snapshot row (`portfolio_accounts.id`, its first when rows
+   *  merge), only when it has no one performance account: one snapshot's id. */
+  portfolioAccountId?: number;
   /** Waterfall category this account belongs to. */
   category: AccountCategory;
   /** Tax type: 'taxFree' for Roth, 'preTax'/'hsa'/'afterTax' for others. */

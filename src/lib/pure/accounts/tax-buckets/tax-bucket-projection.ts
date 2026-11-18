@@ -34,12 +34,10 @@ import type {
 import type {
   RothBasisMeta,
   RuleOf55Status,
+  AccountKey,
 } from "@/lib/pure/accounts/account-balances.types";
 import { ageInYear } from "@/lib/utils/date";
-import {
-  accountKeyOf,
-  type AccountKey,
-} from "@/lib/pure/accounts/account-part";
+import { accountKeyOf } from "@/lib/pure/accounts/account-part";
 
 type TaxBucketProjectionResult = {
   /** Null when the projection has no accumulation phase (already past the transition);
