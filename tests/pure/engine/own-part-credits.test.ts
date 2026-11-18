@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ownPartCredits } from "@/lib/pure/engine/individual-accounts/own-part-credits";
+import {
+  ownPartCredits,
+  unclaimedSlot,
+} from "@/lib/pure/engine/individual-accounts/own-part-credits";
+import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { makeContributionSpec } from "../fixtures/engine-fixtures";
 import type { AccumulationSlot } from "@/lib/pure/engine/types/routing";
@@ -48,16 +52,27 @@ const slots = [
   slot("hsa", { employeeContrib: 4000, employerMatch: 500 }),
   slot("brokerage", { employeeContrib: 2000 }),
 ];
-const byName = (credits: ReturnType<typeof ownPartCredits>) => {
-  const out: Record<string, number> = {};
-  for (const [p, amount] of credits ?? [])
-    out[p.name] = (out[p.name] ?? 0) + amount;
-  return out;
+/** Runs rule 5 over `accounts`; each part's credit by name, or undefined
+ *  when it doesn't apply. */
+const byName = (
+  accounts: IndividualAccountInput[],
+  ramp: number,
+  specs?: ReturnType<typeof makeContributionSpec>[],
+) => {
+  const indBalance = new Map<string, number>();
+  const indKey = makeIndKey();
+  const ledger = { indAccounts: accounts, indKey, indBalance };
+  if (!ownPartCredits(ledger, slots, ramp, specs)) return undefined;
+  return Object.fromEntries(
+    accounts
+      .filter((p) => indBalance.has(indKey(p)))
+      .map((p) => [p.name, indBalance.get(indKey(p))]),
+  );
 };
 
 describe("ownPartCredits (EN14 rule 5)", () => {
   it("credits each slot to its own part by the category totals' split", () => {
-    expect(byName(ownPartCredits(slots, 1200, undefined, parts))).toEqual({
+    expect(byName(parts, 1200)).toEqual({
       "401k preTax": 9000,
       "401k taxFree": 4000,
       "hsa hsa": 4500,
@@ -67,10 +82,32 @@ describe("ownPartCredits (EN14 rule 5)", () => {
 
   it("applies only when no part is held and there are no specs", () => {
     const held = [...parts, { ...part("ira", "preTax"), origin: undefined }];
-    expect(ownPartCredits(slots, 0, undefined, held)).toBeUndefined();
-    expect(ownPartCredits(slots, 0, undefined, [])).toBeUndefined();
+    expect(byName(held, 0)).toBeUndefined();
+    expect(byName([], 0)).toBeUndefined();
     const spec = makeContributionSpec();
-    expect(ownPartCredits(slots, 0, [spec], parts)).toBeUndefined();
-    expect(ownPartCredits(slots, 0, [], parts)).toBeDefined();
+    expect(byName(parts, 0, [spec])).toBeUndefined();
+    expect(byName(parts, 0, [])).toBeDefined();
+  });
+});
+
+describe("unclaimedSlot (the specs' path: a slot no spec claims)", () => {
+  const run = (accounts: IndividualAccountInput[]) => {
+    const indBalance = new Map<string, number>();
+    const contributions = new Map<string, number>();
+    const indKey = makeIndKey();
+    const ledger = { indAccounts: accounts, indKey, indBalance };
+    for (const s of slots)
+      unclaimedSlot({ ...ledger, overflowToBrokerage: 500 }, s, contributions);
+    return { balance: Object.fromEntries(indBalance), contributions };
+  };
+
+  it("on a run with no held part, credits each slot's employee money to its own part, the brokerage net of the overflow", () => {
+    const { balance } = run(parts);
+    expect(Object.values(balance)).toEqual([6000, 4000, 4000, 1500]);
+  });
+
+  it("on a run that holds an account, credits nothing (the year-end reconcile places it)", () => {
+    const held = [...parts, { ...part("ira", "preTax"), origin: undefined }];
+    expect(run(held).balance).toEqual({});
   });
 });

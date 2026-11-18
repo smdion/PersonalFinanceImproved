@@ -14,7 +14,7 @@ import {
 import { OVERFLOW_TOLERANCE } from "../../../constants";
 import type { resolveAccumulationConfig } from "../override-resolution";
 import { distributeContributions } from "../individual-accounts/contributions";
-import { accrueIndividualBasis, credit } from "../individual-accounts/ledger";
+import { accrueIndividualBasis } from "../individual-accounts/ledger";
 import { ownPartCredits } from "../individual-accounts/own-part-credits";
 import { applyLumpSums } from "./lump-sum";
 import type {
@@ -172,34 +172,34 @@ export function distributeYearContributions(
   let indOverflow = new Map<string, number>();
   let indRamp = new Map<string, number>();
   // Contributions, match, overflow and the ramp are cash in: new basis.
-  const own = ownPartCredits(slots, rampAmount, contributionSpecs, indAccounts);
-  if (own)
-    followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
-      own.forEach(([ia, amount]) => credit(indKey(ia), amount, [indBalance])),
-    );
-  else if (holdsAccounts && contributionSpecs) {
+  const ledger = { indAccounts, indKey, indBalance };
+  const fill = () => {
+    if (ownPartCredits(ledger, slots, rampAmount, contributionSpecs)) return;
+    if (holdsAccounts && contributionSpecs)
+      return distributeContributions({
+        slots,
+        contributionSpecs,
+        indAccounts,
+        indKey,
+        indBalance,
+        indParentCat,
+        specToAccount,
+        accountsWithSpecs,
+        projectedSalary,
+        currentSalary,
+        personPay,
+        limitGrowthRate,
+        yearIndex,
+        proRate,
+        overflowToBrokerage,
+        rampAmount,
+        employerMatchByParentCat: activeEmployerMatchByParentCat,
+      });
+  };
+  const maps = followInflows(indAccounts, indKey, indBalance, brokBasis, fill);
+  if (maps) {
     ({ indContributions, indMatch, indIntentional, indOverflow, indRamp } =
-      followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
-        distributeContributions({
-          slots,
-          contributionSpecs,
-          indAccounts,
-          indKey,
-          indBalance,
-          indParentCat,
-          specToAccount,
-          accountsWithSpecs,
-          projectedSalary,
-          currentSalary,
-          personPay,
-          limitGrowthRate,
-          yearIndex,
-          proRate,
-          overflowToBrokerage,
-          rampAmount,
-          employerMatchByParentCat: activeEmployerMatchByParentCat,
-        }),
-      ));
+      maps);
     // Tracked Roth basis grows by this year's contribution, which excludes
     // employer match (roth-basis-tracking.ts's docblock says why).
     accrueIndividualBasis(indAccounts, indKey, indBasis, indContributions);

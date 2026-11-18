@@ -964,7 +964,7 @@
       "runGapYearDraw": 217
     },
     "src/lib/pure/engine/individual-accounts/contributions.ts": {
-      "distributeContributions": 318
+      "distributeContributions": 317
     },
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
       "runAccumulationYear": 216

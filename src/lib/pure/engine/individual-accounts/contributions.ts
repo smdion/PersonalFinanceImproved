@@ -17,6 +17,7 @@ import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { rampBrokerages } from "@/lib/pure/accounts/brokerage-ramp";
 import { credit, retirementFirst, specKeyOf } from "./ledger";
 import { otherParts } from "./other-tax-part";
+import { unclaimedSlot } from "./own-part-credits";
 
 interface DistributeContributionsInput {
   slots: AccumulationSlot[];
@@ -83,8 +84,6 @@ export function distributeContributions(
   const indIntentional = new Map<string, number>();
   const indOverflow = new Map<string, number>();
   const indRamp = new Map<string, number>();
-
-  const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
 
   // --- Step 1: Compute raw projected amount per spec (for weighting only) ---
   const lgf = Math.pow(1 + limitGrowthRate, y);
@@ -171,7 +170,8 @@ export function distributeContributions(
       }
     };
 
-    if (bs === "roth_traditional") {
+    if (catSpecs.length === 0) unclaimedSlot(input, slot, indContributions);
+    else if (bs === "roth_traditional") {
       for (const [taxTreatment, slotAmount] of [
         ["pre_tax", slot.traditionalContrib],
         ["tax_free", slot.rothContrib],
@@ -219,7 +219,7 @@ export function distributeContributions(
       credit(k, roundToCents(amount * weight), [indMatch, indBalance]);
     }
   };
-  for (const cat of ACCOUNT_CATEGORIES) {
+  for (const cat of getAllCategories()) {
     const catMatch = slots.find((s) => s.category === cat)?.employerMatch ?? 0;
     if (catMatch <= 0) continue;
     const parentCatMatchData = employerMatchByParentCat?.get(cat);
