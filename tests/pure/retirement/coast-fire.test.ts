@@ -12,6 +12,7 @@ import {
 import { describe, it, expect } from "vitest";
 import type {
   EngineAccumulationYear,
+  EngineDecumulationYear,
   ProjectionInput,
   ProjectionResult,
 } from "@/lib/pure/engine/types";
@@ -21,6 +22,8 @@ import {
   simulatedCoastFirePasses,
 } from "@/lib/pure/retirement/coast-fire";
 import { calculateProjection } from "@/lib/pure/engine";
+import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
+import { cents } from "../../fixtures/answer-key";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { onePerson } from "../../fixtures/engine-people";
@@ -696,6 +699,37 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
     // never looked at penaltyAvoidedShortfall and could say "already
     // coast" here anyway.
     expect(result.status).not.toBe("already_coast");
+  });
+
+  it("ret/UN1 [ENG-24] contributions stopped at 42, locked money at 61: unmet is the need less what was delivered", () => {
+    const input = makeGapInput();
+    const stopAt42 = calculateProjection({
+      ...input,
+      profileSwitches: buildCoastFireProfileSwitches(input, 42),
+    });
+    const at61 = stopAt42.projectionByYear.find(
+      (y): y is EngineDecumulationYear =>
+        y.phase === "decumulation" && y.age === 61,
+    )!;
+    // By hand: delivered = $35,291.45 drawn − $4,206.59 tax − $0 penalty =
+    // $31,084.86; unmet = $191,082.65 need − $31,084.86 = $159,997.79 (no
+    // Social Security, no IRMAA). The router's own shortfall is in its
+    // trial's gross dollars, which climbed toward the whole pool.
+    cents(
+      {
+        need: at61.afterTaxNeed,
+        delivered: at61.deliveredAfterTax!,
+        unmet: at61.unmetNeed!,
+        lockedPart: at61.penaltyAvoidedShortfall!,
+      },
+      {
+        need: 191082.65,
+        delivered: 31084.86,
+        unmet: 159997.79,
+        lockedPart: 159997.79,
+      },
+    );
+    expect(assessPlan(stopAt42).failureReason).toBe("penaltyGap");
   });
 
   it("without the exclusion (avoidPenalizedWithdrawals: false), the SAME household DOES pass stopping today -- isolates the fix to the exclusion's effect, not an unrelated change", () => {

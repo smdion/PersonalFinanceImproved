@@ -4093,11 +4093,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": {
-    "ratchet/no-unregistered-fallback": {
-      "count": 2
-    }
-  },
   "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": {
     "ratchet/no-abbreviation": {
       "count": 4

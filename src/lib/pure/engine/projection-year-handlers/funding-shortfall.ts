@@ -5,7 +5,7 @@ import type { DecumulationYear } from "./types";
 import type { RepricedFlow } from "./conversion-year-reprice";
 import { payIrmaaCharge, type IrmaaCharge } from "./irmaa-charge";
 
-/** The unmet need (its routed part not floor-filtered), and IRMAA paid. */
+/** The unmet need, its locked and Portfolio parts, and IRMAA paid. */
 export function fundingShortfallForYear(
   state: { portfolioWithdrawal: number | null },
   thisYear: DecumulationYear,
@@ -16,9 +16,8 @@ export function fundingShortfallForYear(
   const { taxCost } = flow.repriced;
   const { penaltyCost, surplusCredit } = flow.parts;
   const { afterTaxNeed } = flow.need;
-  const { routedUnmetNeed } = flow.route;
-  // The router's unmet need misses gaps from an under-sized gross-up and tax
-  // that rose after routing; comparing delivered with needed catches them.
+  const { routedUnmetNeed, penaltyAvoidedShortfall, nonRetirementShortfall } =
+    flow.route;
   const deliveredAfterTax = roundToCents(
     totalWithdrawal - taxCost - penaltyCost,
   );
@@ -34,28 +33,27 @@ export function fundingShortfallForYear(
       : Math.max(0, afterTaxNeed - deliveredAfterTax - surplusCredit(taxCost)),
   );
   const fundingShortfall = roundToCents(needGap + irmaaPayment.unpaid);
-  const shortfallMaterialityFloor = shortfallFloor(afterTaxNeed);
-  const unmetNeedRaw =
-    fundingShortfall > shortfallMaterialityFloor
-      ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
-      : routedUnmetNeed;
+  const floor = shortfallFloor(afterTaxNeed);
+  // Routing fell short (its own figure is gross dollars, not need) or a material gap.
+  const shown = routedUnmetNeed !== undefined || fundingShortfall > floor;
+  const unmetNeedRaw = shown ? fundingShortfall : undefined;
+  const inUnmet = (part?: number) => part && Math.min(part, fundingShortfall);
   // A no-gross-up household's own tax and penalty gap is by design: netted out.
-  const shouldGrossUp = thisYear.taxRates.grossUpForTaxes !== false;
-  const grossUpExplainedGap = shouldGrossUp
-    ? 0
-    : roundToCents(Math.min(taxCost + penaltyCost, needGap));
+  const grossUpExplainedGap =
+    thisYear.taxRates.grossUpForTaxes !== false
+      ? 0
+      : roundToCents(Math.min(taxCost + penaltyCost, needGap));
   const netFundingShortfall = roundToCents(
     Math.max(0, fundingShortfall - grossUpExplainedGap),
   );
-  const unmetNeedMaterial =
-    Math.max(routedUnmetNeed ?? 0, netFundingShortfall) >
-    shortfallMaterialityFloor;
-
+  const unmetNeedMaterial = netFundingShortfall > floor;
   return {
     irmaaPayment,
     deliveredAfterTax,
-    shortfallMaterialityFloor,
+    shortfallMaterialityFloor: floor,
     unmetNeedRaw,
     unmetNeedMaterial,
+    penaltyAvoidedShortfall: inUnmet(penaltyAvoidedShortfall),
+    nonRetirementShortfall: inUnmet(nonRetirementShortfall),
   };
 }

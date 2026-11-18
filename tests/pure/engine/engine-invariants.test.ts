@@ -816,6 +816,31 @@ describe("engine invariants", () => {
       );
     });
 
+    it("34 — unmet need never exceeds the year's budget (plus IRMAA on top), its parts never the unmet need", () => {
+      fc.assert(
+        fc.property(arbitraryRetiredInput(), (input) => {
+          const result = calculateProjection(input);
+          for (const year of result.projectionByYear) {
+            if (year.phase !== "decumulation") continue;
+            // The budget, not afterTaxNeed: tax on Social Security a year
+            // can't pay is unmet spending even when Social Security covers
+            // the budget (a withdrawal-sized year's budget is its amount).
+            const unmet = year.unmetNeed ?? 0;
+            expect(unmet).toBeLessThanOrEqual(
+              year.projectedExpenses + (year.irmaaPaid ?? 0) + EPSILON,
+            );
+            expect(year.penaltyAvoidedShortfall ?? 0).toBeLessThanOrEqual(
+              unmet + EPSILON,
+            );
+            expect(year.nonRetirementShortfall ?? 0).toBeLessThanOrEqual(
+              unmet + EPSILON,
+            );
+          }
+        }),
+        { numRuns: NUM_RUNS },
+      );
+    });
+
     it("23 — sum of individual slot withdrawals equals year totalWithdrawal", () => {
       fc.assert(
         fc.property(arbitraryRetiredInput(), (input) => {

@@ -409,8 +409,8 @@ export type EngineDecumulationYear = {
    *  untouched (`RankedWithdrawalTiers`). bracket_filling only; undefined otherwise. */
   rothBasisCapacity?: number;
   brokerageZeroLtcgCapacity?: number;
-  /** Unmet withdrawal need after routing (target − actual), from all three routing modes;
-   *  includes need left unfunded to avoid penalized money. */
+  /** The need (a `withdrawalSized` year's: gross) less what was delivered, plus IRMAA on top
+   *  left unpaid; never the router's gross shortfall. Includes need left to avoid penalized money. */
   unmetNeed?: number;
   /** The one verdict on whether `unmetNeed` is a material shortfall (`unmetNeed` can carry
    *  rounding residue); UI alerting keys off this (`SHORTFALL_MATERIALITY`). */

@@ -50,7 +50,6 @@ export function decumulationYearRow(
   const { afterTaxNeed, targetWithdrawal } = flow.need;
   const { preWithdrawalAcctBal, routeResult, slots, routeWarnings } =
     flow.route;
-  const { penaltyAvoidedShortfall, nonRetirementShortfall } = flow.route;
   const { totalWithdrawal, totalRothWithdrawal, totalTraditionalWithdrawal } =
     flow.rmd;
   const { rmdDivisor, ownerRmd, rmdOverrodeRouting } = flow.rmd;
@@ -65,6 +64,7 @@ export function decumulationYearRow(
   const { rmdExcessAmount } = parts.settle;
   const { deliveredAfterTax, shortfallMaterialityFloor } = parts.shortfall;
   const { unmetNeedRaw, unmetNeedMaterial } = parts.shortfall;
+  const { penaltyAvoidedShortfall, nonRetirementShortfall } = parts.shortfall;
   const { paid, reinvested } = parts.shortfall.irmaaPayment;
   const { irmaa, acaStatus, acaMagiHeadroom } = parts.cliffs;
   const { yearEnd } = parts.closed;
