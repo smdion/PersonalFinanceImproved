@@ -69,13 +69,18 @@ describe("computeTaxBucketProjection — brokerage cost basis", () => {
     expect(project(years()).costBasis).toBe(16000);
   });
 
-  it("caps the fallback at the balance, as the engine caps its own", () => {
-    // $40k basis + $6k contributed, but the account holds $30k.
+  it("keeps the fallback's basis above the balance, and caps only the tax-free slice", () => {
+    // $40k basis + $6k contributed, but the account holds $30k: basis is
+    // what was paid (J39), and the $30k there is all tax-free.
     const entry = computeTaxBucketProjection({
       nowEntries: [{ ...now, costBasis: 40000 }],
       projectionByYear: years(),
       people: [{ id: 1, name: "Alex", birthYear: 1980 }],
     }).entries[0]!;
-    expect(entry.costBasis).toBe(30000);
+    expect(entry.costBasis).toBe(46000);
+    expect(entry.slices.map((x) => [x.label, x.amount])).toEqual([
+      ["Cost basis", 30000],
+      ["Growth", 0],
+    ]);
   });
 });

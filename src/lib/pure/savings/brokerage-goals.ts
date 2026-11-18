@@ -68,7 +68,9 @@ export type BrokerageGoalYear = {
   totalWithdrawal: number;
   totalTaxCost: number;
   endBalance: number;
+  /** Cost basis: what was paid, above `endBalance` after a loss. */
   endBasis: number;
+  /** `endBalance - endBasis`; negative when the brokerage sits below cost. */
   unrealizedGain: number;
   /** Pro-rate fraction for first year (e.g. 0.833 = 10/12 months). null for full years. */
   proRateFraction: number | null;
@@ -157,12 +159,11 @@ export function calculateBrokerageGoals(
           0,
         );
         afterTaxBasis = roundToCents(
-          Math.min(yearRow.balanceByTaxType.afterTaxBasis * ratio, afterTax),
+          yearRow.balanceByTaxType.afterTaxBasis * ratio,
         );
       }
     } else {
       ({ afterTax, afterTaxBasis } = yearRow.balanceByTaxType);
-      afterTaxBasis = Math.min(afterTaxBasis, afterTax);
     }
 
     let contribution = 0;

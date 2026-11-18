@@ -243,7 +243,7 @@
     "src/lib/demo/profiles/recently-retired.ts": 932,
     "src/lib/demo/profiles/single-income.ts": 475,
     "src/lib/pure/accounts/eligibility.ts": 365,
-    "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts": 439,
+    "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts": 428,
     "src/lib/pure/advice/milestones/custom-goals.ts": 129,
     "src/lib/pure/advice/milestones/financial-order-of-operations.ts": 383,
     "src/lib/pure/advice/milestones/habits.ts": 391,
@@ -283,7 +283,7 @@
     "src/lib/pure/engine/contribution-routing.ts": 615,
     "src/lib/pure/engine/individual-accounts/contributions.ts": 375,
     "src/lib/pure/engine/individual-accounts/ledger.ts": 145,
-    "src/lib/pure/engine/individual-accounts/reconcile.ts": 353,
+    "src/lib/pure/engine/individual-accounts/reconcile.ts": 351,
     "src/lib/pure/engine/individual-accounts/withdrawals.ts": 320,
     "src/lib/pure/engine/irmaa-check.ts": 83,
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 243,
@@ -942,8 +942,8 @@
       "computeTaxBucketAnalysis": 239
     },
     "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts": {
-      "computeTaxBucketProjection": 258,
-      "computeTaxBucketProjection.entries.map()": 183
+      "computeTaxBucketProjection": 256,
+      "computeTaxBucketProjection.entries.map()": 181
     },
     "src/lib/pure/accounts/tax-buckets/tax-buckets.ts": {
       "computeTaxBucketBreakdown": 232
@@ -1006,7 +1006,7 @@
       "calculateRelocation": 316
     },
     "src/lib/pure/savings/brokerage-goals.ts": {
-      "calculateBrokerageGoals": 212
+      "calculateBrokerageGoals": 211
     },
     "src/lib/pure/simulation/trial-run.ts": {
       "runTrials": 293

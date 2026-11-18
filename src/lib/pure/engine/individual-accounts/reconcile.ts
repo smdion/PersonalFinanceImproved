@@ -104,9 +104,7 @@ export function buildIndividualYearBalances(
       : {};
     const brokerageBasis = maps.brokerageBasis?.get(k);
     const costBasisFields =
-      brokerageBasis != null
-        ? { costBasis: roundToCents(Math.min(brokerageBasis, balance)) }
-        : {};
+      brokerageBasis != null ? { costBasis: roundToCents(brokerageBasis) } : {};
     const basisDraw = maps.draws?.get(k);
     const drawnFields: AccountYearRothBasis =
       basisDraw != null

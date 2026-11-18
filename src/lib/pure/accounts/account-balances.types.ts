@@ -116,7 +116,8 @@ export type IndividualAccountYearBalance = {
   projectedOnly?: boolean;
   balance: number;
   /** Cost basis (brokerage-type accounts), tracked per account by the
-   *  engine (brokerage-basis.ts). */
+   *  engine (brokerage-basis.ts): what was paid, so above `balance` after a
+   *  loss. */
   costBasis?: number;
   contribution: number;
   employerMatch: number;

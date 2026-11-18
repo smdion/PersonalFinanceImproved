@@ -672,4 +672,79 @@ describe("brokerage goals integration", () => {
       },
     });
   });
+
+  // J39 (BL-V): basis is what was paid (IRC § 1012), so a brokerage below
+  // cost shows its basis above the balance and a negative unrealized gain.
+  // At a 0% return every dollar put in is basis, so the $10,000 loss stays.
+  it("a brokerage below cost shows its real basis and a negative gain (held accounts)", () => {
+    const input = makeInput({
+      returnRates: [{ label: "0%", rate: 0 }],
+      individualAccounts: [
+        {
+          name: "401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 80000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "Taxable Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 30000,
+          startingBasis: 40000,
+          parentCategory: "Portfolio",
+        },
+      ],
+    });
+    const engineResult = calculateProjection(input);
+    const first = engineResult.projectionByYear[0]!;
+    const row = first.individualAccountBalances.find(
+      (ia) => ia.name === "Taxable Brokerage",
+    )!;
+    expect(row.costBasis! - row.balance).toBeCloseTo(10000, 2);
+
+    const year = calculateBrokerageGoals({
+      asOfDate: AS_OF,
+      goals: [],
+      engineYears: engineResult.projectionByYear,
+    }).projectionByYear[0]!;
+    expect(year.endBasis).toBeCloseTo(year.endBalance + 10000, 2);
+    expect(year.unrealizedGain).toBeCloseTo(-10000, 2);
+  });
+
+  it("a brokerage below cost shows its real basis and a negative gain (no held accounts)", () => {
+    const input = makeInput({
+      returnRates: [{ label: "0%", rate: 0 }],
+      startingBalances: {
+        preTax: 110000,
+        taxFree: 40000,
+        afterTax: 30000,
+        afterTaxBasis: 40000,
+        hsa: 15000,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 80000,
+          roth: 20000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 15000 },
+        ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 30000,
+          basis: 40000,
+        },
+      },
+    });
+    const year = calculateBrokerageGoals({
+      asOfDate: AS_OF,
+      goals: [],
+      engineYears: calculateProjection(input).projectionByYear,
+    }).projectionByYear[0]!;
+    expect(year.endBasis).toBeCloseTo(year.endBalance + 10000, 2);
+    expect(year.unrealizedGain).toBeCloseTo(-10000, 2);
+  });
 });

@@ -104,24 +104,15 @@ function transitionRothBasis(
 function transitionCostBasis(
   costBasis: number,
   projectedCostBasis: number | undefined,
-  balance: number,
   contributionByYear: Map<number, number> | undefined,
   currentYear: number,
   transitionYear: number,
 ): number {
-  // Capped at the balance, as the engine caps its own (an account that's
-  // down can't hand back more basis than it holds).
+  // Basis is what was paid, above the balance after a loss, as the engine
+  // keeps it; the access slices cap it (computeBrokerageAccess).
   return (
     projectedCostBasis ??
-    Math.min(
-      balance,
-      projectCostBasis(
-        costBasis,
-        contributionByYear,
-        currentYear,
-        transitionYear,
-      ),
-    )
+    projectCostBasis(costBasis, contributionByYear, currentYear, transitionYear)
   );
 }
 
@@ -296,7 +287,6 @@ export function computeTaxBucketProjection(input: {
         projectedCostBasis = transitionCostBasis(
           now.costBasis,
           projected.costBasis,
-          balance,
           contributionsByKey.get(key),
           currentYear,
           transitionYear,
@@ -409,7 +399,6 @@ export function computeTaxBucketProjection(input: {
       costBasis = transitionCostBasis(
         costBasis,
         projected.costBasis,
-        balance,
         contributionsByKey.get(key),
         currentYear,
         transitionYear,
