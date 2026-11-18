@@ -18,6 +18,30 @@ import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 export type BrokerageBasis = Map<string, number>;
 
+/** Average cost (IRC § 1012): the basis a draw of `amount` takes from money whose basis ÷ balance
+ *  is `ratio`, unrounded. Uncapped, so money holding more basis than balance gives it up in
+ *  proportion and an emptied account keeps none. */
+export function basisOut(amount: number, ratio: number): number {
+  return amount * ratio;
+}
+
+/** A draw's taxable gain once `out` (its basis out, in cents) is taken: never below 0, the one
+ *  place the ratio caps at 1. */
+function taxableGain(amount: number, out: number): number {
+  return roundToCents(amount - Math.min(amount, out));
+}
+
+/** A brokerage sale of `amount` at basis ÷ balance `ratio`: the basis it takes out (cents), the
+ *  part of the sale that returns basis, and the taxable gain. */
+export function sellAtCost(amount: number, ratio: number) {
+  const out = roundToCents(basisOut(amount, ratio));
+  return {
+    basisOut: out,
+    basisPortion: Math.min(amount, out),
+    gainsPortion: taxableGain(amount, out),
+  };
+}
+
 /** Accounts whose balance structure tracks cost basis (brokerage). */
 function basisTrackedAccounts(
   indAccounts: readonly IndividualAccountInput[],
@@ -64,7 +88,7 @@ export function seedBrokerageBasis(
   return basis;
 }
 
-/** Basis ÷ balance over the given accounts (0..1); undefined when they
+/** Basis ÷ balance over the given accounts (average cost, uncapped); undefined when they
  *  hold nothing (callers fall back to the aggregate ratio — a 0 would price
  *  any unattributed money as all gain). */
 export function groupBasisRatio(
@@ -80,7 +104,7 @@ export function groupBasisRatio(
     balance += Math.max(0, indBalance.get(k) ?? 0);
     b += basis.get(k) ?? 0;
   }
-  return balance > 0 ? Math.min(1, Math.max(0, b / balance)) : undefined;
+  return balance > 0 ? Math.max(0, b / balance) : undefined;
 }
 
 function brokerageBalances(
@@ -111,7 +135,7 @@ export function followDraws<T>(
     const now = Math.max(0, indBalance.get(k) ?? 0);
     if (now >= was || was <= 0) continue;
     const b = basis.get(k) ?? 0;
-    basis.set(k, roundToCents(Math.max(0, b - (was - now) * (b / was))));
+    basis.set(k, roundToCents(Math.max(0, b - basisOut(was - now, b / was))));
   }
   return result;
 }

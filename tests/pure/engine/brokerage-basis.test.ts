@@ -4,7 +4,9 @@
  */
 import { describe, it, expect } from "vitest";
 import {
+  basisOut,
   seedBrokerageBasis,
+  sellAtCost,
   syncAggregateBasis,
 } from "@/lib/pure/engine/brokerage-basis";
 import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
@@ -25,6 +27,27 @@ const brokerage = (
   taxType: "afterTax",
   startingBalance,
   ...(startingBasis != null ? { startingBasis } : {}),
+});
+
+describe("sellAtCost", () => {
+  it("a sale takes basis out at average cost and taxes the rest as gain", () => {
+    // $40,000 held at $10,000 basis (ratio 0.25): a $4,000 sale returns $1,000 of basis.
+    expect(sellAtCost(4000, 0.25)).toEqual({
+      basisOut: 1000,
+      basisPortion: 1000,
+      gainsPortion: 3000,
+    });
+    expect(basisOut(4000, 0.25)).toBe(1000);
+  });
+
+  it("basis above the balance leaves in proportion, and the gain is never below 0", () => {
+    // $8,000 held at $10,000 basis (ratio 1.25): selling half takes half the basis.
+    expect(sellAtCost(4000, 1.25)).toEqual({
+      basisOut: 5000,
+      basisPortion: 4000,
+      gainsPortion: 0,
+    });
+  });
 });
 
 describe("seedBrokerageBasis", () => {

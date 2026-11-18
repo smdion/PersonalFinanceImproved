@@ -27,8 +27,8 @@ export type WithdrawalSourceKind = "roth" | "brokerage" | "hsa";
  */
 export function deriveBasisRankingInputs(params: {
   balances: Pick<TaxBuckets, "afterTax" | "afterTaxBasis">;
-  /** Retirement brokerages' own basis ratio (brokerage-basis.ts), when
-   *  basis is tracked per account; otherwise the aggregate ratio. */
+  /** Retirement brokerages' own basis ratio (brokerage-basis.ts), when basis is
+   *  tracked per account; otherwise the aggregate. Capped at 1: ranking prices the gain. */
   brokerageBasisRatio?: number;
   indBasis?: Map<string, RothBasisState>;
   /** With `indKey`, drops basis held in Portfolio-parented accounts, which routing
@@ -71,11 +71,11 @@ export function deriveBasisRankingInputs(params: {
       );
     }
   }
-  const brokerageBasisRatio =
+  const brokerageBasisRatio = Math.min(
+    1,
     params.brokerageBasisRatio ??
-    (balances.afterTax > 0
-      ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
-      : 0);
+      (balances.afterTax > 0 ? balances.afterTaxBasis / balances.afterTax : 0),
+  );
   return { rothBasisAvailable, brokerageBasisRatio };
 }
 

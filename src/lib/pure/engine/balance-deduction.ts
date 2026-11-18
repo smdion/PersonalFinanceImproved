@@ -39,7 +39,8 @@ interface DeductWithdrawalsInput {
   slots: DecumulationSlot[];
   balances: TaxBuckets;
   accountBalance: AccountBalances;
-  brokerageBasisPortion: number;
+  /** The brokerage draw's basis out at average cost (`computeTaxFromSlots`). */
+  basisOut: number;
 }
 
 /**
@@ -47,7 +48,7 @@ interface DeductWithdrawalsInput {
  * Mutates `balances` and `accountBalance` in place.
  */
 export function deductWithdrawals(input: DeductWithdrawalsInput): void {
-  const { slots, balances, accountBalance, brokerageBasisPortion } = input;
+  const { slots, balances, accountBalance, basisOut } = input;
 
   for (const slot of slots) {
     if (
@@ -63,7 +64,7 @@ export function deductWithdrawals(input: DeductWithdrawalsInput): void {
     } else if (isOverflowTarget(slot.category)) {
       balances.afterTax = roundToCents(balances.afterTax - slot.withdrawal);
       balances.afterTaxBasis = roundToCents(
-        Math.max(0, balances.afterTaxBasis - brokerageBasisPortion),
+        Math.max(0, balances.afterTaxBasis - basisOut),
       );
       setBalance(
         accountBalance[slot.category],
@@ -74,10 +75,7 @@ export function deductWithdrawals(input: DeductWithdrawalsInput): void {
       setBasis(
         accountBalance[slot.category],
         roundToCents(
-          Math.max(
-            0,
-            getBasis(accountBalance[slot.category]) - brokerageBasisPortion,
-          ),
+          Math.max(0, getBasis(accountBalance[slot.category]) - basisOut),
         ),
       );
     } else {

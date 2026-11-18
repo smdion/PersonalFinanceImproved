@@ -10,6 +10,7 @@ import {
   isOverflowTarget,
 } from "../../config/account-types";
 import { scheduleDGainsTax } from "@/lib/pure/tax/ltcg";
+import { sellAtCost } from "./brokerage-basis";
 import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
 import {
   ssTaxThresholdsFor,
@@ -222,9 +223,9 @@ interface ComputeTaxFromSlotsInput {
   /** Current balances by tax bucket — only afterTax/afterTaxBasis are read,
    *  for the brokerage basis-ratio split. */
   balances: Pick<TaxBuckets, "afterTax" | "afterTaxBasis">;
-  /** The basis ratio of the brokerage money withdrawn (the Retirement
-   *  brokerages' own, brokerage-basis.ts) — one ratio per year shared with
-   *  the ranking. Omitted: the aggregate ratio from `balances`. */
+  /** Basis ÷ balance of the brokerage money withdrawn (the Retirement
+   *  brokerages' own, brokerage-basis.ts), uncapped: average cost takes it
+   *  out. Omitted: the aggregate ratio from `balances`. */
   brokerageBasisRatio?: number;
   /** Authoritative totals when the caller already tracks them (post-RMD in decumulation-year.ts),
    *  so no sub-cent drift from re-summing. Omit to derive from slots (withdrawal-solver.ts). */
@@ -265,6 +266,8 @@ interface ComputeTaxFromSlotsResult {
    *  is responsible for annotating the brokerage slot with this if needed —
    *  this function only reads slots, it doesn't mutate them. */
   brokerageBasisPortion: number;
+  /** Basis the brokerage withdrawal takes out at average cost (`basisOut`). */
+  brokerageBasisOut: number;
   /** Taxable-gains portion of the brokerage withdrawal. */
   brokerageGainsPortion: number;
   /** Tax on the brokerage withdrawal alone (subset of taxCost), exposed so callers don't
@@ -330,29 +333,25 @@ export function computeTaxFromSlots(
         )
       : taxRates.traditionalFallbackRate;
 
-  // Basis-aware brokerage tax: only gains portion is taxable
+  // Basis-aware brokerage tax: average cost takes basis out; only the gain is taxable
   let brokerageTaxCost = 0;
+  let brokerageBasisOut = 0;
   let brokerageBasisPortion = 0;
   let brokerageGainsPortion = 0;
+  const sellsBrokerage = brokerageWithdrawal > 0 && balances.afterTax > 0;
+  if (sellsBrokerage) {
+    ({
+      basisOut: brokerageBasisOut,
+      basisPortion: brokerageBasisPortion,
+      gainsPortion: brokerageGainsPortion,
+    } = sellAtCost(
+      brokerageWithdrawal,
+      input.brokerageBasisRatio ?? balances.afterTaxBasis / balances.afterTax,
+    ));
+  }
   if (input.brokerageTaxCostOverride !== undefined) {
     brokerageTaxCost = roundToCents(input.brokerageTaxCostOverride);
-    if (brokerageWithdrawal > 0 && balances.afterTax > 0) {
-      const basisRatio =
-        input.brokerageBasisRatio ??
-        Math.min(1, balances.afterTaxBasis / balances.afterTax);
-      brokerageBasisPortion = roundToCents(brokerageWithdrawal * basisRatio);
-      brokerageGainsPortion = roundToCents(
-        brokerageWithdrawal - brokerageBasisPortion,
-      );
-    }
-  } else if (brokerageWithdrawal > 0 && balances.afterTax > 0) {
-    const basisRatio =
-      input.brokerageBasisRatio ??
-      Math.min(1, balances.afterTaxBasis / balances.afterTax);
-    brokerageBasisPortion = roundToCents(brokerageWithdrawal * basisRatio);
-    brokerageGainsPortion = roundToCents(
-      brokerageWithdrawal - brokerageBasisPortion,
-    );
+  } else if (sellsBrokerage) {
     // Gains stack on ordinary income across 0%/15%/20%, at most their cost at
     // ordinary rates (line 25). `actualTaxableIncome` is gross, as the W-4
     // brackets above take it; the gains tax converts it first.
@@ -387,6 +386,7 @@ export function computeTaxFromSlots(
     actualTraditionalRate,
     actualTaxableIncome,
     brokerageBasisPortion,
+    brokerageBasisOut,
     brokerageGainsPortion,
     brokerageTaxCost,
     ssTaxCost,

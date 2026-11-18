@@ -1,4 +1,4 @@
-import { followDraws, groupBasisRatio } from "../brokerage-basis";
+import { followDraws, groupBasisRatio, sellAtCost } from "../brokerage-basis";
 import type { EngineAccumulationYear } from "../types/projection-result";
 import { roundToCents } from "../../../utils/math";
 import { addBalance, setBasis, getBasis } from "../../accounts/account-balance";
@@ -88,11 +88,11 @@ export function brokerageGoalDraws(
             brokBasis,
           )
         : undefined) ??
-      (balances.afterTax > 0
-        ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
-        : 0);
-    const basisPortion = roundToCents(drawAmount * basisRatio);
-    const gainsPortion = roundToCents(drawAmount - basisPortion);
+      (balances.afterTax > 0 ? balances.afterTaxBasis / balances.afterTax : 0);
+    const { basisOut, basisPortion, gainsPortion } = sellAtCost(
+      drawAmount,
+      basisRatio,
+    );
     const taxCost = roundToCents(
       gainsPortion *
         (decumulationDefaults.distributionTaxRates?.brokerage ??
@@ -100,13 +100,13 @@ export function brokerageGoalDraws(
     );
     balances.afterTax = roundToCents(balances.afterTax - drawAmount);
     balances.afterTaxBasis = roundToCents(
-      Math.max(0, balances.afterTaxBasis - basisPortion),
+      Math.max(0, balances.afterTaxBasis - basisOut),
     );
     addBalance(accountBalance[OVERFLOW_CATEGORY], -drawAmount);
     setBasis(
       accountBalance[OVERFLOW_CATEGORY],
       roundToCents(
-        Math.max(0, getBasis(accountBalance[OVERFLOW_CATEGORY]) - basisPortion),
+        Math.max(0, getBasis(accountBalance[OVERFLOW_CATEGORY]) - basisOut),
       ),
     );
     if (holdsAccounts) {

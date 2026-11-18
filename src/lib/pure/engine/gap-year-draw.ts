@@ -198,7 +198,7 @@ export function runGapYearDraw(
         filingStatus,
         rothTaxableGrowth,
         penaltyCost,
-        brokerageBasisRatio,
+        brokerageBasisRatio: retirementBasisRatio,
       });
     const first = pricedWith(incomeAlone);
     const drawIncome =
@@ -235,7 +235,7 @@ export function runGapYearDraw(
     slots,
     balances,
     accountBalance,
-    brokerageBasisPortion: priced.brokerageBasisPortion,
+    basisOut: priced.brokerageBasisOut,
   });
   clampBalances(balances, accountBalance);
   if (holdsAccounts) {

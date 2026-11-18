@@ -51,7 +51,7 @@ export function priceYearTax(
   const { taxRates, ssIncome } = thisYear;
   const { grownTaxBrackets, grownLtcgBrackets } = thisYear.tables;
   const standardDeduction = thisYear.tables.grownStandardDeduction; // all year
-  const { slots, brokerageBasisRatio } = flow.route;
+  const { slots } = flow.route;
   const { totalTraditionalWithdrawal, totalRothWithdrawal } = flow.rmd;
   const { rothTaxSplit, earlyWithdrawalPenalty } = flow.drawn;
   const { taxEstimate } = flow.need;
@@ -75,7 +75,7 @@ export function priceYearTax(
       totalRothWithdrawal,
       rothTaxableGrowth: rothTaxSplit.taxableGrowth,
       penaltyCost: earlyWithdrawalPenalty.penaltyCost,
-      brokerageBasisRatio,
+      brokerageBasisRatio: thisYear.retirementBasisRatio,
       brokerageTaxCostOverride,
     });
   // Taxable Social Security from this year's post-RMD income (the first
@@ -102,7 +102,6 @@ export function pricedYearParts(
   const { slots } = flow.route;
   const { ssSurplus, taxEstimate, afterTaxNeed } = flow.need;
   const { rmdOverrodeRouting } = flow.rmd;
-  const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
   const brokerageGainsPortion = taxFromSlots.brokerageGainsPortion;
   // This year's taxable income, non-qualified Roth growth included, as
   // computeTaxFromSlots computed it (LTCG bracket selection and MAGI read it).
@@ -115,7 +114,7 @@ export function pricedYearParts(
     taxFromSlots.brokerageWithdrawal > 0 &&
     balances.afterTax > 0
   ) {
-    brokerageSlot.basisPortion = brokerageBasisPortion;
+    brokerageSlot.basisPortion = taxFromSlots.brokerageBasisPortion;
     brokerageSlot.gainsPortion = brokerageGainsPortion;
   }
 
@@ -143,7 +142,6 @@ export function pricedYearParts(
   }
 
   return {
-    brokerageBasisPortion,
     brokerageGainsPortion,
     actualTaxableIncome,
     penaltyCost,
@@ -170,11 +168,12 @@ export function settleYearDraws(
   const { depletionTracked, accountDepletions } = state;
   const { config, year, age } = thisYear;
   const { slots } = flow.route;
-  const { brokerageBasisPortion, surplusCredit } = flow.parts;
+  const { surplusCredit } = flow.parts;
   const { taxFromSlots } = flow.priced;
   const { rmdOverrodeRouting, totalWithdrawal } = flow.rmd;
   const { afterTaxNeed } = flow.need;
-  deductWithdrawals({ slots, balances, accountBalance, brokerageBasisPortion });
+  const basisOut = taxFromSlots.brokerageBasisOut;
+  deductWithdrawals({ slots, balances, accountBalance, basisOut });
   clampBalances(balances, accountBalance);
   // Lump sums (one-time, outside limits) are cash in: new basis in the
   // brokerage account they land in.
