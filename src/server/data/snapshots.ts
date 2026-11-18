@@ -5,24 +5,11 @@ import * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { toNumber } from "@/lib/utils/numbers";
 import type { Db } from "@/lib/db";
-
-type SnapshotAccount = {
-  institution: string;
-  taxType: string;
-  accountType: AccountCategory;
-  subType: string | null;
-  label: string | null;
-  parentCategory: string | null;
-  amount: number;
-  ownerPersonId: number | null;
-  performanceAccountId: number | null;
-  displayName: string | null;
-  accountLabel: string | null;
-};
+import type { TaxBucketSnapshotAccount } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 
 type SnapshotResult = {
   snapshot: typeof schema.portfolioSnapshots.$inferSelect;
-  accounts: SnapshotAccount[];
+  accounts: TaxBucketSnapshotAccount[];
   total: number;
 };
 
@@ -54,6 +41,7 @@ export async function getLatestSnapshot(
 
   const rawAccounts = await db
     .select({
+      portfolioAccountId: schema.portfolioAccounts.id,
       institution: schema.portfolioAccounts.institution,
       taxType: schema.portfolioAccounts.taxType,
       accountType: schema.portfolioAccounts.accountType,
@@ -81,7 +69,8 @@ export async function getLatestSnapshot(
     // surfaces and doesn't reshuffle after an inline balance edit.
     .orderBy(asc(schema.portfolioAccounts.id));
 
-  const accounts: SnapshotAccount[] = rawAccounts.map((a) => ({
+  const accounts: TaxBucketSnapshotAccount[] = rawAccounts.map((a) => ({
+    portfolioAccountId: a.portfolioAccountId,
     institution: a.institution,
     taxType: a.taxType,
     accountType: a.accountType as AccountCategory,
@@ -97,7 +86,7 @@ export async function getLatestSnapshot(
     accountLabel: a.accountLabel,
   }));
   const total = accounts.reduce(
-    (s: number, a: SnapshotAccount) => s + a.amount,
+    (s: number, a: TaxBucketSnapshotAccount) => s + a.amount,
     0,
   );
 

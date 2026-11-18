@@ -13,10 +13,14 @@ const people = [
   { id: 2, name: "Sam", birthYear: 1991 },
 ];
 
+/** Each row its own `portfolio_accounts.id`, as the loader gives it. */
+let nextRowId = 0;
 function account(
   overrides: Partial<TaxBucketSnapshotAccount>,
 ): TaxBucketSnapshotAccount {
+  nextRowId += 1;
   return {
+    portfolioAccountId: nextRowId,
     institution: "Fidelity",
     taxType: "preTax",
     accountType: "401k",

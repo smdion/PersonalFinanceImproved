@@ -57,6 +57,7 @@ const snapshotRow = (
 ) => {
   const p = perfAccounts.find((a) => a.id === perfId)!;
   return {
+    portfolioAccountId: perfId,
     institution: "Fidelity",
     taxType,
     accountType: p.accountType,

@@ -30,7 +30,10 @@ import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 /** parentCategory values the projection engine includes in starting balances. */
 const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
 
+/** One portfolio snapshot row, as the loader reads it. */
 export type TaxBucketSnapshotAccount = {
+  /** The row's own id (`portfolio_accounts.id`), unique within a snapshot. */
+  portfolioAccountId: number;
   institution: string;
   taxType: string;
   accountType: AccountCategory;
@@ -78,6 +81,8 @@ type AccountBreakdownEntry = {
   costBasis?: number;
   /** The performance accounts this entry's rows belong to. */
   performanceAccountIds?: number[];
+  /** The snapshot rows this entry holds (`portfolio_accounts.id`). */
+  portfolioAccountIds: number[];
 };
 
 export type TaxBucketBreakdown = {
@@ -311,6 +316,7 @@ function mergeRowIntoEntries(
   );
   if (existing) {
     existing.amount += a.amount;
+    existing.portfolioAccountIds.push(a.portfolioAccountId);
     if (
       a.performanceAccountId != null &&
       !existing.performanceAccountIds?.includes(a.performanceAccountId)
@@ -334,6 +340,7 @@ function mergeRowIntoEntries(
       ...(a.performanceAccountId != null
         ? { performanceAccountIds: [a.performanceAccountId] }
         : {}),
+      portfolioAccountIds: [a.portfolioAccountId],
     });
   }
 

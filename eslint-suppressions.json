@@ -4847,9 +4847,6 @@
     },
     "ratchet/no-abbreviation": {
       "count": 1
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
     }
   },
   "src/server/data/sub-accounts.ts": {

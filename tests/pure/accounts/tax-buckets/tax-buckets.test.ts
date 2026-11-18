@@ -14,6 +14,9 @@ const people = [
   { id: 2, name: "Sam" },
 ];
 
+/** Each row its own `portfolio_accounts.id`, as the loader gives it. */
+let nextRowId = 0;
+
 // Shaped after real household data verified live this session: a 401k with
 // preTax rows split across Rollover/Employer Match sub-types plus a Roth
 // (taxFree) sub-election in the same account, a joint Roth IRA split into
@@ -21,7 +24,9 @@ const people = [
 function account(
   overrides: Partial<TaxBucketSnapshotAccount>,
 ): TaxBucketSnapshotAccount {
+  nextRowId += 1;
   return {
+    portfolioAccountId: nextRowId,
     institution: "Fidelity",
     taxType: "preTax",
     accountType: "401k",

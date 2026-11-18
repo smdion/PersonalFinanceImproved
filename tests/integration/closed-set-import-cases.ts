@@ -259,6 +259,7 @@ async function snapshot(db: Db) {
 async function snapshotRows(db: Db, accountType?: string) {
   const { schema } = await app();
   return (await db.select().from(schema.portfolioAccounts)).map((a) => ({
+    portfolioAccountId: a.id,
     institution: a.institution,
     taxType: a.taxType,
     // The read takes the stored string as a category; this one may not be.

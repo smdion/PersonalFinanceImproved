@@ -2008,6 +2008,7 @@ describe("one config entry adds an account type", () => {
         {
           accounts: [
             {
+              portfolioAccountId: 1,
               institution: "Bank",
               taxType: "afterTax",
               accountType: "brokerage" as const,
