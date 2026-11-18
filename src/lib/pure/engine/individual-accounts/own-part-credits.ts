@@ -1,23 +1,23 @@
-/** A slot's money no contribution spec claims, credited to the slot's own
- *  part (EN14 rule 5) on a run that holds no account. */
+/** A slot's money no contribution spec claims:
+ *  the run's Retirement parts of its slice take it, by balance. */
 import {
   getAccountTypeConfig,
-  getAllCategories,
   isOverflowTarget,
+  isRetirementMoney,
 } from "../../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../../config/tax-treatment-buckets";
-import { roundToCents } from "../../../utils/math";
-import { isHeldPart } from "../../accounts/account-part";
+import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
 import type { IndKeyFn } from "../../accounts/account-part";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
-import type { ContributionSpec } from "../types/contribution-spec";
 import type { AccumulationSlot } from "../types/routing";
 import { credit } from "./ledger";
 
-/** The run's parts and what a credit writes to. */
+/** The run's parts, their parents, and the balances a credit writes to. */
 type Ledger = Record<"indAccounts", readonly IndividualAccountInput[]> &
   Record<"indKey", IndKeyFn> &
-  Record<"indBalance", Map<string, number>>;
+  Record<"indBalance", Map<string, number>> &
+  Record<"indParentCat", Map<string, string>> &
+  Record<"overflowToBrokerage", number>;
 
 /** A slot's employee money by tax part; the overflow target's net of the
  *  year's IRS overflow, which the overflow step routes. */
@@ -37,63 +37,62 @@ function slotTaxParts(
   return [[config.taxBucketKey, employee]];
 }
 
-/** The first part of a category and tax type: rule 5's target. */
-function firstPart(ledger: Ledger, category: string, taxType: string) {
-  return ledger.indAccounts.find(
-    (ia) => ia.category === category && ia.taxType === taxType,
+/** Each part's weight: its balance; when all are $0, its account's other
+ *  parts' (each person's); when those are $0 too, equal. */
+function weightsOf(ledger: Ledger, parts: IndividualAccountInput[]) {
+  const balance = (ia: IndividualAccountInput) =>
+    Math.max(0, ledger.indBalance.get(ledger.indKey(ia)) ?? 0);
+  const own = parts.map(balance);
+  if (sumBy(own, (w) => w) > 0) return own;
+  const otherParts = parts.map((part) =>
+    sumBy(
+      ledger.indAccounts.filter(
+        (ia) =>
+          ia.name === part.name &&
+          ia.category === part.category &&
+          ia.ownerPersonId === part.ownerPersonId &&
+          ia.taxType !== part.taxType,
+      ),
+      balance,
+    ),
   );
+  if (sumBy(otherParts, (w) => w) > 0) return otherParts;
+  return parts.map(() => 1);
 }
 
 /**
- * A slot's employee money no spec in its category claims, by tax part, on
- * the first part of each slice (rule 5), only on a run that holds no
- * account: a held run's year-end reconcile places it.
+ * A slot's employee money that no spec in its category claims, by tax part:
+ * the run's Retirement-parented parts of each slice take it by weight
+ * (`weightsOf`), the last part the cents left. Credits contributions too.
  */
 export function unclaimedSlot(
-  ledger: Ledger & { overflowToBrokerage: number },
+  ledger: Ledger,
   slot: AccumulationSlot,
   contributions: Map<string, number>,
 ): void {
-  if (ledger.indAccounts.some(isHeldPart)) return;
   for (const [taxType, amount] of slotTaxParts(
     slot,
     ledger.overflowToBrokerage,
   )) {
-    const part = firstPart(ledger, slot.category, taxType);
-    if (part && amount !== 0)
-      credit(ledger.indKey(part), amount, [contributions, ledger.indBalance]);
+    const parts = ledger.indAccounts.filter(
+      (ia) =>
+        ia.category === slot.category &&
+        ia.taxType === taxType &&
+        isRetirementMoney(
+          ledger.indParentCat.get(ledger.indKey(ia)) ?? ia.parentCategory,
+        ),
+    );
+    if (amount === 0 || parts.length === 0) continue;
+    const weights = weightsOf(ledger, parts);
+    const total = sumBy(weights, (w) => w);
+    let left = amount;
+    parts.forEach((ia, i) => {
+      const share =
+        i === parts.length - 1
+          ? left
+          : roundToCents(amount * safeDivide(weights[i]!, total, 0));
+      left = roundToCents(left - share);
+      credit(ledger.indKey(ia), share, [contributions, ledger.indBalance]);
+    });
   }
-}
-
-/** Credits each slot and the brokerage ramp to its own part; false when the
- *  run holds an account or has specs (the specs' path applies). */
-export function ownPartCredits(
-  ledger: Ledger,
-  slots: readonly AccumulationSlot[],
-  rampAmount: number,
-  specs: readonly ContributionSpec[] | undefined,
-): boolean {
-  const { indAccounts: accounts } = ledger;
-  const held = accounts.some(isHeldPart);
-  if (held || accounts.length === 0 || (specs && specs.length > 0))
-    return false;
-  const add = (category: string, taxType: string, amount: number) => {
-    const part = firstPart(ledger, category, taxType);
-    if (part && amount !== 0)
-      credit(ledger.indKey(part), amount, [ledger.indBalance]);
-  };
-  for (const slot of slots) {
-    const config = getAccountTypeConfig(slot.category);
-    if (config.balanceStructure === "roth_traditional") {
-      const traditional = slot.traditionalContrib + slot.employerMatch;
-      add(slot.category, TAX_TREATMENT_TO_TAX_TYPE.pre_tax, traditional);
-      add(slot.category, TAX_TREATMENT_TO_TAX_TYPE.tax_free, slot.rothContrib);
-    } else {
-      const total = slot.employeeContrib + slot.employerMatch;
-      add(slot.category, config.taxBucketKey, total);
-    }
-  }
-  const overflow = getAllCategories().find(isOverflowTarget)!;
-  add(overflow, getAccountTypeConfig(overflow).taxBucketKey, rampAmount);
-  return true;
 }

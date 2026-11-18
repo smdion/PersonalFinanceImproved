@@ -252,7 +252,7 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
     }
   });
 
-  it("conservation: rothBasisDrawn never exceeds that year's withdrawal, and basis book-keeping is monotonically non-increasing absent new contributions", () => {
+  it("conservation: rothBasisDrawn never exceeds that year's withdrawal, and basis book-keeping rises only by new contributions", () => {
     const input = makeInput({
       individualAccounts: [
         ...otherAccounts(1980),
@@ -293,8 +293,8 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
         expect(acct.roth?.basisDrawn).toBeGreaterThanOrEqual(0);
       }
 
-      // Basis remaining never increases year-over-year (no new
-      // contributions to this account post-retirement in this fixture).
+      // Basis remaining rises only by the year's contribution (the
+      // working years' savings land here with no specs).
       if (
         prevBasisRemaining !== undefined &&
         acct.roth?.basisRemaining !== undefined
@@ -304,7 +304,7 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
             acct.roth!.conversionBasisRemaining!,
         ).toBeCloseTo(acct.roth!.basisRemaining!, 1);
         expect(acct.roth?.basisRemaining).toBeLessThanOrEqual(
-          prevBasisRemaining + 0.01,
+          prevBasisRemaining + acct.contribution + 0.01,
         );
       }
       prevBasisRemaining = acct.roth?.basisRemaining;

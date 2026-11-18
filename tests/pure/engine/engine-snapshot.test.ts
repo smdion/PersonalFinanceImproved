@@ -4215,31 +4215,20 @@ describe("engine snapshot parity", () => {
 });
 
 /** Fixtures whose two balance tracks drift today. */
-const KNOWN_DRIFT = [
-  "fixture 39: Individual account tracking through full projection",
-  "fixture 52: 3+ individual accounts with unequal balances in same category",
-];
-
 describe("the two balance tracks agree", () => {
-  const warningsOf = (fixture: string) =>
-    [...drift.byTest].filter(([name]) => name.endsWith(fixture));
-
-  it("no other projection above drifts by more than $1 (indBal vs acctBal)", () => {
+  it("no projection above drifts by more than $1 (indBal vs acctBal)", () => {
     expect(drift.byTest.size).toBeGreaterThan(0);
-    const unknown = drift
-      .drifting()
-      .map(([name]) => name)
-      .filter((name) => !KNOWN_DRIFT.some((k) => name.endsWith(k)));
-    expect(unknown).toEqual([]);
+    expect(drift.drifting().map(([name]) => name)).toEqual([]);
   });
 
-  for (const fixture of KNOWN_DRIFT)
-    it.fails(
-      `${fixture}: no drift (v0.11 Engine: two balance tracks become one)`,
-      () => {
-        const ran = warningsOf(fixture);
-        expect(ran).toHaveLength(1);
-        expect(ran[0]![1]).toEqual([]);
-      },
-    );
+  // Their savings with no contribution specs land on the parts.
+  for (const fixture of [
+    "fixture 39: Individual account tracking through full projection",
+    "fixture 52: 3+ individual accounts with unequal balances in same category",
+  ])
+    it(`${fixture}: no drift`, () => {
+      const ran = [...drift.byTest].filter(([name]) => name.endsWith(fixture));
+      expect(ran).toHaveLength(1);
+      expect(ran[0]![1]).toEqual([]);
+    });
 });

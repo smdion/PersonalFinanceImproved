@@ -11,6 +11,7 @@ import {
   makeAccountBalances,
   makeIndividualAccount,
   TEST_BRACKETS,
+  makeAccumulationDefaults,
 } from "../fixtures/engine-fixtures";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import { declareOpeningParts } from "@/lib/pure/engine/opening-state";
@@ -18,7 +19,18 @@ import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balance
 import { shippedTaxTables } from "../../helpers/tax-data";
 
 /** No lump sums or other flows reach a slice the parts don't cover. */
-const NO_FLOWS = { accumulationOverrides: [], decumulationOverrides: [] };
+const NO_FLOWS = {
+  accumulationDefaults: makeAccumulationDefaults({ contributionRate: 0 }),
+  employerMatchRateByCategory: {
+    "401k": 0,
+    "403b": 0,
+    hsa: 0,
+    ira: 0,
+    brokerage: 0,
+  },
+  accumulationOverrides: [],
+  decumulationOverrides: [],
+};
 
 // ---------------------------------------------------------------------------
 // performRothConversion

@@ -223,9 +223,7 @@ export function distributeContributions(
     const catMatch = slots.find((s) => s.category === cat)?.employerMatch ?? 0;
     if (catMatch <= 0) continue;
     const parentCatMatchData = employerMatchByParentCat?.get(cat);
-    const catAccounts = indAccounts.filter(
-      (ia) => ia.category === cat && ia.origin !== "projected",
-    );
+    const catAccounts = indAccounts.filter((ia) => ia.category === cat);
     if (parentCatMatchData && parentCatMatchData.size > 0) {
       let totalMatch = 0;
       parentCatMatchData.forEach((v) => {

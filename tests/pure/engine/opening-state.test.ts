@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
 import { acct, household } from "../fixtures/two-person-household";
-import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
+import {
+  makeAccumulationDefaults,
+  makeContributionSpec,
+} from "../fixtures/engine-fixtures";
 import {
   declareOpeningParts,
   openingParts,
@@ -14,7 +17,13 @@ import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balance
 import { PROJECTED_RETIREMENT_BROKERAGE_LABEL } from "@/lib/config/display-labels";
 
 /** No lump sums or other flows reach a slice the parts don't cover. */
-const NO_FLOWS = { accumulationOverrides: [], decumulationOverrides: [] };
+const zeroes = { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 };
+const NO_FLOWS = {
+  accumulationDefaults: makeAccumulationDefaults({ contributionRate: 0 }),
+  employerMatchRateByCategory: zeroes,
+  accumulationOverrides: [],
+  decumulationOverrides: [],
+};
 
 const retirementBrokerage: IndividualAccountInput = {
   name: "Retirement brokerage",
@@ -149,7 +158,7 @@ describe("declareOpeningParts", () => {
     targetAccount: "ira" | "hsa" | "401k",
     extra: { taxType?: "roth"; targetParentCategory?: "Portfolio" } = {},
   ) => ({
-    accumulationOverrides: [],
+    ...NO_FLOWS,
     decumulationOverrides: [
       { year: 2040, lumpSums: [{ amount: 5000, targetAccount, ...extra }] },
     ],
@@ -193,6 +202,116 @@ describe("declareOpeningParts", () => {
     expect(declareOpeningParts(held, lumpSumInto("401k"))).toEqual(
       declareOpeningParts(held, NO_FLOWS),
     );
+  });
+
+  // A stretch that saves with no contribution specs reaches each
+  // category routing fills, as Retirement money.
+  const saving = (
+    extra: Partial<Parameters<typeof declareOpeningParts>[1]> = {},
+    contributionRate = 0.1,
+  ) => ({
+    ...NO_FLOWS,
+    accumulationDefaults: makeAccumulationDefaults({
+      contributionRate,
+      accountOrder: ["401k", "brokerage"],
+      accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
+    }),
+    ...extra,
+  });
+  const ira = {
+    ...retirementBrokerage,
+    name: "Ann IRA",
+    category: "ira" as const,
+    taxType: "preTax",
+    startingBasis: undefined,
+  };
+
+  it("saving with no specs declares a projected Retirement part, both tax parts, of each category no Retirement part takes", () => {
+    const parts = declareOpeningParts([ira], saving());
+    expect(parts.map((p) => [p.name, p.taxType, p.origin])).toEqual([
+      ["Ann IRA", "preTax", undefined],
+      [PROJECTED_RETIREMENT_BROKERAGE_LABEL, "afterTax", "projected"],
+      ["Retirement 401k (projected)", "preTax", "projected"],
+      ["Ann IRA", "taxFree", "declared"],
+      ["Retirement 401k (projected)", "taxFree", "projected"],
+    ]);
+  });
+
+  it("a Retirement 401(k) part takes the 401(k)'s savings, so none is projected", () => {
+    const parts = declareOpeningParts(
+      [retirementBrokerage, roth401k],
+      saving(),
+    );
+    expect(parts.some((p) => p.origin === "projected")).toBe(false);
+  });
+
+  it("specs throughout, or a stretch that saves nothing, declare none", () => {
+    const spec = makeContributionSpec();
+    const withSpecs = saving({ contributionSpecs: [spec] });
+    expect(declareOpeningParts([ira], withSpecs)).toHaveLength(3);
+    expect(declareOpeningParts([ira], saving({}, 0))).toHaveLength(3);
+  });
+
+  it("a profile switch to no specs that saves declares them; one that stops saving doesn't", () => {
+    const spec = makeContributionSpec();
+    const switchTo = (contributionRate: number) =>
+      saving({
+        contributionSpecs: [spec],
+        profileSwitches: [
+          {
+            year: 2030,
+            contributionSpecs: [],
+            contributionRate,
+            employerMatchRateByCategory: zeroes,
+            baseYearContributions: zeroes,
+            baseYearEmployerMatch: zeroes,
+          },
+        ],
+      });
+    expect(declareOpeningParts([ira], switchTo(0.1))).toHaveLength(5);
+    expect(declareOpeningParts([ira], switchTo(0))).toHaveLength(3);
+  });
+
+  // An employer match reaches its category's Traditional side in any
+  // stretch, specs or not.
+  const matching = (
+    match: Partial<typeof zeroes>,
+    byParent?: [string, number][],
+  ) =>
+    saving(
+      {
+        contributionSpecs: [makeContributionSpec()],
+        employerMatchRateByCategory: { ...zeroes, ...match },
+        ...(byParent
+          ? { employerMatchByParentCat: new Map([["401k", new Map(byParent)]]) }
+          : {}),
+      },
+      0,
+    );
+
+  it("a match in a category no part holds declares a projected Retirement part there, with specs too", () => {
+    const parts = declareOpeningParts([ira], matching({ "401k": 0.04 }));
+    expect(
+      parts.filter((p) => p.origin === "projected").map((p) => p.taxType),
+    ).toEqual(["afterTax", "preTax", "taxFree"]);
+    expect(parts.find((p) => p.taxType === "preTax" && p.origin)!.name).toBe(
+      "Retirement 401k (projected)",
+    );
+  });
+
+  it("a match a part of its category takes, of any parent when the match names none, declares none", () => {
+    const portfolio401k = { ...roth401k, parentCategory: "Portfolio" };
+    const held = [retirementBrokerage, portfolio401k];
+    expect(declareOpeningParts(held, matching({ "401k": 0.04 }))).toEqual(
+      declareOpeningParts(held, NO_FLOWS),
+    );
+    const named = declareOpeningParts(
+      held,
+      matching({ "401k": 0.04 }, [["Retirement", 4000]]),
+    );
+    expect(
+      named.filter((p) => p.origin === "projected").map((p) => p.name),
+    ).toEqual(["Retirement 401k (projected)", "Retirement 401k (projected)"]);
   });
 
   it("an account with no parent is retirement money, so no projected brokerage is added", () => {

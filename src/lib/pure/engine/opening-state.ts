@@ -39,7 +39,15 @@ const SPLIT_TAX_TYPES: readonly string[] = Object.values(ROTH_SPLIT_PARTS);
 /** The engine input's flows that can reach a slice no part covers. */
 export type OpeningFlows = Pick<
   ProjectionInput,
-  "accumulationOverrides" | "decumulationOverrides"
+  | "accumulationDefaults"
+  | "accumulationOverrides"
+  | "decumulationOverrides"
+  | "contributionSpecs"
+  | "baseYearContributions"
+  | "profileSwitches"
+  | "employerMatchRateByCategory"
+  | "baseYearEmployerMatch"
+  | "employerMatchByParentCat"
 >;
 
 /** A slice of money: its category, tax type and parent (whose money it is). */
@@ -71,7 +79,100 @@ export function declareOpeningParts(
   for (const slice of lumpSumSlices(flows))
     if (!parts.some((ia) => takesSlice(ia, slice)))
       parts.push(projectedPart(slice));
+  for (const slice of noSpecSlices(flows))
+    if (
+      !parts.some(
+        (ia) => takesSlice(ia, slice) && isRetirementMoney(ia.parentCategory),
+      )
+    )
+      parts.push(projectedPart(slice));
+  for (const { slice, anyParent } of matchSlices(flows))
+    if (
+      !parts.some(
+        (ia) =>
+          takesSlice(ia, slice) &&
+          (anyParent || ia.parentCategory === slice.parentCategory),
+      )
+    )
+      parts.push(projectedPart(slice));
   return withOtherTaxParts(parts);
+}
+
+/** A stated amount above $0 (an absent one is none). */
+const positive = (v: number | undefined) => v != null && v > 0;
+
+/**
+ * Where a stretch with no contribution specs saves: each category
+ * routing or year 0's amounts can fill, as Retirement money, when the opening
+ * profile or a profile switch saves with no specs.
+ */
+function noSpecSlices(flows: OpeningFlows): Slice[] {
+  const opening = {
+    contributionSpecs: flows.contributionSpecs ?? [],
+    contributionRate: flows.accumulationDefaults.contributionRate,
+    baseYearContributions: flows.baseYearContributions,
+  };
+  const stretches = [opening, ...(flows.profileSwitches ?? [])];
+  const routings = [flows.accumulationDefaults, ...flows.accumulationOverrides];
+  const rated = flows.accumulationOverrides.some((o) =>
+    positive(o.contributionRate),
+  );
+  const categories = getAllCategories().filter(
+    (c) =>
+      isOverflowTarget(c) ||
+      routings.some(
+        (r) => r.accountOrder?.includes(c) || positive(r.accountSplits?.[c]),
+      ) ||
+      stretches.some((s) => positive(s.baseYearContributions?.[c])),
+  );
+  const saves = stretches.some(
+    (s) =>
+      s.contributionSpecs.length === 0 &&
+      (rated ||
+        s.contributionRate > 0 ||
+        Object.values(s.baseYearContributions ?? {}).some((v) => v > 0)),
+  );
+  if (!saves) return [];
+  return categories.map((category) => ({
+    category,
+    taxType: taxTypeOnSide(category, "traditional"),
+    parentCategory: PERF_CATEGORY_RETIREMENT,
+  }));
+}
+
+/** A match's slice; with no parent named, a part of any parent takes it. */
+type MatchSlice = { slice: Slice; anyParent: boolean };
+
+/**
+ * Where an employer match lands, in any stretch, specs or not: its category's
+ * Traditional side per parent it names; naming none, any part of its category.
+ */
+function matchSlices(flows: OpeningFlows): MatchSlice[] {
+  const stretches = [flows, ...(flows.profileSwitches ?? [])];
+  return stretches.flatMap((s) =>
+    getAllCategories()
+      .filter(
+        (c) =>
+          s.employerMatchRateByCategory[c] > 0 ||
+          positive(s.baseYearEmployerMatch?.[c]),
+      )
+      .flatMap((category): MatchSlice[] => {
+        const parents = [
+          ...(s.employerMatchByParentCat?.get(category) ?? []),
+        ].filter(([, amount]) => amount > 0);
+        const slice = (parentCategory: string) => ({
+          category,
+          taxType: taxTypeOnSide(category, "traditional"),
+          parentCategory,
+        });
+        return parents.length > 0
+          ? parents.map(([parent]) => ({
+              slice: slice(parent),
+              anyParent: false,
+            }))
+          : [{ slice: slice(PERF_CATEGORY_RETIREMENT), anyParent: true }];
+      }),
+  );
 }
 
 /** Each lump sum's slice, in either phase; an unset parent is Retirement's. */

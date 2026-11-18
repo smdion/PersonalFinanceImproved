@@ -15,7 +15,6 @@ import { OVERFLOW_TOLERANCE } from "../../../constants";
 import type { resolveAccumulationConfig } from "../override-resolution";
 import { distributeContributions } from "../individual-accounts/contributions";
 import { accrueIndividualBasis } from "../individual-accounts/ledger";
-import { ownPartCredits } from "../individual-accounts/own-part-credits";
 import { applyLumpSums } from "./lump-sum";
 import type {
   yearContributionTarget,
@@ -172,13 +171,12 @@ export function distributeYearContributions(
   let indOverflow = new Map<string, number>();
   let indRamp = new Map<string, number>();
   // Contributions, match, overflow and the ramp are cash in: new basis.
-  const ledger = { indAccounts, indKey, indBalance };
   const fill = () => {
-    if (ownPartCredits(ledger, slots, rampAmount, contributionSpecs)) return;
-    if (holdsAccounts && contributionSpecs)
+    // With no specs, every slot is one no spec claims (unclaimedSlot).
+    if (holdsAccounts)
       return distributeContributions({
         slots,
-        contributionSpecs,
+        contributionSpecs: contributionSpecs ?? [],
         indAccounts,
         indKey,
         indBalance,

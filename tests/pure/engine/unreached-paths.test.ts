@@ -21,7 +21,10 @@ import type {
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { roundToCents } from "@/lib/utils/math";
 import { acct, household } from "../fixtures/two-person-household";
-import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
+import {
+  makeAccumulationDefaults,
+  makeContributionSpec,
+} from "../fixtures/engine-fixtures";
 
 const FILE = path.join(__dirname, "__pins__", "unreached-paths.json");
 const WRITE = process.env.LEDGR_BASELINE_WRITE === "1";
@@ -539,8 +542,7 @@ describe("a gap year in year 0, drawn from a 401k with no owner's age", () => {
 
 describe("a run whose parts are all synthetic takes the household path", () => {
   // Unreached until such a run keeps its own ledger: per-owner RMDs, QCDs,
-  // penalty eligibility and RMD smoothing, a synthetic part's hidden row,
-  // and each slot's credit to its own part with no specs (ownPartCredits).
+  // penalty eligibility and RMD smoothing, and a synthetic part's hidden row.
   const parts = (owned: boolean) =>
     [
       acct("Ann IRA", "ira", 500000, owned ? 1 : undefined),
@@ -600,4 +602,55 @@ describe("a run whose parts are all synthetic takes the household path", () => {
       expect(y.qcdByPerson).toBeUndefined();
     }
   });
+});
+
+describe("a match whose pool has no part (spreadMatch over none)", () => {
+  // Unreached: the opening state declares each match's slice, so the pool
+  // is never empty. A 401(k) match where no one holds a 401(k), with and
+  // without specs, lands whole on parts every year.
+  const input = (specs: boolean) =>
+    household([acct("Ann IRA", "ira", 200000, 1)], {
+      currentAge: 50,
+      birthYear: 1976,
+      retirementYear: 2036,
+      projectionEndYear: 2030,
+      currentSalary: 100000,
+      employerMatchRateByCategory: {
+        "401k": 0.04,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 0,
+      },
+      accumulationDefaults: makeAccumulationDefaults({ contributionRate: 0.1 }),
+      ...(specs
+        ? {
+            contributionSpecs: [
+              makeContributionSpec({
+                category: "ira",
+                name: "Ann IRA",
+                taxTreatment: "pre_tax",
+              }),
+            ],
+          }
+        : {}),
+    });
+
+  it.each([false, true])(
+    "specs %s: every match dollar lands on a part",
+    (specs) => {
+      const years = run(input(specs)).filter(
+        (y): y is EngineAccumulationYear => y.phase === "accumulation",
+      );
+      expect(years.length).toBeGreaterThan(0);
+      for (const y of years) {
+        expect(y.totalEmployer).toBeGreaterThan(0);
+        const landed = y.individualAccountBalances.reduce(
+          (s, a) => s + a.employerMatch,
+          0,
+        );
+        expect(landed).toBeCloseTo(y.totalEmployer, 2);
+      }
+    },
+  );
 });
