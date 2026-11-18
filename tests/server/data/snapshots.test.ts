@@ -116,6 +116,24 @@ describe("getLatestSnapshot", () => {
     expect(result!.accounts).toHaveLength(2);
     expect(result!.total).toBe(80000);
   });
+
+  it("gives each row its own portfolio_accounts.id", async () => {
+    const snap = ctx.db
+      .select()
+      .from(ctx.schema.portfolioSnapshots)
+      .all()
+      .find((s) => s.snapshotDate === "2026-03-15")!;
+    const stored = ctx.db
+      .select()
+      .from(ctx.schema.portfolioAccounts)
+      .all()
+      .filter((a) => a.snapshotId === snap.id);
+
+    const result = await getLatestSnapshot(ctx.rawDb, snap.id);
+    expect(
+      result!.accounts.map((a) => [a.institution, a.portfolioAccountId]),
+    ).toEqual(stored.map((a) => [a.institution, a.id]));
+  });
 });
 
 /**

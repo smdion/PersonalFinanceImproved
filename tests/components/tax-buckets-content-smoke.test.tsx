@@ -57,7 +57,8 @@ const snapshotRow = (
 ) => {
   const p = perfAccounts.find((a) => a.id === perfId)!;
   return {
-    portfolioAccountId: perfId,
+    // A row's id is its own (`portfolio_accounts.id`), never its account's.
+    portfolioAccountId: perfId + 900,
     institution: "Fidelity",
     taxType,
     accountType: p.accountType,

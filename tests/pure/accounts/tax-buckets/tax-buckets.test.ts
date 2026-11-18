@@ -62,6 +62,24 @@ describe("computeTaxBucketBreakdown", () => {
     expect(result.accountBreakdownByCategory["401k"]).toHaveLength(2); // one preTax entry (3 rows merged), one taxFree entry
   });
 
+  it("lists the rows a merged entry holds, by their own ids", () => {
+    const first = account({ amount: 1000, performanceAccountId: 1 });
+    const second = account({ amount: 2000, performanceAccountId: 2 });
+    expect(first.portfolioAccountId).not.toBe(second.portfolioAccountId);
+    const result = computeTaxBucketBreakdown(
+      { accounts: [first, second] },
+      people,
+      [],
+    );
+
+    const [entry] = result.accountBreakdownByCategory["401k"]!;
+    expect(entry!.performanceAccountIds).toEqual([1, 2]);
+    expect(entry!.portfolioAccountIds).toEqual([
+      first.portfolioAccountId,
+      second.portfolioAccountId,
+    ]);
+  });
+
   it("splits a joint Roth IRA into two owner-scoped rollup entries", () => {
     const accounts: TaxBucketSnapshotAccount[] = [
       account({
