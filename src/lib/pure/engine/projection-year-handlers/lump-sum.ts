@@ -6,7 +6,6 @@ import type { IndividualAccountInput } from "../../accounts/account-balances.typ
 import type { LumpSum } from "../types/year-overrides";
 import {
   getAccountTypeConfig,
-  getDisplayConfig,
   isTaxFreeBucket,
   isRetirementMoney,
 } from "../../../config/account-types";
@@ -18,7 +17,6 @@ import {
   addBasis,
 } from "../../accounts/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
-import { isHeldPart } from "../../accounts/account-part";
 import { portfolioFirst, retirementFirst } from "../individual-accounts/ledger";
 import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
 
@@ -107,23 +105,5 @@ export function resolveLumpSumTargets(
     (ia) =>
       isRetirementMoney(ia.parentCategory) ===
       isRetirementMoney(first.parentCategory),
-  );
-}
-
-/** Each lump sum with no account part of its category and tax type: the
- *  totals take it, no account's row can, so the run says so. */
-export function unplacedLumpSumWarnings(
-  overrides: readonly { year: number; lumpSums?: LumpSum[] }[],
-  accounts: readonly IndividualAccountInput[],
-): string[] {
-  if (!accounts.some(isHeldPart)) return [];
-  return overrides.flatMap(({ year, lumpSums }) =>
-    (lumpSums ?? [])
-      .filter((ls) => resolveLumpSumTargets(ls, accounts).length === 0)
-      .map((ls) => {
-        const label = getDisplayConfig(ls.targetAccount).displayLabel;
-        const amount = Math.round(ls.amount).toLocaleString();
-        return `${year}: a $${amount} lump sum for ${label} has no ${label} account to land in, so no account's row shows it.`;
-      }),
   );
 }

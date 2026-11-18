@@ -6,6 +6,7 @@ import {
   isRetirementMoney,
 } from "../../../config/account-types";
 import { addTraditional } from "../../accounts/account-balance";
+import { isHeldPart } from "../../accounts/account-part";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { reachesAgeRule } from "@/lib/pure/household/age";
 import { enforceOwnerRmds, enforceRmd, rmdOwnerOf } from "../rmd-enforcement";
@@ -144,8 +145,7 @@ export function enforceYearRmd(
   // Each owner's requirement is reduced by their own QCD only: the QCD'd
   // part already left the account tax-free, so only the rest is enforced.
 
-  // The household path's divisor, shown as its RMD's working (the
-  // per-owner rows carry their own).
+  // The household path's divisor, shown as its RMD's working (not per owner).
   const rmdDivisor =
     !perOwnerRmd &&
     rmdStartAge != null &&
@@ -205,9 +205,9 @@ export function enforceYearRmd(
     if (
       !state.rmdNoOwnerWarned &&
       rmdByPerson.some((p) => p.personId === ctx.primaryPersonId) &&
-      indAccounts.some(
-        (ia) => ia.ownerPersonId == null && isPreTaxType(ia.taxType),
-      )
+      indAccounts
+        .filter(isHeldPart)
+        .some((ia) => ia.ownerPersonId == null && isPreTaxType(ia.taxType))
     ) {
       state.rmdNoOwnerWarned = true;
       routeWarnings.push(

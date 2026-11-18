@@ -14,7 +14,6 @@ import { buildProjectionState } from "./projection-year-handlers/state";
 import { runPreYearSetup } from "./projection-year-handlers/pre-year-setup";
 import { runAccumulationYear } from "./projection-year-handlers/accumulation-year";
 import { runDecumulationYear } from "./projection-year-handlers/decumulation-year";
-import { unplacedLumpSumWarnings } from "./projection-year-handlers/lump-sum";
 
 // ---------------------------------------------------------------------------
 // Main engine
@@ -57,12 +56,6 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   // Build immutable context and mutable state
   const ctx = buildProjectionContext(input, validated);
   const state = buildProjectionState(input, ctx);
-  warnings.push(
-    ...unplacedLumpSumWarnings(
-      [...input.accumulationOverrides, ...input.decumulationOverrides],
-      ctx.indAccounts,
-    ),
-  );
 
   // Main projection loop
   for (let y = 0; y < ctx.yearsToProject; y++) {

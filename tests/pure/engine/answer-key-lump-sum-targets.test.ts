@@ -4,8 +4,8 @@
  * names its account's side ("traditional"/"roth") and lands on that side's
  * part; a name no such part carries is shared by balance over that
  * category's parts of that tax type within the lump sum's own parent
- * (Retirement first only when unset); a lump sum no part can take is named
- * in the run's warnings. Invented households only.
+ * (Retirement first only when unset); a lump sum no part can take lands on
+ * a projected part of its kind, declared at the start. Invented households only.
  */
 import { describe, expect, it } from "vitest";
 import { cents } from "../../fixtures/answer-key";
@@ -221,21 +221,34 @@ describe("answer key: a lump sum's account part through the engine", () => {
     );
   });
 
-  it("eng/LS-6 [ENG-13] a lump sum into a kind of account the household doesn't hold is named in the run's warnings", () => {
+  it("eng/LS-6 [ENG-13] a lump sum into a kind of account the household doesn't hold lands on a projected part of that kind", () => {
     // 5,000 into an HSA, but the household holds only an IRA and a
-    // brokerage: the totals take it, no account part can, and the run
-    // says so instead of dropping it from the rows silently.
+    // brokerage: the opening state declares a projected HSA part
+    // (Retirement money, the lump sum names no parent), so the year's HSA
+    // row holds it, as the HSA total does, and no warning is needed.
     const result = calculateProjection(
       household(
         [
           acct("Ann IRA", "ira", 400_000, 1, "preTax"),
           acct("Ann Brokerage", "brokerage", 100_000, 1, "afterTax"),
         ],
-        lumpSum({ amount: 5_000, targetAccount: "hsa" }),
+        {
+          decumulationOverrides: [
+            { year: 2027, lumpSums: [{ amount: 5_000, targetAccount: "hsa" }] },
+          ],
+        },
       ),
     );
-    expect(result.warnings).toContain(
-      "2027: a $5,000 lump sum for HSA has no HSA account to land in, so no account's row shows it.",
+    const year = result.projectionByYear.find((y) => y.year === 2027)!;
+    const rows = year.individualAccountBalances.filter(
+      (r) => r.category === "hsa",
     );
+    expect(rows.map((r) => r.name)).toEqual(["Retirement HSA (projected)"]);
+    // It lands after the year's growth: both hold the 5,000.
+    cents(
+      { row: rows[0]!.balance, hsa: year.balanceByTaxType.hsa },
+      { row: 5_000, hsa: 5_000 },
+    );
+    expect(result.warnings.filter((w) => w.includes("lump sum"))).toEqual([]);
   });
 });

@@ -5,6 +5,7 @@
  */
 import {
   getAccountTypeConfig,
+  getDisplayConfig,
   getAllCategories,
   getEngineCategories,
   isOverflowTarget,
@@ -21,6 +22,7 @@ import {
 import {
   emptyTaxBucketMap,
   ROTH_SPLIT_PARTS,
+  taxTypeOnSide,
 } from "../../config/tax-treatment-buckets";
 import { roundToCents } from "../../utils/math";
 import { accountKeyOf } from "../accounts/account-part";
@@ -29,35 +31,104 @@ import type {
   IndividualAccountInput,
   TaxBuckets,
 } from "../accounts/account-balances.types";
+import type { ProjectionInput } from "./types/projection-result";
 
 /** The two tax parts of an account type that `supportsRothSplit`. */
 const SPLIT_TAX_TYPES: readonly string[] = Object.values(ROTH_SPLIT_PARTS);
 
+/** The engine input's flows that can reach a slice no part covers. */
+export type OpeningFlows = Pick<
+  ProjectionInput,
+  "accumulationOverrides" | "decumulationOverrides"
+>;
+
+/** A slice of money: its category, tax type and parent (whose money it is). */
+type Slice = Pick<
+  IndividualAccountInput,
+  "category" | "taxType" | "parentCategory"
+>;
+
 /**
- * The held parts, then the projected Retirement brokerage when none is held,
- * then each Roth-capable account's missing tax part per owner, at $0.
+ * The held parts; the projected Retirement brokerage when none is held; a
+ * projected part for each slice a flow reaches that no part takes; then each
+ * Roth-capable part's missing tax part, per owner, at $0.
  */
 export function declareOpeningParts(
   held: readonly IndividualAccountInput[],
+  flows: OpeningFlows,
 ): IndividualAccountInput[] {
   if (held.length === 0) return [];
   const parts = [...held];
-  const keys = new Set(held.map((ia) => accountKeyOf(ia)));
   const overflowCategory = getAllCategories().find(isOverflowTarget)!;
   if (!held.some((ia) => isRetirementBrokerage(ia.category, ia.parentCategory)))
-    parts.push({
-      name: PROJECTED_RETIREMENT_BROKERAGE_LABEL,
-      category: overflowCategory,
-      taxType: getAccountTypeConfig(overflowCategory).taxBucketKey,
-      startingBalance: 0,
-      startingBasis: 0,
-      parentCategory: PERF_CATEGORY_RETIREMENT,
-      origin: "projected",
-    });
-  for (const ia of held) {
+    parts.push(
+      projectedPart({
+        category: overflowCategory,
+        taxType: getAccountTypeConfig(overflowCategory).taxBucketKey,
+        parentCategory: PERF_CATEGORY_RETIREMENT,
+      }),
+    );
+  for (const slice of lumpSumSlices(flows))
+    if (!parts.some((ia) => takesSlice(ia, slice)))
+      parts.push(projectedPart(slice));
+  return withOtherTaxParts(parts);
+}
+
+/** Each lump sum's slice, in either phase; an unset parent is Retirement's. */
+function lumpSumSlices(flows: OpeningFlows): Slice[] {
+  const overrides = [
+    ...flows.accumulationOverrides,
+    ...flows.decumulationOverrides,
+  ];
+  return overrides.flatMap(({ lumpSums }) =>
+    (lumpSums ?? []).map((ls) => ({
+      category: ls.targetAccount,
+      taxType: taxTypeOnSide(ls.targetAccount, ls.taxType),
+      parentCategory: ls.targetParentCategory ?? PERF_CATEGORY_RETIREMENT,
+    })),
+  );
+}
+
+/** A part takes a slice's money: its category, and its tax type or (a
+ *  Roth-capable account) its other tax part, which is declared beside it. */
+function takesSlice(ia: IndividualAccountInput, slice: Slice): boolean {
+  if (ia.category !== slice.category) return false;
+  if (ia.taxType === slice.taxType) return true;
+  return (
+    getAccountTypeConfig(ia.category).supportsRothSplit &&
+    SPLIT_TAX_TYPES.includes(ia.taxType) &&
+    SPLIT_TAX_TYPES.includes(slice.taxType)
+  );
+}
+
+/** The engine's own $0 part of a slice no account holds: no owner, shown once
+ *  it holds money, named by its parent and category. */
+function projectedPart(slice: Slice): IndividualAccountInput {
+  const { category, parentCategory } = slice;
+  const name = isRetirementBrokerage(category, parentCategory)
+    ? PROJECTED_RETIREMENT_BROKERAGE_LABEL
+    : `${parentCategory} ${getDisplayConfig(category).displayLabel} (projected)`;
+  return {
+    name,
+    category,
+    taxType: slice.taxType,
+    startingBalance: 0,
+    startingBasis: 0,
+    parentCategory,
+    origin: "projected",
+  };
+}
+
+/** The parts, then each Roth-capable part's missing tax part, per owner, at
+ *  $0, with the part's origin (a held part's is "declared"). */
+function withOtherTaxParts(
+  parts: IndividualAccountInput[],
+): IndividualAccountInput[] {
+  const keys = new Set(parts.map((ia) => accountKeyOf(ia)));
+  for (const ia of [...parts]) {
     if (!getAccountTypeConfig(ia.category).supportsRothSplit) continue;
     if (!SPLIT_TAX_TYPES.includes(ia.taxType)) continue;
-    // The account's facts; the held part's money, basis and RMD target stay with it.
+    // The account's facts; the part's money, basis and RMD target stay with it.
     const {
       startingBasis: _basis,
       rothBasisMeta: _rothBasis,
@@ -65,12 +136,11 @@ export function declareOpeningParts(
       ...facts
     } = ia;
     for (const taxType of SPLIT_TAX_TYPES) {
-      // A synthetic account's sibling is synthetic too: no real account.
       const part = {
         ...facts,
         taxType,
         startingBalance: 0,
-        origin: ia.origin === "synthetic" ? ia.origin : ("declared" as const),
+        origin: ia.origin ?? ("declared" as const),
       };
       const key = accountKeyOf(part);
       if (keys.has(key)) continue;

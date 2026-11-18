@@ -120,6 +120,28 @@ describe("per-owner RMDs through the engine", () => {
     expect(warned.filter((w) => w.includes("has no owner"))).toHaveLength(1);
   });
 
+  it("an engine's projected IRA part has no owner: its RMD is the primary's and no warning names it", () => {
+    // A 100,000 lump sum into an IRA in 2026, but no one holds an IRA: the
+    // opening state declares a projected IRA part (K19). It has no owner by
+    // design, so its money counts as the primary's (J41's household rule)
+    // and the "no owner" warning, about entered data, stays silent.
+    const ira = (amount: number) =>
+      decumYears(
+        household([acct("Bo 401k", "401k", 500000, 2)], {
+          decumulationOverrides: [
+            { year: 2026, lumpSums: [{ amount, targetAccount: "ira" }] },
+          ],
+        }),
+      );
+    const [, next] = ira(100000);
+    const [, without] = ira(0);
+    expect(person(next!, 1)!.priorYearEndTradBalance).toBeGreaterThan(
+      person(without!, 1)?.priorYearEndTradBalance ?? 0,
+    );
+    const warned = ira(100000).flatMap((y) => y.warnings ?? []);
+    expect(warned.filter((w) => w.includes("has no owner"))).toEqual([]);
+  });
+
   it("an ownerless IRA counts for the primary's QCD as it does for their RMD", () => {
     const year = (owner: number | undefined) =>
       calculateProjection(

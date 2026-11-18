@@ -17,6 +17,9 @@ import { declareOpeningParts } from "@/lib/pure/engine/opening-state";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { shippedTaxTables } from "../../helpers/tax-data";
 
+/** No lump sums or other flows reach a slice the parts don't cover. */
+const NO_FLOWS = { accumulationOverrides: [], decumulationOverrides: [] };
+
 // ---------------------------------------------------------------------------
 // performRothConversion
 // ---------------------------------------------------------------------------
@@ -622,29 +625,32 @@ describe("performRothConversion (nonRetirement scope)", () => {
   // Each Roth-capable account's Roth part is declared, as the engine's
   // opening state does.
   function accts(): IndividualAccountInput[] {
-    return declareOpeningParts([
-      makeIndividualAccount({
-        name: "Retirement 401k",
-        category: "401k",
-        taxType: "preTax",
-        startingBalance: 100000,
-        parentCategory: "Retirement",
-      }),
-      makeIndividualAccount({
-        name: "Portfolio 401k",
-        category: "401k",
-        taxType: "preTax",
-        startingBalance: 400000,
-        parentCategory: "Portfolio",
-      }),
-      makeIndividualAccount({
-        name: "Retirement Brokerage",
-        category: "brokerage",
-        taxType: "afterTax",
-        startingBalance: 300000,
-        parentCategory: "Retirement",
-      }),
-    ]);
+    return declareOpeningParts(
+      [
+        makeIndividualAccount({
+          name: "Retirement 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 100000,
+          parentCategory: "Retirement",
+        }),
+        makeIndividualAccount({
+          name: "Portfolio 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 400000,
+          parentCategory: "Portfolio",
+        }),
+        makeIndividualAccount({
+          name: "Retirement Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 300000,
+          parentCategory: "Retirement",
+        }),
+      ],
+      NO_FLOWS,
+    );
   }
 
   function indBalFor(ia: IndividualAccountInput[]) {
@@ -762,29 +768,32 @@ describe("performRothConversion (nonRetirement scope)", () => {
       preTax: 100000,
       afterTax: 300000,
     });
-    const ia = declareOpeningParts([
-      makeIndividualAccount({
-        name: "Retirement 401k",
-        category: "401k",
-        taxType: "preTax",
-        startingBalance: 100000,
-        parentCategory: "Retirement",
-      }),
-      makeIndividualAccount({
-        name: "Retirement Brokerage",
-        category: "brokerage",
-        taxType: "afterTax",
-        startingBalance: 500, // negligible -- can't cover any real tax cost
-        parentCategory: "Retirement",
-      }),
-      makeIndividualAccount({
-        name: "Portfolio Brokerage",
-        category: "brokerage",
-        taxType: "afterTax",
-        startingBalance: 299500, // makes blended afterTax look fully funded
-        parentCategory: "Portfolio",
-      }),
-    ]);
+    const ia = declareOpeningParts(
+      [
+        makeIndividualAccount({
+          name: "Retirement 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 100000,
+          parentCategory: "Retirement",
+        }),
+        makeIndividualAccount({
+          name: "Retirement Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 500, // negligible -- can't cover any real tax cost
+          parentCategory: "Retirement",
+        }),
+        makeIndividualAccount({
+          name: "Portfolio Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 299500, // makes blended afterTax look fully funded
+          parentCategory: "Portfolio",
+        }),
+      ],
+      NO_FLOWS,
+    );
     const nonRetirement = {
       total: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 299500 },
       trad: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },

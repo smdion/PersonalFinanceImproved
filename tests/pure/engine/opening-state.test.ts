@@ -13,6 +13,9 @@ import { accountKeyOf } from "@/lib/pure/accounts/account-part";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { PROJECTED_RETIREMENT_BROKERAGE_LABEL } from "@/lib/config/display-labels";
 
+/** No lump sums or other flows reach a slice the parts don't cover. */
+const NO_FLOWS = { accumulationOverrides: [], decumulationOverrides: [] };
+
 const retirementBrokerage: IndividualAccountInput = {
   name: "Retirement brokerage",
   category: "brokerage",
@@ -47,11 +50,14 @@ const keysOf = (parts: IndividualAccountInput[]) =>
 
 describe("declareOpeningParts", () => {
   it("a run with no accounts declares nothing", () => {
-    expect(declareOpeningParts([])).toEqual([]);
+    expect(declareOpeningParts([], NO_FLOWS)).toEqual([]);
   });
 
   it("a Roth-only 401(k) gains its owner's Traditional part at $0, with the account's facts and none of the held part's money", () => {
-    const parts = declareOpeningParts([retirementBrokerage, roth401k]);
+    const parts = declareOpeningParts(
+      [retirementBrokerage, roth401k],
+      NO_FLOWS,
+    );
     expect(parts.slice(0, 2)).toEqual([retirementBrokerage, roth401k]);
     expect(parts).toHaveLength(3);
     const { rothBasisMeta: _basis, ...facts } = roth401k;
@@ -65,16 +71,22 @@ describe("declareOpeningParts", () => {
 
   it("a synthetic account's missing tax part is synthetic too", () => {
     const synthetic = { ...roth401k, origin: "synthetic" as const };
-    const parts = declareOpeningParts([retirementBrokerage, synthetic]);
+    const parts = declareOpeningParts(
+      [retirementBrokerage, synthetic],
+      NO_FLOWS,
+    );
     expect(parts[2]).toMatchObject({ taxType: "preTax", origin: "synthetic" });
   });
 
   it("an account held in both tax parts declares nothing more", () => {
-    const parts = declareOpeningParts([
-      retirementBrokerage,
-      roth401k,
-      { ...roth401k, taxType: "preTax", rothBasisMeta: undefined },
-    ]);
+    const parts = declareOpeningParts(
+      [
+        retirementBrokerage,
+        roth401k,
+        { ...roth401k, taxType: "preTax", rothBasisMeta: undefined },
+      ],
+      NO_FLOWS,
+    );
     expect(parts).toHaveLength(3);
     expect(parts.some((p) => p.origin === "declared")).toBe(false);
   });
@@ -88,11 +100,10 @@ describe("declareOpeningParts", () => {
       ownerPersonId,
       parentCategory: "Retirement",
     });
-    const parts = declareOpeningParts([
-      retirementBrokerage,
-      ira(1, "preTax"),
-      ira(2, "taxFree"),
-    ]);
+    const parts = declareOpeningParts(
+      [retirementBrokerage, ira(1, "preTax"), ira(2, "taxFree")],
+      NO_FLOWS,
+    );
     expect(keysOf(parts.filter((p) => p.origin === "declared"))).toEqual([
       accountKeyOf(ira(1, "taxFree")),
       accountKeyOf(ira(2, "preTax")),
@@ -107,7 +118,7 @@ describe("declareOpeningParts", () => {
       startingBalance: 5000,
       parentCategory: "Retirement",
     };
-    expect(declareOpeningParts([retirementBrokerage, hsa])).toEqual([
+    expect(declareOpeningParts([retirementBrokerage, hsa], NO_FLOWS)).toEqual([
       retirementBrokerage,
       hsa,
     ]);
@@ -118,7 +129,7 @@ describe("declareOpeningParts", () => {
       ...retirementBrokerage,
       parentCategory: "Portfolio",
     };
-    const parts = declareOpeningParts([portfolioBrokerage]);
+    const parts = declareOpeningParts([portfolioBrokerage], NO_FLOWS);
     expect(parts).toEqual([
       portfolioBrokerage,
       {
@@ -133,9 +144,60 @@ describe("declareOpeningParts", () => {
     ]);
   });
 
+  // K19: a lump sum's slice no part takes gets a projected part at the start.
+  const lumpSumInto = (
+    targetAccount: "ira" | "hsa" | "401k",
+    extra: { taxType?: "roth"; targetParentCategory?: "Portfolio" } = {},
+  ) => ({
+    accumulationOverrides: [],
+    decumulationOverrides: [
+      { year: 2040, lumpSums: [{ amount: 5000, targetAccount, ...extra }] },
+    ],
+  });
+
+  it("a lump sum into a kind of account no part holds declares a projected part of its slice, with its other tax part", () => {
+    const parts = declareOpeningParts(
+      [retirementBrokerage],
+      lumpSumInto("ira"),
+    );
+    const projected = {
+      name: "Retirement IRA (projected)",
+      category: "ira",
+      startingBalance: 0,
+      parentCategory: "Retirement",
+      origin: "projected",
+    };
+    expect(parts).toEqual([
+      retirementBrokerage,
+      { ...projected, taxType: "preTax", startingBasis: 0 },
+      { ...projected, taxType: "taxFree" },
+    ]);
+  });
+
+  it("a lump sum's parent names its projected part, Retirement when unset", () => {
+    const parts = declareOpeningParts(
+      [retirementBrokerage],
+      lumpSumInto("hsa", { targetParentCategory: "Portfolio" }),
+    );
+    expect(parts.map((p) => p.name)).toEqual([
+      "Retirement brokerage",
+      "Portfolio HSA (projected)",
+    ]);
+  });
+
+  it("a lump sum a part or its declared other tax part takes declares nothing more", () => {
+    const held = [retirementBrokerage, roth401k];
+    expect(
+      declareOpeningParts(held, lumpSumInto("401k", { taxType: "roth" })),
+    ).toEqual(declareOpeningParts(held, NO_FLOWS));
+    expect(declareOpeningParts(held, lumpSumInto("401k"))).toEqual(
+      declareOpeningParts(held, NO_FLOWS),
+    );
+  });
+
   it("an account with no parent is retirement money, so no projected brokerage is added", () => {
     const { parentCategory: _parent, ...noParent } = retirementBrokerage;
-    expect(declareOpeningParts([noParent])).toEqual([noParent]);
+    expect(declareOpeningParts([noParent], NO_FLOWS)).toEqual([noParent]);
   });
 });
 
