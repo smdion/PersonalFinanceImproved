@@ -43,6 +43,25 @@ function makeRothInput(
 }
 
 describe("performRothConversion", () => {
+  it("with no parts, the tax sells brokerage at average cost on the aggregate and the category alike", () => {
+    // $100,000 held at $150,000 cost (ratio 1.5): each $1 of tax takes $1.50 of basis.
+    const balances = makeTaxBuckets({
+      afterTax: 100000,
+      afterTaxBasis: 150000,
+    });
+    const accountBalance = makeAccountBalances({
+      afterTax: 100000,
+      afterTaxBasis: 150000,
+    });
+    const tax = performRothConversion(
+      makeRothInput({ balances, accountBalance }),
+    ).rothConversionTaxCost;
+    expect(tax).toBeGreaterThan(0);
+    const basis = Math.round((150000 - tax * 1.5) * 100) / 100;
+    expect(balances.afterTaxBasis).toBe(basis);
+    expect(accountBalance.brokerage).toMatchObject({ basis });
+  });
+
   it("returns zero when disabled", () => {
     const result = performRothConversion(
       makeRothInput({ enableRothConversions: false }),

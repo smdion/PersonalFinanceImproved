@@ -127,7 +127,7 @@ describe("deductWithdrawals (pins current behavior)", () => {
 });
 
 describe("clampBalances (pins current behavior)", () => {
-  it("floors every balance at 0 and caps basis at the balance", () => {
+  it("floors every balance at 0; basis is cost, and an emptied brokerage keeps none", () => {
     const balances: TaxBuckets = {
       preTax: -5,
       taxFree: 10,
@@ -153,15 +153,15 @@ describe("clampBalances (pins current behavior)", () => {
       taxFree: 10,
       hsa: 0,
       afterTax: 50,
-      afterTaxBasis: 50,
+      afterTaxBasis: 80,
     });
     expect(accountBalance["401k"]).toMatchObject({ traditional: 0, roth: 7 });
     expect(accountBalance.hsa).toMatchObject({ balance: 0 });
-    // Balance floored first, then basis capped at the floored balance.
+    // The balance floors at 0, so the brokerage is empty and keeps no basis.
     expect(accountBalance.brokerage).toMatchObject({ balance: 0, basis: 0 });
   });
 
-  it("a negative bucket basis stays negative (only capped above)", () => {
+  it("a negative bucket basis stays negative while the brokerage holds money", () => {
     const balances: TaxBuckets = {
       preTax: 0,
       taxFree: 0,

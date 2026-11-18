@@ -157,12 +157,12 @@ export function calculateBrokerageGoals(
           0,
         );
         afterTaxBasis = roundToCents(
-          yearRow.balanceByTaxType.afterTaxBasis * ratio,
+          Math.min(yearRow.balanceByTaxType.afterTaxBasis * ratio, afterTax),
         );
       }
     } else {
-      afterTax = yearRow.balanceByTaxType.afterTax;
-      afterTaxBasis = yearRow.balanceByTaxType.afterTaxBasis;
+      ({ afterTax, afterTaxBasis } = yearRow.balanceByTaxType);
+      afterTaxBasis = Math.min(afterTaxBasis, afterTax);
     }
 
     let contribution = 0;

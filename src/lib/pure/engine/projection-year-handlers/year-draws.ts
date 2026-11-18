@@ -94,7 +94,6 @@ export function routeYearDraw(
 
   return {
     preWithdrawalAcctBal,
-    brokerageBasisRatio,
     resolvedConversionTarget,
     routeResult,
     slots,

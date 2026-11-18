@@ -68,11 +68,16 @@ describe("seedBrokerageBasis", () => {
     expect(accts.map((a) => basis.get(indKey(a)))).toEqual([4000, 6000, 2000]);
   });
 
-  it("basis never exceeds the balance", () => {
+  it("a stated basis above the balance is kept: basis is cost, and a loss leaves it above", () => {
     const accts = [brokerage("A", 1000, 5000)];
     expect(seedBrokerageBasis(accts, indKey, 0).get(indKey(accts[0]!))).toBe(
-      1000,
+      5000,
     );
+  });
+
+  it("an account holding nothing seeds no basis, whatever it states", () => {
+    const accts = [brokerage("A", 0, 2500)];
+    expect(seedBrokerageBasis(accts, indKey, 0).get(indKey(accts[0]!))).toBe(0);
   });
 });
 
@@ -108,6 +113,27 @@ describe("syncAggregateBasis", () => {
     );
     expect(balances.afterTaxBasis).toBe(22000);
     expect(diagnostics).toHaveLength(1); // the $3,000 drift is surfaced
+  });
+
+  it("basis above the balance after a loss stays on every track", () => {
+    // $8,000 held at $10,000 cost: the aggregate, the category and the account all keep $10,000.
+    const accts = [brokerage("A", 0)];
+    const indBal = new Map([[indKey(accts[0]!), 8000]]);
+    const basis = new Map([[indKey(accts[0]!), 10000]]);
+    const balances = buckets(8000, 10000);
+    const accountBalance = accountBalancesFromTaxBuckets(balances);
+    syncAggregateBasis(
+      accts,
+      indKey,
+      indBal,
+      basis,
+      balances,
+      accountBalance,
+      [],
+    );
+    expect(balances.afterTaxBasis).toBe(10000);
+    expect(accountBalance.brokerage).toMatchObject({ basis: 10000 });
+    expect(basis.get(indKey(accts[0]!))).toBe(10000);
   });
 
   it("keeps the aggregate basis when brokerage money lives outside the accounts", () => {

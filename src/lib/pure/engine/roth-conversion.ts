@@ -7,7 +7,7 @@ import type {
   TaxBuckets,
   AccountBalances,
 } from "../accounts/account-balances.types";
-import { roundToCents } from "../../utils/math";
+import { roundToCents, safeDivide } from "../../utils/math";
 import { getAllCategories, isOverflowTarget } from "../../config/account-types";
 import {
   getTotalBalance,
@@ -19,6 +19,7 @@ import {
 } from "../accounts/account-balance";
 import type { IrmaaBracket } from "../../config/irmaa-tables";
 import { irmaaConversionHeadroom } from "./conversion-irmaa-cap";
+import { basisOut } from "./brokerage-basis";
 import {
   debitConvertedParts,
   payConversionTaxFromParts,
@@ -279,16 +280,15 @@ export function performRothConversion(
   balances.taxFree = roundToCents(balances.taxFree + conversion);
   // Pay tax from brokerage
   balances.afterTax = roundToCents(balances.afterTax - taxCostOfConversion);
-  // Reduce basis proportionally (with parts: by the basis they sell, below)
-  if (!hasIndTracking && balances.afterTax > 0 && balances.afterTaxBasis > 0) {
-    const basisRatio = Math.min(
-      1,
-      balances.afterTaxBasis / (balances.afterTax + taxCostOfConversion),
-    );
+  // The tax sells brokerage at average cost (parts: by the basis they sell, below)
+  const sold = basisOut(
+    taxCostOfConversion,
+    safeDivide(balances.afterTaxBasis, balances.afterTax + taxCostOfConversion),
+  );
+  if (!hasIndTracking && balances.afterTaxBasis > 0)
     balances.afterTaxBasis = roundToCents(
-      Math.max(0, balances.afterTaxBasis - taxCostOfConversion * basisRatio),
+      Math.max(0, balances.afterTaxBasis - sold),
     );
-  }
 
   // Spread across Traditional accounts weighted by Retirement-only balance
   // (`balance.traditional - nonRetirement.trad[cat]`), so each category's
@@ -359,12 +359,8 @@ export function performRothConversion(
           category: accountBalance[cat],
         });
       else if (accountBalance[cat].structure === "basis_tracking") {
-        const currentBasis = getBasis(accountBalance[cat]);
-        const currentBalance = getTotalBalance(accountBalance[cat]);
-        setBasis(
-          accountBalance[cat],
-          roundToCents(Math.min(currentBasis, currentBalance)),
-        );
+        const b = getBasis(accountBalance[cat]);
+        setBasis(accountBalance[cat], roundToCents(Math.max(0, b - sold)));
       }
       break;
     }

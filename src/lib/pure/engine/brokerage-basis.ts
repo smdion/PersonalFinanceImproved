@@ -53,7 +53,7 @@ function basisTrackedAccounts(
 }
 
 /**
- * Starting basis per account: its own `startingBasis` (capped at balance); accounts without one
+ * Starting basis per account: its own `startingBasis` (none on a $0 account); accounts without one
  * share the rest of the aggregate basis by starting balance.
  */
 export function seedBrokerageBasis(
@@ -66,9 +66,8 @@ export function seedBrokerageBasis(
   let known = 0;
   for (const ia of accounts) {
     if (ia.startingBasis == null) continue;
-    const b = roundToCents(
-      Math.max(0, Math.min(ia.startingBasis, Math.max(0, ia.startingBalance))),
-    );
+    const b =
+      ia.startingBalance > 0 ? roundToCents(Math.max(0, ia.startingBasis)) : 0;
     basis.set(indKey(ia), b);
     known += b;
   }
@@ -192,8 +191,8 @@ export function followReconciliation<T>(
 }
 
 /**
- * Year end: basis is capped at balance, and when the accounts hold all brokerage money the
- * aggregate basis is their sum. Drift over $1 is surfaced as a diagnostic.
+ * Year end: when the accounts hold all brokerage money the aggregate basis is their sum (basis is
+ * cost, so it can sit above the balance after a loss). Drift over $1 is surfaced as a diagnostic.
  */
 export function syncAggregateBasis(
   indAccounts: readonly IndividualAccountInput[],
@@ -223,9 +222,7 @@ export function syncAggregateBasis(
   const byCategory = new Map<string, number>();
   for (const ia of accounts) {
     const k = indKey(ia);
-    const b = roundToCents(
-      Math.min(basis.get(k) ?? 0, Math.max(0, indBalance.get(k) ?? 0)),
-    );
+    const b = roundToCents(basis.get(k) ?? 0);
     basis.set(k, b);
     total += b;
     byCategory.set(ia.category, (byCategory.get(ia.category) ?? 0) + b);
@@ -236,11 +233,11 @@ export function syncAggregateBasis(
     diagnostics.push(
       `[DIAG] brokerage basis: aggregate $${balances.afterTaxBasis.toFixed(2)} vs accounts $${total.toFixed(2)} (drift $${drift.toFixed(2)})`,
     );
-  balances.afterTaxBasis = Math.min(total, balances.afterTax);
+  balances.afterTaxBasis = total;
   for (const [cat, b] of byCategory) {
     const balance = accountBalance[cat as keyof AccountBalances];
     if (balance.structure === "basis_tracking")
-      setBasis(balance, roundToCents(Math.min(b, balance.balance)));
+      setBasis(balance, roundToCents(b));
   }
 }
 

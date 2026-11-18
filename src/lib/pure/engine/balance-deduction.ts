@@ -106,7 +106,7 @@ export function deductWithdrawals(input: DeductWithdrawalsInput): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Ensure no negative balances across all balance systems.
+ * Ensure no negative balances across all balance systems; an emptied brokerage keeps no basis.
  * Mutates `balances` and `accountBalance` in place.
  */
 export function clampBalances(
@@ -117,7 +117,7 @@ export function clampBalances(
   balances.taxFree = Math.max(0, balances.taxFree);
   balances.hsa = Math.max(0, balances.hsa);
   balances.afterTax = Math.max(0, balances.afterTax);
-  balances.afterTaxBasis = Math.min(balances.afterTaxBasis, balances.afterTax);
+  if (balances.afterTax === 0) balances.afterTaxBasis = 0;
   for (const cat of getAllCategories()) {
     const balance = accountBalance[cat];
     if (balance.structure === "roth_traditional") {
@@ -127,7 +127,7 @@ export function clampBalances(
       setBalance(balance, Math.max(0, balance.balance));
     } else {
       setBalance(balance, Math.max(0, balance.balance));
-      setBasis(balance, Math.min(balance.basis, balance.balance));
+      if (balance.balance === 0) setBasis(balance, 0);
     }
   }
 }
