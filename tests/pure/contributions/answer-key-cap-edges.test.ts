@@ -211,13 +211,20 @@ describe("answer key: this year's pay on the contribution summary", () => {
     );
   });
 
-  it("limits/LIM22-C6 [LIM-22] the bonus check's date is its month and day in the year", () => {
-    // Bonus month 3, day 15, figured on 2026-06-15: March 15, 2026. With
-    // no day set: the 1st (March 1, 2026).
+  it("limits/LIM22-C6 [LIM-22] the bonus check's date is the first payday on or after its month and day", () => {
+    // Biweekly from Friday January 2, 2026: paydays March 13 and March 27. Bonus March 15:
+    // the March 27 check; with no day set, March 1: the March 13 check.
     const at = (day: number | null) =>
       contributionAccountsFor({
         effectiveContributions: [],
-        activeJob: { id: 10, bonusMonth: 3, bonusDayOfMonth: day },
+        activeJob: {
+          id: 10,
+          bonusMonth: 3,
+          bonusDayOfMonth: day,
+          payPeriod: "biweekly",
+          anchorPayDate: "2026-01-02",
+          startDate: "2020-01-01",
+        },
         person: { id: 1, dateOfBirth: "1986-05-01" },
         pay: { salary: 100_000, bonusGross: 10_000 },
         asOfDate: new Date("2026-06-15T12:00:00Z"),
@@ -230,6 +237,6 @@ describe("answer key: this year's pay on the contribution summary", () => {
       })
         .bonusDate?.toISOString()
         .slice(0, 10);
-    expect([at(15), at(null)]).toEqual(["2026-03-15", "2026-03-01"]);
+    expect([at(15), at(null)]).toEqual(["2026-03-27", "2026-03-13"]);
   });
 });

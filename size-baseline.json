@@ -269,7 +269,7 @@
     "src/lib/pure/contributions/irs-limits.ts": 209,
     "src/lib/pure/contributions/joint-accounts.ts": 165,
     "src/lib/pure/contributions/paycheck-accounts.ts": 156,
-    "src/lib/pure/contributions/person-snapshot.ts": 215,
+    "src/lib/pure/contributions/person-snapshot.ts": 210,
     "src/lib/pure/contributions/profile-contrib-data.ts": 324,
     "src/lib/pure/contributions/profile-fields.ts": 45,
     "src/lib/pure/contributions/roth-ira.ts": 177,
@@ -1027,7 +1027,7 @@
       "computeBudgetActiveSummary": 217
     },
     "src/server/services/contributions/contribution-mix.ts": {
-      "loadContributionMix": 163
+      "loadContributionMix": 156
     },
     "src/server/services/contributions/summary.ts": {
       "computeContributionSummary": 630,

@@ -1,6 +1,7 @@
 /** What a person's contribution snapshot is figured from. */
 import type { contributionPay } from "@/lib/pure/household/compensation";
 import type { ContributionAccountRow } from "./contribution-account-row";
+import type { JobForPaycheckInput } from "@/lib/pure/paycheck/paycheck-input";
 
 /** contributionAccountsFor's input, by name: several of its figures share a
  *  type (salary and total compensation; this year's and last year's IRS
@@ -12,7 +13,7 @@ export type PersonContributionAccountsInput<R extends ContributionAccountRow> =
       id: number;
       bonusMonth?: number | null;
       bonusDayOfMonth?: number | null;
-    };
+    } & Pick<JobForPaycheckInput, "payPeriod" | "anchorPayDate" | "startDate">;
     person: { id: number; dateOfBirth: string };
     /** The job's contributionPay: base salary and the bonus. */
     pay: ReturnType<typeof contributionPay>;

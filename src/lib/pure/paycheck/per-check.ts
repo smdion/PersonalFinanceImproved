@@ -221,7 +221,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     periodsElapsedYtd,
     periodsBeforeStart: checks.beforeStart,
     // Where the bonus falls against the job's checks (for display).
-    ...bonusOnSchedule(input, bonusEstimate.bonusGross, checks.beforeStart),
+    ...bonusOnSchedule(input, bonusEstimate.bonusGross),
     nextPayDate,
     payFrequencyLabel,
     warnings,

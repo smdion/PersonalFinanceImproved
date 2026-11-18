@@ -35,6 +35,7 @@ import {
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { annualContributionWithBonus } from "@/lib/pure/contributions/contribution-rows";
 import { rowPaySchedule } from "@/lib/pure/contributions/row-pay";
+import { jobBonusPayday } from "@/lib/pure/paycheck/bonus-check";
 import type { Db } from "@/lib/db";
 
 export async function loadContributionMix(
@@ -105,16 +106,9 @@ export async function loadContributionMix(
         contributedThrough?.get(c.performanceAccountId!),
       ),
     };
-    // The bonus check's part is still to come until its date (unknown date:
+    // The bonus check's part is still to come until its payday (unknown date:
     // like the paychecks).
-    const bonusDate =
-      job?.bonusMonth != null
-        ? new Date(
-            asOf.getFullYear(),
-            job.bonusMonth - 1,
-            job.bonusDayOfMonth ?? 1,
-          )
-        : null;
+    const bonusDate = job ? jobBonusPayday(job, asOf) : null;
     return {
       c,
       job,

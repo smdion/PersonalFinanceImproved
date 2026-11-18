@@ -63,7 +63,14 @@ const lastYear = {
 const snapshot = () =>
   contributionAccountsFor({
     effectiveContributions: [base, ira],
-    activeJob: { id: 10, bonusMonth: null, bonusDayOfMonth: null },
+    activeJob: {
+      id: 10,
+      bonusMonth: null,
+      bonusDayOfMonth: null,
+      payPeriod: "biweekly",
+      anchorPayDate: "2026-01-02",
+      startDate: "2020-01-01",
+    },
     person: { id: 1, dateOfBirth: "1974-06-01" },
     pay: { salary: 100000, bonusGross: 0 },
     asOfDate: new Date(2026, 5, 15),

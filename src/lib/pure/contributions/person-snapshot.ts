@@ -24,6 +24,7 @@ import {
 } from "@/lib/pure/household/compensation";
 import type { ContributionAccountInput } from "@/lib/pure/paycheck/paycheck.types";
 import { roundToCents } from "@/lib/utils/math";
+import { jobBonusPayday } from "@/lib/pure/paycheck/bonus-check";
 import { toNumber } from "@/lib/utils/numbers";
 import { buildContribAccounts } from "@/lib/pure/contributions/paycheck-accounts";
 import type { ContributionAccountRow } from "@/lib/pure/contributions/contribution-account-row";
@@ -83,13 +84,7 @@ export function contributionAccountsFor<R extends ContributionAccountRow>({
 
   // The day this year's bonus check is paid (null: no bonus date set).
   const bonusDate =
-    pay.bonusGross > 0 && activeJob.bonusMonth != null
-      ? new Date(
-          asOfDate.getFullYear(),
-          activeJob.bonusMonth - 1,
-          activeJob.bonusDayOfMonth ?? 1,
-        )
-      : null;
+    pay.bonusGross > 0 ? jobBonusPayday(activeJob, asOfDate) : null;
   const accounts = buildContribAccounts(
     jobContributions,
     personalContributions,

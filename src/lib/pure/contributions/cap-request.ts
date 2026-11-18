@@ -117,8 +117,7 @@ function thisYearInput(
     // On the pay schedule's periods: an extra payday (a 27th or 53rd) adds no contribution money.
     const checks = jobChecksThisYear(input, periods);
     const check = bonusCheckNumber(input, pay.bonusGross);
-    const bonusGross =
-      check !== null && check > checks.beforeStart ? pay.bonusGross : 0;
+    const bonusGross = check !== null ? pay.bonusGross : 0;
     const share = checks.total / periods;
     return {
       ...pay,

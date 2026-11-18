@@ -459,8 +459,8 @@ describe("calculatePaycheck", () => {
 //
 // Pinned ahead of consolidating the "align anchor date to on/after a
 // reference date" idiom, duplicated across findExtraPaycheckMonths,
-// countPeriodsElapsed (2 branches), getExtraPaycheckMonthKeys, and
-// findBonusPeriod. findNextPayDate uses a different (exclusive) boundary
+// countPeriodsElapsed (2 branches), getExtraPaycheckMonthKeys, and the
+// bonus's payday (bonusPayday). findNextPayDate uses a different (exclusive) boundary
 // and is deliberately NOT included in that consolidation — pinned here too
 // so any accidental behavior merge would be caught.
 // ---------------------------------------------------------------------------
@@ -560,11 +560,12 @@ describe("anchor-payday date-walk (pinned)", () => {
     ).toEqual(["2025-08-01", "2026-01-01", "2026-07-01"]);
   });
 
+  // A bonus is paid on the first payday on or after its date (no day: the month's first).
   it.each([
-    [1, 15, 1],
-    [3, 15, 6],
-    [6, 15, 12],
-    [12, 15, 25],
+    [1, 15, 2],
+    [3, 15, 7],
+    [6, 15, 13],
+    [12, 15, 26],
     [1, null, 1],
     [3, null, 6],
     [6, null, 12],
@@ -581,7 +582,7 @@ describe("anchor-payday date-walk (pinned)", () => {
     },
   );
 
-  it("bonusPeriod — semimonthly, day before/after the 15th payday", () => {
+  it("bonusPeriod — semimonthly, the next 1st or 15th on or after the date", () => {
     const base = {
       ...PERSON_A_PAYCHECK_INPUT,
       payPeriod: "semimonthly" as const,
@@ -589,10 +590,10 @@ describe("anchor-payday date-walk (pinned)", () => {
     };
     expect(
       calculatePaycheck({ ...base, bonusDayOfMonth: 20 }).bonusPeriod,
-    ).toBe(12);
+    ).toBe(13);
     expect(
       calculatePaycheck({ ...base, bonusDayOfMonth: 10 }).bonusPeriod,
-    ).toBe(11);
+    ).toBe(12);
   });
 
   it("bonusPeriod — monthly", () => {

@@ -9,7 +9,7 @@ type JobEnd = Pick<
 >;
 
 /** The job's last day when it falls in the schedule's year (`asOfDate`'s), else null. */
-function lastDayThisYear(input: JobEnd): Date | null {
+export function lastDayThisYear(input: JobEnd): Date | null {
   const end = input.endDate;
   return end && end.getUTCFullYear() === input.asOfDate.getUTCFullYear()
     ? end
@@ -28,18 +28,6 @@ export function lastCheckThisYear(input: JobEnd): number {
     paydays,
     countPeriodsElapsed(end, input.payPeriod, input.anchorPayDate),
   );
-}
-
-/**
- * The bonus's check is after the job's last check this year (not its pay): dated after it,
- * or undated (paid after the regular checks, maybe past the last day) for a job ending now.
- */
-export function bonusAfterEnd(
-  input: JobEnd & Pick<PaycheckInput, "bonusMonth">,
-  bonusCheck: number,
-): boolean {
-  if (!lastDayThisYear(input)) return false;
-  return input.bonusMonth == null || bonusCheck > lastCheckThisYear(input);
 }
 
 /** A job's checks in `asOfDate`'s year: the paydays before its start, its last check and the

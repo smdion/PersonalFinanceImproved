@@ -68,7 +68,7 @@ Multiplier?
 Formula: $30,000.00
 —
 Paid on?
-Pay period 5 of 26
+Pay period 6 of 26
 [2026-03-13]
 Goes to?
 Budget
@@ -86,7 +86,7 @@ Net
 $22,823.70
 Check against a pay stub
 Contribution Accounts?(2)
-SS wage base cap hit at period 23 of 26(bonus in period 5 accelerates this)
+SS wage base cap hit at period 23 of 26(bonus in period 6 accelerates this)
 Take-home increases by $442.82/period after
 Social Security stops once your pay for the year passes $184,500.00; per-check figures average it over the year.
 Riley

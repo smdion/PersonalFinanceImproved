@@ -381,12 +381,10 @@ describe("paycheck/C38–C51: wage bases on the year schedule", () => {
     cents(scheduleNet(january), scheduleNet(december));
   });
 
-  it("paycheck/PAY19-1 [PAY-19] semimonthly: a bonus dated the 15th is on the 15th's check", () => {
-    // Semimonthly paydays are the 1st and the 15th (Ledgr's own calendar:
-    // the next payday and the paydays so far count them so). A bonus is
-    // paid with the check it is dated on or after (PW-8.1): June 1 is
-    // check 11 and June 15 check 12, so a June 15 bonus is on check 12
-    // and a June 14 one on check 11.
+  it("paycheck/PAY19-1 [PAY-19] semimonthly: a bonus is on the first payday on or after its date", () => {
+    // Semimonthly paydays are the 1st and the 15th; a bonus is paid on the first payday on or
+    // after its date: June 1 is check 11 and June 15 check 12, so both a June 14 and a June 15
+    // bonus are on check 12, and a June 1 one on check 11.
     const on = (day: number) =>
       calculatePaycheck(
         job({
@@ -397,10 +395,38 @@ describe("paycheck/C38–C51: wage bases on the year schedule", () => {
           bonusDay: day,
         }),
       ).bonusPeriod;
-    expect({ june14: on(14), june15: on(15) }).toEqual({
-      june14: 11,
+    expect({ june1: on(1), june14: on(14), june15: on(15) }).toEqual({
+      june1: 11,
+      june14: 12,
       june15: 12,
     });
+  });
+
+  it("paycheck/RR-P1 [PAY-19] a bonus dated after the start and before the first check is paid on that check", () => {
+    // Paid on the first payday on or after its date (Reg. 31.3121(a)-2(a): wages count when paid): May 3, check 9 of checks 9–26.
+    // Box 1 18 × 100,000/26 + 20,000 = 89,230.77; federal 18/26 × (5,800 + 22% × 33,500) = 9,117.69 (Pub 15-T 2026) + 22% × 20,000 = 4,400.
+    // FICA 7.65% × 89,230.77 = 6,826.15; take-home 68,886.92, ±$0.18 for 18 checks' rounding (PW-3.15).
+    const r = calculatePaycheck({
+      ...job({
+        salary: 100_000,
+        period: "biweekly",
+        bonus: 20_000,
+        bonusMonth: 5,
+        bonusDay: 1,
+      }),
+      anchorPayDate: new Date("2026-01-11"),
+      startDate: new Date("2026-04-21"),
+    });
+    expect(r.bonusPeriod).toBe(9);
+    cents(row(r, 9).bonusWithholding, 4_400);
+    cents(
+      {
+        box1: sum(r.yearSchedule.map((p) => p.gross + p.bonusGross)),
+        net: scheduleNet(r),
+      },
+      { box1: 89_230.77, net: 68_886.92 },
+      0.18,
+    );
   });
 
   // C48: regular pay alone uses the whole base, then a $20,000 bonus with

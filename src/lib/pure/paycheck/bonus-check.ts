@@ -1,130 +1,147 @@
 /** The bonus check on the year schedule: which check pays it. */
 import type { PaycheckInput } from "./paycheck.types";
 import { MS_PER_DAY } from "../../constants";
-import { alignPaydayOnOrAfter } from "./pay-periods-in-year";
-import { bonusAfterEnd } from "./job-last-check";
-import { yearPaydays } from "./year-paydays";
+import { parseLocalDateOnly, utcDayOf } from "../../utils/date";
+import type { JobForPaycheckInput } from "./paycheck-input";
+import {
+  alignPaydayOnOrAfter,
+  periodsBeforeStart,
+} from "./pay-periods-in-year";
+import { lastCheckThisYear, lastDayThisYear } from "./job-last-check";
 
-/**
- * Finds the pay period that contains the bonus pay date.
- * When bonusDayOfMonth is provided, matches the specific date within the month.
- * Otherwise falls back to the first pay period of the given month.
- */
-export function findBonusPeriod(
-  asOfDate: Date,
-  payPeriod: string,
-  anchorPayDate: Date,
-  bonusMonth: number,
-  bonusDayOfMonth: number | null,
-): number {
-  const year = asOfDate.getFullYear();
-  const msPerDay = MS_PER_DAY;
-  const targetMonth = bonusMonth - 1; // 0-indexed
-  const lastDay = new Date(Date.UTC(year, targetMonth + 1, 0)).getUTCDate();
-  const targetDay =
-    bonusDayOfMonth != null ? Math.min(bonusDayOfMonth, lastDay) : null;
-  const bonusDate =
-    targetDay != null ? new Date(Date.UTC(year, targetMonth, targetDay)) : null;
+/** No pay schedule (`payPeriod` null): the bonus is paid on its date. */
+type BonusCalendar = Pick<
+  PaycheckInput,
+  "asOfDate" | "anchorPayDate" | "bonusMonth" | "bonusDayOfMonth"
+> & { payPeriod: PaycheckInput["payPeriod"] | null };
 
+/** The bonus's date in `asOfDate`'s year (no day set: the 1st); null with no month. */
+function bonusDate(input: BonusCalendar): Date | null {
+  if (input.bonusMonth == null) return null;
+  const year = input.asOfDate.getFullYear();
+  const month = input.bonusMonth - 1;
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const day = Math.min(input.bonusDayOfMonth ?? 1, lastDay);
+  return new Date(Date.UTC(year, month, day));
+}
+
+/** The year's paydays on the job's calendar: walked from the anchor (weekly, biweekly), the 1st
+ *  and the 15th (semimonthly), the 1st (monthly). */
+function paydayDates(input: BonusCalendar): Date[] {
+  const year = input.asOfDate.getFullYear();
+  const { payPeriod } = input;
   if (payPeriod === "biweekly" || payPeriod === "weekly") {
-    const interval = payPeriod === "biweekly" ? 14 : 7;
-    const jan1 = new Date(Date.UTC(year, 0, 1));
-    let payday = alignPaydayOnOrAfter(anchorPayDate, jan1, interval);
-    // Dated before the year's first payday: that first check pays it.
-    if (bonusDate && bonusDate < payday) return 1;
-
-    let periodNum = 0;
+    const step = (payPeriod === "biweekly" ? 14 : 7) * MS_PER_DAY;
     const december31 = new Date(Date.UTC(year, 11, 31));
-    while (payday <= december31) {
-      periodNum++;
-      if (bonusDate) {
-        const nextPayday = new Date(payday.getTime() + interval * msPerDay);
-        if (bonusDate >= payday && bonusDate < nextPayday) return periodNum;
-      } else {
-        if (payday.getUTCMonth() === targetMonth) return periodNum;
-      }
-      payday = new Date(payday.getTime() + interval * msPerDay);
-    }
-    return periodNum; // fallback to last period
+    const jan1 = new Date(Date.UTC(year, 0, 1));
+    const out: Date[] = [];
+    let payday = alignPaydayOnOrAfter(
+      input.anchorPayDate,
+      jan1,
+      step / MS_PER_DAY,
+    );
+    for (; payday <= december31; payday = new Date(payday.getTime() + step))
+      out.push(payday);
+    return out;
   }
-
-  if (payPeriod === "semimonthly") {
-    // Paydays the 1st and the 15th, as the pay calendar counts them
-    if (targetDay != null && targetDay >= 15) {
-      return targetMonth * 2 + 2; // second pay period of the month
-    }
-    return targetMonth * 2 + 1; // first pay period of the month
-  }
-
-  if (payPeriod === "monthly") {
-    return targetMonth + 1;
-  }
-
-  return 1;
+  const months = [...Array(12).keys()];
+  if (payPeriod === "semimonthly")
+    return months.flatMap((m) =>
+      [1, 15].map((d) => new Date(Date.UTC(year, m, d))),
+    );
+  if (payPeriod === "monthly")
+    return months.map((m) => new Date(Date.UTC(year, m, 1)));
+  return [];
 }
 
 /**
- * The schedule's check that pays the bonus: its dated one; an undated bonus, or one dated
- * past the last row, the last (paid after the regular checks). Null with no bonus, or one
- * after the job's last check this year (not its pay).
+ * A dated bonus's check and payday: the first payday on or after its date; dated past the
+ * year's last payday, the last (paid after the regular checks). Null undated.
  */
-export function bonusCheckNumber(
-  input: Pick<
-    PaycheckInput,
-    | "asOfDate"
-    | "payPeriod"
-    | "anchorPayDate"
-    | "endDate"
-    | "bonusMonth"
-    | "bonusDayOfMonth"
-  >,
-  bonusGross: number,
-): number | null {
-  if (bonusGross <= 0) return null;
-  const last = yearPaydays(input);
-  const check =
-    input.bonusMonth == null
-      ? last
-      : Math.min(
-          last,
-          findBonusPeriod(
-            input.asOfDate,
-            input.payPeriod,
-            input.anchorPayDate,
-            input.bonusMonth,
-            input.bonusDayOfMonth,
-          ),
-        );
-  return bonusAfterEnd(input, check) ? null : check;
+export function bonusPayday(
+  input: BonusCalendar,
+): { check: number; payday: Date; date: Date } | null {
+  const date = bonusDate(input);
+  if (!date) return null;
+  const paydays = paydayDates(input);
+  if (paydays.length === 0) return { check: 1, payday: date, date };
+  const k = paydays.findIndex((p) => utcDayOf(p) >= utcDayOf(date));
+  const check = k === -1 ? paydays.length : k + 1;
+  return { check, payday: paydays[check - 1]!, date };
+}
+
+type BonusJob = BonusCalendar &
+  Pick<PaycheckInput, "payPeriod" | "startDate" | "endDate">;
+
+/**
+ * Where the bonus falls against the job: the check that pays it (an undated one, the last), or
+ * null when it isn't this job's pay this year: dated before its start or after its last day this
+ * year (dates compared), or undated for a job ending this year. Paid past the last check: on it.
+ */
+export function bonusCheck(input: BonusJob, bonusGross: number) {
+  const none = { check: null, beforeStart: false, afterEnd: false };
+  if (bonusGross <= 0) return none;
+  const paid = bonusPayday(input);
+  const start = input.startDate ? new Date(input.startDate) : null;
+  const end = lastDayThisYear(input);
+  const beforeStart =
+    !!paid &&
+    !!start &&
+    start.getUTCFullYear() === input.asOfDate.getUTCFullYear() &&
+    utcDayOf(paid.date) < utcDayOf(start);
+  const afterEnd = !!end && (!paid || utcDayOf(paid.date) > utcDayOf(end));
+  if (beforeStart || afterEnd) return { ...none, beforeStart, afterEnd };
+  const last = lastCheckThisYear(input);
+  const check = paid ? Math.min(paid.check, last) : last;
+  // A job that starts after the year's last payday has no check this year to pay it on.
+  const before = periodsBeforeStart(
+    input.asOfDate,
+    input.payPeriod,
+    input.anchorPayDate,
+    input.startDate,
+  );
+  return { ...none, check: check > before ? check : null };
+}
+
+/** The schedule's check that pays the bonus (bonusCheck), null when none does. */
+export function bonusCheckNumber(input: BonusJob, bonusGross: number) {
+  return bonusCheck(input, bonusGross).check;
 }
 
 /**
- * Where the bonus falls against the job's checks this year: the pay period it's dated in
- * (for display; null undated or outside the job), and whether it's dated before the job's
- * start, after its last check, or undated. Outside the job, the schedule leaves it out too.
+ * Where the bonus falls against the job's checks this year: the check a dated bonus is paid on
+ * (null undated or outside the job), and whether it's dated before the job's start, after its
+ * last day, or undated. Outside the job, the schedule leaves it out too.
  */
-export function bonusOnSchedule(
-  input: PaycheckInput,
-  bonusGross: number,
-  beforeStart: number,
-) {
-  const found =
-    input.bonusMonth != null && bonusGross > 0
-      ? findBonusPeriod(
-          input.asOfDate,
-          input.payPeriod,
-          input.anchorPayDate,
-          input.bonusMonth,
-          input.bonusDayOfMonth,
-        )
-      : null;
-  const afterEnd =
-    bonusGross > 0 && bonusCheckNumber(input, bonusGross) === null;
+export function bonusOnSchedule(input: BonusJob, bonusGross: number) {
+  const { check, beforeStart, afterEnd } = bonusCheck(input, bonusGross);
+  const undated = input.bonusMonth == null && bonusGross > 0;
   return {
-    bonusPeriod:
-      found !== null && found > beforeStart && !afterEnd ? found : null,
-    bonusBeforeStart: found !== null && found <= beforeStart,
+    bonusPeriod: undated ? null : check,
+    bonusBeforeStart: beforeStart,
     bonusAfterEnd: afterEnd,
-    bonusUndated: input.bonusMonth == null && bonusGross > 0,
+    bonusUndated: undated,
   };
+}
+
+/** The local day a job's dated bonus is paid this year (bonusPayday), for comparing with a local
+ *  date (still to come, already posted); null undated. */
+export function jobBonusPayday(
+  job: Pick<
+    JobForPaycheckInput,
+    "payPeriod" | "anchorPayDate" | "startDate"
+  > & {
+    bonusMonth?: number | null;
+    bonusDayOfMonth?: number | null;
+  },
+  asOfDate: Date,
+): Date | null {
+  const paid = bonusPayday({
+    asOfDate,
+    payPeriod: job.payPeriod ?? null,
+    anchorPayDate: new Date(job.anchorPayDate ?? job.startDate),
+    bonusMonth: job.bonusMonth ?? null,
+    bonusDayOfMonth: job.bonusDayOfMonth ?? null,
+  });
+  return paid ? parseLocalDateOnly(utcDayOf(paid.payday)) : null;
 }
