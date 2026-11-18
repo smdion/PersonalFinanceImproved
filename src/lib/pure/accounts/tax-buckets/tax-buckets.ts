@@ -218,66 +218,19 @@ export function computeTaxBucketBreakdown(
         }
       }
 
-      if (!accountBreakdownByCategory[cat])
-        accountBreakdownByCategory[cat] = [];
-      // Owner is in the merge key: same-named accounts of different people stay
-      // separate rows, so per-owner eligibility (Rule of 55, 59½) sees the right owner.
-      const existing = accountBreakdownByCategory[cat].find(
-        (e) =>
-          e.name === displayName &&
-          e.taxType === a.taxType &&
-          e.ownerPersonId === (a.ownerPersonId ?? undefined),
-      );
-      if (existing) {
-        existing.amount += a.amount;
-        if (
-          a.performanceAccountId != null &&
-          !existing.performanceAccountIds?.includes(a.performanceAccountId)
-        )
-          existing.performanceAccountIds = [
-            ...(existing.performanceAccountIds ?? []),
-            a.performanceAccountId,
-          ];
-        if (knownBasis != null)
-          existing.costBasis = roundToCents((existing.costBasis ?? 0) + basis);
-      } else {
-        accountBreakdownByCategory[cat].push({
-          name: displayName,
-          amount: a.amount,
-          taxType: a.taxType,
+      mergeRowIntoEntries(
+        a,
+        {
+          category: catAsBalance,
+          displayName,
           ownerName,
-          ownerPersonId: a.ownerPersonId ?? undefined,
-          accountType: cat,
-          parentCategory: a.parentCategory ?? undefined,
-          ...(knownBasis != null ? { costBasis: basis } : {}),
-          ...(a.performanceAccountId != null
-            ? { performanceAccountIds: [a.performanceAccountId] }
-            : {}),
-        });
-      }
-
-      // Rollup on the same tuple as accountBreakdownByCategory so both merge alike.
-      // Retirement-only: early-access rules don't apply to Portfolio brokerage, and
-      // the "at retirement" join on this tuple excludes it too.
-      if (isRetirementParent(pCat)) {
-        const rollupKey = `${displayName}|${cat}|${a.taxType}|${a.ownerPersonId ?? "null"}`;
-        const rollupExisting = rollupByKey.get(rollupKey);
-        if (rollupExisting) {
-          rollupExisting.amount += a.amount;
-          if (rollupExisting.performanceAccountId !== a.performanceAccountId) {
-            rollupExisting.performanceAccountId = null;
-          }
-        } else {
-          rollupByKey.set(rollupKey, {
-            name: displayName,
-            performanceAccountId: a.performanceAccountId,
-            ownerPersonId: a.ownerPersonId,
-            taxType: a.taxType,
-            category: cat,
-            amount: a.amount,
-          });
-        }
-      }
+          isRetirement: isRetirementParent(pCat),
+          knownBasis,
+          basis,
+        },
+        accountBreakdownByCategory,
+        rollupByKey,
+      );
     }
   }
 
@@ -326,4 +279,84 @@ export function computeTaxBucketBreakdown(
     accountBreakdownByCategory,
     accountRollup: Array.from(rollupByKey.values()),
   };
+}
+
+/** Merges one snapshot row into its breakdown entry and, for Retirement money, its
+ *  rollup entry: rows of one (display name, category, tax type, owner) are one entry. */
+function mergeRowIntoEntries(
+  a: TaxBucketSnapshotAccount,
+  row: {
+    category: AccountCategory;
+    displayName: string;
+    ownerName: string | undefined;
+    /** The row's parent category (Retirement when unset) is Retirement. */
+    isRetirement: boolean;
+    knownBasis: number | null;
+    basis: number;
+  },
+  accountBreakdownByCategory: Record<string, AccountBreakdownEntry[]>,
+  rollupByKey: Map<string, AccountRollupEntry>,
+): void {
+  const { category, displayName, ownerName, isRetirement, knownBasis, basis } =
+    row;
+  if (!accountBreakdownByCategory[category])
+    accountBreakdownByCategory[category] = [];
+  // Owner is in the merge key: same-named accounts of different people stay
+  // separate rows, so per-owner eligibility (Rule of 55, 59½) sees the right owner.
+  const existing = accountBreakdownByCategory[category].find(
+    (e) =>
+      e.name === displayName &&
+      e.taxType === a.taxType &&
+      e.ownerPersonId === (a.ownerPersonId ?? undefined),
+  );
+  if (existing) {
+    existing.amount += a.amount;
+    if (
+      a.performanceAccountId != null &&
+      !existing.performanceAccountIds?.includes(a.performanceAccountId)
+    )
+      existing.performanceAccountIds = [
+        ...(existing.performanceAccountIds ?? []),
+        a.performanceAccountId,
+      ];
+    if (knownBasis != null)
+      existing.costBasis = roundToCents((existing.costBasis ?? 0) + basis);
+  } else {
+    accountBreakdownByCategory[category].push({
+      name: displayName,
+      amount: a.amount,
+      taxType: a.taxType,
+      ownerName,
+      ownerPersonId: a.ownerPersonId ?? undefined,
+      accountType: category,
+      parentCategory: a.parentCategory ?? undefined,
+      ...(knownBasis != null ? { costBasis: basis } : {}),
+      ...(a.performanceAccountId != null
+        ? { performanceAccountIds: [a.performanceAccountId] }
+        : {}),
+    });
+  }
+
+  // Rollup on the same tuple as accountBreakdownByCategory so both merge alike.
+  // Retirement-only: early-access rules don't apply to Portfolio brokerage, and
+  // the "at retirement" join on this tuple excludes it too.
+  if (isRetirement) {
+    const rollupKey = `${displayName}|${category}|${a.taxType}|${a.ownerPersonId ?? "null"}`;
+    const rollupExisting = rollupByKey.get(rollupKey);
+    if (rollupExisting) {
+      rollupExisting.amount += a.amount;
+      if (rollupExisting.performanceAccountId !== a.performanceAccountId) {
+        rollupExisting.performanceAccountId = null;
+      }
+    } else {
+      rollupByKey.set(rollupKey, {
+        name: displayName,
+        performanceAccountId: a.performanceAccountId,
+        ownerPersonId: a.ownerPersonId,
+        taxType: a.taxType,
+        category,
+        amount: a.amount,
+      });
+    }
+  }
 }
