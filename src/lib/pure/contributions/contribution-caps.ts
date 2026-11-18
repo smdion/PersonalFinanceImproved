@@ -24,7 +24,7 @@ import {
 import { ageInYear } from "@/lib/utils/date";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import type { CapContext, CapRow } from "./contribution-caps.types";
-import { holdToAnnualAdditions } from "./annual-additions";
+import { configuredEmployee, holdToAnnualAdditions } from "./annual-additions";
 import { monthsFor, participantOf } from "./already-in";
 
 type CapReason =
@@ -228,9 +228,7 @@ export function capContributionsByLimitGroup(
   rows: readonly CapRow[],
   ctx: CapContext,
 ): CapResult {
-  const employeeOf = (r: CapRow) =>
-    Math.max(0, r.regularAnnual) + Math.max(0, r.bonusAnnual);
-  const kept = rows.map(employeeOf);
+  const kept = rows.map(configuredEmployee);
   /** Each row's factor on its configured employee money (employer money moves with it). */
   const factorOf = rows.map(() => 1);
   const limitOf: (number | null)[] = rows.map(() => null);
@@ -436,7 +434,7 @@ export function capContributionsByLimitGroup(
 
   const out = new Map<number, CappedContribution>();
   rows.forEach((r, i) => {
-    const annual = roundToCents(employeeOf(r));
+    const annual = roundToCents(configuredEmployee(r));
     const cappedAnnual = roundToCents(kept[i]!);
     const factor = annual > 0 ? cappedAnnual / annual : 1;
     const bonusAnnual = roundToCents(Math.max(0, r.bonusAnnual) * factor);

@@ -261,7 +261,7 @@
     "src/lib/pure/contributions/cap-pass.ts": 181,
     "src/lib/pure/contributions/category-totals.ts": 146,
     "src/lib/pure/contributions/contribution-amount.ts": 74,
-    "src/lib/pure/contributions/contribution-caps.ts": 563,
+    "src/lib/pure/contributions/contribution-caps.ts": 561,
     "src/lib/pure/contributions/contribution-caps.types.ts": 45,
     "src/lib/pure/contributions/contribution-order.ts": 83,
     "src/lib/pure/contributions/contribution-rows.ts": 110,
@@ -952,7 +952,7 @@
       "buildMilestoneInput": 216
     },
     "src/lib/pure/contributions/contribution-caps.ts": {
-      "capContributionsByLimitGroup": 231
+      "capContributionsByLimitGroup": 229
     },
     "src/lib/pure/contributions/profile-contrib-data.ts": {
       "buildProfileContribData": 230

@@ -93,6 +93,10 @@ function largestFit(hi: number, fits: (d: number) => boolean): number {
   return lo;
 }
 
+/** A row's configured yearly employee money (regular + bonus checks). */
+export const configuredEmployee = (r: CapRow) =>
+  Math.max(0, r.regularAnnual) + Math.max(0, r.bonusAnnual);
+
 /** 415(c) per person per employer, after 402(g): deferrals + employer money within min(limit, pay);
  *  the rest is catch-up up to what's left of it and pay less other deferrals (414(v)(3)(A),
  *  (v)(2)(A)(ii)). Only employee money is cut; an ended job's plan goes first and is never cut. */
@@ -152,7 +156,7 @@ export function holdToAnnualAdditions(
         r.personId === pid &&
         !index.includes(j) &&
         getLimitGroup(r.accountType) === getLimitGroup(first.accountType)
-          ? sum + Math.max(0, r.regularAnnual) + Math.max(0, r.bonusAnnual)
+          ? sum + configuredEmployee(r)
           : sum,
       0,
     );
