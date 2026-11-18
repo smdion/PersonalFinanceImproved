@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  irmaaOutsideNeed,
   payIrmaaCharge,
   settleIrmaaCharge,
   type IrmaaCharge,
@@ -70,6 +71,58 @@ describe("payIrmaaCharge", () => {
       rmdExcessAmount: 0,
     });
     expect(paid).toEqual({ paid: 2000, unpaid: 4936, reinvested: 0 });
+  });
+});
+
+describe("irmaaOutsideNeed: the on-top charge known at the year's start that its need leaves out", () => {
+  it("a withdrawal-sized year's need leaves it out: the whole on-top part", () => {
+    expect(irmaaOutsideNeed(charge(true), withdrawalSized)).toBe(6936);
+  });
+
+  it("a need-sized year's need holds it: none", () => {
+    expect(irmaaOutsideNeed(charge(true), needSized)).toBe(0);
+  });
+
+  it("a charge read from the year's own MAGI, or no charge: none", () => {
+    expect(irmaaOutsideNeed(charge(false), withdrawalSized)).toBe(0);
+    expect(irmaaOutsideNeed(charge(false), needSized)).toBe(0);
+    expect(irmaaOutsideNeed(undefined, withdrawalSized)).toBe(0);
+  });
+
+  it("a charge in the budget: none", () => {
+    const inBudget = { ...charge(true), onTop: 0 };
+    expect(irmaaOutsideNeed(inBudget, withdrawalSized)).toBe(0);
+  });
+});
+
+describe("fundingShortfallForYear: RMD money past the need pays the charge first", () => {
+  it("spending + paid + reinvested is what the year had, and nothing is unmet", () => {
+    // 50,000 delivered after tax against a 30,000 need: 20,000 past it,
+    // 6,936 of it the charge (left out of the excess), 13,064 reinvested.
+    const year = { ...reinvest, taxRates: { grossUpForTaxes: true } };
+    const result = fundingShortfallForYear(
+      withdrawalSized,
+      year as never,
+      {
+        rmd: { totalWithdrawal: 60_000 },
+        repriced: { taxCost: 10_000 },
+        parts: { penaltyCost: 0, surplusCredit: () => 0 },
+        need: { afterTaxNeed: 30_000 },
+        route: { routedUnmetNeed: undefined },
+        settle: { rmdExcessAmount: 13_064 },
+      } as never,
+      { irmaa: charge(true) },
+    );
+    const { paid, unpaid, reinvested } = result.irmaaPayment;
+    expect({ paid, unpaid, reinvested }).toEqual({
+      paid: 6936,
+      unpaid: 0,
+      reinvested: 13_064,
+    });
+    const spending = result.deliveredAfterTax - paid - reinvested;
+    expect(spending).toBe(30_000);
+    expect(spending + paid + reinvested).toBe(result.deliveredAfterTax);
+    expect(result.unmetNeedRaw ?? 0).toBe(0);
   });
 });
 

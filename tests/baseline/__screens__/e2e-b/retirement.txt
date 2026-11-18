@@ -22,7 +22,7 @@ Range $2,219,846.59 – $2,806,234.69
 Baseline: $2,107,214.40 (fixed returns)
 End Balance
 $771,952.83
-Range $603,602.07 – $1,082,232.47 in 2080
+Range $603,602.07 – $1,081,919.83 in 2080
 Baseline: $654,615.11 (fixed returns)
 Coast FIRE?
 2032 (Jordan, 48)

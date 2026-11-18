@@ -17,6 +17,7 @@ import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
 import { applyLumpSums } from "./lump-sum";
 import { perOwnerRmds } from "./helpers";
+import { irmaaOutsideNeed } from "./irmaa-charge";
 import type { yearNeed } from "./year-need";
 import type { distributeYearDraws, routeYearDraw } from "./year-draws";
 import type { enforceYearRmd } from "./rmd-step";
@@ -171,7 +172,7 @@ export function settleYearDraws(
   const { surplusCredit } = flow.parts;
   const { taxFromSlots } = flow.priced;
   const { rmdOverrodeRouting, totalWithdrawal } = flow.rmd;
-  const { afterTaxNeed } = flow.need;
+  const { afterTaxNeed, irmaa } = flow.need;
   const basisOut = taxFromSlots.brokerageBasisOut;
   deductWithdrawals({ slots, balances, accountBalance, basisOut });
   clampBalances(balances, accountBalance);
@@ -181,9 +182,9 @@ export function settleYearDraws(
     applyLumpSums(config.lumpSums, ctx, state),
   );
 
-  // RMD money past the need, shown in the UI; rmdExcessHandling reinvests it
-  // (cash in: new basis where it lands) or spends it. The withdrawal pays
-  // the tax less Social Security's surplus.
+  // RMD money past the need and the year-start charge it leaves out, shown in
+  // the UI; rmdExcessHandling reinvests it (cash in: new basis where it lands)
+  // or spends it. The withdrawal pays the tax less Social Security's surplus.
   const withdrawalTax = roundToCents(
     taxFromSlots.taxCost - surplusCredit(taxFromSlots.taxCost),
   );
@@ -197,7 +198,7 @@ export function settleYearDraws(
         config.rmdExcessHandling,
         rmdOverrodeRouting,
         totalWithdrawal,
-        afterTaxNeed,
+        afterTaxNeed + irmaaOutsideNeed(irmaa, state),
         withdrawalTax,
         balances,
         accountBalance,
@@ -207,7 +208,6 @@ export function settleYearDraws(
       ),
   );
 
-  // Clamp individual account balances
   if (holdsAccounts) {
     followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
       clampIndividualBalances(indAccounts, indKey, indBalance),

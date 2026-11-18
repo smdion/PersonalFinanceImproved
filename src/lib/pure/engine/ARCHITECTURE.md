@@ -137,7 +137,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 7. `enforceYearRmd` (`rmd-step.ts`) — each RMD enforced on the routed draw
 8. `distributeYearDraws` (`year-draws.ts`) — the draw followed to each account (Roth split, early-withdrawal penalty), worked out on copies of the per-account maps
 9. `priceYearTax`, `pricedYearParts` (`tax-year-settlement.ts`) — the year's tax priced from the post-RMD totals (an RMD can add Traditional to the routed draw); when the RMD overrode routing, the reported gross-up factor is recomputed from them
-10. `settleYearDraws` — the accounts' draws from stage 8 landed with `deductWithdrawals`, `clampBalances`, lump sums, `reinvestRmdExcess` (or the excess spent), `trackDepletions`
+10. `settleYearDraws` — the accounts' draws from stage 8 landed with `deductWithdrawals`, `clampBalances`, lump sums, `reinvestRmdExcess` (the excess past the need and the year-start IRMAA charge it leaves out, `irmaaOutsideNeed`; or spent), `trackDepletions`
 11. `yearRothConversion` — `computeRmdSmoothingTargets`, `performRothConversion`; `repriceConversionYear` (`conversion-year-reprice.ts`) re-prices the year's tax after it
 12. `yearCliffChecks` (`year-cliffs.ts`) — records the year's tax year for later IRMAA years (`recordIrmaaTaxYear`; a working year records its wages, `workingYearIncome`, in `runAccumulationYear`); the year's IRMAA charge (the year-start one, else `settleIrmaaCharge` from this year's own MAGI; `checkHouseholdIrmaa`, per person `checkIrmaa` × people 65+) and its warnings; `checkAca`
 13. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine), whether it's material, and the IRMAA paid on top

@@ -22,7 +22,7 @@ Range $2,569,648.99 – $2,646,105.58
 Baseline: $2,390,000.00 (fixed returns)
 End Balance
 $4,751,597.70
-Range $3,414,394.14 – $9,933,264.34 in 2072
+Range $3,414,394.14 – $9,863,251.65 in 2072
 Baseline: $0.00 (fixed returns)
 Coast FIRE?
 Not reachable

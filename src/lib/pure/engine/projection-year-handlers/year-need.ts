@@ -73,5 +73,5 @@ export function yearNeed(
   if (taxEstimate.derivedAfterTaxNeed !== undefined)
     afterTaxNeed = taxEstimate.derivedAfterTaxNeed;
 
-  return { afterTaxNeed, ssSurplus, taxEstimate, targetWithdrawal };
+  return { afterTaxNeed, ssSurplus, taxEstimate, targetWithdrawal, irmaa };
 }

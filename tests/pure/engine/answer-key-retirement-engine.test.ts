@@ -13,7 +13,9 @@
  * - The penalty priced (P9, E13, E17; engine audit M08, RT56): the
  *   function-level figures are `tests/pure/accounts/answer-key-penalties.test.ts`'s.
  * - IRMAA per enrolled person (I10, I11; RT34) and the on-top surcharge in
- *   the third retired year (RT38): `tests/config/answer-key-irmaa.test.ts`.
+ *   the third retired year (RT38): `tests/config/answer-key-irmaa.test.ts`;
+ *   the surcharge paid before RMD money past the need is reinvested
+ *   (I26:reinvest), from I26's 2026 MAGI.
  * - The two-year lookback (I26, I29, C5; RT33): the same file, and spec
  *   `specs/retirement-rules.md` § 14.6 C5.
  * - Spouses in different RMD cohorts (RT08): `answer-key-rmd.test.ts` (ret/R4
@@ -335,6 +337,61 @@ describe("answer key through the engine: IRMAA per person on Medicare", () => {
       GROSS_UP,
     );
     expect(at(2027).totalWithdrawal).toBeGreaterThan(350_000);
+  });
+
+  it("ret/I26:reinvest [RET-16] the year's charge comes out of RMD money past the need before the rest is reinvested", () => {
+    // Invented: born 1952 and 1953 (RMDs from 73: 2025 and 2026), Person
+    // 1's IRA 7,650,000, a constant-percentage strategy at 2% with a 100%
+    // floor (153,000 gross every year, Social Security none), RMD money
+    // reinvested, IRMAA on top. Uniform Lifetime divisors 74 25.5, 75
+    // 24.6, 76 23.7 (Pub. 590-B Table III).
+    // 2026: RMD 7,650,000 / 25.5 = 300,000 (MAGI 300,000: 274,000 <
+    // 300,000 ≤ 342,000, 2 × 2,884.80). 2027: 7,350,000 / 24.6 =
+    // 298,780.49 (≥ 250,000: no senior amount in 2028).
+    // 2028: RMD 7,051,219.51 / 23.7 = 297,519.81; deductions 32,200 + 2 ×
+    // 1,650 = 35,500; tax 0.24 × 262,019.81 − 14,804 = 48,080.75. The
+    // strategy's 153,000 delivers 153,000 − (0.22 × 117,500 − 10,576) =
+    // 137,726. The charge reads 2026: 5,769.60, known at the year's start,
+    // so it is paid from the RMD money first: reinvested 297,519.81 −
+    // 48,080.75 − 137,726 − 5,769.60 = 105,943.46, and 137,726 is spent.
+    // 2026's charge reads its own MAGI, settled after the draws: it still
+    // lowers spending to 137,726 − 5,769.60 = 131,956.40 (RET-16's Gaps).
+    const base = withIrmaa(
+      couple([1952, 1953], 100_000, { traditionalIra: 7_650_000 }),
+      true,
+    );
+    const at = retiredYears({
+      ...base,
+      decumulationDefaults: {
+        ...base.decumulationDefaults,
+        withdrawalStrategy: "constant_percentage",
+        strategyParams: {
+          constant_percentage: { withdrawalPercent: 0.02, floorPercent: 1 },
+        },
+      },
+    });
+    cents(
+      {
+        w2028: at(2028).totalWithdrawal,
+        tax2028: at(2028).taxCost,
+        need2028: at(2028).afterTaxNeed,
+        charged2028: at(2028).irmaaCost,
+        reinvested2028: at(2028).rmdExcessAmount,
+        spent2028: at(2028).spending,
+        unmet2028: at(2028).unmetNeed ?? 0,
+        spent2026: at(2026).spending,
+      },
+      {
+        w2028: 297_519.81,
+        tax2028: 48_080.75,
+        need2028: 137_726,
+        charged2028: 5_769.6,
+        reinvested2028: 105_943.46,
+        spent2028: 137_726,
+        unmet2028: 0,
+        spent2026: 131_956.4,
+      },
+    );
   });
 });
 

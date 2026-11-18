@@ -80,6 +80,18 @@ export function irmaaInNeed(
     : 0;
 }
 
+/** The on-top charge known at the year's start that the need leaves out (a
+ *  withdrawal-sized year's): owed before RMD money past the need is
+ *  reinvested. A charge read from the year's own MAGI comes after it. */
+export function irmaaOutsideNeed(
+  charge: IrmaaCharge | undefined,
+  state: { portfolioWithdrawal: number | null },
+): number {
+  return charge?.atYearStart && irmaaInNeed(charge, state) === 0
+    ? charge.onTop
+    : 0;
+}
+
 /** What the year pays of its on-top charge from what it has to spend (what
  *  it delivered, less RMD money reinvested, plus Social Security), and the
  *  unpaid rest: unmet need, unless the need already holds it. */

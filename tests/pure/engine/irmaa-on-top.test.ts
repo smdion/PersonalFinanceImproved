@@ -104,6 +104,29 @@ describe("IRMAA on top of the budget", () => {
     expect(fixedOn.rmdExcessAmount).toBe(fixedIn.rmdExcessAmount);
   });
 
+  it("a withdrawal-sized year pays the charge before reinvesting RMD money: spending + charge + reinvested is what it had", () => {
+    // 1% of the portfolio, held at that first amount: the RMDs pass it.
+    const strategy = {
+      withdrawalStrategy: "constant_percentage" as const,
+      strategyParams: {
+        constant_percentage: { withdrawalPercent: 0.01, floorPercent: 1 },
+      },
+    };
+    const rows = years(input({ irmaaOnTopOfBudget: true }, strategy));
+    const reinvesting = rows.filter(
+      (y) => y.year >= 2028 && y.rmdExcessAmount > 0 && (y.irmaaPaid ?? 0) > 0,
+    );
+    expect(reinvesting.length).toBeGreaterThan(0);
+    for (const y of reinvesting) {
+      expect(y.unmetNeed ?? 0).toBe(0);
+      expect(y.spending).toBeCloseTo(y.afterTaxNeed + y.ssIncome, 1);
+      expect(y.spending + y.irmaaPaid! + y.rmdExcessAmount).toBeCloseTo(
+        y.deliveredAfterTax! + y.ssIncome,
+        1,
+      );
+    }
+  });
+
   it("running out shows as unmet need", () => {
     const short = years(
       household(
