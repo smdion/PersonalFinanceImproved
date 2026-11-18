@@ -93,13 +93,23 @@ function largestFit(hi: number, fits: (d: number) => boolean): number {
   return lo;
 }
 
+/** Employer money counts toward the type's own limit (its 402(g)-style room moves with the cut). */
+const countsEmployerMoney = (type: string) =>
+  categoriesWithIrsLimit().some(
+    (c) => c === type && getAccountTypeConfig(c).matchCountsTowardLimit,
+  );
+
 /** A row's configured yearly employee money (regular + bonus checks). */
 export const configuredEmployee = (r: CapRow) =>
   Math.max(0, r.regularAnnual) + Math.max(0, r.bonusAnnual);
 
-/** 415(c) per person per employer, after 402(g): deferrals + employer money within min(limit, pay);
- *  the rest is catch-up up to what's left of it and pay less other deferrals (414(v)(3)(A),
- *  (v)(2)(A)(ii)). Only employee money is cut; an ended job's plan goes first and is never cut. */
+/** One employer's plan: its rows, the most its deferrals can be (its 415(c) ceiling), and the
+ *  person's configured money in the same limit group at their other employers. */
+type Plan = { index: number[]; most: number; elsewhere: number };
+
+/** 415(c) per person per employer, after 402(g) (holdPlans); 402(g) room a plan's ceiling frees
+ *  goes back to the person's rows still below theirs (giveBack), and the ceilings are held again
+ *  until none frees (a catch-up one plan uses is gone for the next). */
 export function holdToAnnualAdditions(
   rows: readonly CapRow[],
   ctx: CapContext,
@@ -112,12 +122,33 @@ export function holdToAnnualAdditions(
     const at = `${r.personId}:${r.employer.key}`;
     plans.set(at, [...(plans.get(at) ?? []), i]);
   });
-  const catchupLeft = new Map<number, number>();
   // A plan is one employer's rows (one job), so its first row says whether it ended.
   const endedFirst = [...plans.values()].sort(
     (a, b) =>
       Number(isAlreadyIn(rows[b[0]!]!)) - Number(isAlreadyIn(rows[a[0]!]!)),
   );
+  const afterDeferralCut = [...state.kept];
+  let held = holdPlans(rows, ctx, state, endedFirst);
+  for (let round = 0; round < endedFirst.length; round++) {
+    if (!giveBack(rows, state, afterDeferralCut, held)) break;
+    held = holdPlans(rows, ctx, state, endedFirst);
+  }
+  for (const { index, most, elsewhere } of held)
+    for (const i of index)
+      state.maxOf[i] = Math.min(state.maxOf[i] ?? Infinity, most + elsewhere);
+}
+
+/** Each plan held to its 415(c) ceiling: deferrals + employer money within min(limit, pay), the rest
+ *  catch-up up to what's left of it and pay less other deferrals (414(v)(3)(A), (v)(2)(A)(ii)).
+ *  Only employee money is cut; an ended job's plan goes first and is never cut. */
+function holdPlans(
+  rows: readonly CapRow[],
+  ctx: CapContext,
+  state: PassState,
+  endedFirst: readonly number[][],
+): Plan[] {
+  const catchupLeft = new Map<number, number>();
+  const held: Plan[] = [];
   for (const index of endedFirst) {
     const first = rows[index[0]!]!;
     const keys = additionsKeys(first.accountType)!;
@@ -165,7 +196,53 @@ export function holdToAnnualAdditions(
         state.kept[i] = (state.kept[i]! * most) / kept;
         state.factorOf[i] = (state.factorOf[i]! * most) / kept;
       }
-      state.maxOf[i] = Math.min(state.maxOf[i] ?? Infinity, most + elsewhere);
+    }
+    held.push({ index, most, elsewhere });
+  }
+  return held;
+}
+
+/** Water-fill: a person's rows in a limit group take one factor f on their configured money (a plan's
+ *  rows held to its ceiling), the largest f within what the 402(g) cut left them. Ended-job and joint
+ *  rows, and a group counting employer money, stay as they are. True when a row got money back. */
+function giveBack(
+  rows: readonly CapRow[],
+  state: PassState,
+  afterDeferralCut: readonly number[],
+  held: readonly Plan[],
+): boolean {
+  const ceilingOf = new Map<number, Plan>();
+  for (const plan of held) for (const i of plan.index) ceilingOf.set(i, plan);
+  const groups = new Map<string, number[]>();
+  rows.forEach((r, i) => {
+    const group = getLimitGroup(r.accountType);
+    if (!group || r.personId === null || isAlreadyIn(r)) return;
+    if (countsEmployerMoney(r.accountType)) return;
+    const at = `${r.personId}:${group}`;
+    groups.set(at, [...(groups.get(at) ?? []), i]);
+  });
+  let changed = false;
+  for (const index of groups.values()) {
+    if (!index.some((i) => state.kept[i]! < afterDeferralCut[i]! - 1e-9))
+      continue;
+    const room = sumBy(index, (i) => afterDeferralCut[i]!);
+    /** Row i's factor at f: f, or its plan's ceiling share when that is lower. */
+    const factorAt = (i: number, f: number) => {
+      const plan = ceilingOf.get(i);
+      if (!plan) return f;
+      const asked = sumBy(plan.index, (j) => configuredEmployee(rows[j]!));
+      return asked > 0 ? Math.min(f, plan.most / asked) : f;
+    };
+    const total = (f: number) =>
+      sumBy(index, (i) => configuredEmployee(rows[i]!) * factorAt(i, f));
+    const f = largestFit(1, (x) => total(x) <= room);
+    for (const i of index) {
+      const back = configuredEmployee(rows[i]!) * factorAt(i, f);
+      if (back <= state.kept[i]! + 1e-9) continue;
+      state.kept[i] = back;
+      state.factorOf[i] = factorAt(i, f);
+      changed = true;
     }
   }
+  return changed;
 }

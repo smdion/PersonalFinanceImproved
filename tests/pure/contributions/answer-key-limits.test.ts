@@ -319,6 +319,32 @@ describe("limits: several employers", () => {
       20_000,
     );
   });
+
+  it("limits/RR-C1 [LIM-06] room one plan's pay bound frees stays the person's (2026, 45, A pays 10,000 with 24,500 asked, B pays 100,000 with 10,000): 10,000 + 10,000", () => {
+    // 415(c)(1)(B) holds A to its 10,000 pay (unrelated employers: 415(h), Reg. 1.415(f)-1);
+    // 402(g)(1) is one 24,500 limit over both jobs (Notice 2025-67): 10,000 + 10,000 is
+    // under it, so B keeps its 10,000. Age 45: no catch-up.
+    const a = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 24_500,
+      employer: { key: 1, pay: 10_000 },
+    });
+    const b = row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: 10_000,
+      employer: { key: 2, pay: 100_000 },
+    });
+    const capped = cap(2026, [person(1, 2026, 45, 110_000)], [a, b]);
+    cents(
+      {
+        a: capped.get(a.id)!.cappedAnnual,
+        b: capped.get(b.id)!.cappedAnnual,
+      },
+      { a: 10_000, b: 10_000 },
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

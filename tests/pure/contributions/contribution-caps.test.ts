@@ -432,6 +432,50 @@ describe("capContributionsByLimitGroup — 415(c) at two employers", () => {
   });
 });
 
+describe("capContributionsByLimitGroup — 402(g) room a pay bound frees", () => {
+  const lim415 = {
+    "401k_employee_limit": 24500,
+    "401k_catchup_limit": 8000,
+    "401k_super_catchup_limit": 11250,
+    "401k_total_additions_limit": 72000,
+  };
+  const plan = (job: number, pay: number, deferred: number) =>
+    row({
+      personId: 1,
+      accountType: "401k",
+      regularAnnual: deferred,
+      employer: { key: job, pay },
+    });
+  const capped = (rows: CapRow[]) => {
+    const r = cap(rows, [person(1, 45, 300000)], "Single", lim415);
+    return rows.map((x) => r.get(x.id)!.cappedAnnual);
+  };
+  it("goes to the plan still under its pay: one factor on the rest", () => {
+    // 49,000 asked against 24,500. A is held to its 5,000 pay; one factor f on B:
+    // 5,000 + 24,500 f = 24,500, so B keeps 19,500.
+    const [a, b] = capped([plan(1, 5000, 24500), plan(2, 100000, 24500)]);
+    expect(a).toBeCloseTo(5000, 2);
+    expect(b).toBeCloseTo(19500, 2);
+  });
+  it("is shared pro rata by the plans still under their pay", () => {
+    // A held to 5,000; B and C share 19,500 at one factor: 30,000 f = 19,500, f = 0.65.
+    const [a, b, c] = capped([
+      plan(1, 5000, 20000),
+      plan(2, 100000, 20000),
+      plan(3, 100000, 10000),
+    ]);
+    expect(a).toBeCloseTo(5000, 2);
+    expect(b).toBeCloseTo(13000, 2);
+    expect(c).toBeCloseTo(6500, 2);
+  });
+  it("leaves a cut that no pay bound changes as it was", () => {
+    // A's 20,000 pay is over its share (24,500 × 24,500 / 34,500 = 17,398.55): one factor.
+    const [a, b] = capped([plan(1, 20000, 24500), plan(2, 100000, 10000)]);
+    expect(a).toBeCloseTo(17398.55, 2);
+    expect(b).toBeCloseTo(7101.45, 2);
+  });
+});
+
 describe("capContributionsByLimitGroup — money already in from an ended job", () => {
   const ended = (key: number, pay: number) => ({
     key,
