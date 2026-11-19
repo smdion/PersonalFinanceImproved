@@ -37,9 +37,7 @@ export type EligibilityAccountInput = {
   ownerPersonId?: number;
   ruleOf55?: RuleOf55Status | null;
   rothBasisMeta?: RothBasisMeta | null;
-  /** `ownerPersonId`'s birth year, carried directly on the account — see
-   *  `IndividualAccountInput.ownerBirthYear`'s docblock for why this isn't
-   *  a separate `birthYearByPersonId` lookup. */
+  /** `ownerPersonId`'s birth year; in a projection, the owner's in `people`. */
   ownerBirthYear?: number;
   /** Passed straight to `projectRuleOf55` (`opts.forceIneligible`); never checked here,
    *  since Rule-of-55-ineligible is not locked (pro_rata is "Rule of 55 OR 59½"). */

@@ -17,6 +17,7 @@ import { isHeldPart } from "../../accounts/account-part";
 import { declareOpeningParts } from "../opening-state";
 import { getRmdStartAge } from "../../../config/rmd-tables";
 import type { BrokerageGoal, ProjectionContext } from "./types";
+import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 
 // ---------------------------------------------------------------------------
 // Context and state builders
@@ -154,7 +155,7 @@ export function buildProjectionContext(
 
   const parts = input.individualAccounts;
   const holdsAccounts = parts.some(isHeldPart);
-  const indAccounts = holdsAccounts ? declareOpeningParts(parts, input) : [];
+  const indAccounts = holdsAccounts ? openingParts(input) : [];
   const indKey = makeIndKey();
   const indParentCat = new Map<string, string>();
   for (const ia of indAccounts) {
@@ -204,4 +205,17 @@ export function buildProjectionContext(
     OVERFLOW_CATEGORY,
     TAX_ADVANTAGED,
   };
+}
+
+/** The opening parts, each owner's birth year their one in `people`
+ *  (input validation checked every owner is there). */
+function openingParts(input: ProjectionInput): IndividualAccountInput[] {
+  const birthYearOf = new Map(
+    input.people.map((p) => [p.personId, p.birthYear]),
+  );
+  return declareOpeningParts(input.individualAccounts, input).map((ia) =>
+    ia.ownerPersonId == null
+      ? ia
+      : { ...ia, ownerBirthYear: birthYearOf.get(ia.ownerPersonId) },
+  );
 }

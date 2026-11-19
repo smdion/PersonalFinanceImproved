@@ -129,7 +129,6 @@ export function startingAccounts(
     people,
     asOfDate,
     taxBucketBreakdown,
-    birthYearByPersonId,
     retirementYearByPersonId,
     ruleOf55OverrideByPerson,
     rmdTarget,

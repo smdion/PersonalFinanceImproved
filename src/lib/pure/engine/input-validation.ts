@@ -29,6 +29,7 @@ export function validateEngineInputs(
   const ages = [input.currentAge, ...(input.perPersonBirthYears ?? [])];
   if (!ages.every(Number.isFinite))
     throw new Error("A person's age or birth year is not a number");
+  validateOneBirthYearPerPerson(input);
   let { salaryGrowthRate, inflationRate } = input;
   let postRetirementInflationRate =
     input.postRetirementInflationRate ?? inflationRate;
@@ -77,4 +78,34 @@ export function validateEngineInputs(
   }
 
   return { salaryGrowthRate, inflationRate, postRetirementInflationRate };
+}
+
+/** A person's birth year is the one in `people`: every account owner is one of
+ *  them, `currentAge` is the primary's (`primaryPersonId`, else the first) in
+ *  the as-of year, and `perPersonBirthYears`, when sent, holds the same years. */
+function validateOneBirthYearPerPerson(input: ProjectionInput): void {
+  const { people } = input;
+  const ids = new Set(people.map((p) => p.personId));
+  for (const ia of input.individualAccounts)
+    if (ia.ownerPersonId != null && !ids.has(ia.ownerPersonId))
+      throw new Error(
+        `Account "${ia.name}" names owner ${ia.ownerPersonId}, who isn't among the household's people`,
+      );
+  const primary =
+    input.primaryPersonId == null
+      ? people[0]
+      : people.find((p) => p.personId === input.primaryPersonId);
+  if (!primary) throw new Error("The engine input names no primary person");
+  const primaryAge = input.asOfDate.getFullYear() - primary.birthYear;
+  if (input.currentAge !== primaryAge)
+    throw new Error(
+      `currentAge ${input.currentAge} disagrees with person ${primary.personId}'s birth year ${primary.birthYear} (age ${primaryAge})`,
+    );
+  const sent = input.perPersonBirthYears;
+  const sorted = (years: readonly number[]) => [...years].sort((a, b) => a - b);
+  const expected = sorted(people.map((p) => p.birthYear));
+  if (sent && sorted(sent).join() !== expected.join())
+    throw new Error(
+      `perPersonBirthYears ${sent.join(", ")} disagree with the people's birth years ${expected.join(", ")}`,
+    );
 }

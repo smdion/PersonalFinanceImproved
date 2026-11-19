@@ -1,6 +1,6 @@
 /**
- * The engine's per-account starting list (category, tax type, owner, basis, birth year, early-
- * access eligibility, penalty allowance, unspent-RMD target). The engine declares the
+ * The engine's per-account starting list (category, tax type, owner, basis, early-access
+ * eligibility, penalty allowance, unspent-RMD target). The engine declares the
  * projection-only Retirement brokerage itself (`declareOpeningParts`).
  */
 import { calendarYear } from "@/lib/utils/date";
@@ -26,7 +26,6 @@ export function buildIndividualAccounts({
   people,
   asOfDate,
   taxBucketBreakdown,
-  birthYearByPersonId,
   retirementYearByPersonId,
   ruleOf55OverrideByPerson,
   rmdTarget,
@@ -38,7 +37,6 @@ export function buildIndividualAccounts({
   people: readonly { id: number; name: string; dateOfBirth: string }[];
   asOfDate: Date;
   taxBucketBreakdown: ReturnType<typeof computeTaxBucketBreakdown>;
-  birthYearByPersonId: ReadonlyMap<number, number>;
   /** Each person's planned retirement year (birth year + retirement age). */
   retirementYearByPersonId?: ReadonlyMap<number, number>;
   ruleOf55OverrideByPerson: ReadonlyMap<number, boolean | null | undefined>;
@@ -106,10 +104,6 @@ export function buildIndividualAccounts({
         ownerPersonId: a.ownerPersonId,
         parentCategory: a.parentCategory,
         ...eligibility,
-        ownerBirthYear:
-          a.ownerPersonId != null
-            ? birthYearByPersonId.get(a.ownerPersonId)
-            : undefined,
         ownerRetirementYear:
           a.ownerPersonId != null
             ? retirementYearByPersonId?.get(a.ownerPersonId)
