@@ -62,30 +62,43 @@ function noAllowance(
 }
 
 describe("makeIndKey", () => {
-  it("creates composite key from name, category, and taxType", () => {
+  it("keys a part by its account's id, category and tax type", () => {
     const fn = makeIndKey();
-    expect(fn({ name: "My 401k", category: "401k", taxType: "preTax" })).toBe(
-      "My 401k::401k::preTax::joint",
-    );
+    expect(
+      fn({
+        name: "My 401k",
+        performanceAccountId: 4,
+        category: "401k",
+        taxType: "preTax",
+      }),
+    ).toBe("acct:4:401k::preTax::joint");
   });
 
-  it("includes ownerPersonId so two owners' same-named accounts don't collide", () => {
+  it("includes ownerPersonId so two owners' parts of one account don't collide", () => {
     const fn = makeIndKey();
-    const alice = fn({
+    const part = {
       name: "401k",
+      performanceAccountId: 4,
       category: "401k",
       taxType: "preTax",
-      ownerPersonId: 1,
-    });
-    const bob = fn({
-      name: "401k",
-      category: "401k",
-      taxType: "preTax",
-      ownerPersonId: 2,
-    });
+    } as const;
+    const alice = fn({ ...part, ownerPersonId: 1 });
+    const bob = fn({ ...part, ownerPersonId: 2 });
     expect(alice).not.toBe(bob);
-    expect(alice).toBe("401k::401k::preTax::1");
-    expect(bob).toBe("401k::401k::preTax::2");
+    expect(alice).toBe("acct:4:401k::preTax::1");
+    expect(bob).toBe("acct:4:401k::preTax::2");
+  });
+
+  it("keeps two same-named accounts of one owner apart", () => {
+    const fn = makeIndKey();
+    const part = {
+      name: "Brokerage",
+      category: "brokerage",
+      taxType: "afterTax",
+    } as const;
+    expect(fn({ ...part, performanceAccountId: 4 })).not.toBe(
+      fn({ ...part, performanceAccountId: 5 }),
+    );
   });
 });
 
@@ -147,9 +160,7 @@ describe("buildSpecToAccountMapping", () => {
       indKey,
       parentCat,
     );
-    expect(specToAccount.get("Alice 401k::pre_tax")).toBe(
-      "Alice 401k::401k::preTax::joint",
-    );
+    expect(specToAccount.get("Alice 401k::pre_tax")).toBe(indKey(accounts[0]!));
   });
 
   it("falls back to unowned account when no exact owner match", () => {

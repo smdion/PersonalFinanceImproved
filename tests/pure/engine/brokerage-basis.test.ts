@@ -15,19 +15,21 @@ import type {
   IndividualAccountInput,
   TaxBuckets,
 } from "@/lib/pure/accounts/account-balances.types";
+import { withAccountId } from "../fixtures/engine-input";
 
 const indKey = makeIndKey();
 const brokerage = (
   name: string,
   startingBalance: number,
   startingBasis?: number,
-): IndividualAccountInput => ({
-  name,
-  category: "brokerage",
-  taxType: "afterTax",
-  startingBalance,
-  ...(startingBasis != null ? { startingBasis } : {}),
-});
+): IndividualAccountInput =>
+  withAccountId({
+    name,
+    category: "brokerage",
+    taxType: "afterTax",
+    startingBalance,
+    ...(startingBasis != null ? { startingBasis } : {}),
+  });
 
 describe("sellAtCost", () => {
   it("a sale takes basis out at average cost and taxes the rest as gain", () => {

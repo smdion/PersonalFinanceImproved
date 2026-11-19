@@ -18,6 +18,36 @@ type StartingMoney = {
   individualAccounts?: IndividualAccountInput[];
 };
 
+/**
+ * A fixture account as the payload gives it: a held part with neither id
+ * takes a performance account id from its name and category, so an account's
+ * tax and owner parts stay one account and its same-named accounts of other
+ * categories stay apart.
+ */
+export function withAccountId<T extends IndividualAccountInput>(ia: T): T {
+  if (!isHeldPart(ia) || ia.performanceAccountId != null) return ia;
+  if (ia.portfolioAccountId != null) return ia;
+  return { ...ia, performanceAccountId: fixtureAccountId(ia) };
+}
+
+/** `withAccountId` over a fixture's accounts. */
+export function withAccountIds<T extends IndividualAccountInput>(
+  parts: T[],
+): T[] {
+  return parts.map(withAccountId);
+}
+
+/** A fixture account's performance account id: one per (name, category),
+ *  above the ids tests write by hand. */
+function fixtureAccountId(
+  ia: Pick<IndividualAccountInput, "name" | "category">,
+) {
+  let hash = 0;
+  for (const ch of `${ia.name}::${ia.category}`)
+    hash = (hash * 31 + ch.charCodeAt(0)) % 1_000_000;
+  return 1_000_000 + hash;
+}
+
 /** An engine input as fixtures write it. */
 export type FixtureInput = Omit<ProjectionInput, "individualAccounts"> &
   StartingMoney;
@@ -60,7 +90,7 @@ export function engineInput(fixture: StartingMoney) {
   );
   return {
     ...rest,
-    individualAccounts: individualAccounts.map((ia) => {
+    individualAccounts: withAccountIds(individualAccounts).map((ia) => {
       const shared = basis.get(accountKeyOf(ia));
       return ia.startingBasis == null && shared != null
         ? { ...ia, startingBasis: shared }

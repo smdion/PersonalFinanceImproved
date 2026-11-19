@@ -10,6 +10,7 @@ import { unclaimedSlot } from "@/lib/pure/engine/individual-accounts/own-part-cr
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import type { AccumulationSlot } from "@/lib/pure/engine/types/routing";
+import { withAccountId } from "../fixtures/engine-input";
 
 const part = (
   name: string,
@@ -18,14 +19,15 @@ const part = (
   startingBalance: number,
   ownerPersonId?: number,
   parentCategory = "Retirement",
-): IndividualAccountInput => ({
-  name,
-  category,
-  taxType,
-  startingBalance,
-  ownerPersonId,
-  parentCategory,
-});
+): IndividualAccountInput =>
+  withAccountId({
+    name,
+    category,
+    taxType,
+    startingBalance,
+    ownerPersonId,
+    parentCategory,
+  });
 const slot = (
   category: AccumulationSlot["category"],
   money: Partial<AccumulationSlot>,

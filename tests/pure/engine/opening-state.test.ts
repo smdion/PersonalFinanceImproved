@@ -27,6 +27,7 @@ const NO_FLOWS = {
 
 const retirementBrokerage: IndividualAccountInput = {
   name: "Retirement brokerage",
+  performanceAccountId: 3,
   category: "brokerage",
   taxType: "afterTax",
   startingBalance: 1000,
@@ -103,6 +104,7 @@ describe("declareOpeningParts", () => {
   it("an IRA held in parts by two owners declares each owner's missing part", () => {
     const ira = (ownerPersonId: number, taxType: string) => ({
       name: "Joint IRA",
+      performanceAccountId: 5,
       category: "ira" as const,
       taxType,
       startingBalance: 10000,
@@ -122,6 +124,7 @@ describe("declareOpeningParts", () => {
   it("accounts with no Roth split declare no other part", () => {
     const hsa: IndividualAccountInput = {
       name: "HSA",
+      performanceAccountId: 6,
       category: "hsa",
       taxType: "hsa",
       startingBalance: 5000,

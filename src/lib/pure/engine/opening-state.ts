@@ -25,7 +25,7 @@ import {
   taxTypeOnSide,
 } from "../../config/tax-treatment-buckets";
 import { roundToCents } from "../../utils/math";
-import { accountKeyOf } from "../accounts/account-part";
+import { accountIdKeyOf } from "../accounts/account-part";
 import type {
   AccountBalances,
   IndividualAccountInput,
@@ -225,7 +225,7 @@ function projectedPart(slice: Slice): IndividualAccountInput {
 function withOtherTaxParts(
   parts: IndividualAccountInput[],
 ): IndividualAccountInput[] {
-  const keys = new Set(parts.map((ia) => accountKeyOf(ia)));
+  const keys = new Set(parts.map((ia) => accountIdKeyOf(ia)));
   for (const ia of [...parts]) {
     if (!getAccountTypeConfig(ia.category).supportsRothSplit) continue;
     if (!SPLIT_TAX_TYPES.includes(ia.taxType)) continue;
@@ -243,7 +243,7 @@ function withOtherTaxParts(
         startingBalance: 0,
         origin: ia.origin ?? ("declared" as const),
       };
-      const key = accountKeyOf(part);
+      const key = accountIdKeyOf(part);
       if (keys.has(key)) continue;
       keys.add(key);
       parts.push(part);

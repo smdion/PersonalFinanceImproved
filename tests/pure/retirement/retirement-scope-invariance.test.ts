@@ -32,6 +32,7 @@ import {
   AS_OF,
 } from "../../benchmarks/benchmark-helpers";
 import { shippedTaxTables } from "../../helpers/tax-data";
+import { withAccountId } from "../fixtures/engine-input";
 
 const MFJ_BRACKETS = [
   { threshold: 23850, baseWithholding: 0, rate: 0.1 },
@@ -47,17 +48,18 @@ const account = (
   taxType: string,
   startingBalance: number,
   extra: Partial<IndividualAccountInput> = {},
-): IndividualAccountInput => ({
-  name,
-  category,
-  taxType,
-  startingBalance,
-  ownerPersonId: 1,
-  ownerName: "Alex",
-  ownerBirthYear: 1990,
-  parentCategory: "Retirement",
-  ...extra,
-});
+): IndividualAccountInput =>
+  withAccountId({
+    name,
+    category,
+    taxType,
+    startingBalance,
+    ownerPersonId: 1,
+    ownerName: "Alex",
+    ownerBirthYear: 1990,
+    parentCategory: "Retirement",
+    ...extra,
+  });
 
 const spec = (
   name: string,

@@ -38,6 +38,7 @@ import type {
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { readTaxData, shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
+import { withAccountIds } from "../../pure/fixtures/engine-input";
 import { calendarMonth } from "@/lib/utils/date";
 import {
   engineInput,
@@ -540,7 +541,7 @@ export function ledgerInput(
       afterTaxBasis: basis,
     },
     startingAccountBalances,
-    individualAccounts,
+    individualAccounts: withAccountIds(individualAccounts),
     annualExpenses: h.annualSpendingToday,
     decumulationAnnualExpenses: h.annualSpendingToday,
     inflationRate: Number(h.inflation),

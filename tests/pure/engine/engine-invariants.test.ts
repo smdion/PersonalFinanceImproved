@@ -39,6 +39,7 @@ import { shippedTaxTables } from "../../helpers/tax-data";
 import { onePerson } from "../../fixtures/engine-people";
 import { engineInput, type FixtureInput } from "../fixtures/engine-input";
 import { openingTotals } from "@/lib/pure/engine/opening-state";
+import { withAccountIds } from "../fixtures/engine-input";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -433,7 +434,7 @@ function withAccountsAndSpecs(input: ProjectionInput): ProjectionInput {
       .reduce((t, sp) => t + sp.baseAnnual, 0);
   return {
     ...input,
-    individualAccounts: accounts,
+    individualAccounts: withAccountIds(accounts),
     contributionSpecs: specs,
     baseYearContributions: {
       "401k": base("401k"),
@@ -2019,7 +2020,7 @@ describe("engine invariants", () => {
           ...base.decumulationDefaults,
           avoidPenalizedWithdrawals: true,
         },
-        individualAccounts: [
+        individualAccounts: withAccountIds([
           { ...k401, taxType: "preTax", startingBalance: 500000 },
           { ...k401, taxType: "taxFree", startingBalance: 50000 },
           {
@@ -2030,7 +2031,7 @@ describe("engine invariants", () => {
             startingBasis: 300000,
             parentCategory: "Retirement",
           },
-        ],
+        ]),
       };
       const firstYear = calculateProjection(input).projectionByYear.find(
         (y): y is EngineDecumulationYear => y.phase === "decumulation",

@@ -48,10 +48,9 @@ function weightsOf(ledger: Ledger, parts: IndividualAccountInput[]) {
     sumBy(
       ledger.indAccounts.filter(
         (ia) =>
-          ia.name === part.name &&
-          ia.category === part.category &&
-          ia.ownerPersonId === part.ownerPersonId &&
-          ia.taxType !== part.taxType,
+          ia.taxType !== part.taxType &&
+          ledger.indKey({ ...ia, taxType: part.taxType }) ===
+            ledger.indKey(part),
       ),
       balance,
     ),

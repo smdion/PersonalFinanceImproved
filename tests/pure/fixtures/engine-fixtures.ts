@@ -21,7 +21,7 @@ import { accountBalancesFromTaxBuckets } from "./tax-bucket-split";
 import { buildCategoryRecord } from "@/lib/config/account-types";
 import { roundToCents } from "@/lib/utils/math";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
-import { engineInput, type FixtureInput } from "./engine-input";
+import { engineInput, withAccountId, type FixtureInput } from "./engine-input";
 import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "@/lib/constants";
 import type { WithholdingBracket } from "@/lib/pure/engine/tax-estimation";
 
@@ -289,13 +289,13 @@ export function makeContributionSpec(
 export function makeIndividualAccount(
   overrides: Partial<IndividualAccountInput> = {},
 ): IndividualAccountInput {
-  return {
+  return withAccountId({
     name: "401k Account",
     category: "401k" as AccountCategory,
     taxType: "preTax",
     startingBalance: 100000,
     ...overrides,
-  };
+  });
 }
 
 // ---------------------------------------------------------------------------

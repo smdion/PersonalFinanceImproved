@@ -22,6 +22,7 @@ import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
 import { onePerson } from "../../fixtures/engine-people";
 import { engineInput, type FixtureInput } from "../fixtures/engine-input";
+import { withAccountIds } from "../fixtures/engine-input";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -149,7 +150,7 @@ function makeSingleHousehold(): ProjectionInput {
       ],
       asOfDate: AS_OF,
       filingStatus: "Single",
-      individualAccounts: [
+      individualAccounts: withAccountIds([
         {
           name: "401k",
           category: "401k",
@@ -201,7 +202,7 @@ function makeSingleHousehold(): ProjectionInput {
           ownerBirthYear: 1963,
           parentCategory: "Retirement",
         },
-      ],
+      ]),
     }),
   );
 }
@@ -381,7 +382,7 @@ describe("sweepClaimingAges", () => {
       // The household-level preTax total includes the unassigned
       // account's balance (the engine takes its starting money from the
       // accounts), so it drops out of the per-person base only.
-      individualAccounts: [
+      individualAccounts: withAccountIds([
         ...(base.individualAccounts ?? []),
         {
           name: "Unassigned 401k",
@@ -392,7 +393,7 @@ describe("sweepClaimingAges", () => {
           ownerPersonId: undefined,
           parentCategory: "Retirement",
         },
-      ],
+      ]),
     };
 
     const pia = 30000;

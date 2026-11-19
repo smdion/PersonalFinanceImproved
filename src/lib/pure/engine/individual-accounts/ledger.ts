@@ -6,7 +6,7 @@ import {
   getAccountTypeConfig,
   isRetirementMoney,
 } from "../../../config/account-types";
-import { accountKeyOf, type IndKeyFn } from "@/lib/pure/accounts/account-part";
+import { accountIdKeyOf, type IndKeyFn } from "../../accounts/account-part";
 import {
   accrueContributionBasis,
   drawFromBasis,
@@ -38,9 +38,9 @@ export function retirementFirst<T>(
   return retirement.length > 0 ? retirement : [...items];
 }
 
-/** The ledger's key function: each account part's `accountKeyOf`. */
+/** The ledger's key function: each account part's id key (`accountIdKeyOf`). */
 export function makeIndKey(): IndKeyFn {
-  return accountKeyOf;
+  return accountIdKeyOf;
 }
 
 /** Adds `amount` to account `account` in each of the year's maps `into`

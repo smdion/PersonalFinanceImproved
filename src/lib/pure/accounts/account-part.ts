@@ -3,8 +3,8 @@ import type {
   IndividualAccountInput,
 } from "./account-balances.types";
 
-/** One account part as the engine keys it: the account's name, category,
- *  tax type and owner (absent for a joint account). */
+/** One account part by its name key (`accountKeyOf`): the account's name,
+ *  category, tax type and owner (absent for a joint account). */
 type AccountPart = {
   name: string;
   category: string;
@@ -15,15 +15,13 @@ type AccountPart = {
 /** What names a part's account by id and category: its performance account,
  *  else its snapshot row (each has one parent); the engine's own parts by
  *  origin, category and parent. */
-type PartIdentity = Pick<
-  IndividualAccountInput,
-  | "category"
-  | "taxType"
-  | "performanceAccountId"
-  | "portfolioAccountId"
-  | "origin"
-  | "parentCategory"
-> & { ownerPersonId?: number | null };
+type PartIdentity = Partial<
+  Pick<
+    IndividualAccountInput,
+    "performanceAccountId" | "portfolioAccountId" | "origin" | "parentCategory"
+  >
+> &
+  Pick<AccountPart, "category" | "taxType"> & { ownerPersonId?: number | null };
 
 /** The one key shape: (identity, tax type, owner or `joint`). */
 function partKey(
@@ -62,8 +60,11 @@ function identityOf(part: PartIdentity): string {
   );
 }
 
-/** The engine's key function for one individual account (`accountKeyOf`). */
-export type IndKeyFn = (ia: AccountPart) => string;
+/** The engine's key function for one individual account (`accountIdKeyOf`). */
+export type IndKeyFn = (
+  ia: Omit<PartIdentity, "ownerPersonId"> &
+    Pick<AccountPart, "name" | "ownerPersonId">,
+) => string;
 
 /** A part with a real account behind it: no `origin` (the engine's declared
  *  siblings, the projected brokerage and synthetic parts all carry one). */

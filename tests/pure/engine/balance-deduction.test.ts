@@ -306,7 +306,13 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
   it("reinvest: three equal targets split 100 as 33.33 x 3 plus a 0.01 remainder on the first", () => {
     const { balances, accountBalance } = start();
     const accts = accounts().slice(0, 2);
-    accts.push({ ...accts[1]!, name: "Retirement brokerage C" });
+    accts.push(
+      makeIndividualAccount({
+        ...accts[1]!,
+        name: "Retirement brokerage C",
+        performanceAccountId: undefined,
+      }),
+    );
     accts[0] = { ...accts[0]!, startingBalance: 10000 };
     const indBal = indBalOf(accts);
     reinvestRmdExcess(
