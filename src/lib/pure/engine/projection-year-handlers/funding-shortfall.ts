@@ -4,6 +4,7 @@ import { shortfallFloor } from "../gap-year-draw";
 import type { DecumulationYear } from "./types";
 import type { RepricedFlow } from "./conversion-year-reprice";
 import { payIrmaaCharge, type IrmaaCharge } from "./irmaa-charge";
+import { shortfallPartsInUnmet } from "./shortfall-parts";
 
 /** The unmet need, its locked and Portfolio parts, and IRMAA paid. */
 export function fundingShortfallForYear(
@@ -16,8 +17,7 @@ export function fundingShortfallForYear(
   const { taxCost } = flow.repriced;
   const { penaltyCost, surplusCredit } = flow.parts;
   const { afterTaxNeed } = flow.need;
-  const { routedUnmetNeed, penaltyAvoidedShortfall, nonRetirementShortfall } =
-    flow.route;
+  const { routedUnmetNeed } = flow.route;
   const deliveredAfterTax = roundToCents(
     totalWithdrawal - taxCost - penaltyCost,
   );
@@ -37,7 +37,6 @@ export function fundingShortfallForYear(
   // Routing fell short (its own figure is gross dollars, not need) or a material gap.
   const shown = routedUnmetNeed !== undefined || fundingShortfall > floor;
   const unmetNeedRaw = shown ? fundingShortfall : undefined;
-  const inUnmet = (part?: number) => part && Math.min(part, fundingShortfall);
   // A no-gross-up household's own tax and penalty gap is by design: netted out.
   const grossUpExplainedGap =
     thisYear.taxRates.grossUpForTaxes !== false
@@ -53,7 +52,6 @@ export function fundingShortfallForYear(
     shortfallMaterialityFloor: floor,
     unmetNeedRaw,
     unmetNeedMaterial,
-    penaltyAvoidedShortfall: inUnmet(penaltyAvoidedShortfall),
-    nonRetirementShortfall: inUnmet(nonRetirementShortfall),
+    ...shortfallPartsInUnmet(flow.route, fundingShortfall),
   };
 }

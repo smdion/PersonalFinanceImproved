@@ -732,6 +732,50 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
     expect(assessPlan(stopAt42).failureReason).toBe("penaltyGap");
   });
 
+  it("ret/UN2 [ENG-24] stopped at 40, brokerage gone at 58 and the rest locked: the whole unmet need is the locked part", () => {
+    // The person and every account share one birth year, so the gate's age is the row's.
+    const birthYear = AS_OF_2.getFullYear() - 37;
+    const gapInput = makeGapInput();
+    const input: ProjectionInput = {
+      ...gapInput,
+      individualAccounts: gapInput.individualAccounts.map((ia) => ({
+        ...ia,
+        ownerBirthYear: birthYear,
+      })),
+    };
+    const stopAt40 = calculateProjection({
+      ...input,
+      profileSwitches: buildCoastFireProfileSwitches(input, 40),
+    });
+    const at58 = stopAt40.projectionByYear.find(
+      (y): y is EngineDecumulationYear =>
+        y.phase === "decumulation" && y.age === 58,
+    )!;
+    // By hand: the brokerage's last $170,460.83 is drawn, $19,648.70 of it
+    // tax: delivered $150,812.13; unmet = $174,867.69 − $150,812.13 =
+    // $24,055.56. Every other dollar is locked before 59½ (no Rule of 55,
+    // Roth basis spent, HSA before 65), so all of it is the locked part.
+    cents(
+      {
+        drawn: at58.totalWithdrawal,
+        need: at58.afterTaxNeed,
+        delivered: at58.deliveredAfterTax!,
+        unmet: at58.unmetNeed!,
+        lockedPart: at58.penaltyAvoidedShortfall!,
+      },
+      {
+        drawn: 170460.83,
+        need: 174867.69,
+        delivered: 150812.13,
+        unmet: 24055.56,
+        lockedPart: 24055.56,
+      },
+    );
+    const outcome = assessPlan(stopAt40);
+    expect(outcome.failureReason).toBe("penaltyGap");
+    expect(outcome.failureAge).toBe(58);
+  });
+
   it("without the exclusion (avoidPenalizedWithdrawals: false), the SAME household DOES pass stopping today -- isolates the fix to the exclusion's effect, not an unrelated change", () => {
     const input = makeGapInput({
       decumulationDefaults: {

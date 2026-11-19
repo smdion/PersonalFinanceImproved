@@ -419,11 +419,11 @@ export type EngineDecumulationYear = {
    *  whichever is greater. Also what counts as "no money left" for the
    *  plan judge (plan-outcome.ts) — one threshold, set here. */
   shortfallMaterialityFloor?: number;
-  /** Part of `unmetNeed` due to excluding penalty-exposed money rather than lack of money
-   *  (`RouteResult.penaltyAvoidedShortfall`, withdrawal-routing/types.ts). */
+  /** Part of `unmetNeed` due to excluding penalty-exposed money: routing's share, in the unmet
+   *  need's dollars. Overlaps `nonRetirementShortfall`: each is ≤ `unmetNeed`, never summed. */
   penaltyAvoidedShortfall?: number;
-  /** Part of `unmetNeed` due to excluding Portfolio-parented money (`RouteResult.nonRetirementShortfall`);
-   *  independent of `penaltyAvoidedShortfall`. */
+  /** Part of `unmetNeed` due to excluding Portfolio-parented money: routing's share, in the unmet
+   *  need's dollars. Overlaps `penaltyAvoidedShortfall`: each is ≤ `unmetNeed`, never summed. */
   nonRetirementShortfall?: number;
   /** Early-withdrawal penalty charged this year; nonzero only when penalized money was drawn.
    *  Not in `taxCost` (`ComputeTaxFromSlotsResult`). */
