@@ -642,7 +642,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
             startingBalance: 900000,
             ownerName: "Owner",
             ownerPersonId: 1,
-            ownerBirthYear: 1990,
+            ownerBirthYear: 1988,
             parentCategory: "Retirement",
           },
           {
@@ -652,7 +652,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
             startingBalance: 260000,
             ownerName: "Owner",
             ownerPersonId: 1,
-            ownerBirthYear: 1990,
+            ownerBirthYear: 1988,
             parentCategory: "Retirement",
           },
           {
@@ -663,7 +663,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
             startingBasis: 20000,
             ownerName: "Owner",
             ownerPersonId: 1,
-            ownerBirthYear: 1990,
+            ownerBirthYear: 1988,
             parentCategory: "Retirement",
           },
           {
@@ -673,7 +673,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
             startingBalance: 1700000,
             ownerName: "Owner",
             ownerPersonId: 1,
-            ownerBirthYear: 1990,
+            ownerBirthYear: 1988,
             parentCategory: "Retirement",
             rothBasisMeta: {
               year: 2025,
@@ -701,48 +701,53 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
     expect(result.status).not.toBe("already_coast");
   });
 
-  it("ret/UN1 [ENG-24] contributions stopped at 42, locked money at 61: unmet is the need less what was delivered", () => {
+  it("ret/UN1 [ENG-24] contributions stopped at 40, the brokerage runs out at 58: unmet is the need less what was delivered", () => {
     const input = makeGapInput();
-    const stopAt42 = calculateProjection({
+    const stopAt40 = calculateProjection({
       ...input,
-      profileSwitches: buildCoastFireProfileSwitches(input, 42),
+      profileSwitches: buildCoastFireProfileSwitches(input, 40),
     });
-    const at61 = stopAt42.projectionByYear.find(
-      (y): y is EngineDecumulationYear =>
-        y.phase === "decumulation" && y.age === 61,
-    )!;
-    // By hand: delivered = $35,291.45 drawn − $4,206.59 tax − $0 penalty =
-    // $31,084.86; unmet = $191,082.65 need − $31,084.86 = $159,997.79 (no
-    // Social Security, no IRMAA). The router's own shortfall is in its
-    // trial's gross dollars, which climbed toward the whole pool.
+    const at = (age: number) =>
+      stopAt40.projectionByYear.find(
+        (y): y is EngineDecumulationYear =>
+          y.phase === "decumulation" && y.age === age,
+      )!;
+    // By hand, at 58: delivered = the brokerage's last $170,460.83 drawn −
+    // $19,648.70 tax − $0 penalty = $150,812.13; unmet = $174,867.69 need −
+    // $150,812.13 = $24,055.56. At 59 the brokerage is empty and the rest is
+    // locked (the 401(k) until 59½, the HSA until 65, the Roth IRA's basis
+    // spent): $0 delivered, so all $180,113.72 of the need is unmet, locked.
+    const at58 = at(58);
+    const at59 = at(59);
     cents(
       {
-        need: at61.afterTaxNeed,
-        delivered: at61.deliveredAfterTax!,
-        unmet: at61.unmetNeed!,
-        lockedPart: at61.penaltyAvoidedShortfall!,
+        need58: at58.afterTaxNeed,
+        drawn58: at58.totalWithdrawal,
+        tax58: at58.taxCost,
+        delivered58: at58.deliveredAfterTax!,
+        unmet58: at58.unmetNeed!,
+        need59: at59.afterTaxNeed,
+        delivered59: at59.deliveredAfterTax!,
+        unmet59: at59.unmetNeed!,
+        lockedPart59: at59.penaltyAvoidedShortfall!,
       },
       {
-        need: 191082.65,
-        delivered: 31084.86,
-        unmet: 159997.79,
-        lockedPart: 159997.79,
+        need58: 174867.69,
+        drawn58: 170460.83,
+        tax58: 19648.7,
+        delivered58: 150812.13,
+        unmet58: 24055.56,
+        need59: 180113.72,
+        delivered59: 0,
+        unmet59: 180113.72,
+        lockedPart59: 180113.72,
       },
     );
-    expect(assessPlan(stopAt42).failureReason).toBe("penaltyGap");
+    expect(assessPlan(stopAt40).failureAge).toBe(58);
   });
 
   it("ret/UN2 [ENG-24] stopped at 40, brokerage gone at 58 and the rest locked: the whole unmet need is the locked part", () => {
-    // The person and every account share one birth year, so the gate's age is the row's.
-    const birthYear = AS_OF_2.getFullYear() - 37;
-    const gapInput = makeGapInput();
-    const input: ProjectionInput = {
-      ...gapInput,
-      individualAccounts: gapInput.individualAccounts.map((ia) => ({
-        ...ia,
-        ownerBirthYear: birthYear,
-      })),
-    };
+    const input = makeGapInput();
     const stopAt40 = calculateProjection({
       ...input,
       profileSwitches: buildCoastFireProfileSwitches(input, 40),
@@ -751,25 +756,12 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
       (y): y is EngineDecumulationYear =>
         y.phase === "decumulation" && y.age === 58,
     )!;
-    // By hand: the brokerage's last $170,460.83 is drawn, $19,648.70 of it
-    // tax: delivered $150,812.13; unmet = $174,867.69 − $150,812.13 =
-    // $24,055.56. Every other dollar is locked before 59½ (no Rule of 55,
-    // Roth basis spent, HSA before 65), so all of it is the locked part.
+    // ret/UN1 works the year's $24,055.56 unmet need by hand. Every dollar
+    // left is locked before 59½ (no Rule of 55, Roth basis spent, HSA before
+    // 65), so all of it is the locked part, and the plan fails for it.
     cents(
-      {
-        drawn: at58.totalWithdrawal,
-        need: at58.afterTaxNeed,
-        delivered: at58.deliveredAfterTax!,
-        unmet: at58.unmetNeed!,
-        lockedPart: at58.penaltyAvoidedShortfall!,
-      },
-      {
-        drawn: 170460.83,
-        need: 174867.69,
-        delivered: 150812.13,
-        unmet: 24055.56,
-        lockedPart: 24055.56,
-      },
+      { lockedPart: at58.penaltyAvoidedShortfall! },
+      { lockedPart: 24055.56 },
     );
     const outcome = assessPlan(stopAt40);
     expect(outcome.failureReason).toBe("penaltyGap");
@@ -918,7 +910,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
             startingBalance: 80000,
             ownerName: "Owner",
             ownerPersonId: 1,
-            ownerBirthYear: 1958,
+            ownerBirthYear: 1959,
             parentCategory: "Retirement",
           },
           {
@@ -928,7 +920,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
             startingBalance: 20000,
             ownerName: "Owner",
             ownerPersonId: 1,
-            ownerBirthYear: 1958,
+            ownerBirthYear: 1959,
             parentCategory: "Retirement",
           },
           {
@@ -939,7 +931,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
             startingBasis: 32000,
             ownerName: "Owner",
             ownerPersonId: 1,
-            ownerBirthYear: 1958,
+            ownerBirthYear: 1959,
             parentCategory: "Retirement",
           },
           {
@@ -949,7 +941,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
             startingBalance: 600000,
             ownerName: "Owner",
             ownerPersonId: 1,
-            ownerBirthYear: 1958,
+            ownerBirthYear: 1959,
             parentCategory: "Portfolio",
           },
         ],
@@ -973,7 +965,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
           startingBalance: 80000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1958,
+          ownerBirthYear: 1959,
           parentCategory: "Retirement",
         },
         {
@@ -983,7 +975,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
           startingBalance: 20000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1958,
+          ownerBirthYear: 1959,
           parentCategory: "Retirement",
         },
         {
@@ -994,7 +986,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
           startingBasis: 32000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1958,
+          ownerBirthYear: 1959,
           parentCategory: "Retirement",
         },
         {
@@ -1004,7 +996,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
           startingBalance: 600000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1958,
+          ownerBirthYear: 1959,
           parentCategory: "Retirement",
         },
       ],

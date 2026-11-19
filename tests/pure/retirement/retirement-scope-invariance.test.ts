@@ -56,7 +56,8 @@ const account = (
     startingBalance,
     ownerPersonId: 1,
     ownerName: "Alex",
-    ownerBirthYear: 1990,
+    // The fixture's 35-year-old (as of 2026).
+    ownerBirthYear: AS_OF.getFullYear() - 35,
     parentCategory: "Retirement",
     ...extra,
   });

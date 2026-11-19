@@ -17,9 +17,10 @@
  *      where non-qualified growth was actually drawn.
  *
  * Both fixtures hold currentAge/retirementAge/projectionEndAge (and so RMD
- * timing, SS timing, expenses) IDENTICAL -- only the Roth account's own
- * ownerBirthYear differs -- isolating the effect to Roth tax treatment
- * alone, not a confound from some other age-driven engine behavior.
+ * timing, SS timing, expenses) IDENTICAL -- only the Roth owner's birth
+ * year differs (a second person, the primary, owns the rest) -- isolating
+ * the effect to Roth tax treatment alone, not a confound from some other
+ * age-driven engine behavior.
  */
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
@@ -174,6 +175,19 @@ function otherAccounts() {
   ];
 }
 
+/** The household with the Roth owner (person 1) born in `ownerBirthYear`:
+ *  Bob (person 2, the fixture's 45-year-old) is the primary person. */
+function makeRothHousehold(ownerBirthYear: number) {
+  return {
+    primaryPersonId: 2,
+    people: [
+      { personId: 2, birthYear: AS_OF.getFullYear() - 45, birthMonth: 1 },
+      { personId: 1, birthYear: ownerBirthYear, birthMonth: 1 },
+    ],
+    individualAccounts: makeRothIndividualAccounts(ownerBirthYear),
+  };
+}
+
 function makeRothIndividualAccounts(ownerBirthYear: number) {
   return [
     ...otherAccounts(),
@@ -206,13 +220,9 @@ describe("Roth growth-vs-basis taxability — full pipeline", () => {
     // Never crosses 59.5 across the whole decumulation window (retire at
     // 50, end at 58) -- isolates the effect to basis-vs-growth taxability,
     // not the age gate flipping mid-projection.
-    const nonQualifiedInput = makeInput({
-      individualAccounts: makeRothIndividualAccounts(1980), // age 45-53 over the projection window
-    });
+    const nonQualifiedInput = makeInput(makeRothHousehold(1980)); // age 45-53 over the projection window
     // Already well past 59.5 for the entire window.
-    const qualifiedInput = makeInput({
-      individualAccounts: makeRothIndividualAccounts(1955), // age 70-78 over the projection window
-    });
+    const qualifiedInput = makeInput(makeRothHousehold(1955)); // age 70-78 over the projection window
 
     const nonQualifiedResult = calculateProjection(nonQualifiedInput);
     const qualifiedResult = calculateProjection(qualifiedInput);
@@ -250,9 +260,7 @@ describe("Roth growth-vs-basis taxability — full pipeline", () => {
   });
 
   it("determinism: running the same projection twice produces identical taxCost (estimate never leaks state across runs)", () => {
-    const input = makeInput({
-      individualAccounts: makeRothIndividualAccounts(1980),
-    });
+    const input = makeInput(makeRothHousehold(1980));
     const result1 = calculateProjection(input);
     const result2 = calculateProjection(input);
     expect(result1.sustainableWithdrawal).toBe(result2.sustainableWithdrawal);
