@@ -6,7 +6,8 @@
  * Ann and Bo, both 50 in 2026. Ann stops work in 2029, Bo in 2033 (the plan
  * retires then). Ann's 401k and Roth IRA stay locked until she turns 59½ in
  * 2036; Bo's brokerage is the only money reachable before then, and runs out
- * in 2035.
+ * in 2035. The accounts are performance accounts 71–73, as the Tax Buckets
+ * smoke test's snapshot names them.
  */
 import type {
   ProjectionInput,
@@ -27,14 +28,17 @@ export function annAndBo(
     [
       {
         ...acct("Ann 401k", "401k", 300000, 1, "preTax"),
+        performanceAccountId: 71,
         ownerBirthYear: BIRTH_YEAR,
       },
       {
         ...acct("Ann Roth IRA", "ira", 150000, 1, "taxFree"),
+        performanceAccountId: 72,
         ownerBirthYear: BIRTH_YEAR,
       },
       {
         ...acct("Bo Brokerage", "brokerage", 250000, 2, "afterTax"),
+        performanceAccountId: 73,
         ownerBirthYear: BIRTH_YEAR,
       },
     ],

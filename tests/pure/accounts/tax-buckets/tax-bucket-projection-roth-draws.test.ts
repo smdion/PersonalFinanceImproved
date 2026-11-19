@@ -3,10 +3,11 @@ import { describe, it, expect } from "vitest";
 import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-buckets/tax-bucket-projection";
 import type { AccountAnalysisEntry } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
 import type { EngineYearProjection } from "@/lib/pure/engine/types/index";
-import { accountKeyOf } from "@/lib/pure/accounts/account-part";
+import { accountIdKeyOf } from "@/lib/pure/accounts/account-part";
 
 const now: AccountAnalysisEntry = {
   performanceAccountId: 4,
+  portfolioAccountIds: [1],
   ownerPersonId: 1,
   ownerName: "Alex",
   category: "ira",
@@ -33,8 +34,8 @@ const row = (extra: object) =>
         year,
         individualAccountBalances: [
           {
-            accountKey: accountKeyOf({
-              name: "Roth IRA",
+            accountKey: accountIdKeyOf({
+              performanceAccountId: 4,
               category: "ira",
               taxType: "taxFree",
               ownerPersonId: 1,

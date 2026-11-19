@@ -47,6 +47,22 @@ export function accountIdKeyOf(part: PartIdentity): AccountKey {
   return partKey(identityOf(part), part);
 }
 
+/** The part key of a Tax Buckets entry: by its performance account, else by
+ *  its first snapshot row (one run's name for it), as the payload builds it. */
+export function entryKeyOf(
+  entry: Pick<AccountPart, "category" | "taxType"> & {
+    ownerPersonId?: number | null;
+    performanceAccountId?: number | null;
+    portfolioAccountIds: readonly number[];
+  },
+): AccountKey {
+  return accountIdKeyOf({
+    ...entry,
+    performanceAccountId: entry.performanceAccountId ?? undefined,
+    portfolioAccountId: entry.portfolioAccountIds[0],
+  });
+}
+
 function identityOf(part: PartIdentity): string {
   if (part.performanceAccountId != null)
     return `acct:${part.performanceAccountId}:${part.category}`;

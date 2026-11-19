@@ -75,6 +75,8 @@ export type AgeThresholdStatus = {
 
 export type AccountAnalysisEntry = {
   performanceAccountId: number | null;
+  /** The snapshot rows the entry holds (`portfolio_accounts.id`). */
+  portfolioAccountIds: number[];
   ownerPersonId: number | null;
   ownerName: string | null;
   category: AccountCategory;
@@ -129,9 +131,8 @@ export function computeTaxBucketAnalysis(input: {
     jobLinksByAccount.set(link.performanceAccountId, arr);
   }
 
-  // Cache Rule-of-55 resolution per (performanceAccountId, ownerPersonId) —
-  // both the preTax and taxFree slices of one account share the exact same
-  // resolution (Rule of 55 frees the whole plan, not just part of it).
+  // Rule of 55 per (performanceAccountId, ownerPersonId): an account's preTax and
+  // taxFree slices share one resolution (it frees the whole plan, not a part).
   const ruleOf55Cache = new Map<string, RuleOf55Status>();
   function resolveRuleOf55(
     performanceAccountId: number,
@@ -203,11 +204,11 @@ export function computeTaxBucketAnalysis(input: {
     const displayName = entry.name;
     const category = entry.category as AccountCategory;
 
-    // No matching performance account at all — nothing to compute against
-    // (no costBasis, no separationDate), regardless of ownership.
+    // No performance account: no costBasis or separationDate, whoever owns it.
     if (!perfAccount) {
       return {
         performanceAccountId: entry.performanceAccountId,
+        portfolioAccountIds: entry.portfolioAccountIds,
         ownerPersonId: null,
         ownerName: null,
         category,
@@ -312,6 +313,7 @@ export function computeTaxBucketAnalysis(input: {
 
     return {
       performanceAccountId: entry.performanceAccountId,
+      portfolioAccountIds: entry.portfolioAccountIds,
       ownerPersonId: entry.ownerPersonId,
       ownerName,
       category,

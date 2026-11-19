@@ -105,7 +105,7 @@ export type IndividualAccountInput = {
 
 /** Per-account balance tracked through the engine projection. */
 export type IndividualAccountYearBalance = {
-  /** The part's identity (`accountKeyOf`): joins rows across years and views. */
+  /** The part's identity (`accountIdKeyOf`): joins rows across years and views. */
   accountKey: AccountKey;
   /** As on `IndividualAccountInput`: only when the part has exactly one. */
   performanceAccountId?: number;

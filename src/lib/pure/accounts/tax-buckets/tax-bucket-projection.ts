@@ -37,7 +37,7 @@ import type {
   AccountKey,
 } from "@/lib/pure/accounts/account-balances.types";
 import { ageInYear } from "@/lib/utils/date";
-import { accountKeyOf } from "@/lib/pure/accounts/account-part";
+import { entryKeyOf } from "@/lib/pure/accounts/account-part";
 
 type TaxBucketProjectionResult = {
   /** Null when the projection has no accumulation phase (already past the transition);
@@ -236,12 +236,7 @@ export function computeTaxBucketProjection(input: {
   const staleBasisAccountNames: string[] = [];
 
   const entries: AccountAnalysisEntry[] = nowEntries.map((now) => {
-    const key = accountKeyOf({
-      name: now.displayName,
-      category: now.category,
-      taxType: now.taxType,
-      ownerPersonId: now.ownerPersonId,
-    });
+    const key = entryKeyOf(now);
     const projected = transitionBalanceByKey.get(key);
     if (!projected) {
       unmatchedAccountNames.push(now.displayName);

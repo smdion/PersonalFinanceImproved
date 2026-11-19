@@ -1,9 +1,8 @@
 /**
- * The uniqueness check for the engine's account key (`makeIndKey`, built
- * from the display name) switching to the account id, both ways: every entry
- * of a household's `accountBreakdownByCategory` comes from one performance
- * account, and no two of the engine's parts share an id key
- * (`accountIdKeyOf`). Seeds each baseline household the way the router
+ * The uniqueness check for the engine's account key (`makeIndKey`, the
+ * account id), both ways: every entry of a household's
+ * `accountBreakdownByCategory` comes from one performance account, and no
+ * two of the engine's parts share an id key (`accountIdKeyOf`). Seeds each baseline household the way the router
  * baseline does (router-suite.ts) and reads the projection's breakdown and
  * the engine's input.
  */
@@ -38,9 +37,6 @@ vi.mock("@/lib/pure/engine/projection", async (importOriginal) => {
 
 /** The router baseline's clock (router-suite.ts). */
 const BASELINE_NOW = new Date("2026-03-07T18:00:00.000Z");
-
-/** The households where two accounts merge today: each is a v0.11 bug. */
-const MERGED = "el-h5";
 
 const projection = PROCEDURES.find(
   (p) => p.path === "projection.computeProjection",
@@ -95,20 +91,11 @@ afterAll(() => {
 });
 
 describe("one performance account per account breakdown entry", () => {
-  it.each(
-    HOUSEHOLDS.filter((h) => h.key !== MERGED).map((h) => [h.key, h] as const),
-  )(
+  // el-h5's Retirement and Portfolio brokerages share a name and owner, and
+  // stay two entries.
+  it.each(HOUSEHOLDS.map((h) => [h.key, h] as const))(
     "%s",
     async (_key, household) => {
-      expect(await mergedEntries(household)).toEqual([]);
-    },
-    60_000,
-  );
-
-  it.fails(
-    "v0.11 el-h5: its Retirement and Portfolio brokerages share a name and owner, so they merge into one entry (the account key switches to the id then)",
-    async () => {
-      const household = HOUSEHOLDS.find((h) => h.key === MERGED)!;
       expect(await mergedEntries(household)).toEqual([]);
     },
     60_000,

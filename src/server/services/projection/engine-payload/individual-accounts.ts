@@ -7,7 +7,7 @@ import { calendarYear } from "@/lib/utils/date";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { tracksCostBasis } from "@/lib/config/account-types";
-import { accountKeyOf } from "@/lib/pure/accounts/account-part";
+import { accountIdKeyOf, entryKeyOf } from "@/lib/pure/accounts/account-part";
 import type { resolveRmdExcessTarget } from "@/lib/pure/retirement/rmd-excess-target";
 import type { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
@@ -63,77 +63,40 @@ export function buildIndividualAccounts({
     })),
     currentDate: asOfDate,
   });
-  // The key `accountRollup` merges on and the engine keys parts by.
-  function eligibilityJoinKey(
-    name: string,
-    category: string,
-    taxType: string,
-    ownerPersonId: number | null,
-  ): string {
-    return accountKeyOf({ name, category, taxType, ownerPersonId });
-  }
-  const eligibilityByJoinKey = new Map<
+  // Joined on the part's key (`entryKeyOf`), the one the engine keys it by.
+  const eligibilityByKey = new Map<
     string,
     { ruleOf55: RuleOf55Status | null; rothBasisMeta: RothBasisMeta | null }
   >();
   for (const entry of accountAnalysis) {
     if (entry.ownerPersonId == null) continue; // joint — no per-owner data to join
-    eligibilityByJoinKey.set(
-      eligibilityJoinKey(
-        entry.displayName,
-        entry.category,
-        entry.taxType,
-        entry.ownerPersonId,
-      ),
-      { ruleOf55: entry.ruleOf55, rothBasisMeta: entry.rothBasisMeta },
-    );
+    eligibilityByKey.set(entryKeyOf(entry), {
+      ruleOf55: entry.ruleOf55,
+      rothBasisMeta: entry.rothBasisMeta,
+    });
   }
   // Per-account penalty allowance: account-level, so joint accounts are
   // included. Records only `true` (omit-when-false, for cache-hash stability).
   const allowPenalizedByPerfAccountId = new Map(
     perfAccounts.map((p) => [p.id, p.allowPenalizedWithdrawals]),
   );
-  // The join key isn't unique (performanceAccounts is unique on another tuple),
-  // so fail CLOSED: a key mapping to more than one performanceAccountId never
-  // allows the penalty, since the flag authorizes a real tax penalty.
-  const perfAccountIdsByJoinKey = new Map<string, Set<number>>();
+  const allowPenalizedByKey = new Map<string, true>();
   for (const entry of accountAnalysis) {
     if (entry.performanceAccountId == null) continue;
-    const key = eligibilityJoinKey(
-      entry.displayName,
-      entry.category,
-      entry.taxType,
-      entry.ownerPersonId,
-    );
-    const ids = perfAccountIdsByJoinKey.get(key) ?? new Set<number>();
-    ids.add(entry.performanceAccountId);
-    perfAccountIdsByJoinKey.set(key, ids);
-  }
-  const allowPenalizedByJoinKey = new Map<string, true>();
-  for (const entry of accountAnalysis) {
-    if (entry.performanceAccountId == null) continue;
-    const key = eligibilityJoinKey(
-      entry.displayName,
-      entry.category,
-      entry.taxType,
-      entry.ownerPersonId,
-    );
-    const ids = perfAccountIdsByJoinKey.get(key);
-    if (!ids || ids.size > 1) continue; // ambiguous join key — fail closed
     if (!allowPenalizedByPerfAccountId.get(entry.performanceAccountId))
       continue;
-    allowPenalizedByJoinKey.set(key, true);
+    allowPenalizedByKey.set(entryKeyOf(entry), true);
   }
   return Object.entries(accountBreakdownByCategory).flatMap(([cat, accounts]) =>
     accounts.map((a) => {
+      const ids = accountIds(a);
+      const key = accountIdKeyOf({ ...a, category: cat, ...ids });
       const eligibility = a.ownerPersonId
-        ? eligibilityByJoinKey.get(
-            eligibilityJoinKey(a.name, cat, a.taxType, a.ownerPersonId),
-          )
+        ? eligibilityByKey.get(key)
         : undefined;
       return {
         name: a.name,
-        ...accountIds(a),
+        ...ids,
         category: cat as AccountCategory,
         taxType: a.taxType,
         accountType: a.accountType,
@@ -156,9 +119,7 @@ export function buildIndividualAccounts({
           ruleOf55OverrideByPerson.get(a.ownerPersonId) === false
             ? true
             : undefined,
-        allowPenalizedWithdrawals: allowPenalizedByJoinKey.get(
-          eligibilityJoinKey(a.name, cat, a.taxType, a.ownerPersonId ?? null),
-        ),
+        allowPenalizedWithdrawals: allowPenalizedByKey.get(key),
         ...(rmdTarget.targetPerformanceAccountId != null &&
         tracksCostBasis(cat) &&
         a.performanceAccountIds?.includes(rmdTarget.targetPerformanceAccountId)

@@ -62,29 +62,85 @@ describe("computeTaxBucketBreakdown", () => {
     expect(result.accountBreakdownByCategory["401k"]).toHaveLength(2); // one preTax entry (3 rows merged), one taxFree entry
   });
 
-  it("lists the rows a merged entry holds, by their own ids", () => {
+  it("keeps two same-named accounts of one owner apart, each with its own rows", () => {
     const first = account({ amount: 1000, performanceAccountId: 1 });
     const second = account({ amount: 2000, performanceAccountId: 2 });
-    expect(first.portfolioAccountId).not.toBe(second.portfolioAccountId);
+    const third = account({ amount: 500, performanceAccountId: 1 });
     const result = computeTaxBucketBreakdown(
-      { accounts: [first, second] },
+      { accounts: [first, second, third] },
       people,
       [],
     );
 
-    const [entry] = result.accountBreakdownByCategory["401k"]!;
-    expect(entry!.performanceAccountIds).toEqual([1, 2]);
-    expect(entry!.portfolioAccountIds).toEqual([
-      first.portfolioAccountId,
-      second.portfolioAccountId,
+    expect(result.accountBreakdownByCategory["401k"]).toEqual([
+      expect.objectContaining({
+        amount: 1500,
+        performanceAccountIds: [1],
+        portfolioAccountIds: [
+          first.portfolioAccountId,
+          third.portfolioAccountId,
+        ],
+      }),
+      expect.objectContaining({
+        amount: 2000,
+        performanceAccountIds: [2],
+        portfolioAccountIds: [second.portfolioAccountId],
+      }),
     ]);
-    // The rollup merges on the same key, and keeps the rows its account id loses.
+    // The rollup merges on the same key: one entry per account.
+    expect(result.accountRollup).toEqual([
+      expect.objectContaining({ performanceAccountId: 1, amount: 1500 }),
+      expect.objectContaining({ performanceAccountId: 2, amount: 2000 }),
+    ]);
+  });
+
+  it("keeps same-named rows with no performance account apart across parents", () => {
+    const retirement = account({ amount: 200, performanceAccountId: null });
+    const portfolio = account({
+      amount: 300,
+      performanceAccountId: null,
+      parentCategory: "Portfolio",
+    });
+    const result = computeTaxBucketBreakdown(
+      { accounts: [portfolio, retirement] },
+      people,
+      [],
+    );
+
+    expect(
+      result.accountBreakdownByCategory["401k"]!.map((e) => e.amount),
+    ).toEqual([300, 200]);
     expect(result.accountRollup).toEqual([
       expect.objectContaining({
-        performanceAccountId: null,
-        amount: 3000,
-        portfolioAccountIds: entry!.portfolioAccountIds,
+        amount: 200,
+        portfolioAccountIds: [retirement.portfolioAccountId],
       }),
+    ]);
+  });
+
+  it("merges same-named rows with no performance account by name, apart from a linked one", () => {
+    const linked = account({ amount: 1000 });
+    const first = account({ amount: 200, performanceAccountId: null });
+    const second = account({ amount: 300, performanceAccountId: null });
+    const result = computeTaxBucketBreakdown(
+      { accounts: [linked, first, second] },
+      people,
+      [],
+    );
+
+    expect(result.accountBreakdownByCategory["401k"]).toEqual([
+      expect.objectContaining({ amount: 1000, performanceAccountIds: [1] }),
+      expect.objectContaining({
+        amount: 500,
+        portfolioAccountIds: [
+          first.portfolioAccountId,
+          second.portfolioAccountId,
+        ],
+      }),
+    ]);
+    expect(result.accountRollup).toEqual([
+      expect.objectContaining({ performanceAccountId: 1, amount: 1000 }),
+      expect.objectContaining({ performanceAccountId: null, amount: 500 }),
     ]);
   });
 
@@ -250,7 +306,7 @@ describe("computeTaxBucketBreakdown", () => {
       ).toEqual([5177.68, 0]);
     });
 
-    it("an account's basis is split over its sub-type rows by amount", () => {
+    it("an account's sub-type rows are one part, holding its whole basis", () => {
       const result = computeTaxBucketBreakdown(
         {
           accounts: [
@@ -264,9 +320,11 @@ describe("computeTaxBucketBreakdown", () => {
         people,
         [perf(7, "2000")],
       );
+      // Each row's share by amount ($1,500 and $500), on one entry: the
+      // engine keys a part by its account, whatever each row is named.
       expect(
         result.accountBreakdownByCategory.brokerage!.map((e) => e.costBasis),
-      ).toEqual([1500, 500]);
+      ).toEqual([2000]);
     });
 
     it("an account with no row in the snapshot contributes no basis", () => {

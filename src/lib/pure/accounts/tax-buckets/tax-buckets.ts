@@ -26,7 +26,8 @@ import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { toNumber } from "@/lib/utils/numbers";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
-import { accountKeyOf } from "@/lib/pure/accounts/account-part";
+import { accountKeyOf, entryKeyOf } from "@/lib/pure/accounts/account-part";
+import type { AccountKey } from "@/lib/pure/accounts/account-balances.types";
 
 /** parentCategory values the projection engine includes in starting balances. */
 const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
@@ -55,13 +56,12 @@ type TaxBucketPerfAccount = {
   costBasis: string | null;
 };
 
-/** Per-(name, category, taxType, owner) rollup that lets the Tax Buckets tool attach
- *  `rothBasis` rows and early-access flags to balances. Same key as
- *  `accountBreakdownByCategory` and the engine (`accountKeyOf`). */
+/** Per-account-part rollup that lets the Tax Buckets tool attach `rothBasis` rows
+ *  and early-access flags to balances. Same key as `accountBreakdownByCategory`
+ *  and the engine (`entryKeyOf`). */
 type AccountRollupEntry = {
   name: string;
-  /** Null only when a merged group spans several performance accounts sharing a name;
-   *  per-account edits key off `performanceAccounts`, so that doesn't block them. */
+  /** Null for snapshot rows with no performance account. */
   performanceAccountId: number | null;
   ownerPersonId: number | null;
   taxType: string;
@@ -289,8 +289,36 @@ export function computeTaxBucketBreakdown(
   };
 }
 
+/** The part key a snapshot row merges on (`entryKeyOf`): its performance
+ *  account's; a row with none takes a same-named entry's with none and the
+ *  same parent, so Retirement and Portfolio money never share a part. */
+function rowKeyOf(
+  a: TaxBucketSnapshotAccount,
+  category: AccountCategory,
+  displayName: string,
+  entries: AccountBreakdownEntry[],
+): AccountKey {
+  const named = accountKeyOf({ ...a, name: displayName, category });
+  const unlinked =
+    a.performanceAccountId == null
+      ? entries.find(
+          (e) =>
+            e.performanceAccountIds == null &&
+            e.parentCategory === (a.parentCategory ?? undefined) &&
+            accountKeyOf({ ...e, category }) === named,
+        )
+      : undefined;
+  return entryKeyOf({
+    ...a,
+    category,
+    portfolioAccountIds: unlinked?.portfolioAccountIds ?? [
+      a.portfolioAccountId,
+    ],
+  });
+}
+
 /** Merges one snapshot row into its breakdown entry and, for Retirement money, its
- *  rollup entry: rows with one engine key (`accountKeyOf`) are one entry. */
+ *  rollup entry: rows with one engine key (`entryKeyOf`) are one entry. */
 function mergeRowIntoEntries(
   a: TaxBucketSnapshotAccount,
   facts: {
@@ -307,13 +335,16 @@ function mergeRowIntoEntries(
 ): void {
   const { category, displayName, ownerName, isRetirement, knownBasis, basis } =
     facts;
-  if (!accountBreakdownByCategory[category])
-    accountBreakdownByCategory[category] = [];
-  // Owner is in the key: same-named accounts of different people stay
-  // separate rows, so per-owner eligibility (Rule of 55, 59½) sees the right owner.
-  const key = accountKeyOf({ ...a, name: displayName, category });
-  const existing = accountBreakdownByCategory[category].find(
-    (e) => accountKeyOf({ ...e, category }) === key,
+  const entries = (accountBreakdownByCategory[category] ??= []);
+  // By id and owner: each account part its own row, whatever its name.
+  const key = rowKeyOf(a, category, displayName, entries);
+  const existing = entries.find(
+    (e) =>
+      entryKeyOf({
+        ...e,
+        category,
+        performanceAccountId: e.performanceAccountIds?.[0],
+      }) === key,
   );
   if (existing) {
     existing.amount += a.amount;
@@ -329,7 +360,7 @@ function mergeRowIntoEntries(
     if (knownBasis != null)
       existing.costBasis = roundToCents((existing.costBasis ?? 0) + basis);
   } else {
-    accountBreakdownByCategory[category].push({
+    entries.push({
       name: displayName,
       amount: a.amount,
       taxType: a.taxType,
@@ -352,9 +383,6 @@ function mergeRowIntoEntries(
     if (rollupExisting) {
       rollupExisting.amount += a.amount;
       rollupExisting.portfolioAccountIds.push(a.portfolioAccountId);
-      if (rollupExisting.performanceAccountId !== a.performanceAccountId) {
-        rollupExisting.performanceAccountId = null;
-      }
     } else {
       rollupByKey.set(key, {
         name: displayName,

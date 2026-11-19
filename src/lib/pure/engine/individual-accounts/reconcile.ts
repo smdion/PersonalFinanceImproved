@@ -22,7 +22,7 @@ import {
   getTotalBalance,
 } from "../../accounts/account-balance";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
-import { accountKeyOf, isHeldPart } from "@/lib/pure/accounts/account-part";
+import { accountIdKeyOf, isHeldPart } from "@/lib/pure/accounts/account-part";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {
   clampBasisToBalance,
@@ -116,7 +116,7 @@ export function buildIndividualYearBalances(
         : {};
 
     const part = {
-      accountKey: accountKeyOf(ia),
+      accountKey: accountIdKeyOf(ia),
       performanceAccountId: ia.performanceAccountId,
       name: ia.name,
       category: ia.category,
