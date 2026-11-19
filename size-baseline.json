@@ -183,12 +183,12 @@
     "src/components/retirement-projection/table/account-notes.ts": 223,
     "src/components/retirement-projection/table/bucket-slots.ts": 165,
     "src/components/retirement-projection/table/lump-sums.ts": 32,
-    "src/components/retirement-projection/table/projection-columns.ts": 204,
+    "src/components/retirement-projection/table/projection-columns.ts": 203,
     "src/components/retirement-projection/table/projection-table-accum-balances.model.ts": 235,
     "src/components/retirement-projection/table/projection-table-accum-contributions.model.ts": 253,
     "src/components/retirement-projection/table/projection-table-accum-row.tsx": 889,
     "src/components/retirement-projection/table/projection-table-decum-balances.model.ts": 276,
-    "src/components/retirement-projection/table/projection-table-decum-row.tsx": 840,
+    "src/components/retirement-projection/table/projection-table-decum-row.tsx": 839,
     "src/components/retirement-projection/table/projection-table-decum-withdrawals.model.ts": 230,
     "src/components/retirement-projection/table/projection-table.tsx": 431,
     "src/components/retirement-projection/tooltip-renderer.tsx": 407,
@@ -752,8 +752,8 @@
       "AccumulationRow": 737
     },
     "src/components/retirement-projection/table/projection-table-decum-row.tsx": {
-      "DecumulationRow": 711,
-      "DecumulationRow.map()": 207
+      "DecumulationRow": 710,
+      "DecumulationRow.map()": 206
     },
     "src/components/retirement-projection/table/projection-table.tsx": {
       "ProjectionTable": 394

@@ -518,9 +518,8 @@ export function DecumulationRow({
                   withdrawal: number;
                 }[] = [];
                 for (const ia of decumulationIabs) {
-                  const dk = `${catKey}-${ia.name}-${ia.taxType}`;
-                  if (seenDecumulationAccounts.has(dk)) continue;
-                  seenDecumulationAccounts.add(dk);
+                  if (seenDecumulationAccounts.has(ia.accountKey)) continue;
+                  seenDecumulationAccounts.add(ia.accountKey);
                   decumulationSplits.push({
                     name: ia.name,
                     entryTaxType: ia.taxType,

@@ -489,9 +489,10 @@ describe("computeColumnChange", () => {
 // ---------------------------------------------------------------------------
 
 describe("computeAccountSplits", () => {
-  it("aggregates contribution/growth totals and dedupes by name+category+taxType", () => {
+  it("aggregates contribution/growth totals and dedupes by the part's key", () => {
     const accounts = [
       {
+        accountKey: "acct:1:401k::preTax::1",
         name: "My 401k",
         category: "401k",
         taxType: "preTax",
@@ -501,6 +502,7 @@ describe("computeAccountSplits", () => {
         growth: 50,
       },
       {
+        accountKey: "acct:1:401k::preTax::1",
         name: "My 401k",
         category: "401k",
         taxType: "preTax",
@@ -515,6 +517,26 @@ describe("computeAccountSplits", () => {
     expect(result.splits[0]!.contribution).toBe(600);
     expect(result.splitContribution).toBe(600);
     expect(result.splitGrowth).toBe(50);
+  });
+
+  it("lists two same-named accounts of one owner apart", () => {
+    const brokerage = (accountKey: string, balance: number) => ({
+      accountKey,
+      name: "Emery Brokerage",
+      category: "brokerage",
+      taxType: "afterTax",
+      balance,
+      contribution: 0,
+      employerMatch: 0,
+      growth: 0,
+    });
+    const accounts = [
+      brokerage("acct:1:brokerage::afterTax::1", 40000),
+      brokerage("acct:2:brokerage::afterTax::1", 60000),
+    ] as unknown as Parameters<typeof computeAccountSplits>[0];
+    expect(computeAccountSplits(accounts).splits.map((s) => s.balance)).toEqual(
+      [40000, 60000],
+    );
   });
 
   it("excludes zero-balance, zero-contribution, zero-growth accounts", () => {

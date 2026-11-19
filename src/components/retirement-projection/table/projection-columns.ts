@@ -183,9 +183,8 @@ export function computeAccountSplits(
   let splitContribution = 0;
   let splitGrowth = 0;
   for (const ia of accounts) {
-    const key = `${ia.category}::${ia.name}::${ia.taxType}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (seen.has(ia.accountKey)) continue;
+    seen.add(ia.accountKey);
     const contribution = Math.max(0, ia.contribution + ia.employerMatch);
     if (ia.balance > 0 || contribution > 1 || Math.abs(ia.growth) > 1) {
       splits.push({
