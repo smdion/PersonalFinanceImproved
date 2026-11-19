@@ -93,6 +93,8 @@ const DEFAULT_DECUMULATION = {
 export function makePureGrowthInput(
   overrides: Partial<FixtureInput> = {},
 ): ProjectionInput {
+  // The one person is the age the fixture states.
+  const currentAge = overrides.currentAge ?? 35;
   return withConsistentStart(
     withCapsAge({
       budgetContributionLines: 0,
@@ -114,8 +116,8 @@ export function makePureGrowthInput(
       },
       accumulationOverrides: [],
       decumulationOverrides: [],
-      currentAge: 35,
-      people: onePerson(AS_OF.getFullYear() - 35),
+      currentAge,
+      people: onePerson(AS_OF.getFullYear() - currentAge),
       retirementYear: AS_OF.getFullYear() + 30,
       projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 0,
@@ -166,6 +168,8 @@ export function makeTrinityInput(
 ): ProjectionInput {
   const withdrawalRate = overrides.decumulationDefaults?.withdrawalRate ?? 0.04;
   const startingBalance = 1_000_000;
+  // The one person is the age the fixture states.
+  const currentAge = overrides.currentAge ?? 65;
   return engineInput(
     withCapsAge({
       budgetContributionLines: 0,
@@ -188,8 +192,8 @@ export function makeTrinityInput(
       },
       accumulationOverrides: [],
       decumulationOverrides: [],
-      currentAge: 65,
-      people: onePerson(AS_OF.getFullYear() - 65),
+      currentAge,
+      people: onePerson(AS_OF.getFullYear() - currentAge),
       retirementYear: AS_OF.getFullYear() + 0,
       projectionEndYear: AS_OF.getFullYear() + 30,
       currentSalary: 0,
@@ -237,6 +241,8 @@ export function makeTrinityInput(
 export function makeStandardInput(
   overrides: Partial<FixtureInput> = {},
 ): ProjectionInput {
+  // The one person is the age the fixture states.
+  const currentAge = overrides.currentAge ?? 35;
   return withConsistentStart(
     withCapsAge({
       budgetContributionLines: 0,
@@ -252,8 +258,8 @@ export function makeStandardInput(
       decumulationDefaults: DEFAULT_DECUMULATION,
       accumulationOverrides: [],
       decumulationOverrides: [],
-      currentAge: 35,
-      people: onePerson(AS_OF.getFullYear() - 35),
+      currentAge,
+      people: onePerson(AS_OF.getFullYear() - currentAge),
       retirementYear: AS_OF.getFullYear() + 30,
       projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,

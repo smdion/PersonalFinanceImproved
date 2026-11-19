@@ -12,6 +12,24 @@ import type {
 } from "@/lib/pure/engine/types";
 import { acct, household } from "../fixtures/two-person-household";
 
+// Ann 78 and Bo 75, born 1948 and 1951.
+const annAndBo = [
+  {
+    personId: 1,
+    personName: "Ann",
+    birthYear: 1948,
+    startAge: 70,
+    annualAmount: 0,
+  },
+  {
+    personId: 2,
+    personName: "Bo",
+    birthYear: 1951,
+    startAge: 70,
+    annualAmount: 0,
+  },
+];
+
 // Ann 78 and Bo 75 draw enough Traditional to sit above the first tier.
 const input = (
   overrides: Partial<ProjectionInput> = {},
@@ -27,22 +45,7 @@ const input = (
       annualExpenses: 400000,
       decumulationAnnualExpenses: 400000,
       enableIrmaaAwareness: true,
-      socialSecurityEntries: [
-        {
-          personId: 1,
-          personName: "Ann",
-          birthYear: 1948,
-          startAge: 70,
-          annualAmount: 0,
-        },
-        {
-          personId: 2,
-          personName: "Bo",
-          birthYear: 1951,
-          startAge: 70,
-          annualAmount: 0,
-        },
-      ],
+      socialSecurityEntries: annAndBo,
       perPersonBirthYears: [1948, 1951],
       ...overrides,
     },
@@ -140,6 +143,7 @@ describe("IRMAA on top of the budget", () => {
           enableIrmaaAwareness: true,
           irmaaOnTopOfBudget: true,
           projectionEndYear: 2041,
+          socialSecurityEntries: annAndBo,
           perPersonBirthYears: [1948, 1951],
         },
       ),
@@ -160,6 +164,7 @@ describe("IRMAA on top of the budget", () => {
           enableIrmaaAwareness: true,
           irmaaOnTopOfBudget: true,
           projectionEndYear: 2041,
+          socialSecurityEntries: annAndBo,
           perPersonBirthYears: [1948, 1951],
         },
       ),

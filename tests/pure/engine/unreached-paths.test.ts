@@ -612,6 +612,8 @@ describe("a match whose pool has no part (spreadMatch over none)", () => {
     household([acct("Ann IRA", "ira", 200000, 1)], {
       currentAge: 50,
       birthYear: 1976,
+      perPersonBirthYears: [1976],
+      socialSecurityEntries: undefined,
       retirementYear: 2036,
       projectionEndYear: 2030,
       currentSalary: 100000,

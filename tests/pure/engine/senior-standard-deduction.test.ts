@@ -90,7 +90,12 @@ function makeInput(overrides: {
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: overrides.currentAge ?? 63,
-      people: onePerson(AS_OF.getFullYear() - (overrides.currentAge ?? 63)),
+      // The people the fixture states, the primary (its `currentAge`) first.
+      people: (
+        overrides.perPersonBirthYears ?? [
+          AS_OF.getFullYear() - (overrides.currentAge ?? 63),
+        ]
+      ).flatMap((birthYear, i) => onePerson(birthYear, i + 1)),
       retirementYear:
         AS_OF.getFullYear() +
         (overrides.retirementAge ?? 63) -
@@ -152,7 +157,7 @@ function makeInput(overrides: {
       decumulationAnnualExpenses: 90000,
       inflationRate: 0.03,
       returnRates: [{ label: "6%", rate: 0.06 }],
-      birthYear: 1962,
+      birthYear: AS_OF.getFullYear() - (overrides.currentAge ?? 63),
       socialSecurityAnnual: 0,
       ssStartAge: 67,
       asOfDate: AS_OF,
@@ -200,16 +205,15 @@ describe("R59 — age-65+ additional standard deduction (decumulation)", () => {
   });
 
   it("scales by the number of household members 65+ that year (perPersonBirthYears)", () => {
-    // Two people: born 1958 (67 at AS_OF) and 1963 (62 at AS_OF). In the
-    // projection year the younger turns 65, the count goes 1 → 2.
+    // Two people: born 1963 (62 at AS_OF, the primary) and 1958 (67). In
+    // the projection year the younger turns 65, the count goes 1 → 2.
+    const couple = { currentAge: 62, perPersonBirthYears: [1963, 1958] };
     const input = makeInput({
       additionalStdDeduction65PerSenior: PER_SENIOR,
-      perPersonBirthYears: [1958, 1963],
+      ...couple,
     });
     const withAddon = decumYears(input);
-    const without = decumYears(
-      makeInput({ perPersonBirthYears: [1958, 1963] }),
-    );
+    const without = decumYears(makeInput(couple));
 
     for (const y of withAddon) {
       const b = without.find((w) => w.year === y.year)!;

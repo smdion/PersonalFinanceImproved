@@ -31,6 +31,8 @@ const STOCK_BOND_CORRELATIONS = [
 ];
 
 function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
+  // The one person is the age the fixture states.
+  const currentAge = overrides.currentAge ?? 37;
   return engineInput(
     withCapsAge({
       budgetContributionLines: 0,
@@ -67,8 +69,8 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
       },
       accumulationOverrides: [],
       decumulationOverrides: [],
-      currentAge: 37,
-      people: onePerson(AS_OF.getFullYear() - 37),
+      currentAge,
+      people: onePerson(AS_OF.getFullYear() - currentAge),
       retirementYear: AS_OF.getFullYear() + 18,
       projectionEndYear: AS_OF.getFullYear() + 58,
       currentSalary: 300000,

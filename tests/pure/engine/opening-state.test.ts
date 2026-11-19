@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
 import { acct, household } from "../fixtures/two-person-household";
+import { onePerson } from "../../fixtures/engine-people";
 import {
   makeAccumulationDefaults,
   makeContributionSpec,
@@ -371,6 +372,8 @@ describe("a slot's money with no spec of its tax type", () => {
         brokerage: 0,
       },
       socialSecurityEntries: [],
+      perPersonBirthYears: [1986],
+      people: onePerson(1986),
     },
   );
 

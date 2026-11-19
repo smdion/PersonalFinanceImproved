@@ -149,7 +149,11 @@ function makeInput(): ProjectionInput {
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 65,
-      people: onePerson(AS_OF.getFullYear() - 65),
+      // Alex and Sam, both 65.
+      people: [
+        ...onePerson(AS_OF.getFullYear() - 65),
+        ...onePerson(AS_OF.getFullYear() - 65, 2),
+      ],
       retirementYear: AS_OF.getFullYear(), // retire immediately -> decumulation from year 0
       projectionEndYear: AS_OF.getFullYear() + 5,
       currentSalary: 0,

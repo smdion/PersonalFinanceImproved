@@ -251,6 +251,7 @@ describe("runStressTestScenarios (M2)", () => {
       baseEngineInput: {
         ...base,
         currentAge: 68,
+        people: onePerson(AS_OF.getFullYear() - 68),
         retirementYear: AS_OF.getFullYear() - 3,
       },
       decumulationDefaults: makeDecumulationDefaults(),

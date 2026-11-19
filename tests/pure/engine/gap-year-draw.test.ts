@@ -98,6 +98,7 @@ describe("gap-year draw", () => {
       currentAge: 62,
       birthYear: 1964,
       perPersonBirthYears: [1964],
+      socialSecurityEntries: undefined,
       retirementYear: 2036,
       projectionEndYear: 2045,
       currentSalary: 80000,

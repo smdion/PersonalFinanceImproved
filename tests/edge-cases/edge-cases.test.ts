@@ -699,6 +699,8 @@ const DEFAULT_DECUMULATION = {
 function makeBaseProjection(
   overrides: Partial<FixtureInput> = {},
 ): ProjectionInput {
+  // The one person is the age the fixture states.
+  const currentAge = overrides.currentAge ?? 35;
   return engineInput(
     withCapsAge({
       budgetContributionLines: 0,
@@ -720,8 +722,8 @@ function makeBaseProjection(
       },
       accumulationOverrides: [],
       decumulationOverrides: [],
-      currentAge: 35,
-      people: onePerson(JAN_1.getFullYear() - 35),
+      currentAge,
+      people: onePerson(JAN_1.getFullYear() - currentAge),
       retirementYear: JAN_1.getFullYear() + 30,
       projectionEndYear: JAN_1.getFullYear() + 55,
       currentSalary: 0,

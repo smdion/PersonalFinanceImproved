@@ -41,6 +41,8 @@ const AS_OF = new Date("2025-03-07");
 
 /** Build a minimal valid engine input with sensible defaults. */
 function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
+  // The one person is the age the fixture states.
+  const currentAge = overrides.currentAge ?? 35;
   return withConsistentStart(
     withCapsAge({
       budgetContributionLines: 0,
@@ -76,8 +78,8 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
       },
       accumulationOverrides: [],
       decumulationOverrides: [],
-      currentAge: 35,
-      people: onePerson(AS_OF.getFullYear() - 35),
+      currentAge,
+      people: onePerson(AS_OF.getFullYear() - currentAge),
       retirementYear: AS_OF.getFullYear() + 30,
       projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,
@@ -2823,6 +2825,7 @@ describe("engine snapshot parity", () => {
       currentSalary: 0,
       enableIrmaaAwareness: true,
       perPersonBirthYears: [1959, 1961],
+      people: [...onePerson(1959), ...onePerson(1961, 2)],
       socialSecurityAnnual: 44000,
       ssStartAge: 66,
       annualExpenses: 90000,
@@ -2908,6 +2911,7 @@ describe("engine snapshot parity", () => {
       currentSalary: 0,
       enableIrmaaAwareness: false,
       perPersonBirthYears: [1959, 1961],
+      people: [...onePerson(1959), ...onePerson(1961, 2)],
       socialSecurityAnnual: 44000,
       ssStartAge: 66,
       annualExpenses: 90000,
@@ -3278,6 +3282,7 @@ describe("engine snapshot parity", () => {
       currentSalary: 220000,
       salaryByPerson: { 1: 140000, 2: 80000 },
       perPersonBirthYears: [1962, 1967], // 5-year age gap
+      people: [...onePerson(1962), ...onePerson(1967, 2)],
       enableIrmaaAwareness: true,
       enableAcaAwareness: true,
       householdSize: 2,

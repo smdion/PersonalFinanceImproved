@@ -68,6 +68,8 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
 /** `makeInput` as the fixture writes it (buckets and categories), for tests
  *  that reshape the money. */
 function makeFixture(overrides: Partial<FixtureInput> = {}): FixtureInput {
+  // The one person is the age the fixture states.
+  const currentAge = overrides.currentAge ?? 35;
   return consistentStart(
     withCapsAge({
       budgetContributionLines: 0,
@@ -104,8 +106,8 @@ function makeFixture(overrides: Partial<FixtureInput> = {}): FixtureInput {
       },
       accumulationOverrides: [],
       decumulationOverrides: [],
-      currentAge: 35,
-      people: onePerson(AS_OF.getFullYear() - 35),
+      currentAge,
+      people: onePerson(AS_OF.getFullYear() - currentAge),
       retirementYear: AS_OF.getFullYear() + 30,
       projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,
@@ -3340,6 +3342,7 @@ describe("Social Security switch on portfolio-sized strategies", () => {
     const couple = vpwFirst({
       stockShareByAge: share(0.3),
       perPersonBirthYears: [retireYear - 65, retireYear - 55],
+      people: [...onePerson(retireYear - 65), ...onePerson(retireYear - 55, 2)],
     });
     expect(couple.targetWithdrawal).toBeLessThan(bonds.targetWithdrawal);
     expect(bonds.withdrawalSized).toBe(true);

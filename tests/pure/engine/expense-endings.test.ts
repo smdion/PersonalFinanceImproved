@@ -14,6 +14,8 @@ const base = (overrides: Partial<ProjectionInput> = {}) =>
     currentAge: 50,
     birthYear: 1976,
     perPersonBirthYears: [1976],
+    // One person, Ann, born 1976: none of the default couple's entries.
+    socialSecurityEntries: undefined,
     retirementYear: 2036,
     projectionEndYear: 2050,
     currentSalary: 150000,

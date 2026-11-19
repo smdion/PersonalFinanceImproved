@@ -25,6 +25,8 @@ import { engineInput, type FixtureInput } from "../fixtures/engine-input";
 const AS_OF = new Date("2025-01-01");
 
 function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
+  // The one person is the age the fixture states.
+  const currentAge = overrides.currentAge ?? 40;
   return engineInput(
     withCapsAge({
       budgetContributionLines: 0,
@@ -60,8 +62,8 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
       },
       accumulationOverrides: [],
       decumulationOverrides: [],
-      currentAge: 40,
-      people: onePerson(AS_OF.getFullYear() - 40),
+      currentAge,
+      people: onePerson(AS_OF.getFullYear() - currentAge),
       retirementYear: AS_OF.getFullYear() + 25,
       projectionEndYear: AS_OF.getFullYear() + 50,
       currentSalary: 150000,
