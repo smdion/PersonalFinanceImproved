@@ -146,7 +146,6 @@ function otherAccounts() {
   const owner = {
     ownerName: "Bob",
     ownerPersonId: 2,
-    ownerBirthYear: 1980,
     parentCategory: "Retirement",
   };
   return [
@@ -184,11 +183,11 @@ function makeRothHousehold(ownerBirthYear: number) {
       { personId: 2, birthYear: AS_OF.getFullYear() - 45, birthMonth: 1 },
       { personId: 1, birthYear: ownerBirthYear, birthMonth: 1 },
     ],
-    individualAccounts: makeRothIndividualAccounts(ownerBirthYear),
+    individualAccounts: makeRothIndividualAccounts(),
   };
 }
 
-function makeRothIndividualAccounts(ownerBirthYear: number) {
+function makeRothIndividualAccounts() {
   return [
     ...otherAccounts(),
     {
@@ -198,7 +197,6 @@ function makeRothIndividualAccounts(ownerBirthYear: number) {
       startingBalance: 150000,
       ownerName: "Alice",
       ownerPersonId: 1,
-      ownerBirthYear,
       parentCategory: "Retirement",
       // Small tracked basis relative to balance -- most of what's drawn
       // over the projection will be growth, maximizing the tax-treatment

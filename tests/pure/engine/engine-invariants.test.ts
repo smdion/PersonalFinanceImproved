@@ -2002,7 +2002,6 @@ describe("engine invariants", () => {
     it("neither tax part of a locked 401(k) is drawn before 59½", () => {
       // Retired at 55; the 401(k) (no Rule of 55) holds Traditional and Roth
       // money, both locked until 59½; the brokerage is reachable.
-      const birthYear = AS_OF.getFullYear() - 55;
       const base = makeInput({
         currentAge: 55,
         retirementYear: AS_OF.getFullYear(),
@@ -2012,7 +2011,6 @@ describe("engine invariants", () => {
         category: "401k" as const,
         ownerPersonId: 1,
         ownerName: "Alex",
-        ownerBirthYear: birthYear,
         ruleOf55ForceIneligible: true,
         parentCategory: "Retirement",
       };

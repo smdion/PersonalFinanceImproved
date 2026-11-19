@@ -183,7 +183,6 @@ function makeMainHousehold(
           startingBalance: 1400000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1963,
           parentCategory: "Retirement",
         },
         {
@@ -193,7 +192,6 @@ function makeMainHousehold(
           startingBalance: 80000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1963,
           parentCategory: "Retirement",
           rothBasisMeta: {
             year: 2025,
@@ -211,7 +209,6 @@ function makeMainHousehold(
           startingBalance: 200000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1963,
           parentCategory: "Retirement",
         },
         {
@@ -221,7 +218,6 @@ function makeMainHousehold(
           startingBalance: 20000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1963,
           parentCategory: "Retirement",
         },
         {
@@ -232,7 +228,6 @@ function makeMainHousehold(
           startingBasis: 100000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1963,
           parentCategory: "Retirement",
         },
       ],

@@ -134,7 +134,6 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
           startingBalance: 50000,
           ownerName: "Alice",
           ownerPersonId: 1,
-          ownerBirthYear: 1980,
           parentCategory: "Retirement",
         },
         {
@@ -144,7 +143,6 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
           startingBalance: 5000,
           ownerName: "Alice",
           ownerPersonId: 1,
-          ownerBirthYear: 1980,
           parentCategory: "Retirement",
         },
         {
@@ -155,7 +153,6 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
           startingBasis: 8000,
           ownerName: "Alice",
           ownerPersonId: 1,
-          ownerBirthYear: 1980,
           parentCategory: "Retirement",
         },
         {
@@ -165,7 +162,6 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
           startingBalance: 150000,
           ownerName: "Alice",
           ownerPersonId: 1,
-          ownerBirthYear: 1980, // age 45-53 over the window -- never 59½
           parentCategory: "Retirement",
           rothBasisMeta: {
             year: 2025,

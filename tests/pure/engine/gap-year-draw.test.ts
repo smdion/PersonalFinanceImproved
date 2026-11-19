@@ -140,7 +140,6 @@ describe("gap-year draw", () => {
     const input = couple({}, [
       {
         ...acct("Ann Roth 401k", "401k", 800000, 1, "taxFree"),
-        ownerBirthYear: 1976,
         ruleOf55: {
           eligible: false,
           separationYear: null,
@@ -384,7 +383,6 @@ describe("gap-year draw from Roth past the Rule of 55 age", () => {
   it("pays ordinary tax on the growth", () => {
     const account = {
       ...acct("Ann Roth 401k", "401k", 800000, 1, "taxFree"),
-      ownerBirthYear: 1973,
       ruleOf55: {
         eligible: false,
         separationYear: null,
@@ -470,7 +468,7 @@ describe("gap-year figures (pins current behavior)", () => {
 
   it("Traditional money past 59½: ordinary tax on the draw on top of Bo's pay", () => {
     const accounts = [
-      { ...acct("Ann IRA", "ira", 600000, 1), ownerBirthYear: 1966 },
+      acct("Ann IRA", "ira", 600000, 1),
       acct("Bo Brokerage", "brokerage", 100000, 2, "afterTax"),
     ];
     const input = couple(

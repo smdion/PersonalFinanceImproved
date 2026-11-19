@@ -146,7 +146,6 @@ export function engineHouseholdFixture(h: KeyHousehold): FixtureInput {
   const owned = {
     ownerName: "A",
     ownerPersonId: 1,
-    ownerBirthYear: primary.birthYear,
     parentCategory: "Retirement",
     ...(ownerRetirementYear ? { ownerRetirementYear } : {}),
   };
@@ -180,7 +179,6 @@ export function engineHouseholdFixture(h: KeyHousehold): FixtureInput {
       startingBalance: spouseIra,
       ownerName: "B",
       ownerPersonId: 2,
-      ownerBirthYear: spouse.birthYear,
       parentCategory: "Retirement",
       ...penalized,
     } as IndividualAccountInput);

@@ -258,7 +258,6 @@ describe("household: Coast FIRE reads retirement money only", () => {
     const owner = {
       ownerName: "Owner",
       ownerPersonId: 1,
-      ownerBirthYear: 1986,
     };
     return withConsistentStart(
       withCapsAge({

@@ -7,7 +7,7 @@ import type { ResolvedDecumulationConfig } from "./types/decumulation";
 import type {
   AccountBalances,
   TaxBuckets,
-  IndividualAccountInput,
+  EnginePart,
 } from "../accounts/account-balances.types";
 import { computeNiit } from "../tax/niit";
 import { yearMagi } from "@/lib/pure/tax/year-income";
@@ -93,7 +93,7 @@ interface TaxEstimationInput {
   /** Individual-account state for Roth growth-vs-basis taxability, sliced as
    *  the real year does against cloned maps (never mutated). Omitted ⇒
    *  rothTaxableGrowth stays 0. */
-  indAccounts?: IndividualAccountInput[];
+  indAccounts?: EnginePart[];
   indKey?: IndKeyFn;
   indBalance?: Map<string, number>;
   indBasis?: Map<string, RothBasisState>;

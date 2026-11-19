@@ -335,7 +335,6 @@ export function ledgerInput(
       ownerName: a.owner,
       ownerPersonId: PERSON_ID[a.owner],
       parentCategory: a.parent,
-      ownerBirthYear: yearOf(owner.birthDate),
       ...(owner.jobs.length
         ? { ownerRetirementYear: lastJobYear(owner) + 1 }
         : {}),

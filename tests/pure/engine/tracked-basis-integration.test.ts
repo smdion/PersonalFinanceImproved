@@ -130,11 +130,10 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
 
 /** The fixture's other money, tracked as accounts so they and the
  *  per-category balances describe the same household. */
-function otherAccounts(ownerBirthYear: number) {
+function otherAccounts() {
   const owner = {
     ownerName: "Alice",
     ownerPersonId: 1,
-    ownerBirthYear,
     parentCategory: "Retirement",
   };
   return [
@@ -171,7 +170,7 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
     // the age gate.
     const input = makeInput({
       individualAccounts: [
-        ...otherAccounts(1980),
+        ...otherAccounts(),
         {
           name: "Roth IRA",
           category: "ira",
@@ -179,7 +178,6 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
           startingBalance: 150000,
           ownerName: "Alice",
           ownerPersonId: 1,
-          ownerBirthYear: 1980,
           parentCategory: "Retirement",
           rothBasisMeta: {
             year: 2025,
@@ -255,7 +253,7 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
   it("conservation: rothBasisDrawn never exceeds that year's withdrawal, and basis book-keeping rises only by new contributions", () => {
     const input = makeInput({
       individualAccounts: [
-        ...otherAccounts(1980),
+        ...otherAccounts(),
         {
           name: "Roth IRA",
           category: "ira",
@@ -263,7 +261,6 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
           startingBalance: 150000,
           ownerName: "Alice",
           ownerPersonId: 1,
-          ownerBirthYear: 1980,
           parentCategory: "Retirement",
           rothBasisMeta: {
             year: 2025,

@@ -158,7 +158,6 @@ function makeSingleHousehold(): ProjectionInput {
           startingBalance: 1400000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1963,
           parentCategory: "Retirement",
         },
         {
@@ -168,7 +167,6 @@ function makeSingleHousehold(): ProjectionInput {
           startingBalance: 80000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1963,
           parentCategory: "Retirement",
         },
         {
@@ -178,7 +176,6 @@ function makeSingleHousehold(): ProjectionInput {
           startingBalance: 200000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1963,
           parentCategory: "Retirement",
         },
         {
@@ -188,7 +185,6 @@ function makeSingleHousehold(): ProjectionInput {
           startingBalance: 20000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1963,
           parentCategory: "Retirement",
         },
         {
@@ -199,7 +195,6 @@ function makeSingleHousehold(): ProjectionInput {
           startingBasis: 100000,
           ownerName: "Owner",
           ownerPersonId: 1,
-          ownerBirthYear: 1963,
           parentCategory: "Retirement",
         },
       ]),

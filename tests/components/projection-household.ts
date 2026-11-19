@@ -29,17 +29,14 @@ export function annAndBo(
       {
         ...acct("Ann 401k", "401k", 300000, 1, "preTax"),
         performanceAccountId: 71,
-        ownerBirthYear: BIRTH_YEAR,
       },
       {
         ...acct("Ann Roth IRA", "ira", 150000, 1, "taxFree"),
         performanceAccountId: 72,
-        ownerBirthYear: BIRTH_YEAR,
       },
       {
         ...acct("Bo Brokerage", "brokerage", 250000, 2, "afterTax"),
         performanceAccountId: 73,
-        ownerBirthYear: BIRTH_YEAR,
       },
     ],
     {

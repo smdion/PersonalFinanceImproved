@@ -11,7 +11,7 @@ import type { AccountCategory } from "../../../config/account-types";
 import type {
   TaxBuckets,
   AccountBalances,
-  IndividualAccountInput,
+  EnginePart,
 } from "../../accounts/account-balances.types";
 import type {
   ContributionSpec,
@@ -158,7 +158,7 @@ export type ProjectionContext = {
   /** Some part belongs to a real account (`isHeldPart`); without one the run
    *  takes the household path and `indAccounts` is empty. */
   holdsAccounts: boolean;
-  indAccounts: IndividualAccountInput[];
+  indAccounts: EnginePart[];
   indKey: ReturnType<typeof makeIndKey>;
   indParentCat: Map<string, string>;
   hasPerPersonSalary: boolean;

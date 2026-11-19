@@ -17,7 +17,7 @@ import { isHeldPart } from "../../accounts/account-part";
 import { declareOpeningParts } from "../opening-state";
 import { getRmdStartAge } from "../../../config/rmd-tables";
 import type { BrokerageGoal, ProjectionContext } from "./types";
-import type { IndividualAccountInput } from "../../accounts/account-balances.types";
+import type { EnginePart } from "../../accounts/account-balances.types";
 
 // ---------------------------------------------------------------------------
 // Context and state builders
@@ -209,7 +209,7 @@ export function buildProjectionContext(
 
 /** The opening parts, each owner's birth year their one in `people`
  *  (input validation checked every owner is there). */
-function openingParts(input: ProjectionInput): IndividualAccountInput[] {
+function openingParts(input: ProjectionInput): EnginePart[] {
   const birthYearOf = new Map(
     input.people.map((p) => [p.personId, p.birthYear]),
   );

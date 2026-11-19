@@ -173,7 +173,6 @@ const CAPTURED: Omit<FixtureInput, "asOfDate" | "employerMatchByParentCat"> = {
         knownFutureSeparationYear: null,
       },
       rothBasisMeta: null,
-      ownerBirthYear: 1969,
       ownerRetirementYear: 2025,
     },
     {
@@ -187,7 +186,6 @@ const CAPTURED: Omit<FixtureInput, "asOfDate" | "employerMatchByParentCat"> = {
       parentCategory: "Retirement",
       ruleOf55: null,
       rothBasisMeta: null,
-      ownerBirthYear: 1969,
       ownerRetirementYear: 2025,
     },
     {

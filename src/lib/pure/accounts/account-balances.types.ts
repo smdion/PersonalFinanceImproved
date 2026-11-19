@@ -87,9 +87,6 @@ export type IndividualAccountInput = {
   /** Companion to `ruleOf55` — Roth contribution/conversion basis "now",
    *  same scope/caveats; seeds tracked Roth basis. */
   rothBasisMeta?: RothBasisMeta | null;
-  /** `ownerPersonId`'s birth year: the engine sets it from `people`, replacing
-   *  whatever the input says. */
-  ownerBirthYear?: number;
   /** The owner's planned retirement year (birth year + retirement age) —
    *  when a still-active job is assumed to end, for Rule of 55. */
   ownerRetirementYear?: number;
@@ -102,6 +99,10 @@ export type IndividualAccountInput = {
    *  otherwise (hash stability); read by `computeWithdrawalEligibility`. */
   allowPenalizedWithdrawals?: boolean;
 };
+
+/** A part as the engine runs it: its owner's birth year comes from the
+ *  input's `people` by `ownerPersonId` (absent with no owner). */
+export type EnginePart = IndividualAccountInput & { ownerBirthYear?: number };
 
 /** Per-account balance tracked through the engine projection. */
 export type IndividualAccountYearBalance = {

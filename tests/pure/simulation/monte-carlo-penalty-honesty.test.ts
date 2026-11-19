@@ -137,11 +137,10 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
  *  (non-medical penalty until 65) are penalty-exposed like the Roth growth:
  *  only the brokerage and the Roth basis are reachable before 59½ — a real
  *  gap. (Untracked, the aggregate 401(k)/HSA read as reachable money.) */
-function makeRothIndividualAccounts(ownerBirthYear: number) {
+function makeRothIndividualAccounts() {
   const owner = {
     ownerName: "Owner",
     ownerPersonId: 1,
-    ownerBirthYear,
     parentCategory: "Retirement",
   };
   return [
@@ -176,7 +175,6 @@ function makeRothIndividualAccounts(ownerBirthYear: number) {
       startingBalance: 1700000,
       ownerName: "Owner",
       ownerPersonId: 1,
-      ownerBirthYear,
       parentCategory: "Retirement",
       rothBasisMeta: {
         year: 2025,
@@ -197,7 +195,7 @@ describe("Monte Carlo honesty (acceptance criterion 11)", () => {
       // the 55→59½ gap is real (the brokerage and Roth basis can't cover it).
       currentAge: 54,
       retirementYear: AS_OF.getFullYear() + 1,
-      individualAccounts: makeRothIndividualAccounts(1971),
+      individualAccounts: makeRothIndividualAccounts(),
     });
     const mcOpts = {
       numTrials: 100,
@@ -243,7 +241,7 @@ describe("Monte Carlo honesty (acceptance criterion 11)", () => {
         makeInput({
           currentAge: 54,
           retirementYear: AS_OF.getFullYear() + 1,
-          individualAccounts: makeRothIndividualAccounts(1971),
+          individualAccounts: makeRothIndividualAccounts(),
         }),
         {
           numTrials: 20,

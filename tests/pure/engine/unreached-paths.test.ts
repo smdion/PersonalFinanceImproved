@@ -333,7 +333,6 @@ describe("the five eligibility reasons no household shows (B L3)", () => {
   // and her other 401k didn't. Bo's 401k has the Rule of 55 turned off.
   const roth = (name: string, balance: number, basis: number) => ({
     ...acct(name, "ira", balance, 1, "taxFree"),
-    ownerBirthYear: 1974,
     rothBasisMeta: {
       year: 2026,
       contributionBasis: basis,
@@ -348,7 +347,6 @@ describe("the five eligibility reasons no household shows (B L3)", () => {
     roth("Ann Roth part basis", 200000, 50000),
     {
       ...acct("Ann 401k R55", "401k", 300000, 1),
-      ownerBirthYear: 1974,
       ruleOf55: {
         eligible: true,
         separationYear: null,
@@ -358,12 +356,10 @@ describe("the five eligibility reasons no household shows (B L3)", () => {
     },
     {
       ...acct("Ann 401k", "401k", 300000, 1),
-      ownerBirthYear: 1974,
       ruleOf55: null,
     },
     {
       ...acct("Bo 401k", "401k", 300000, 2),
-      ownerBirthYear: 1972,
       ruleOf55ForceIneligible: true,
     },
     acct("Joint brokerage", "brokerage", 400000, undefined, "afterTax"),
@@ -497,10 +493,9 @@ describe("a gap year in year 0 (A2 L3.5)", () => {
   // brokerage (her 401k is locked at 50).
   const y = accum(
     worker({ workingYearsByPerson: { 1: { start: null, end: 2025 } } }, [
-      { ...acct("Ann 401k", "401k", 200000, 1), ownerBirthYear: 1976 },
+      acct("Ann 401k", "401k", 200000, 1),
       {
         ...retirementBrokerage("Ann brokerage", 300000, 1),
-        ownerBirthYear: 1976,
       },
     ]),
     2026,
