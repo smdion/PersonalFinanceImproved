@@ -64,7 +64,9 @@ export function engineInput<T extends StartingMoney>(
 ): Omit<T, keyof StartingMoney> & {
   individualAccounts: IndividualAccountInput[];
 };
-export function engineInput(fixture: StartingMoney) {
+export function engineInput(
+  fixture: StartingMoney & { people?: ProjectionInput["people"] },
+) {
   const {
     startingBalances,
     startingAccountBalances,
@@ -88,9 +90,18 @@ export function engineInput(fixture: StartingMoney) {
     accountKeyOf,
     startingBalances.afterTaxBasis,
   );
+  // An owned account carries its owner's birth year from the people, as
+  // the payload states it.
+  const born = new Map(
+    (rest.people ?? []).map((p) => [p.personId, p.birthYear]),
+  );
   return {
     ...rest,
-    individualAccounts: withAccountIds(individualAccounts).map((ia) => {
+    individualAccounts: withAccountIds(individualAccounts).map((given) => {
+      const ia =
+        given.ownerPersonId == null || given.ownerBirthYear != null
+          ? given
+          : { ...given, ownerBirthYear: born.get(given.ownerPersonId) };
       const shared = basis.get(accountKeyOf(ia));
       return ia.startingBasis == null && shared != null
         ? { ...ia, startingBasis: shared }

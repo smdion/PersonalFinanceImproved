@@ -10,6 +10,7 @@ import {
   toSimpleTaxMode,
   type SimpleTaxModeParts,
 } from "@/lib/pure/tax/simple-tax-mode";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { acct, household } from "../fixtures/two-person-household";
 
 const returnRates = Array.from({ length: 70 }, (_, i) => ({
@@ -29,11 +30,25 @@ const people = [1, 2].map((personId) => ({
   annualAmount: 0,
 }));
 
+/** Ann's Roth IRA, all of it her contributions: before 59½ she draws it
+ *  free of tax and penalty. */
+const annRoth = (): IndividualAccountInput => ({
+  ...acct("Ann Roth IRA", "ira", 400000, 1, "taxFree"),
+  rothBasisMeta: {
+    year: 2026,
+    contributionBasis: 400000,
+    conversionBasis: 0,
+    latestConversionYear: null,
+    isSeeded: false,
+    updatedAt: new Date("2026-01-01"),
+  },
+});
+
 /** Both 50 in 2026. Ann retires in 2030, Bo works to 2035. */
 function couple(
   overrides: Partial<ProjectionInput> = {},
   accounts = [
-    acct("Ann Roth IRA", "ira", 400000, 1, "taxFree"),
+    annRoth(),
     acct("Bo Brokerage", "brokerage", 400000, 2, "afterTax"),
   ],
 ): ProjectionInput {
@@ -301,8 +316,8 @@ describe("a stopped year that is also a 0% year", () => {
     // The draw covers the budget with nothing taken out for saving.
     expect(stopped.gapDraw!.contributions).toBe(0);
     expect(stopped.gapDraw!.need).toBe(56590);
-    expect(stopped.gapDraw!.withdrawal).toBe(59245.93);
-    expect(stopped.retirementBalance).toBe(1023811.95);
+    expect(stopped.gapDraw!.withdrawal).toBe(59160.59);
+    expect(stopped.retirementBalance).toBe(1023901.56);
   });
 });
 
@@ -518,7 +533,7 @@ describe("a gap year's Portfolio saving", () => {
   const run = (annualExpenses: number) => {
     const row = year(
       couple({ contributionSpecs, annualExpenses }, [
-        acct("Ann Roth IRA", "ira", 400000, 1, "taxFree"),
+        annRoth(),
         acct("Bo Brokerage", "brokerage", 400000, 2, "afterTax"),
         portfolioRoth,
       ]),
@@ -616,7 +631,7 @@ describe("a gap year's brokerage ramp", () => {
   it("landing in a Portfolio brokerage it is Portfolio saving: skipped and warned", () => {
     const row = year(
       couple(ramp, [
-        acct("Ann Roth IRA", "ira", 400000, 1, "taxFree"),
+        annRoth(),
         acct("Bo Brokerage", "brokerage", 400000, 2, "afterTax"),
         {
           ...acct("Bo Portfolio", "brokerage", 20000, 2, "afterTax"),

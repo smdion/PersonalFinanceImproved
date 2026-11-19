@@ -520,12 +520,12 @@ describe("a gap year in year 0 (A2 L3.5)", () => {
   it("pins the year", () => pin("gap-year-0", [y]));
 });
 
-describe("a gap year in year 0, drawn from a 401k with no owner's age", () => {
-  // The same year from a 401k whose owner has no birth year on record
-  // (nothing gates it): taxed at the fallback rate.
+describe("a gap year in year 0, drawn from a 401k with no owner", () => {
+  // The same year from a 401k with no owner, so no age gates it: taxed at
+  // the fallback rate.
   const y = accum(
     worker({ workingYearsByPerson: { 1: { start: null, end: 2025 } } }, [
-      acct("Ann 401k", "401k", 200000, 1),
+      acct("Ann 401k", "401k", 200000, undefined),
       retirementBrokerage("Ann brokerage", 300000, 1),
     ]),
     2026,

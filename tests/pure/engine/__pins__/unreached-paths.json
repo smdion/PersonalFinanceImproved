@@ -43,7 +43,8 @@
       "withdrawal": 24896.27,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 600000,
       "penaltyExposedAmount": 0,
@@ -58,7 +59,7 @@
       "withdrawal": 0,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "always_available"
       },
       "penaltyFreeAmount": 50000,
       "penaltyExposedAmount": 0,
@@ -121,7 +122,8 @@
       "withdrawal": 0,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 500000,
       "penaltyExposedAmount": 0,
@@ -136,7 +138,8 @@
       "withdrawal": 50000,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 500000,
       "penaltyExposedAmount": 0,
@@ -191,7 +194,8 @@
       "withdrawal": 20746.89,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 500000,
       "penaltyExposedAmount": 0,
@@ -206,7 +210,8 @@
       "withdrawal": 29253.11,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 500000,
       "penaltyExposedAmount": 0,
@@ -274,7 +279,8 @@
       "withdrawal": 0,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 500000,
       "penaltyExposedAmount": 0,
@@ -289,7 +295,8 @@
       "withdrawal": 21097.05,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 500000,
       "penaltyExposedAmount": 0,
@@ -367,7 +374,8 @@
       "withdrawal": 256902.88,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 3000000,
       "penaltyExposedAmount": 0,
@@ -382,7 +390,8 @@
       "withdrawal": 243097.12,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 3000000,
       "penaltyExposedAmount": 0,
@@ -397,7 +406,7 @@
       "withdrawal": 0,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "always_available"
       },
       "penaltyFreeAmount": 500000,
       "penaltyExposedAmount": 0,
@@ -458,7 +467,8 @@
       "withdrawal": 262155.9,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 2223463.68,
       "penaltyExposedAmount": 0,
@@ -473,7 +483,8 @@
       "withdrawal": 253732.11,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 2260648.31,
       "penaltyExposedAmount": 0,
@@ -488,7 +499,7 @@
       "withdrawal": 0,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "always_available"
       },
       "penaltyFreeAmount": 500000,
       "penaltyExposedAmount": 0,
@@ -534,7 +545,8 @@
       "withdrawal": 0,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 2000000,
       "penaltyExposedAmount": 0,
@@ -549,7 +561,7 @@
       "withdrawal": 121578.04,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "always_available"
       },
       "penaltyFreeAmount": 1500000,
       "penaltyExposedAmount": 0,
@@ -564,7 +576,8 @@
       "withdrawal": 0,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "age_reached",
+       "gate": "age_59_half"
       },
       "penaltyFreeAmount": 0,
       "penaltyExposedAmount": 0,
@@ -961,7 +974,7 @@
       "withdrawal": 0,
       "eligibilityLocked": false,
       "reason": {
-       "kind": "no_owner"
+       "kind": "always_available"
       },
       "penaltyFreeAmount": 300000,
       "penaltyExposedAmount": 0,
