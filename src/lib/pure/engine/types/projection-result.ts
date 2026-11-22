@@ -528,7 +528,7 @@ export type EngineDecumulationYear = {
   acaSubsidyPreserved: boolean;
   /** MAGI headroom below ACA cliff ($0 if not applicable). */
   acaMagiHeadroom: number;
-  /** Per-year warnings (cap hits, insufficient funds, etc.). */
+  /** Per-year notes (cap hits, RMDs, ACA); never the unmet need (`unmetNeed`). */
   warnings: string[];
 };
 

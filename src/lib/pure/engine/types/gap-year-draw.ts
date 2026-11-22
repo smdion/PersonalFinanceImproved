@@ -9,7 +9,7 @@ export type GapYearDraw = {
   withdrawal: number;
   /** Tax and any penalty on the draw (not on the pay). */
   taxCost: number;
-  /** The need no reachable money could fund. */
+  /** The need the draw didn't fund, after its tax. */
   unmetNeed: number;
   /** Spending given up by choice: the household draws nothing these years. */
   spendingCut: number;
