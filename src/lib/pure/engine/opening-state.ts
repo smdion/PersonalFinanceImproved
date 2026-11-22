@@ -95,7 +95,24 @@ export function declareOpeningParts(
       )
     )
       parts.push(projectedPart(slice));
-  return withOtherTaxParts(parts);
+  return refuseSharedKeys(withOtherTaxParts(parts));
+}
+
+/** Each part its own key: two parts with one key would share one balance in
+ *  the ledger, the second overwriting the first. */
+function refuseSharedKeys(
+  parts: IndividualAccountInput[],
+): IndividualAccountInput[] {
+  const keys = new Set<string>();
+  for (const ia of parts) {
+    const key = accountIdKeyOf(ia);
+    if (keys.has(key))
+      throw new Error(
+        `Two account parts have one key (${key}): "${ia.name}" and another`,
+      );
+    keys.add(key);
+  }
+  return parts;
 }
 
 /** A stated amount above $0 (an absent one is none). */

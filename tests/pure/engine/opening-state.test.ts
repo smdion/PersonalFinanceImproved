@@ -64,6 +64,31 @@ describe("declareOpeningParts", () => {
     expect(declareOpeningParts([], NO_FLOWS)).toEqual([]);
   });
 
+  it("refuses two parts with one key, which would share one balance", () => {
+    const sameAccount = {
+      ...retirementBrokerage,
+      name: "Retirement brokerage (ESPP)",
+      startingBalance: 500,
+    };
+    expect(() =>
+      declareOpeningParts([retirementBrokerage, sameAccount], NO_FLOWS),
+    ).toThrow(/Two account parts have one key/);
+  });
+
+  it("takes one account's parts of two owners or two tax types apart", () => {
+    expect(() =>
+      declareOpeningParts(
+        [
+          retirementBrokerage,
+          roth401k,
+          { ...roth401k, ownerPersonId: 2 },
+          { ...roth401k, taxType: "preTax", rothBasisMeta: undefined },
+        ],
+        NO_FLOWS,
+      ),
+    ).not.toThrow();
+  });
+
   it("a Roth-only 401(k) gains its owner's Traditional part at $0, with the account's facts and none of the held part's money", () => {
     const parts = declareOpeningParts(
       [retirementBrokerage, roth401k],
