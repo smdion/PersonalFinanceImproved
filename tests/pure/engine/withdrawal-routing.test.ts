@@ -131,7 +131,7 @@ describe("waterfall routing", () => {
     expect(totalTrad).toBeLessThanOrEqual(20000);
   });
 
-  it("warns when withdrawal need is unmet", () => {
+  it("returns an unmet need as a number, with no sentence about it", () => {
     const config = makeDecumulationConfig({
       withdrawalOrder: ["401k"],
     });
@@ -142,8 +142,14 @@ describe("waterfall routing", () => {
       afterTax: 0,
       afterTaxBasis: 0,
     });
-    const { warnings } = routeWithdrawalsWaterfall(100000, config, balances);
-    expect(warnings.some((w) => w.includes("unmet"))).toBe(true);
+    const { warnings, unmetNeed, slots } = routeWithdrawalsWaterfall(
+      100000,
+      config,
+      balances,
+    );
+    const drawn = slots.reduce((s, sl) => s + sl.withdrawal, 0);
+    expect(unmetNeed).toBeCloseTo(100000 - drawn, 2);
+    expect(warnings.some((w) => w.includes("unmet"))).toBe(false);
   });
 
   it("handles zero withdrawal target", () => {
@@ -234,7 +240,7 @@ describe("routeWithdrawalsPercentage", () => {
     expect(totalWithdrawn).toBeCloseTo(100000, -2);
   });
 
-  it("warns when insufficient funds across all accounts", () => {
+  it("returns what it couldn't draw as a number, with no sentence about it", () => {
     const config = makeDecumulationConfig({
       withdrawalSplits: {
         "401k": 1.0,
@@ -251,8 +257,15 @@ describe("routeWithdrawalsPercentage", () => {
       afterTax: 0,
       afterTaxBasis: 0,
     });
-    const { warnings } = routeWithdrawalsPercentage(100000, config, balances);
-    expect(warnings.some((w) => w.includes("unmet"))).toBe(true);
+    const { warnings, unmetNeed, slots } = routeWithdrawalsPercentage(
+      100000,
+      config,
+      balances,
+    );
+    // What it couldn't draw is a number; the year words it from its own unmetNeed.
+    const drawn = slots.reduce((s, sl) => s + sl.withdrawal, 0);
+    expect(unmetNeed).toBeCloseTo(100000 - drawn, 2);
+    expect(warnings.some((w) => w.includes("unmet"))).toBe(false);
   });
 
   it("returns slots for all categories", () => {
@@ -486,7 +499,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     expect(withSS.traditionalCap!).toBeLessThan(noSS.traditionalCap!);
   });
 
-  it("warns when need is unmet", () => {
+  it("returns an unmet need as a number, with no sentence about it", () => {
     const config = makeDecumulationConfig();
     const balances = makeAccountBalances({
       preTax: 1000,
@@ -502,7 +515,7 @@ describe("routeWithdrawalsBracketFilling", () => {
       taxableSS: 0,
     });
     expect(result.unmetNeed).toBeGreaterThan(0);
-    expect(result.warnings.some((w) => w.includes("unmet"))).toBe(true);
+    expect(result.warnings.some((w) => w.includes("unmet"))).toBe(false);
   });
 
   // -------------------------------------------------------------------------

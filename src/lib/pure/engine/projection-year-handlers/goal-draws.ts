@@ -8,7 +8,7 @@ import {
   goalFundingAccounts,
   goalFundingBalance,
 } from "../individual-accounts/withdrawals";
-import { shortfallFloor, runGapYearDraw } from "../gap-year-draw";
+import { runGapYearDraw } from "../gap-year-draw";
 import type { GapYearNeed } from "../gap-year-need";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
@@ -17,18 +17,11 @@ export function yearGapDraw(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
   gapNeed: GapYearNeed | null,
-  year: number,
   routeWarnings: string[],
 ) {
   const gapRun = gapNeed ? runGapYearDraw(ctx, state, gapNeed) : null;
   const gapDraw = gapRun?.draw ?? null;
-  if (gapDraw) {
-    routeWarnings.push(...gapDraw.warnings);
-    if (gapDraw.unmetNeed >= shortfallFloor(gapDraw.need))
-      routeWarnings.push(
-        `${year}: $${Math.round(gapDraw.unmetNeed).toLocaleString()} of spending can't be funded with a paycheck gone: no reachable money without a penalty.`,
-      );
-  }
+  if (gapDraw) routeWarnings.push(...gapDraw.warnings);
 
   return { gapRun, gapDraw };
 }

@@ -131,13 +131,7 @@ export function runAccumulationYear(
       activeEmployerMatchByParentCat,
       indBasis,
     );
-  const { gapRun, gapDraw } = yearGapDraw(
-    ctx,
-    state,
-    gapNeed,
-    year,
-    routeWarnings,
-  );
+  const { gapRun, gapDraw } = yearGapDraw(ctx, state, gapNeed, routeWarnings);
   const wages = fullYearWages(projectedSalary, slots, proRate, lateYearCut);
   const income = workingYearIncome(wages, gapRun?.income);
   recordIrmaaTaxYear(state.irmaaTaxYears, year, income);

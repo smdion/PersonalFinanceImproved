@@ -286,15 +286,18 @@ describe("answer key: engine ledger H6 (penalty priced in the gross-up)", () => 
   // unmet). 59 1/2 on 2037-01-01; first RMD 2052 (age 75) above the need.
   const H6 = { allowPenalizedWithdrawals: true };
 
-  it("engine/H6-warn [WDR-06] a penalized year that funds its need warns no unmet need", () => {
+  it("engine/H6-warn [WDR-06] a penalized year that funds its need has no unmet need", () => {
     // 2026–2036 draw from the IRA before 59 1/2 with the penalty paid and
-    // nothing unmet (key § Re-run): no year says the need went unmet.
+    // nothing unmet (key § Re-run): no year has a material unmet need, and
+    // no year's notes speak of one.
     const { result } = project("H6", H6);
-    const said = result.projectionByYear
-      .filter((y) => y.year <= 2036)
-      .flatMap((y) => y.warnings.map((w) => `${y.year}: ${w}`))
-      .filter((w) => w.includes("unmet"));
-    expect(said).toEqual([]);
+    const early = result.projectionByYear.filter((y) => y.year <= 2036);
+    expect(early.every((y) => y.phase === "decumulation")).toBe(true);
+    const short = early
+      .filter((y) => y.phase === "decumulation" && y.unmetNeedMaterial)
+      .map((y) => y.year);
+    expect(short).toEqual([]);
+    expect(early.flatMap((y) => y.warnings).join()).not.toMatch(/unmet/);
   });
 
   it("engine/H6 [ENG-01] every ledger row 2026–2053", () => {

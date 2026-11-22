@@ -14,7 +14,6 @@ import {
   getRothBalance,
   getTotalBalance,
 } from "../../accounts/account-balance";
-import { unmetNeedWarning } from "./unmet-warning";
 
 /**
  * Route withdrawals by percentage split across accounts: each account's
@@ -195,9 +194,6 @@ export function routeWithdrawalsPercentage(
     }
     placeExcess();
     builtSlots = buildSlots();
-  }
-  if (excess > 0) {
-    warnings.push(unmetNeedWarning(excess));
   }
   const unmetNeed = excess > 0 ? roundToCents(excess) : undefined;
   return { slots: builtSlots, warnings, unmetNeed };

@@ -10901,9 +10901,6 @@
         }
        ],
        "unmetNeedMaterial": true,
-       "warnings": [
-        "$0.18 withdrawal need unmet — insufficient funds across all accounts"
-       ],
        "withdrawalSized": false
       },
       {

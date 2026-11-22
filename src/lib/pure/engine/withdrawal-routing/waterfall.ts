@@ -13,7 +13,6 @@ import {
   getTotalBalance,
 } from "../../accounts/account-balance";
 import type { RouteResult } from "./types";
-import { unmetNeedWarning } from "./unmet-warning";
 
 /**
  * Route withdrawals from accounts for one year.
@@ -142,11 +141,6 @@ export function routeWithdrawalsWaterfall(
           `$${remaining.toLocaleString()} shifts to next account`,
       );
     }
-  }
-
-  // Handle accounts not in withdrawal order (shouldn't happen but safety)
-  if (remaining > 0) {
-    warnings.push(unmetNeedWarning(remaining));
   }
 
   return {

@@ -20,7 +20,6 @@ import type { WithdrawalSourceKind } from "../withdrawal-cost-ranking";
 import { routeWithdrawalsWaterfall } from "./waterfall";
 import { computeBracketTraditionalCap, pastTargetWarning } from "./caps";
 import type { RouteBracketInfo, RouteResult } from "./types";
-import { unmetNeedWarning } from "./unmet-warning";
 
 /**
  * Bracket-filling routing: fill Traditional up to the `rothBracketTarget` bracket
@@ -441,10 +440,6 @@ export function routeWithdrawalsBracketFilling(
         remainingNeed: 0,
       });
     }
-  }
-
-  if (remaining > 0) {
-    warnings.push(unmetNeedWarning(remaining));
   }
 
   return {

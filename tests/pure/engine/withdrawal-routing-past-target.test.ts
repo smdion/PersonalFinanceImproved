@@ -132,7 +132,7 @@ describe("percentage mode with a tax-type cap", () => {
     expect(r.unmetNeed).toBeUndefined();
   });
 
-  it("with nowhere to go it's an unmet need, with a warning", () => {
+  it("with nowhere to go it's an unmet need, returned as a number and no sentence", () => {
     const r = routeWithdrawalsPercentage(
       50000,
       config(),
@@ -140,7 +140,7 @@ describe("percentage mode with a tax-type cap", () => {
     );
     expect(drawn(r)).toBeCloseTo(10000, 0);
     expect(r.unmetNeed).toBeCloseTo(40000, 0);
-    expect(r.warnings.join()).toMatch(/unmet/);
+    expect(r.warnings.join()).not.toMatch(/unmet/);
   });
 });
 
