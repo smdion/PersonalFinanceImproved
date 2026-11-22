@@ -54,6 +54,14 @@ export function shortfallFloor(need: number): number {
   return Math.max(minimum, need * shareOfNeed);
 }
 
+/** Whether a gap year's unmet need is a shortfall: at or over its floor.
+ *  A retirement year's test is `unmetNeedMaterial`. */
+export function gapUnmetNeedMaterial(
+  gap: Pick<GapYearDraw, "need" | "unmetNeed">,
+): boolean {
+  return gap.unmetNeed >= shortfallFloor(gap.need);
+}
+
 export function runGapYearDraw(
   ctx: ProjectionContext,
   state: ProjectionLoopState,

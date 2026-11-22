@@ -25,4 +25,4 @@ export type {
   /** @public */ RankWithdrawalTiersInput,
 } from "./withdrawal-cost-ranking";
 
-export { shortfallFloor } from "./gap-year-draw";
+export { gapUnmetNeedMaterial } from "./gap-year-draw";

@@ -3,7 +3,7 @@
  * unmet spending, or with retirement money gone while a later year still needs withdrawals
  * (Portfolio money never counts). Survival only; callers add extra tests on top.
  */
-import { shortfallFloor } from "../engine/gap-year-draw";
+import { gapUnmetNeedMaterial } from "../engine/gap-year-draw";
 import type { EngineDecumulationYear, ProjectionResult } from "../engine/types";
 
 /** Why a plan failed: `depleted` (retirement money ran out), `penaltyGap` (money locked behind
@@ -56,7 +56,7 @@ export function assessPlan(
     if (
       y.phase === "accumulation" &&
       y.gapDraw &&
-      y.gapDraw.unmetNeed >= shortfallFloor(y.gapDraw.need)
+      gapUnmetNeedMaterial(y.gapDraw)
     )
       return {
         succeeded: false,

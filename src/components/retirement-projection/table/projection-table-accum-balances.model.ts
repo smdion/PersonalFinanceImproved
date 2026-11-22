@@ -10,7 +10,7 @@ import {
 } from "./projection-table-accum-row.model";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { itemTaxType, percentOf, proRateMonths } from "./projection-columns";
-import { shortfallFloor } from "@/lib/pure/engine";
+import { gapUnmetNeedMaterial } from "@/lib/pure/engine";
 
 /** The contribution total's tooltip: what went in, what came out, growth and budget. */
 export function totalContributionTooltip(
@@ -95,7 +95,7 @@ export function totalContributionTooltip(
     header: `${isPersonFiltered ? personFilterName : "Employee"}: ${formatCurrency(empAmount)}`,
     meta: gapScoped ? undefined : gapMeta,
     shortfall:
-      gap && !gapScoped && gap.unmetNeed >= shortfallFloor(gap.need)
+      gap && !gapScoped && gapUnmetNeedMaterial(gap)
         ? { amount: deflate(gap.unmetNeed, yearRow.year) }
         : undefined,
     withdrawals:

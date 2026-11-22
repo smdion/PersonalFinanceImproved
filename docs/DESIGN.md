@@ -688,7 +688,7 @@ The orchestrator (`projection.ts`) calls modules in an explicit pipeline order; 
 
 ### Public API
 
-`engine/index.ts` is the only entry point: `calculateProjection()`, the tax helpers `estimateEffectiveTaxRate()`, `incomeCapForMarginalRate()`, `marginalRateAboveTarget()`, `computeTaxableSS()`, `rankWithdrawalTiers()` (withdrawal cost ranking) and `shortfallFloor()` (the unmet need below which a gap or retirement year still counts as funded), plus their types. Code outside the engine may also name its types, and the Zod schemas for its stored inputs, through `engine/types/index.ts`. Everything else is internal to `engine/`.
+`engine/index.ts` is the only entry point: `calculateProjection()`, the tax helpers `estimateEffectiveTaxRate()`, `incomeCapForMarginalRate()`, `marginalRateAboveTarget()`, `computeTaxableSS()`, `rankWithdrawalTiers()` (withdrawal cost ranking) and `gapUnmetNeedMaterial()` (whether a gap year's unmet need is a shortfall, at or over its floor), plus their types. Code outside the engine may also name its types, and the Zod schemas for its stored inputs, through `engine/types/index.ts`. Everything else is internal to `engine/`.
 
 ---
 

@@ -3,7 +3,7 @@
  * comes out of the accounts. Fictional households; see gap-year-draw.ts.
  */
 import { assert, describe, expect, it } from "vitest";
-import { calculateProjection } from "@/lib/pure/engine";
+import { calculateProjection, gapUnmetNeedMaterial } from "@/lib/pure/engine";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import {
@@ -80,6 +80,18 @@ const year = (i: ProjectionInput, y: number) => {
   assert(row.phase === "accumulation");
   return row;
 };
+
+describe("a gap year's material unmet need", () => {
+  // SHORTFALL_MATERIALITY: $50, or 1% of the need when that is more.
+  it.each([
+    [1000, 49.99, false],
+    [1000, 50, true],
+    [60000, 599.99, false],
+    [60000, 600, true],
+  ])("need %s with %s unmet: %s", (need, unmetNeed, material) => {
+    expect(gapUnmetNeedMaterial({ need, unmetNeed })).toBe(material);
+  });
+});
 
 describe("gap-year draw", () => {
   it("draws nothing while both work", () => {
