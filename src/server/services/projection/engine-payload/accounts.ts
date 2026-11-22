@@ -6,7 +6,10 @@ import {
   findMissingCostBasis,
   missingCostBasisWarning,
 } from "@/lib/pure/accounts/basis-consistency";
-import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
+import {
+  computeTaxBucketBreakdown,
+  unlinkedRowsWarning,
+} from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { buildIndividualAccounts } from "./individual-accounts";
 import type { RetirementData } from "./load";
 import type { perPersonSettingsFor } from "./settings-for";
@@ -99,6 +102,7 @@ export function startingAccounts(
       : []),
     ...(rmdTarget.warning ? [rmdTarget.warning] : []),
     ...basisWarnings,
+    ...unlinkedRowsWarning(accountBreakdownByCategory),
   ];
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
 

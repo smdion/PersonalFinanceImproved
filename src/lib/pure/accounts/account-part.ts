@@ -3,8 +3,9 @@ import type {
   IndividualAccountInput,
 } from "./account-balances.types";
 
-/** One account part by its name key (`accountKeyOf`): the account's name,
- *  category, tax type and owner (absent for a joint account). */
+/** One account part's label and facts: its account's name, category, tax
+ *  type and owner (absent for a joint account). The name is a label, never
+ *  part of a key. */
 type AccountPart = {
   name: string;
   category: string;
@@ -32,14 +33,6 @@ function partKey(
   return `${identity}::${part.taxType}::${part.ownerPersonId ?? "joint"}` as AccountKey;
 }
 
-/** The key of one account part, by its name and category. Two people's
- *  same-named accounts stay apart; a joint account keys on `"joint"`. */
-export function accountKeyOf(
-  part: Omit<AccountPart, "ownerPersonId"> & { ownerPersonId?: number | null },
-): AccountKey {
-  return partKey(`${part.name}::${part.category}`, part);
-}
-
 /** The key of one account part by its account's id (`acct:`, `row:`,
  *  `projected:` or `synthetic:`). A row id is one snapshot's: the key holds for
  *  one run, never stored or compared across snapshots or restores. */
@@ -48,7 +41,7 @@ export function accountIdKeyOf(part: PartIdentity): AccountKey {
 }
 
 /** The part key of a Tax Buckets entry: by its performance account, else by
- *  its first snapshot row (one run's name for it), as the payload builds it. */
+ *  its one snapshot row (one run's name for it), as the payload builds it. */
 export function entryKeyOf(
   entry: Pick<AccountPart, "category" | "taxType"> & {
     ownerPersonId?: number | null;

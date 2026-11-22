@@ -13,7 +13,7 @@ import {
   syntheticOpeningParts,
 } from "@/lib/pure/engine/opening-state";
 import type { AccountBalances } from "@/lib/pure/accounts/account-balances.types";
-import { accountKeyOf } from "@/lib/pure/accounts/account-part";
+import { accountIdKeyOf } from "@/lib/pure/accounts/account-part";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { PROJECTED_RETIREMENT_BROKERAGE_LABEL } from "@/lib/config/display-labels";
 
@@ -57,7 +57,7 @@ const roth401k: IndividualAccountInput = {
 };
 
 const keysOf = (parts: IndividualAccountInput[]) =>
-  parts.map((p) => accountKeyOf(p));
+  parts.map((p) => accountIdKeyOf(p));
 
 describe("declareOpeningParts", () => {
   it("a run with no accounts declares nothing", () => {
@@ -142,8 +142,8 @@ describe("declareOpeningParts", () => {
       NO_FLOWS,
     );
     expect(keysOf(parts.filter((p) => p.origin === "declared"))).toEqual([
-      accountKeyOf(ira(1, "taxFree")),
-      accountKeyOf(ira(2, "preTax")),
+      accountIdKeyOf(ira(1, "taxFree")),
+      accountIdKeyOf(ira(2, "preTax")),
     ]);
   });
 

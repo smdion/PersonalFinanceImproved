@@ -16,7 +16,7 @@ import type {
   EngineDecumulationYear,
 } from "@/lib/pure/engine/types";
 import { accountBalancesFromTaxBuckets } from "../../pure/fixtures/tax-bucket-split";
-import { accountKeyOf } from "@/lib/pure/accounts/account-part";
+import { accountIdKeyOf } from "@/lib/pure/accounts/account-part";
 import type { UseProjectionStateProps } from "@/components/retirement-projection/use-projection-state.types";
 import type { ProjectionFormState } from "@/components/retirement-projection/use-projection-form-state";
 import type { ProjectionQueries } from "@/components/retirement-projection/use-projection-queries";
@@ -58,7 +58,10 @@ function makeIndividualAccount(
     ownerName: "Alice",
     ...overrides,
   };
-  return { ...part, accountKey: accountKeyOf(part) };
+  return {
+    ...part,
+    accountKey: accountIdKeyOf({ ...part, performanceAccountId: 1 }),
+  };
 }
 
 function makeAccumYear(

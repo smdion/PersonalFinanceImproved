@@ -6,6 +6,7 @@
 import { describe, it, expect } from "vitest";
 import {
   computeTaxBucketBreakdown,
+  unlinkedRowsWarning,
   type TaxBucketSnapshotAccount,
 } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 
@@ -118,7 +119,7 @@ describe("computeTaxBucketBreakdown", () => {
     ]);
   });
 
-  it("merges same-named rows with no performance account by name, apart from a linked one", () => {
+  it("keeps each row with no performance account its own part, whatever its name", () => {
     const linked = account({ amount: 1000 });
     const first = account({ amount: 200, performanceAccountId: null });
     const second = account({ amount: 300, performanceAccountId: null });
@@ -131,16 +132,43 @@ describe("computeTaxBucketBreakdown", () => {
     expect(result.accountBreakdownByCategory["401k"]).toEqual([
       expect.objectContaining({ amount: 1000, performanceAccountIds: [1] }),
       expect.objectContaining({
-        amount: 500,
-        portfolioAccountIds: [
-          first.portfolioAccountId,
-          second.portfolioAccountId,
-        ],
+        amount: 200,
+        portfolioAccountIds: [first.portfolioAccountId],
+      }),
+      expect.objectContaining({
+        amount: 300,
+        portfolioAccountIds: [second.portfolioAccountId],
       }),
     ]);
     expect(result.accountRollup).toEqual([
       expect.objectContaining({ performanceAccountId: 1, amount: 1000 }),
-      expect.objectContaining({ performanceAccountId: null, amount: 500 }),
+      expect.objectContaining({ performanceAccountId: null, amount: 200 }),
+      expect.objectContaining({ performanceAccountId: null, amount: 300 }),
+    ]);
+    expect(unlinkedRowsWarning(result.accountBreakdownByCategory)).toEqual([
+      expect.stringMatching(/^2 snapshot rows aren't linked/),
+    ]);
+  });
+
+  it("notes one row with no performance account, and none when every row is linked", () => {
+    const linked = computeTaxBucketBreakdown(
+      { accounts: [account({ amount: 1000 })] },
+      people,
+      [],
+    );
+    expect(unlinkedRowsWarning(linked.accountBreakdownByCategory)).toEqual([]);
+    const one = computeTaxBucketBreakdown(
+      {
+        accounts: [
+          account({ amount: 1000 }),
+          account({ amount: 200, performanceAccountId: null }),
+        ],
+      },
+      people,
+      [],
+    );
+    expect(unlinkedRowsWarning(one.accountBreakdownByCategory)).toEqual([
+      expect.stringMatching(/^1 snapshot row isn't linked/),
     ]);
   });
 

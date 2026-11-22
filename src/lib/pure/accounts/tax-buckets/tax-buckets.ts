@@ -26,8 +26,7 @@ import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { toNumber } from "@/lib/utils/numbers";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
-import { accountKeyOf, entryKeyOf } from "@/lib/pure/accounts/account-part";
-import type { AccountKey } from "@/lib/pure/accounts/account-balances.types";
+import { entryKeyOf } from "@/lib/pure/accounts/account-part";
 
 /** parentCategory values the projection engine includes in starting balances. */
 const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
@@ -289,34 +288,6 @@ export function computeTaxBucketBreakdown(
   };
 }
 
-/** The part key a snapshot row merges on (`entryKeyOf`): its performance
- *  account's; a row with none takes a same-named entry's with none and the
- *  same parent, so Retirement and Portfolio money never share a part. */
-function rowKeyOf(
-  a: TaxBucketSnapshotAccount,
-  category: AccountCategory,
-  displayName: string,
-  entries: AccountBreakdownEntry[],
-): AccountKey {
-  const named = accountKeyOf({ ...a, name: displayName, category });
-  const unlinked =
-    a.performanceAccountId == null
-      ? entries.find(
-          (e) =>
-            e.performanceAccountIds == null &&
-            e.parentCategory === (a.parentCategory ?? undefined) &&
-            accountKeyOf({ ...e, category }) === named,
-        )
-      : undefined;
-  return entryKeyOf({
-    ...a,
-    category,
-    portfolioAccountIds: unlinked?.portfolioAccountIds ?? [
-      a.portfolioAccountId,
-    ],
-  });
-}
-
 /** Merges one snapshot row into its breakdown entry and, for Retirement money, its
  *  rollup entry: rows with one engine key (`entryKeyOf`) are one entry. */
 function mergeRowIntoEntries(
@@ -336,8 +307,13 @@ function mergeRowIntoEntries(
   const { category, displayName, ownerName, isRetirement, knownBasis, basis } =
     facts;
   const entries = (accountBreakdownByCategory[category] ??= []);
-  // By id and owner: each account part its own row, whatever its name.
-  const key = rowKeyOf(a, category, displayName, entries);
+  // By id and owner, never by name: a row joins its performance account's
+  // part; a row with none is its own part (`row:`).
+  const key = entryKeyOf({
+    ...a,
+    category,
+    portfolioAccountIds: [a.portfolioAccountId],
+  });
   const existing = entries.find(
     (e) =>
       entryKeyOf({
@@ -395,4 +371,20 @@ function mergeRowIntoEntries(
       });
     }
   }
+}
+
+/** The setup note for snapshot rows with no performance account: each is a
+ *  part of its own (`row:`), never joined to another row by its name. */
+export function unlinkedRowsWarning(
+  accountBreakdownByCategory: Record<string, AccountBreakdownEntry[]>,
+): string[] {
+  const count = Object.values(accountBreakdownByCategory)
+    .flat()
+    .filter((e) => e.performanceAccountIds == null).length;
+  if (count === 0) return [];
+  return [
+    count === 1
+      ? "1 snapshot row isn't linked to an account on the Performance page, so the projection counts it as an account of its own. Link it to its account to keep that account's rows together."
+      : `${count} snapshot rows aren't linked to an account on the Performance page, so the projection counts each as an account of its own. Link each to its account to keep an account's rows together.`,
+  ];
 }

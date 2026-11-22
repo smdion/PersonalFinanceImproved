@@ -8,7 +8,7 @@ import type {
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { syntheticOpeningParts } from "@/lib/pure/engine/opening-state";
 import { seedBrokerageBasis } from "@/lib/pure/engine/brokerage-basis";
-import { accountKeyOf, isHeldPart } from "@/lib/pure/accounts/account-part";
+import { accountIdKeyOf, isHeldPart } from "@/lib/pure/accounts/account-part";
 import { isRetirementMoney } from "@/lib/config/account-types";
 
 /** Starting money as fixtures write it: the tax buckets and the
@@ -88,15 +88,16 @@ export function engineInput(fixture: StartingMoney) {
       ...rest,
       individualAccounts: syntheticOpeningParts(startingAccountBalances),
     };
+  const parts = withAccountIds(individualAccounts);
   const basis = seedBrokerageBasis(
-    individualAccounts,
-    accountKeyOf,
+    parts,
+    accountIdKeyOf,
     startingBalances.afterTaxBasis,
   );
   return {
     ...rest,
-    individualAccounts: withAccountIds(individualAccounts).map((ia) => {
-      const shared = basis.get(accountKeyOf(ia));
+    individualAccounts: parts.map((ia) => {
+      const shared = basis.get(accountIdKeyOf(ia));
       return ia.startingBasis == null && shared != null
         ? { ...ia, startingBasis: shared }
         : ia;
