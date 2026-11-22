@@ -333,11 +333,14 @@ export const COMPOSITION_BUCKET_LABELS: Record<CompositionBucket, string> = {
 export const PROJECTED_RETIREMENT_BROKERAGE_LABEL =
   "Retirement brokerage (projected)";
 
-/** A year's unmet need, by what each rule held back could have covered. The
- *  two overlap: each is at most the whole unmet need, never added. */
+/** Each unmet-need part's noun and tooltip line: they overlap, never added. */
 export const UNMET_PART_LABEL = {
-  penaltyAvoided: "· penalty-locked money could cover",
-  nonRetirement: "· Portfolio money could cover",
+  penaltyAvoided: "penalty-locked money",
+  nonRetirement: "Portfolio money",
+} as const;
+export const UNMET_PART_LINE = {
+  penaltyAvoided: `· ${UNMET_PART_LABEL.penaltyAvoided} could cover`,
+  nonRetirement: `· ${UNMET_PART_LABEL.nonRetirement} could cover`,
 } as const;
 
 /** Where penalty-free money sits at the start of the retirement bridge

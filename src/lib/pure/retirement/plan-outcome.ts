@@ -34,7 +34,7 @@ const SUCCEEDED: PlanOutcome = {
 
 /** Retirement money gone for the year: below the engine's materiality
  *  floor ($50 or 1% of the need) — gone in all but rounding. */
-function moneyGone(y: EngineDecumulationYear): boolean {
+export function moneyGone(y: EngineDecumulationYear): boolean {
   return y.retirementBalance < (y.shortfallMaterialityFloor ?? 1);
 }
 

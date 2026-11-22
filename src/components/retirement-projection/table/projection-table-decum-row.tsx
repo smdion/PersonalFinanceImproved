@@ -5,11 +5,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { BalanceCell } from "./balance-cell";
 import { accountTextColor, taxTypeTextColor } from "@/lib/utils/colors";
 import { taxTypeLabel } from "@/lib/config/display-labels";
-import {
-  formatCurrency,
-  formatPercent,
-  maskAmountsInText,
-} from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type {
@@ -43,6 +39,8 @@ import {
   type RenderSimulationCellOptions,
 } from "./projection-table-mc-cell";
 import { buildFullAccountNote } from "./account-notes";
+import { yearNotices } from "./year-notices.model";
+import { YearNoticesBadge } from "./year-notices-badge";
 import {
   CATEGORY_ORDER,
   decumYearAgesTooltip,
@@ -816,23 +814,10 @@ export function DecumulationRow({
             <span className="ml-1 cursor-help text-blue-300">diag</span>
           </Tooltip>
         )}
-        {dyr.warnings.length > 0 && (
-          <Tooltip
-            content={renderTooltip({
-              kind: "info",
-              lines: dyr.warnings.map((w) => ({
-                text: maskAmountsInText(w),
-                style: "note" as const,
-              })),
-            })}
-            side="left"
-          >
-            <span className="ml-1 text-amber-500">
-              {dyr.warnings.length} warning
-              {dyr.warnings.length > 1 ? "s" : ""}
-            </span>
-          </Tooltip>
-        )}
+        <YearNoticesBadge
+          notices={yearNotices(dyr, deflate)}
+          renderTooltip={renderTooltip}
+        />
       </td>
     </tr>
   );

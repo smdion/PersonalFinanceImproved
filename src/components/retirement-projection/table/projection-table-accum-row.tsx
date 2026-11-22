@@ -5,11 +5,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { BalanceCell } from "./balance-cell";
 import { accountTextColor, taxTypeTextColor } from "@/lib/utils/colors";
 import { taxTypeLabel } from "@/lib/config/display-labels";
-import {
-  formatCurrency,
-  formatPercent,
-  maskAmountsInText,
-} from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type {
   EngineAccumulationYear,
@@ -48,6 +44,8 @@ import {
   iaBelongsToBucket,
 } from "./bucket-slots";
 import { safeDivide } from "@/lib/utils/math";
+import { yearNotices } from "./year-notices.model";
+import { YearNoticesBadge } from "./year-notices-badge";
 import type { ProjectionState } from "../projection-table-types";
 import {
   renderSimulationCell,
@@ -866,23 +864,10 @@ export function AccumulationRow({
             </span>
           </Tooltip>
         )}
-        {yr.warnings.length > 0 && (
-          <Tooltip
-            content={renderTooltip({
-              kind: "info",
-              lines: yr.warnings.map((w) => ({
-                text: maskAmountsInText(w),
-                style: "note" as const,
-              })),
-            })}
-            side="left"
-          >
-            <span className="ml-1 text-amber-500">
-              {yr.warnings.length} warning
-              {yr.warnings.length > 1 ? "s" : ""}
-            </span>
-          </Tooltip>
-        )}
+        <YearNoticesBadge
+          notices={yearNotices(yr, deflate)}
+          renderTooltip={renderTooltip}
+        />
       </td>
     </tr>
   );
