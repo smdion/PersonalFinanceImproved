@@ -75,11 +75,11 @@ export type TooltipData =
        *  floor is cleared; never re-derive that threshold in a component. */
       shortfall?: {
         amount: number;
-        /** Portion attributable to excluding penalty-exposed money
-         *  (avoidPenalizedWithdrawals) — see RouteResult's docblock. */
+        /** What penalty-locked money could cover of `amount`; overlaps
+         *  `nonRetirementAmount` (each ≤ `amount`, never added). */
         penaltyAvoidedAmount?: number;
-        /** Portion attributable to excluding Portfolio-parented
-         *  ("non-retirement") money — see RouteResult's docblock. */
+        /** What Portfolio money could cover of `amount`; overlaps
+         *  `penaltyAvoidedAmount` (each ≤ `amount`, never added). */
         nonRetirementAmount?: number;
       };
       /** Guardrail/spending-strategy event for this year (e.g. Guyton-Klinger

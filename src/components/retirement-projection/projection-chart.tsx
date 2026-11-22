@@ -8,7 +8,7 @@ import {
   CHART_COLORS,
   chartLinePalette,
 } from "@/lib/utils/colors";
-import { taxTypeLabel } from "@/lib/config/display-labels";
+import { taxTypeLabel, UNMET_PART_LABEL } from "@/lib/config/display-labels";
 import { useTheme } from "@/lib/hooks/use-theme";
 import {
   formatCurrency,
@@ -597,12 +597,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             </div>
                             {Number(d._unmetNeedNonRetirement) > 0 && (
                               <div className="text-caption flex justify-between gap-4 text-red-400/70">
-                                <span>
-                                  · excluding non-retirement (Portfolio)
-                                  accounts
-                                </span>
+                                <span>{UNMET_PART_LABEL.nonRetirement}</span>
                                 <span className="tabular-nums">
-                                  -
                                   {formatCurrency(
                                     Number(d._unmetNeedNonRetirement),
                                   )}
@@ -611,9 +607,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             )}
                             {Number(d._unmetNeedPenaltyAvoided) > 0 && (
                               <div className="text-caption flex justify-between gap-4 text-red-400/70">
-                                <span>· excluding penalty-exposed money</span>
+                                <span>{UNMET_PART_LABEL.penaltyAvoided}</span>
                                 <span className="tabular-nums">
-                                  -
                                   {formatCurrency(
                                     Number(d._unmetNeedPenaltyAvoided),
                                   )}

@@ -1,6 +1,6 @@
 /** Data-driven tooltip renderer with a fixed 17-section visual order — call sites supply a TooltipData shape and this module handles all layout, formatting, and recursive line-item rendering. */
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/config/display-labels";
+import { taxTypeLabel, UNMET_PART_LABEL } from "@/lib/config/display-labels";
 import { isRothType } from "@/lib/config/account-types";
 import type { TooltipLineItem, TooltipData } from "./types";
 import { tipColorClass } from "./projection-display";
@@ -146,9 +146,9 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
             <div
               className={`flex justify-between gap-4 ${tipColorClass.red}/70 text-caption`}
             >
-              <span>· excluding non-retirement (Portfolio) accounts</span>
+              <span>{UNMET_PART_LABEL.nonRetirement}</span>
               <span className="tabular-nums">
-                -{formatCurrency(d.shortfall.nonRetirementAmount!)}
+                {formatCurrency(d.shortfall.nonRetirementAmount!)}
               </span>
             </div>
           )}
@@ -156,9 +156,9 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
             <div
               className={`flex justify-between gap-4 ${tipColorClass.red}/70 text-caption`}
             >
-              <span>· excluding penalty-exposed money</span>
+              <span>{UNMET_PART_LABEL.penaltyAvoided}</span>
               <span className="tabular-nums">
-                -{formatCurrency(d.shortfall.penaltyAvoidedAmount!)}
+                {formatCurrency(d.shortfall.penaltyAvoidedAmount!)}
               </span>
             </div>
           )}
