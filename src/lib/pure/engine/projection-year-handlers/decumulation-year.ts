@@ -12,8 +12,8 @@ import type {
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
-import { rmdIncomeByOwner } from "./decumulation-income";
-import { enforceYearRmd, qcdStep } from "./rmd-step";
+import { yearRmdAndQcd } from "./year-rmd-qcd";
+import { enforceYearRmd } from "./rmd-step";
 import { settleYearTax } from "./tax-settlement";
 import { fundingShortfallForYear } from "./funding-shortfall";
 import { distributeYearDraws, routeYearDraw } from "./year-draws";
@@ -85,8 +85,7 @@ export function runDecumulationYear(
     age,
     ctx.inflation.growth(year - input.asOfDate.getFullYear()),
   );
-  const owed = rmdIncomeByOwner(ctx, state, year);
-  const qcd = qcdStep(ctx, state, year, config);
+  const { owed, qcd } = yearRmdAndQcd(ctx, state, year, config);
 
   // This year's retirement withdrawals' basis ratio: the Retirement
   // brokerages' own (start of year), for the estimate, ranking and tax.

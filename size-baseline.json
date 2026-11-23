@@ -291,7 +291,7 @@
     "src/lib/pure/engine/projection-year-handlers/contribution-target.ts": 182,
     "src/lib/pure/engine/projection-year-handlers/decumulation-income.ts": 67,
     "src/lib/pure/engine/projection-year-handlers/decumulation-row.ts": 155,
-    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 162,
+    "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 161,
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 57,
     "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 121,
     "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 88,
