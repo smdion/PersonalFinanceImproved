@@ -2342,6 +2342,36 @@ describe("spotsFromDiff", () => {
       "src/lib/pure/a.ts::Ledger",
     ]);
   });
+
+  it("names a hunk that only deletes a function by the function it deletes", () => {
+    const diff = [
+      "diff --git a/src/lib/pure/a.ts b/src/lib/pure/a.ts",
+      "--- a/src/lib/pure/a.ts",
+      "+++ b/src/lib/pure/a.ts",
+      "@@ -20,6 +19,0 @@ export function computeDraw(input: DrawInput) {",
+      "-",
+      "-/** The tier a draw starts from. */",
+      "-export function firstTier(tiers: Tier[]) {",
+      "-  const tier = tiers[0];",
+      "-  return tier;",
+      "-}",
+      "@@ -40,2 +33,0 @@ const routeTiers = (tiers: Tier[]) => {",
+      "-  const skipped = tiers.length;",
+      "-  log(skipped);",
+      "diff --git a/src/lib/pure/b.ts b/src/lib/pure/b.ts",
+      "--- a/src/lib/pure/b.ts",
+      "+++ b/src/lib/pure/b.ts",
+      "@@ -5,3 +4,0 @@ export function keep() {",
+      "-const dropTier = async (tier: Tier) => {",
+      "-  return tier;",
+      "-};",
+    ].join("\n");
+    expect(spotsFromDiff(diff)).toEqual([
+      "src/lib/pure/a.ts::firstTier",
+      "src/lib/pure/a.ts::routeTiers",
+      "src/lib/pure/b.ts::dropTier",
+    ]);
+  });
 });
 
 describe("countPriorFixes", () => {

@@ -242,21 +242,45 @@ export function srcFileCount(files: FileChange[]): number {
 const NAME_IN_HUNK =
   /(?:function\*?\s+|class\s+|(?:const|let|var)\s+)([A-Za-z_$][\w$]*)|([A-Za-z_$][\w$]*)\s*(?:=\s*(?:async\s*)?\(|\()/;
 
-/** The function each hunk sits in, from git's `@@ … @@ <context>` header. */
+/** A hunk header whose new side is empty: the hunk only deletes. */
+const PURE_DELETION = /^@@ -\d+(?:,\d+)? \+\d+,0 @@/;
+/** A deleted top-level declaration's name. */
+const DELETED_DECLARATION =
+  /^-(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function\*?\s+|class\s+|(?:const|let|var)\s+)([A-Za-z_$][\w$]*)/;
+
+/**
+ * The function each hunk sits in, from git's `@@ … @@ <context>` header. A
+ * hunk that only deletes is named by the top-level declarations it deletes,
+ * since its header names whatever stands before them.
+ */
 export function spotsFromDiff(diff: string): Spot[] {
-  const spots = new Set<Spot>();
+  const hunks: { file: string; context?: string; deleted?: string[] }[] = [];
   let file = "";
   for (const line of diff.split("\n")) {
-    if (line.startsWith("+++ ")) {
+    if (line.startsWith("diff ") || line.startsWith("+++ ")) {
       file = line.startsWith("+++ b/") ? line.slice(6) : "";
       continue;
     }
-    if (!file.startsWith("src/") || !line.startsWith("@@")) continue;
-    const context = line.replace(/^@@[^@]*@@\s?/, "");
-    const match = NAME_IN_HUNK.exec(context);
-    const name = match?.[1] ?? match?.[2];
-    if (name && !["if", "for", "while", "switch", "return"].includes(name)) {
-      spots.add(`${file}::${name}`);
+    if (!file.startsWith("src/")) continue;
+    if (line.startsWith("@@")) {
+      const match = NAME_IN_HUNK.exec(line.replace(/^@@[^@]*@@\s?/, ""));
+      hunks.push({
+        file,
+        context: match?.[1] ?? match?.[2],
+        deleted: PURE_DELETION.test(line) ? [] : undefined,
+      });
+      continue;
+    }
+    const declared = DELETED_DECLARATION.exec(line)?.[1];
+    if (declared) hunks.at(-1)?.deleted?.push(declared);
+  }
+  const spots = new Set<Spot>();
+  for (const hunk of hunks) {
+    const names = hunk.deleted?.length ? hunk.deleted : [hunk.context];
+    for (const name of names) {
+      if (name && !["if", "for", "while", "switch", "return"].includes(name)) {
+        spots.add(`${hunk.file}::${name}`);
+      }
     }
   }
   return [...spots];
