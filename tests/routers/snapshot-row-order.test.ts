@@ -1,8 +1,16 @@
 /** A snapshot's rows are read by id wherever they are summed or listed, so a
  *  sum adds in one order on either database: 0.1 + 0.2 + 0.3 is
  *  0.6000000000000001 in saved order and 0.6 in another. SQLite is told to
- *  answer a read without ORDER BY backwards; on PostgreSQL the updated first
- *  row moves to the end of its scan. Invented rows only. */
+ *  answer a read without ORDER BY backwards. On PostgreSQL the first row is
+ *  updated twice on an indexed column (is_active off, then on): an update
+ *  that changes an indexed column is never HOT, so its new version takes a
+ *  new place after the other two rows and every index gets an entry for it
+ *  there. A sequential scan, a bitmap scan (place order) and an index scan
+ *  on snapshot_id (equal keys ordered by place) all return it last, so a
+ *  read without ORDER BY comes back out of saved order whatever plan
+ *  PostgreSQL picks. A HOT update (amount alone) would keep the row's index
+ *  entry at its old place, and an index scan would read saved order.
+ *  Invented rows only. */
 import "./setup-mocks";
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
@@ -33,11 +41,12 @@ async function seeded() {
     .orderBy(schema.portfolioAccounts.id)
     .all()
     .map((r) => r.id);
-  t.db
-    .update(schema.portfolioAccounts)
-    .set({ amount: AMOUNTS[0]! })
-    .where(eq(schema.portfolioAccounts.id, ids[0]!))
-    .run();
+  for (const isActive of [false, true])
+    t.db
+      .update(schema.portfolioAccounts)
+      .set({ isActive })
+      .where(eq(schema.portfolioAccounts.id, ids[0]!))
+      .run();
   if (!ROUTERS_ON_POSTGRES)
     t.sqlite.exec("PRAGMA reverse_unordered_selects = ON");
   return { ...t, k401, ids };
