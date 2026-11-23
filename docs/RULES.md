@@ -88,6 +88,7 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **There are two success bars,** 90% and the report's 85%, until one 90% bar judges every verdict (decision F5, v0.11.2). The Simulation's colour tones (`simulationRateTone`) also mark 75% amber and colour the stability rates.
 - **A backup labelled with a newer schema version than its data restores without the ladder steps its data needs** (a pre-upgrade backup written from a cleared journal is labelled by shape, past a data-only migration), until each converter is proven to leave current data unchanged and the ladder runs on every backup (v0.11).
 - **Two lists have no full order on PostgreSQL** (`settings.taxBrackets.list` and `netWorth.listSnapshotTotals`, `KNOWN_GAPS` in `tests/baseline/router-baseline-postgres.test.ts`), so PostgreSQL can list their rows in another order than SQLite, until each read names a full order (v0.11.3).
+- **A lump sum saved to a Roth part before v0.11.1 is put in the account's Traditional part:** it was saved with no tax side, and both tax parts share one performance account id, so the side can't be recovered. Re-save the lump sum (delete it and add it again) to put it in the Roth part.
 - **There are two kinds of calendar day,** the household's local day and SimpleFIN's UTC day (DESIGN § Time Resolution), until one day rules both (v0.11.3: merging them moves dates). Never compare one with the other.
 
 ## Data-Driven Architecture
