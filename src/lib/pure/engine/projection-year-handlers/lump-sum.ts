@@ -16,7 +16,7 @@ import {
   addBasis,
 } from "../../accounts/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
-import { resolveLumpSumTargets } from "../lump-sum-targets";
+import { lumpSumParts, runLumpSums } from "../lump-sum-targets";
 import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
 
 /**
@@ -24,14 +24,14 @@ import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
  * Mutates `state.balances`, `state.accountBalance`, and `state.indBalance` in place.
  */
 export function applyLumpSums(
-  lumpSums: LumpSum[],
+  lumpSums: readonly LumpSum[],
   ctx: ProjectionContext,
   state: ProjectionLoopState,
 ): void {
-  const { holdsAccounts, indAccounts, indKey } = ctx;
+  const { holdsAccounts, indAccounts, indKey, lumpSumTargets } = ctx;
   const { balances, accountBalance, indBalance } = state;
 
-  for (const ls of lumpSums) {
+  for (const ls of runLumpSums(lumpSums, lumpSumTargets)) {
     const bs = getAccountTypeConfig(ls.targetAccount).balanceStructure;
     if (bs === "roth_traditional") {
       if (isTaxFreeBucket(taxTypeOnSide(ls.targetAccount, ls.taxType))) {
@@ -51,9 +51,9 @@ export function applyLumpSums(
       addBalance(accountBalance[ls.targetAccount], ls.amount);
       addBasis(accountBalance[ls.targetAccount], ls.amount);
     }
-    // Its parts take it, by balance when a name resolved to none
+    // Its parts take it, by balance when its target is no single part
     if (holdsAccounts) {
-      const targets = resolveLumpSumTargets(ls, indAccounts);
+      const targets = lumpSumParts(ls, indAccounts);
       const balanceOf = (ia: IndividualAccountInput) =>
         Math.max(0, indBalance.get(indKey(ia)) ?? 0);
       const total = sumBy(targets, balanceOf);

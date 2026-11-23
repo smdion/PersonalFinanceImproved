@@ -13,7 +13,7 @@ import { applyLumpSums } from "@/lib/pure/engine/projection-year-handlers/lump-s
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import { makeIndividualAccount } from "../fixtures/engine-fixtures";
 import type { LumpSum } from "@/lib/pure/engine/types";
-import { calculateProjection } from "@/lib/pure/engine";
+import { calculateProjection, lumpSumTargetOf } from "@/lib/pure/engine";
 import { toSimpleTaxMode } from "@/lib/pure/tax/simple-tax-mode";
 import { acct, household } from "../fixtures/two-person-household";
 import type {
@@ -48,6 +48,8 @@ function land(
     holdsAccounts: true,
     indAccounts: parts,
     indKey,
+    // Resolved over the parts, as `lumpSumTargets` does for each run.
+    lumpSumTargets: new Map([[ls, lumpSumTargetOf(ls, parts)]]),
     // eslint-disable-next-line no-restricted-syntax -- test-only stub for complex engine types
   } as unknown as ProjectionContext;
   const state = {

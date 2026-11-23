@@ -29,6 +29,7 @@ import type { SpecParts } from "../individual-accounts/spec-accounts";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { BrokerageBasis } from "../brokerage-basis";
+import type { LumpSumTargets } from "../lump-sum-targets";
 import type { IrmaaTaxYears } from "./irmaa-lookback";
 import type { YearIncome } from "@/lib/pure/tax/year-income";
 import type { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
@@ -134,6 +135,8 @@ export type ProjectionLoopState = {
 export type ProjectionContext = {
   // Input references
   input: ProjectionInput;
+  /** Each lump sum's target, resolved once for the run (lump-sum-targets.ts). */
+  lumpSumTargets: LumpSumTargets;
 
   // Validated rates
   salaryGrowthRate: number;

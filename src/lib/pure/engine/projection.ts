@@ -10,6 +10,7 @@ import { roundToCents } from "../../utils/math";
 import { validateEngineInputs } from "./input-validation";
 import { resolveDecumulationConfig } from "./override-resolution";
 import { buildProjectionContext } from "./projection-year-handlers/context";
+import { lumpSumTargets } from "./lump-sum-targets";
 import { buildProjectionState } from "./projection-year-handlers/state";
 import { runPreYearSetup } from "./projection-year-handlers/pre-year-setup";
 import { runAccumulationYear } from "./projection-year-handlers/accumulation-year";
@@ -53,8 +54,11 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     );
   }
 
-  // Build immutable context and mutable state
-  const ctx = buildProjectionContext(input, validated);
+  // Build immutable context (with each lump sum's target) and mutable state
+  const ctx = {
+    ...buildProjectionContext(input, validated),
+    lumpSumTargets: lumpSumTargets(input),
+  };
   const state = buildProjectionState(input, ctx);
 
   // Main projection loop

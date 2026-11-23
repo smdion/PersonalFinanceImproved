@@ -33,7 +33,7 @@ export function buildProjectionContext(
     inflationRate: number;
     postRetirementInflationRate: number;
   },
-): ProjectionContext {
+): Omit<ProjectionContext, "lumpSumTargets"> {
   const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
   const OVERFLOW_CATEGORY: AccountCategory =
     ACCOUNT_CATEGORIES.find(isOverflowTarget)!;

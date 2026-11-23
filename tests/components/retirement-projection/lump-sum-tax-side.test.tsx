@@ -23,7 +23,7 @@ import type {
   IndividualAccountYearBalance,
 } from "@/lib/pure/accounts/account-balances.types";
 import type { LumpSum } from "@/lib/pure/engine/types";
-import { resolveLumpSumTargets } from "@/lib/pure/engine";
+import { lumpSumParts, lumpSumTargetOf } from "@/lib/pure/engine";
 
 /** The projection's first-year rows: a Roth IRA and a Traditional IRA of one
  *  owner, a 401k held in both tax parts, and a brokerage account. */
@@ -112,10 +112,13 @@ describe("a lump sum's tax side, as the forms save it", () => {
       taxType: r.taxType,
       ownerName: r.ownerName,
       ownerPersonId: r.ownerPersonId,
+      performanceAccountId: r.performanceAccountId,
       parentCategory: r.parentCategory,
       startingBalance: r.balance,
     }));
-    const targets = resolveLumpSumTargets(roth as LumpSum, parts);
+    const ls = roth as LumpSum;
+    const target = lumpSumTargetOf(ls, parts);
+    const targets = lumpSumParts({ ...ls, target }, parts);
     expect(targets.map((t) => [t.name, t.taxType])).toEqual([
       ["Invented Roth IRA", "taxFree"],
     ]);
@@ -164,11 +167,14 @@ describe("a lump sum's tax side, as the forms save it", () => {
       taxType: r.taxType,
       ownerName: r.ownerName,
       ownerPersonId: r.ownerPersonId,
+      performanceAccountId: r.performanceAccountId,
       parentCategory: r.parentCategory,
       startingBalance: r.balance,
     }));
+    const ls = roth as LumpSum;
+    const target = lumpSumTargetOf(ls, parts);
     expect(
-      resolveLumpSumTargets(roth as LumpSum, parts).map((t) => t.taxType),
+      lumpSumParts({ ...ls, target }, parts).map((t) => t.taxType),
     ).toEqual(["taxFree"]);
   });
 

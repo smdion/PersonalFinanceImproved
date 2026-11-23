@@ -1,6 +1,6 @@
 /**
  * Unit tests for projection-year-handler helpers:
- *   - applyLumpSums (lump-sum.ts lines 32-67)
+ *   - applyLumpSums (lump-sum.ts), its lump sums resolved as `lumpSumTargets` does
  *   - updatePerPersonTradBalance (helpers.ts lines 20-25)
  *
  * These are pure functions that only touch specific fields of ProjectionContext
@@ -14,6 +14,11 @@ import type {
   ProjectionLoopState,
 } from "@/lib/pure/engine/projection-year-handlers/types";
 import type { LumpSum } from "@/lib/pure/engine/types";
+import { lumpSumTargetOf } from "@/lib/pure/engine";
+import type { LumpSumTargets } from "@/lib/pure/engine/lump-sum-targets";
+import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
+import type { AccountCategory } from "@/lib/config/account-types";
 
 // ---------------------------------------------------------------------------
 // Minimal stubs (only fields the functions actually read)
@@ -22,8 +27,14 @@ import type { LumpSum } from "@/lib/pure/engine/types";
 function makeCtx(
   overrides: Partial<{
     holdsAccounts: boolean;
-    indAccounts: { name?: string; category: string; taxType: string }[];
-    indKey: (ia: object) => string;
+    indAccounts: {
+      name?: string;
+      category: string;
+      taxType: string;
+      ownerPersonId?: number;
+    }[];
+    indKey: (ia: IndividualAccountInput) => string;
+    lumpSumTargets: LumpSumTargets;
     rmdStartAgeByPerson: Map<number, { startAge: number; birthYear: number }>;
   }> = {},
 ): ProjectionContext {
@@ -33,6 +44,7 @@ function makeCtx(
     // Keyed by category alone — this test\'s indBalance is keyed the same way.
     indKey: (ia: object) => (ia as { category: string }).category,
     rmdStartAgeByPerson: new Map(),
+    lumpSumTargets: new Map(),
     ...overrides,
     // eslint-disable-next-line no-restricted-syntax -- test-only stub for complex engine types
   } as unknown as ProjectionContext;
@@ -60,6 +72,44 @@ function makeState(
   } as unknown as ProjectionLoopState;
 }
 
+/** Each lump sum's target over `parts`, as `lumpSumTargets` resolves them
+ *  for the run's context. */
+const targetsOf = (ls: LumpSum[], parts: readonly IndividualAccountInput[]) =>
+  new Map(ls.map((l) => [l, lumpSumTargetOf(l, parts)]));
+
+const indKey = makeIndKey();
+
+/** A held part with its own performance account. */
+const part = (
+  name: string,
+  category: AccountCategory,
+  taxType: string,
+  performanceAccountId: number,
+  extra: Partial<IndividualAccountInput> = {},
+): IndividualAccountInput => ({
+  name,
+  category,
+  taxType,
+  performanceAccountId,
+  startingBalance: 0,
+  ...extra,
+});
+
+/** A run holding `indAccounts`, with `ls` resolved over them. */
+function apply(
+  ls: LumpSum[],
+  indAccounts: IndividualAccountInput[],
+  state: ProjectionLoopState,
+) {
+  const ctx = makeCtx({
+    holdsAccounts: indAccounts.length > 0,
+    indAccounts,
+    indKey,
+    lumpSumTargets: targetsOf(ls, indAccounts),
+  });
+  applyLumpSums(ls, ctx, state);
+}
+
 // ---------------------------------------------------------------------------
 // applyLumpSums
 // ---------------------------------------------------------------------------
@@ -70,7 +120,7 @@ describe("applyLumpSums", () => {
     const ls: LumpSum[] = [
       { amount: 50000, targetAccount: "401k", taxType: "traditional" },
     ];
-    applyLumpSums(ls, makeCtx(), state);
+    apply(ls, [], state);
     expect(state.balances.preTax).toBe(50000);
     expect(
       (state.accountBalance["401k"] as { traditional: number }).traditional,
@@ -82,7 +132,7 @@ describe("applyLumpSums", () => {
     const ls: LumpSum[] = [
       { amount: 30000, targetAccount: "401k", taxType: "roth" },
     ];
-    applyLumpSums(ls, makeCtx(), state);
+    apply(ls, [], state);
     expect(state.balances.taxFree).toBe(30000);
     expect((state.accountBalance["401k"] as { roth: number }).roth).toBe(30000);
   });
@@ -90,7 +140,7 @@ describe("applyLumpSums", () => {
   it("adds HSA lump sum to hsa bucket (single_bucket)", () => {
     const state = makeState();
     const ls: LumpSum[] = [{ amount: 5000, targetAccount: "hsa" }];
-    applyLumpSums(ls, makeCtx(), state);
+    apply(ls, [], state);
     expect(state.balances.hsa).toBe(5000);
     expect((state.accountBalance["hsa"] as { balance: number }).balance).toBe(
       5000,
@@ -100,7 +150,7 @@ describe("applyLumpSums", () => {
   it("adds brokerage lump sum to afterTax bucket with basis (basis_tracking)", () => {
     const state = makeState();
     const ls: LumpSum[] = [{ amount: 20000, targetAccount: "brokerage" }];
-    applyLumpSums(ls, makeCtx(), state);
+    apply(ls, [], state);
     expect(state.balances.afterTax).toBe(20000);
     expect(state.balances.afterTaxBasis).toBe(20000);
     const brok = state.accountBalance["brokerage"] as {
@@ -111,104 +161,90 @@ describe("applyLumpSums", () => {
     expect(brok.basis).toBe(20000);
   });
 
-  it("updates indBal when some part is held and targetAccountName matches", () => {
-    const indBalance = new Map<string, number>([["myBrokerage", 100000]]);
-    const indAccounts = [
-      { name: "myBrokerage", category: "brokerage", taxType: "afterTax" },
-    ];
-    const ctx = makeCtx({
-      holdsAccounts: true,
-      indAccounts,
-      indKey: (ia: { name?: string }) => ia.name ?? "",
-    });
+  it("updates indBal when some part is held and its target is that part", () => {
+    const indAccounts = [part("myBrokerage", "brokerage", "afterTax", 1)];
+    const indBalance = new Map([[indKey(indAccounts[0]!), 100000]]);
     const state = makeState({ indBalance });
-    const ls: LumpSum[] = [
-      {
-        amount: 15000,
-        targetAccount: "brokerage",
-        targetAccountName: "myBrokerage",
-      },
-    ];
-    applyLumpSums(ls, ctx, state);
-    expect(indBalance.get("myBrokerage")).toBe(115000);
+    apply(
+      [
+        {
+          amount: 15000,
+          targetAccount: "brokerage",
+          targetAccountName: "myBrokerage",
+        },
+      ],
+      indAccounts,
+      state,
+    );
+    expect(indBalance.get(indKey(indAccounts[0]!))).toBe(115000);
   });
 
-  it("R4: matches by name AND owner when two accounts share a name — lands on the RIGHT owner's account", () => {
-    const indBalance = new Map<string, number>([
-      ["Alex::Long Term Brokerage", 200000],
-      ["Sam::Long Term Brokerage", 150000],
+  it("R4: a name two owners share resolves to the named owner's part — the lump sum lands on the RIGHT owner's account", () => {
+    const alex = part("Long Term Brokerage", "brokerage", "afterTax", 1, {
+      ownerName: "Alex",
+      ownerPersonId: 1,
+    });
+    const sam = part("Long Term Brokerage", "brokerage", "afterTax", 2, {
+      ownerName: "Sam",
+      ownerPersonId: 2,
+    });
+    const indBalance = new Map([
+      [indKey(alex), 200000],
+      [indKey(sam), 150000],
     ]);
-    const indAccounts = [
-      {
-        name: "Long Term Brokerage",
-        category: "brokerage",
-        taxType: "afterTax",
-        ownerName: "Alex",
-      },
-      {
-        name: "Long Term Brokerage",
-        category: "brokerage",
-        taxType: "afterTax",
-        ownerName: "Sam",
-      },
-    ];
-    const ctx = makeCtx({
-      holdsAccounts: true,
-      indAccounts,
-      indKey: (ia: { name?: string; ownerName?: string }) =>
-        `${ia.ownerName}::${ia.name}`,
-    });
     const state = makeState({ indBalance });
-    const ls: LumpSum[] = [
-      {
-        amount: 10000,
-        targetAccount: "brokerage",
-        targetAccountName: "Long Term Brokerage",
-        targetOwnerName: "Sam",
-      },
-    ];
-    applyLumpSums(ls, ctx, state);
-    expect(indBalance.get("Sam::Long Term Brokerage")).toBe(160000);
+    apply(
+      [
+        {
+          amount: 10000,
+          targetAccount: "brokerage",
+          targetAccountName: "Long Term Brokerage",
+          targetOwnerName: "Sam",
+        },
+      ],
+      [alex, sam],
+      state,
+    );
+    expect(indBalance.get(indKey(sam))).toBe(160000);
     // Alex's identically-named account must be untouched.
-    expect(indBalance.get("Alex::Long Term Brokerage")).toBe(200000);
+    expect(indBalance.get(indKey(alex))).toBe(200000);
   });
 
-  it("R4: falls back to name-only match when targetOwnerName isn't set (lump sums saved before the field existed)", () => {
-    const indBalance = new Map<string, number>([["myBrokerage", 100000]]);
-    const indAccounts = [
-      { name: "myBrokerage", category: "brokerage", taxType: "afterTax" },
-    ];
-    const ctx = makeCtx({
-      holdsAccounts: true,
-      indAccounts,
-      indKey: (ia: { name?: string }) => ia.name ?? "",
-    });
+  it("R4: a name with no owner name resolves by name alone (lump sums saved before the field existed)", () => {
+    const indAccounts = [part("myBrokerage", "brokerage", "afterTax", 1)];
+    const indBalance = new Map([[indKey(indAccounts[0]!), 100000]]);
     const state = makeState({ indBalance });
-    const ls: LumpSum[] = [
-      {
-        amount: 15000,
-        targetAccount: "brokerage",
-        targetAccountName: "myBrokerage",
-        // targetOwnerName deliberately omitted
-      },
-    ];
-    applyLumpSums(ls, ctx, state);
-    expect(indBalance.get("myBrokerage")).toBe(115000);
+    apply(
+      [
+        {
+          amount: 15000,
+          targetAccount: "brokerage",
+          targetAccountName: "myBrokerage",
+          // targetOwnerName deliberately omitted
+        },
+      ],
+      indAccounts,
+      state,
+    );
+    expect(indBalance.get(indKey(indAccounts[0]!))).toBe(115000);
   });
 
-  it("updates indBal by category+taxType match when no targetAccountName", () => {
-    const indBalance = new Map<string, number>([["401k", 200000]]);
-    const indAccounts = [{ category: "401k", taxType: "preTax" }];
-    const ctx = makeCtx({
-      holdsAccounts: true,
-      indAccounts,
-      // Keyed by category alone — this test\'s indBalance is keyed the same way.
-      indKey: (ia: object) => (ia as { category: string }).category,
-    });
+  it("updates indBal by category+taxType match when no account is named", () => {
+    const indAccounts = [part("401k", "401k", "preTax", 1)];
+    const indBalance = new Map([[indKey(indAccounts[0]!), 200000]]);
     const state = makeState({ indBalance });
-    const ls: LumpSum[] = [{ amount: 10000, targetAccount: "401k" }];
-    applyLumpSums(ls, ctx, state);
-    expect(indBalance.get("401k")).toBe(210000);
+    apply([{ amount: 10000, targetAccount: "401k" }], indAccounts, state);
+    expect(indBalance.get(indKey(indAccounts[0]!))).toBe(210000);
+  });
+
+  it("a lump sum that reached it unresolved throws", () => {
+    expect(() =>
+      applyLumpSums(
+        [{ amount: 10000, targetAccount: "401k" }],
+        makeCtx(),
+        makeState(),
+      ),
+    ).toThrow("no target");
   });
 });
 
