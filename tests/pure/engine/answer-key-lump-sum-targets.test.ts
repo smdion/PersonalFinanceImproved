@@ -16,11 +16,8 @@ import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import { makeIndividualAccount } from "../fixtures/engine-fixtures";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import type { LumpSum } from "@/lib/pure/engine/types";
-import {
-  calculateProjection,
-  lumpSumTargetOf,
-  resolveLumpSums,
-} from "@/lib/pure/engine";
+import { calculateProjection, resolveLumpSums } from "@/lib/pure/engine";
+import { lumpSumTargetOf } from "@/lib/pure/engine/lump-sum-targets";
 import { toSimpleTaxMode } from "@/lib/pure/tax/simple-tax-mode";
 import { acct, household } from "../fixtures/two-person-household";
 import type {

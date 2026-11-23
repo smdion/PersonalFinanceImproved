@@ -14,7 +14,7 @@ import type {
   ProjectionLoopState,
 } from "@/lib/pure/engine/projection-year-handlers/types";
 import type { LumpSum } from "@/lib/pure/engine/types";
-import { lumpSumTargetOf } from "@/lib/pure/engine";
+import { lumpSumTargetOf } from "@/lib/pure/engine/lump-sum-targets";
 import type { LumpSumTargets } from "@/lib/pure/engine/lump-sum-targets";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";

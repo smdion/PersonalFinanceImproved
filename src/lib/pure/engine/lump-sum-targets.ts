@@ -51,8 +51,8 @@ function partsOf(
   );
 }
 
-/** A lump sum's target among `parts`: its stored account, else (no id, or
- *  an absent one, as a restore that skipped the ladder leaves) its name. */
+/** @internal A lump sum's target among `parts`: its stored account, else (no
+ *  id, or an absent one, as a restore that skipped the ladder) its name. */
 export function lumpSumTargetOf(
   ls: LumpSum,
   parts: readonly IndividualAccountInput[],
