@@ -726,7 +726,7 @@
       "DecumulationConfig": 338
     },
     "src/components/retirement-projection/lump-sum-form.tsx": {
-      "LumpSumForm": 158
+      "LumpSumForm": 156
     },
     "src/components/retirement-projection/overrides/overrides-panel.tsx": {
       "OverridesPanel": 347,

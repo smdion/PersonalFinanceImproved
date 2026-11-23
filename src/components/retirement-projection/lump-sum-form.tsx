@@ -11,10 +11,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import type { LumpSumEvent } from "./types";
 import { pickedTarget, type PickedAccount } from "./lump-sum-target";
 
-type AccountOption = PickedAccount & {
-  category: string;
-  taxType?: string;
-};
+type AccountOption = PickedAccount & { category: string };
 
 /** Composite key for the account picker's `<option>` — plain `name` alone
  *  collides (duplicate `key`/`value`) when two owners share an account
@@ -51,7 +48,6 @@ export function LumpSumForm({
     targetAccountName: accounts[0]?.name ?? "",
     targetOwnerName: accounts[0]?.ownerName ?? "",
     targetAccount: (accounts[0]?.category ?? "brokerage") as AccountCategory,
-    taxType: "" as "traditional" | "roth" | "",
     label: "",
   });
 
@@ -68,7 +64,6 @@ export function LumpSumForm({
       amount: finalAmount,
       targetAccount: form.targetAccount,
       ...pickedTarget(accounts, form),
-      taxType: form.taxType,
       label: form.label,
     });
 

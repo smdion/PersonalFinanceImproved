@@ -572,7 +572,7 @@ describe("useProjectionDerived", () => {
       {
         name: "401k A",
         category: "401k",
-        taxType: "preTax",
+        side: "traditional",
         ownerName: "Alice",
         ownerPersonId: 1,
       },
