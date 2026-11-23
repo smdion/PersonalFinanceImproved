@@ -440,7 +440,7 @@ describe("netWorth.portfolioSnapshots createAccount/updateAccount/delete", () =>
     const result = await caller.netWorth.portfolioSnapshots.createAccount({
       snapshotId: snapId,
       institution: "Schwab",
-      taxType: "afterTax",
+      taxType: "taxFree",
       amount: "25000",
       accountType: "ira",
       parentCategory: "Retirement",

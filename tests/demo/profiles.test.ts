@@ -9,6 +9,7 @@ import "../routers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import { DEMO_PROFILES } from "@/lib/demo";
 import { contributionAccountInput } from "@/server/routers/contribution/accounts";
+import { taxTypesHeldBy } from "@/lib/config/tax-treatment-buckets";
 
 const profiles = Object.values(DEMO_PROFILES);
 
@@ -34,6 +35,14 @@ describe.each(profiles.map((p) => [p.slug, p] as const))(
           `${ca.personName} ${ca.accountType}: ${parsed.error?.message}`,
         ).toBe(true);
       }
+    });
+
+    it("every snapshot row has a tax type its account type holds", () => {
+      for (const pa of profile.portfolioAccounts)
+        expect(
+          taxTypesHeldBy(pa.accountType),
+          `${pa.institution} ${pa.accountType}`,
+        ).toContain(pa.taxType);
     });
 
     it("an account with a match, or sized as a share of pay, belongs to a current job of its owner", () => {

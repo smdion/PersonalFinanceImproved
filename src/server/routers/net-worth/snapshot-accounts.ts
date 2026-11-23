@@ -3,7 +3,11 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { getLatestSnapshotId } from "@/server/data/snapshots";
+import {
+  getLatestSnapshot,
+  getLatestSnapshotId,
+} from "@/server/data/snapshots";
+import { refuseTaxTypeEdit, refuseUnheldTaxType } from "./snapshot-tax-types";
 import { refreshSnapshotYearDerivatives } from "@/server/services/net-worth/snapshot-derivatives";
 import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
 import { zDecimal } from "@/lib/utils/zod-fields";
@@ -46,6 +50,8 @@ export const snapshotAccountProcedures = {
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      if (input.taxType !== undefined)
+        await refuseTaxTypeEdit(ctx.db, input.id, input.taxType);
       const metaUpdates: Record<string, unknown> = {};
       if (input.ownerPersonId !== undefined)
         metaUpdates.ownerPersonId = input.ownerPersonId;
@@ -144,6 +150,14 @@ export const snapshotAccountProcedures = {
           code: "PRECONDITION_FAILED",
           message: "Accounts can only be added to the most recent snapshot.",
         });
+      refuseUnheldTaxType(
+        {
+          ...input,
+          subType: input.subType ?? null,
+          performanceAccountId: input.performanceAccountId ?? null,
+        },
+        (await getLatestSnapshot(ctx.db, snap.id))?.accounts ?? [],
+      );
 
       // A row linked to a master takes the master's parent category, as
       // every other write does, so Net Worth and Performance group it

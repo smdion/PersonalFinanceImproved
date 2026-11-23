@@ -1,9 +1,14 @@
 // Portfolio tax buckets as plain values, with no Zod, so the client
 // projection cards and the engine can read them without bundling it.
-import type { PortfolioTaxType, TaxTreatment } from "./enum-values";
+import {
+  PORTFOLIO_TAX_TYPE_VALUES,
+  type PortfolioTaxType,
+  type TaxTreatment,
+} from "./enum-values";
 import {
   type AccountCategory,
   getAccountTypeConfig,
+  getAllCategories,
   isTaxFreeBucket,
 } from "./account-types";
 
@@ -71,5 +76,14 @@ export function bookedTaxType(
   return taxTypeOnSide(
     category,
     isTaxFreeBucket(storedTaxType) ? "roth" : "traditional",
+  );
+}
+
+/** The tax types a row of `accountType` can be saved with: those it counts
+ *  as (`bookedTaxType`). An account type this version doesn't know takes any. */
+export function taxTypesHeldBy(accountType: string): PortfolioTaxType[] {
+  const category = getAllCategories().find((c) => c === accountType);
+  return PORTFOLIO_TAX_TYPE_VALUES.filter(
+    (taxType) => !category || bookedTaxType(category, taxType) === taxType,
   );
 }

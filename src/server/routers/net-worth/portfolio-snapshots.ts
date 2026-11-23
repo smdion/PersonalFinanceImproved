@@ -2,8 +2,8 @@ import { eq, desc } from "drizzle-orm";
 import { z } from "zod/v4";
 import { protectedProcedure, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { createPortfolioSnapshot } from "@/server/services/net-worth/snapshot-write";
 import { portfolioSnapshotInput } from "./portfolio-snapshot-input";
+import { createCheckedPortfolioSnapshot } from "./snapshot-tax-types";
 
 export const portfolioSnapshotProcedures = {
   /** Get the latest snapshot with its accounts (for pre-filling a new snapshot form). */
@@ -25,7 +25,7 @@ export const portfolioSnapshotProcedures = {
   /** Create a new snapshot with all its accounts in a single call. */
   create: portfolioProcedure
     .input(portfolioSnapshotInput)
-    .mutation(({ ctx, input }) => createPortfolioSnapshot(ctx, input)),
+    .mutation(({ ctx, input }) => createCheckedPortfolioSnapshot(ctx, input)),
 
   /** Delete a snapshot (cascades to its accounts). */
   delete: portfolioProcedure

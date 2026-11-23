@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { rebookedRowsWarning } from "@/lib/pure/accounts/tax-buckets/rebooked-rows";
+import {
+  newRowRefusals,
+  rebookedRowsWarning,
+  taxTypeRefusals,
+} from "@/lib/pure/accounts/tax-buckets/rebooked-rows";
 import type { TaxBucketSnapshotAccount } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 
 const people = [{ id: 1, name: "Alex" }];
@@ -68,5 +72,31 @@ describe("rebookedRowsWarning", () => {
         people,
       ),
     ).toEqual([]);
+  });
+});
+
+describe("newRowRefusals", () => {
+  it("leaves out a row carried over from the previous snapshot, refuses a new one", () => {
+    const carried = row({ accountType: "hsa", taxType: "taxFree" });
+    const entered = row({
+      accountType: "hsa",
+      taxType: "taxFree",
+      ownerPersonId: 2,
+    });
+    expect(
+      newRowRefusals([carried, entered], [{ ...carried }]).map((r) => r.row),
+    ).toEqual([entered]);
+  });
+});
+
+describe("taxTypeRefusals", () => {
+  it("refuses each row its account type doesn't hold, naming what it takes", () => {
+    const mistyped = row({ accountType: "hsa", taxType: "taxFree" });
+    expect(taxTypeRefusals([row({}), mistyped])).toEqual([
+      {
+        row: mistyped,
+        message: "HSA balances can't be saved as Roth. Choose HSA.",
+      },
+    ]);
   });
 });

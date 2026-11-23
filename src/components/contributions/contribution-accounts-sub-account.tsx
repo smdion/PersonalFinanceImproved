@@ -4,10 +4,19 @@
 
 import React, { useId, useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
-import { TAX_TYPE_LABELS, taxTypeLabel } from "@/lib/config/display-labels";
+import { taxTypeLabel } from "@/lib/config/display-labels";
+import { taxTypesHeldBy } from "@/lib/config/tax-treatment-buckets";
 import { LabelOptions } from "@/components/ui/label-options";
 import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 import type { PortfolioSub } from "./contribution-accounts-types";
+
+/** The tax types a row of `accountType` can be saved with, by label; a
+ *  saved one it can't (`current`) stays listed so the row shows it. */
+function taxTypeOptions(accountType: string, current?: string) {
+  const choices = new Set<string>(taxTypesHeldBy(accountType));
+  if (current) choices.add(current);
+  return Object.fromEntries([...choices].map((t) => [t, taxTypeLabel(t)]));
+}
 
 export function SubAccountRow({
   sub,
@@ -121,7 +130,9 @@ export function SubAccountRow({
             className={`text-caption text-faint border-none bg-transparent p-0 focus:ring-0${onUpdate ? "hover:text-secondary cursor-pointer" : "cursor-default"}`}
             title="Tax type"
           >
-            <LabelOptions labels={TAX_TYPE_LABELS} />
+            <LabelOptions
+              labels={taxTypeOptions(sub.accountType, sub.taxType)}
+            />
           </select>
         </div>
         {onUpdate && (
@@ -211,7 +222,9 @@ export function AddSubAccountForm({
   }) => void;
   onCancel: () => void;
 }) {
-  const [taxType, setTaxType] = useState("preTax");
+  const [taxType, setTaxType] = useState<string>(
+    () => taxTypesHeldBy(accountType)[0] ?? "",
+  );
   const [amount, setAmount] = useState("0");
   const [subType, setSubType] = useState("");
   const [label, setLabel] = useState("");
@@ -234,7 +247,7 @@ export function AddSubAccountForm({
             onChange={(e) => setTaxType(e.target.value)}
             className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
-            <LabelOptions labels={TAX_TYPE_LABELS} />
+            <LabelOptions labels={taxTypeOptions(accountType)} />
           </select>
         </div>
         <div>
