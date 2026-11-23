@@ -131,20 +131,6 @@ export type TooltipData =
 // Accumulation override form types
 // ---------------------------------------------------------------------------
 
-type LumpSumFormEntry = {
-  id: string;
-  amount: string;
-  targetAccount: AccountCategory;
-  /** Specific individual account name. When set, overrides targetAccount for routing. */
-  targetAccountName: string;
-  /** Owner of the targeted individual account — disambiguates
-   *  two household members' identically-named accounts. "" = not set (name
-   *  matches uniquely, or no specific account targeted). */
-  targetOwnerName: string;
-  taxType: "traditional" | "roth" | "";
-  label: string;
-};
-
 /** Standalone lump sum entry with year — used by shared LumpSumForm and DB persistence. */
 export type LumpSumEvent = {
   id: string;
@@ -152,7 +138,8 @@ export type LumpSumEvent = {
   amount: string; // negative for withdrawals
   targetAccount: AccountCategory;
   targetAccountName: string;
-  /** See LumpSumFormEntry.targetOwnerName. */
+  /** Owner of the targeted individual account — disambiguates two household
+   *  members' identically-named accounts. "" = not set. */
   targetOwnerName: string;
   taxType: "traditional" | "roth" | "";
   label: string;
@@ -168,7 +155,6 @@ export type AccumOverrideForm = {
   taxSplits: Record<string, string>;
   accountCaps: Record<AccountCategory, string>;
   taxTypeCaps: { traditional: string; roth: string };
-  lumpSums: LumpSumFormEntry[];
   reset: boolean;
   notes: string;
 };
@@ -188,7 +174,6 @@ export const emptyAccumForm: AccumOverrideForm = {
   ),
   accountCaps: buildCategoryRecord(() => "") as Record<AccountCategory, string>,
   taxTypeCaps: { traditional: "", roth: "" },
-  lumpSums: [],
   reset: false,
   notes: "",
 };
@@ -207,7 +192,6 @@ export type DecumOverrideForm = {
   withdrawalAccountCaps: Record<AccountCategory, string>;
   withdrawalTaxTypeCaps: { traditional: string; roth: string };
   rothConversionTarget: string; // '' = no change, '0' = disable, '0.10'/'0.12'/etc = target bracket
-  lumpSums: LumpSumFormEntry[];
   reset: boolean;
   notes: string;
 };
@@ -230,7 +214,6 @@ export const emptyDecumForm: DecumOverrideForm = {
   >,
   withdrawalTaxTypeCaps: { traditional: "", roth: "" },
   rothConversionTarget: "",
-  lumpSums: [],
   reset: false,
   notes: "",
 };
