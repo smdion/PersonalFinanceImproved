@@ -46,12 +46,12 @@ export type RouteResult = {
   warnings: string[];
   traditionalCap?: number;
   unmetNeed?: number;
-  /** Portion of `unmetNeed` caused by excluding penalty-exposed money rather
-   *  than the household running out: `min(unmetNeed, still-excluded exposure)`.
-   *  Both shortfall fields can be set at once. */
+  /** What the penalty-exposed money left out of the draw could cover of
+   *  `unmetNeed`: `min(unmetNeed, still-excluded exposure)`. It overlaps
+   *  `nonRetirementShortfall`: each is at most `unmetNeed`, never added. */
   penaltyAvoidedShortfall?: number;
-  /** Portion of `unmetNeed` caused by excluding Portfolio-parented money:
-   *  `min(unmetNeed, nonRetirement.grandTotal)`. */
+  /** What the Portfolio-parented money left out of the draw could cover of
+   *  `unmetNeed`: `min(unmetNeed, nonRetirement.grandTotal)`. */
   nonRetirementShortfall?: number;
   /** bracket_filling only: drawn tiers (amount > 0) beyond the Traditional
    *  target, in draw order at their cost, straight from `rankWithdrawalTiers`.
