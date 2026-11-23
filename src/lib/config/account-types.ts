@@ -709,7 +709,7 @@ export function isPayrollFicaExemptCategory(category: string): boolean {
   );
 }
 
-function isKnownCategory(category: string): category is AccountCategory {
+export function isKnownCategory(category: string): category is AccountCategory {
   return (getAllCategories() as string[]).includes(category);
 }
 

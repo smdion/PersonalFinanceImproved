@@ -8,7 +8,7 @@ import {
 import {
   type AccountCategory,
   getAccountTypeConfig,
-  getAllCategories,
+  isKnownCategory,
   isTaxFreeBucket,
 } from "./account-types";
 
@@ -67,12 +67,18 @@ export function taxTypeOnSide(
 }
 
 /** The tax type a stored row of `category` counts as: a Roth-capable
- *  account's row is Roth only when stored tax-free, else Traditional; any
- *  other category's row is its one tax bucket, whatever was stored. */
+ *  account's row is Roth only when stored tax-free, else Traditional; any other
+ *  its one bucket. A type this version doesn't know holds any: as stored. */
 export function bookedTaxType(
   category: AccountCategory,
   storedTaxType: string,
-): PortfolioTaxType {
+): PortfolioTaxType;
+export function bookedTaxType<T extends string>(
+  category: string,
+  storedTaxType: T,
+): T | PortfolioTaxType;
+export function bookedTaxType(category: string, storedTaxType: string) {
+  if (!isKnownCategory(category)) return storedTaxType;
   return taxTypeOnSide(
     category,
     isTaxFreeBucket(storedTaxType) ? "roth" : "traditional",
@@ -80,10 +86,9 @@ export function bookedTaxType(
 }
 
 /** The tax types a row of `accountType` can be saved with: those it counts
- *  as (`bookedTaxType`). An account type this version doesn't know takes any. */
+ *  as (`bookedTaxType`). */
 export function taxTypesHeldBy(accountType: string): PortfolioTaxType[] {
-  const category = getAllCategories().find((c) => c === accountType);
   return PORTFOLIO_TAX_TYPE_VALUES.filter(
-    (taxType) => !category || bookedTaxType(category, taxType) === taxType,
+    (taxType) => bookedTaxType(accountType, taxType) === taxType,
   );
 }

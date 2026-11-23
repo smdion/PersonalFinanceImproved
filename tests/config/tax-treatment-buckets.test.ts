@@ -18,6 +18,11 @@ describe("bookedTaxType", () => {
     expect(bookedTaxType("hsa", "taxFree")).toBe("hsa");
     expect(bookedTaxType("brokerage", "preTax")).toBe("afterTax");
   });
+
+  it("an account type this version doesn't know counts its row as stored", () => {
+    expect(bookedTaxType("pension", "afterTax")).toBe("afterTax");
+    expect(bookedTaxType("pension", "preTax")).toBe("preTax");
+  });
 });
 
 describe("taxTypesHeldBy", () => {

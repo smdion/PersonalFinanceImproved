@@ -22,6 +22,7 @@ import {
   ACCOUNT_TYPE_CONFIG,
   type AccountCategory,
 } from "@/lib/config/account-types";
+import { withBookedTaxTypes } from "@/lib/pure/net-worth/tax-location";
 import { SummaryTable } from "./summary-table";
 import { SettingsLink } from "@/components/ui/settings-link";
 
@@ -42,8 +43,8 @@ export function AccountBalanceOverview() {
   const overviewData = useMemo(() => {
     if (!latestSnap?.accounts || !perfAccounts || !people) return null;
 
-    // Parse all snapshot accounts into numbers once
-    const accounts = latestSnap.accounts.map((a) => ({
+    // Each row's amount parsed once, under its booked tax type
+    const accounts = withBookedTaxTypes(latestSnap.accounts).map((a) => ({
       ...a,
       amt: parseFloat(a.amount),
     }));

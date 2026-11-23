@@ -1,20 +1,21 @@
 /** The category a snapshot row counts under. */
-import type { AccountCategory } from "@/lib/config/account-types";
 
-/** The stored facts a row's category reads. */
-type SnapshotRowFacts = {
+/** The stored facts a row's category reads; its account type `C` may be one
+ *  this version doesn't know. */
+type SnapshotRowFacts<C extends string> = {
   performanceAccountId: number | null;
   subType: string | null;
-  accountType: AccountCategory;
+  accountType: C;
 };
 
 /** Each row with its category, in the rows' order: a sub-type row (Rollover,
  *  Employer Match, …) counts under its performance account's primary row's
  *  type. */
-export function withRowCategories<R extends SnapshotRowFacts>(
-  rows: readonly R[],
-): { row: R; category: AccountCategory }[] {
-  const primaryTypeByPerformanceAccountId = new Map<number, AccountCategory>();
+export function withRowCategories<
+  C extends string,
+  R extends SnapshotRowFacts<C>,
+>(rows: readonly R[]): { row: R; category: R["accountType"] }[] {
+  const primaryTypeByPerformanceAccountId = new Map<number, R["accountType"]>();
   for (const a of rows)
     if (a.performanceAccountId != null && !a.subType)
       primaryTypeByPerformanceAccountId.set(
