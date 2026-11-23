@@ -31,7 +31,7 @@ export type ContributionSpec = {
   taxTreatment: "pre_tax" | "tax_free" | "after_tax" | "hsa";
   /** Person who owns this contribution (for per-person salary tracking). */
   personId?: number | null;
-  /** Owner name for matching to individual accounts. */
+  /** The owner's name: a label (the over-limit warning names its owners). */
   ownerName?: string;
   /** The spec's identity: its contribution account's id. */
   contributionAccountId: number;

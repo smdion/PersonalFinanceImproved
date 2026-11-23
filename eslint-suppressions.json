@@ -4113,7 +4113,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -5780,9 +5780,6 @@
   },
   "src/lib/pure/engine/individual-accounts/spec-accounts.ts": {
     "ratchet/no-abbreviation": {
-      "count": 5
-    },
-    "ratchet/no-string-closed-set-field": {
       "count": 2
     }
   }

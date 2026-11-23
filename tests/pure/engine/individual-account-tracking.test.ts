@@ -28,7 +28,6 @@ import type {
   ContributionSpec,
   AccumulationSlot,
 } from "@/lib/pure/engine/types";
-import type { AccountCategory } from "@/lib/config/account-types";
 import {
   makeDecumulationSlot,
   makeIndividualAccount,
@@ -136,113 +135,75 @@ describe("specKeyOf", () => {
 describe("buildSpecToAccountMapping", () => {
   const indKey = makeIndKey();
 
-  it("matches spec to account by exact category + owner + taxType", () => {
-    const accounts: IndividualAccountInput[] = [
-      makeIndividualAccount({
-        name: "Alice 401k",
-        category: "401k",
-        taxType: "preTax",
-        ownerName: "Alice",
-      }),
-      makeIndividualAccount({
-        name: "Other 401k",
-        category: "401k",
-        taxType: "preTax",
-        ownerName: "Alex",
-      }),
-    ];
-    const specs: ContributionSpec[] = [
-      {
-        category: "401k" as AccountCategory,
-        name: "Alice 401k",
-        method: "percent_of_salary" as const,
-        value: 0.14,
-        salaryFraction: 1,
-        baseAnnual: 16800,
-        taxTreatment: "pre_tax",
-        allocationPriority: 0,
-        ownerName: "Alice",
-        contributionAccountId: 1,
-        account: paysInto(accounts[0]!),
-      },
-    ];
-    const parentCat = new Map<string, string>();
-    const { specToAccount } = buildSpecToAccountMapping(
-      specs,
-      accounts,
-      indKey,
-      parentCat,
+  // One account (performance account 9) and the specs that pay it.
+  const part = (taxType: string, ownerPersonId?: number) =>
+    makeIndividualAccount({
+      name: "IRA",
+      category: "ira",
+      taxType,
+      performanceAccountId: 9,
+      ...(ownerPersonId != null ? { ownerPersonId } : {}),
+    });
+  const ira = (over: Partial<ContributionSpec>) =>
+    makeContributionSpec({
+      category: "ira",
+      taxTreatment: "pre_tax",
+      contributionAccountId: 1,
+      account: { kind: "performance", performanceAccountId: 9 },
+      ...over,
+    });
+  const join = (spec: ContributionSpec, accounts: IndividualAccountInput[]) =>
+    buildSpecToAccountMapping([spec], accounts, indKey).specToAccount.get(
+      specKeyOf(spec),
     );
-    expect(specToAccount.get(specKeyOf(specs[0]!))).toEqual([
-      indKey(accounts[0]!),
-    ]);
+
+  it("a spec pays its own account's part of its tax type for its person, never another account's", () => {
+    const other = makeIndividualAccount({
+      name: "IRA",
+      category: "ira",
+      taxType: "preTax",
+      performanceAccountId: 8,
+      ownerPersonId: 1,
+    });
+    const mine = part("preTax", 1);
+    expect(join(ira({ personId: 1 }), [other, mine])).toEqual([indKey(mine)]);
   });
 
-  it("falls back to unowned account when no exact owner match", () => {
-    const accounts: IndividualAccountInput[] = [
-      makeIndividualAccount({
-        name: "Roth IRA",
-        category: "ira",
-        taxType: "taxFree",
-        // No ownerName or ownerPersonId
-      }),
-    ];
-    const specs: ContributionSpec[] = [
-      {
-        category: "ira" as AccountCategory,
-        name: "IRA",
-        method: "fixed_per_period" as const,
-        value: 312.5,
-        salaryFraction: 1,
-        baseAnnual: 7000,
-        taxTreatment: "tax_free",
-        allocationPriority: 0,
-        ownerName: "Unknown",
-        contributionAccountId: 1,
-        account: paysInto(accounts[0]!),
-      },
-    ];
-    const parentCat = new Map<string, string>();
-    const { specToAccount } = buildSpecToAccountMapping(
-      specs,
-      accounts,
-      indKey,
-      parentCat,
-    );
-    // Should fall through to tier 4 or 5 (unowned category match)
-    expect(specToAccount.size).toBeGreaterThan(0);
+  it("an individual spec on an account held whole pays its joint part", () => {
+    const whole = part("preTax");
+    expect(join(ira({ personId: 1 }), [whole])).toEqual([indKey(whole)]);
   });
 
-  it("returns empty mapping when no accounts match", () => {
-    const specs: ContributionSpec[] = [
-      {
-        category: "hsa" as AccountCategory,
-        name: "HSA",
-        method: "fixed_per_period" as const,
-        value: 321,
-        salaryFraction: 1,
-        baseAnnual: 8346,
-        taxTreatment: "hsa",
-        allocationPriority: 0,
-        contributionAccountId: 1,
-        account: { kind: "unlinked" },
-      },
-    ];
-    const accounts: IndividualAccountInput[] = [
-      makeIndividualAccount({
-        name: "401k",
-        category: "401k",
-        taxType: "preTax",
-      }),
-    ];
-    const parentCat = new Map<string, string>();
-    const { specToAccount } = buildSpecToAccountMapping(
-      specs,
-      accounts,
-      indKey,
-      parentCat,
-    );
-    expect(specToAccount.size).toBe(0);
+  it("a joint spec on an account held in owner parts pays each owner's part of its tax type", () => {
+    const ann = part("preTax", 1);
+    const bo = part("preTax", 2);
+    const annRoth = part("taxFree", 1);
+    expect(
+      join(ira({ personId: null, ownership: "joint" }), [ann, annRoth, bo]),
+    ).toEqual([indKey(ann), indKey(bo)]);
+  });
+
+  it("an unlinked spec pays its own contribution account's part", () => {
+    const own = {
+      ...part("preTax", 1),
+      performanceAccountId: undefined,
+      contributionAccountId: 1,
+      origin: "spec" as const,
+    };
+    expect(
+      join(ira({ personId: 1, account: { kind: "unlinked" } }), [
+        part("preTax", 1),
+        own,
+      ]),
+    ).toEqual([indKey(own)]);
+  });
+
+  it("a spec whose part the opening state didn't declare throws", () => {
+    expect(() =>
+      join(ira({ personId: 1, account: { kind: "unlinked" } }), [
+        part("preTax", 1),
+      ]),
+    ).toThrow(/didn't declare/);
   });
 
   it("refuses two specs with one contribution account", () => {
@@ -257,7 +218,6 @@ describe("buildSpecToAccountMapping", () => {
         [spec("A"), spec("B")],
         [makeIndividualAccount({ name: "401k", category: "401k" })],
         indKey,
-        new Map(),
       ),
     ).toThrow(/one contribution account \(7\)/);
   });

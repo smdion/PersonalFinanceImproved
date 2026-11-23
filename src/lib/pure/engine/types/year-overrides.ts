@@ -17,8 +17,8 @@ export type LumpSum = {
    *  When set, the engine adds the lump sum to this exact account in indBalance. */
   targetAccountName?: string;
   /** Owner of the targeted account, since two members can share an account name.
-   *  When set, the engine matches (name, ownerName) before name alone, like
-   *  `ContributionSpec.ownerName`. Undefined ⇒ name-only match. */
+   *  When set, the engine matches (name, ownerName) before name alone.
+   *  Undefined ⇒ name-only match. */
   targetOwnerName?: string;
   /** The named account's performance account (null: no single account
    *  matched) and owner (null: joint), beside the names, which still pick

@@ -56,7 +56,6 @@ export function runPreYearSetup(
     holdsAccounts,
     indAccounts,
     indKey,
-    indParentCat,
     hasPerPersonSalary,
     activeStrategy,
     activeStrategyParams,
@@ -96,7 +95,6 @@ export function runPreYearSetup(
           state.contributionSpecs,
           indAccounts,
           indKey,
-          indParentCat,
         );
         state.specToAccount.clear();
         rebuilt.specToAccount.forEach((v, k) => state.specToAccount.set(k, v));

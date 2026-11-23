@@ -54,7 +54,6 @@ type SqliteDb = BetterSQLite3Database<typeof sqliteSchema>;
 
 const ONE_RESOLVER = `v0.11 Engine "One server resolver for the Retirement budget" (decision: one server-side resolver every screen uses)`;
 const OVER_LIMIT = `v0.11 Engine "Plan 'to 95' stops at 94" (its over-limit part, decision C4: overflow to a Retirement brokerage in every year)`;
-const SPEC_TO_ACCOUNT = `v0.11 Engine "matchAccountForContribution matches by owner name" (join specs to accounts by performance account id)`;
 
 /** The household's Projection, from the payload as a router runs it (the
  *  saved decumulation settings, no client overrides, no changes by year). */
@@ -362,76 +361,71 @@ describe("answer key: Retirement money when one person funds the other's Portfol
   // has an $80,000 job and saves a fixed 2,428 a year into A's Portfolio
   // brokerage. DESIGN § Account Categories, retirement scope: Retirement money is the
   // Retirement-parented accounts, so `retirementBalance` must equal their
-  // sum every year (EY-SC-06), and the Portfolio account shows the 2,428.
-  // Today `matchAccountForContribution` (`lib/pure/contributions/account-match.ts:34`)
-  // matches a spec to an account by owner name and ignores the row's
-  // performance account, so B's money finds no account and lives only in
-  // the aggregate, which counts as Retirement. Written as the property;
-  // the verdict's figures (787,251.92 vs 784,726.80) belong to a generated
-  // household that isn't committed.
+  // sum every year (EY-SC-06), and the Portfolio account shows the 2,428:
+  // B's spec pays its own account, A's brokerage, by its performance
+  // account. Written as the property; the verdict's figures (787,251.92 vs
+  // 784,726.80) belong to a generated household that isn't committed.
   describe("engine/S1", () => {
-    xfail({
-      id: "engine/S1 [ENG-22]",
-      todo: SPEC_TO_ACCOUNT,
-      run: async () => {
-        const { db, appDb, cleanup } = await freshDb();
-        try {
-          const a = person(db, "Alex", "1975-06-15", true);
-          const b = person(db, "Sam", "1977-06-15", false);
-          seedJob(db, a, { annualSalary: "100000", startDate: "2010-01-01" });
-          const jobB = seedJob(db, b, {
-            annualSalary: "80000",
-            startDate: "2010-01-01",
-          });
-          holding(db, {
-            ownerPersonId: a,
-            accountType: "401k",
-            parentCategory: "Retirement",
-            taxType: "preTax",
-            amount: 300_000,
-            label: "Alex 401k",
-          });
-          const portfolio = holding(db, {
-            ownerPersonId: a,
-            accountType: "brokerage",
-            parentCategory: "Portfolio",
-            taxType: "afterTax",
-            amount: 50_000,
-            label: "Alex brokerage",
-          });
-          const acct = seedContributionAccount(db, {
-            personId: b,
-            jobId: jobB,
-            accountType: "brokerage",
-            parentCategory: "Portfolio",
-            taxTreatment: "after_tax",
-            performanceAccountId: portfolio,
-          });
-          const contributionProfileId = fixedContributions(db, {
-            [acct]: 2_428,
-          });
-          const years = await projectFromPayload(appDb, contributionProfileId);
-          let worstGap = 0;
-          for (const y of years) {
-            const retirementAccounts = y.individualAccountBalances
-              .filter((x) => x.parentCategory === "Retirement")
-              .reduce((s, x) => s + x.balance, 0);
-            worstGap = Math.max(
-              worstGap,
-              Math.abs(y.retirementBalance - retirementAccounts),
-            );
-          }
-          const first = years.find((y) => y.year === 2026)!;
-          const toPortfolio = first.individualAccountBalances
-            .filter((x) => x.parentCategory === "Portfolio")
-            .reduce((s, x) => s + x.contribution, 0);
-          return { worstGap, toPortfolio };
-        } finally {
-          cleanup();
+    it("engine/S1 [ENG-22] the Retirement balance is the Retirement accounts' sum, and the Portfolio account takes the 2,428", async () => {
+      const { db, appDb, cleanup } = await freshDb();
+      try {
+        const a = person(db, "Alex", "1975-06-15", true);
+        const b = person(db, "Sam", "1977-06-15", false);
+        seedJob(db, a, { annualSalary: "100000", startDate: "2010-01-01" });
+        const jobB = seedJob(db, b, {
+          annualSalary: "80000",
+          startDate: "2010-01-01",
+        });
+        holding(db, {
+          ownerPersonId: a,
+          accountType: "401k",
+          parentCategory: "Retirement",
+          taxType: "preTax",
+          amount: 300_000,
+          label: "Alex 401k",
+        });
+        const portfolio = holding(db, {
+          ownerPersonId: a,
+          accountType: "brokerage",
+          parentCategory: "Portfolio",
+          taxType: "afterTax",
+          amount: 50_000,
+          label: "Alex brokerage",
+        });
+        const acct = seedContributionAccount(db, {
+          personId: b,
+          jobId: jobB,
+          accountType: "brokerage",
+          parentCategory: "Portfolio",
+          taxTreatment: "after_tax",
+          performanceAccountId: portfolio,
+        });
+        const contributionProfileId = fixedContributions(db, {
+          [acct]: 2_428,
+        });
+        const years = await projectFromPayload(appDb, contributionProfileId);
+        let worstGap = 0;
+        for (const y of years) {
+          const retirementAccounts = y.individualAccountBalances
+            .filter((x) => x.parentCategory === "Retirement")
+            .reduce((s, x) => s + x.balance, 0);
+          worstGap = Math.max(
+            worstGap,
+            Math.abs(y.retirementBalance - retirementAccounts),
+          );
         }
-      },
-      expected: { worstGap: 0, toPortfolio: 2_428 },
-      tolerance: 1,
+        const first = years.find((y) => y.year === 2026)!;
+        const toPortfolio = first.individualAccountBalances
+          .filter((x) => x.parentCategory === "Portfolio")
+          .reduce((s, x) => s + x.contribution, 0);
+        cents(
+          { worstGap, toPortfolio },
+          { worstGap: 0, toPortfolio: 2_428 },
+          1,
+        );
+      } finally {
+        cleanup();
+      }
     });
   });
 });

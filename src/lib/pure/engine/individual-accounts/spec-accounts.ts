@@ -2,7 +2,10 @@
 import type { ContributionSpec } from "../types/contribution-spec";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../../config/tax-treatment-buckets";
-import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import {
+  accountIdKeyOf,
+  type IndKeyFn,
+} from "@/lib/pure/accounts/account-part";
 import { sumBy } from "../../../utils/math";
 import { credit, specKeyOf } from "./ledger";
 import { creditByWeight } from "./part-weights";
@@ -11,57 +14,73 @@ import { creditByWeight } from "./part-weights";
  *  account held in owner parts) each owner's part of its tax type. */
 export type SpecParts = readonly string[];
 
+/** The identity a spec's account gives its parts: its performance account,
+ *  else its own contribution account, else (Simple) the synthetic pot. */
+function specAccountIdentity(
+  spec: ContributionSpec,
+): Pick<
+  IndividualAccountInput,
+  "performanceAccountId" | "contributionAccountId" | "origin"
+> {
+  const { account } = spec;
+  if (account.kind === "performance")
+    return { performanceAccountId: account.performanceAccountId };
+  if (account.kind === "unlinked")
+    return { contributionAccountId: spec.contributionAccountId };
+  return { origin: "synthetic" };
+}
+
+/** The parts of `parts` a spec pays: its account's part of its tax type for
+ *  its person; on an account held whole, the joint part; joint over owner
+ *  parts, each owner's. With none, its own $0 part (`origin: "spec"`). */
+export function specParts(
+  spec: ContributionSpec,
+  parts: readonly IndividualAccountInput[],
+): IndividualAccountInput[] {
+  const taxType = TAX_TREATMENT_TO_TAX_TYPE[spec.taxTreatment];
+  const own = {
+    ...specAccountIdentity(spec),
+    category: spec.category,
+    taxType,
+    parentCategory: spec.parentCategory,
+  };
+  const accountOf = (part: Parameters<typeof accountIdKeyOf>[0]) =>
+    accountIdKeyOf({ ...part, taxType: "", ownerPersonId: null });
+  const ofAccount = parts.filter((ia) => accountOf(ia) === accountOf(own));
+  const heldWhole =
+    ofAccount.length > 0 && ofAccount.every((ia) => ia.ownerPersonId == null);
+  const joint = spec.ownership === "joint" || spec.personId == null;
+  const ownerParts = ofAccount.filter(
+    (ia) => ia.ownerPersonId != null && ia.taxType === taxType,
+  );
+  if (joint && !heldWhole && ownerParts.length > 0) return ownerParts;
+  const owner =
+    joint || heldWhole || own.origin ? undefined : (spec.personId ?? undefined);
+  const part = { ...own, ...(owner != null ? { ownerPersonId: owner } : {}) };
+  const found = parts.find((ia) => accountIdKeyOf(ia) === accountIdKeyOf(part));
+  return [
+    found ?? { ...part, name: spec.name, startingBalance: 0, origin: "spec" },
+  ];
+}
+
 /**
- * Build mapping from contribution spec keys to individual account keys.
- * Match on structured fields: category + ownerName + taxType (no fuzzy logic).
+ * Each spec's parts by spec key: the parts of its own account (`specParts`),
+ * which the opening state declares. A spec whose part isn't declared throws.
  */
 export function buildSpecToAccountMapping(
   contributionSpecs: ContributionSpec[],
   indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
-  indParentCat: Map<string, string>,
 ): { specToAccount: Map<string, SpecParts>; accountsWithSpecs: Set<string> } {
   const specToAccount = new Map<string, SpecParts>();
-  // The projection-only retirement brokerage has no contributions of its own.
-  const accounts = indAccounts.filter((ia) => ia.origin !== "projected");
-
   refuseSharedSpecKeys(contributionSpecs);
   for (const spec of contributionSpecs) {
-    const specTaxType = TAX_TREATMENT_TO_TAX_TYPE[spec.taxTreatment];
-    const parentCatMatch = (ia: {
-      name: string;
-      category: string;
-      taxType: string;
-    }) => {
-      const iaPCat = indParentCat.get(indKey(ia));
-      if (iaPCat && spec.parentCategory) return iaPCat === spec.parentCategory;
-      return true;
-    };
-    const exactOwner = (ia: { ownerPersonId?: number; ownerName?: string }) =>
-      ia.ownerPersonId != null && spec.personId != null
-        ? ia.ownerPersonId === spec.personId
-        : ia.ownerName === spec.ownerName;
-    const unowned = (ia: { ownerPersonId?: number; ownerName?: string }) =>
-      ia.ownerPersonId === undefined && ia.ownerName === undefined;
-    const ownerMatch = (ia: { ownerPersonId?: number; ownerName?: string }) =>
-      exactOwner(ia) || unowned(ia);
-
-    // The match rules, tried in rank order: the first that finds an account
-    // in the spec's category wins.
-    const matchRules: ((ia: IndividualAccountInput) => boolean)[] = [
-      (ia) =>
-        exactOwner(ia) && ia.taxType === specTaxType && parentCatMatch(ia),
-      (ia) => unowned(ia) && ia.taxType === specTaxType && parentCatMatch(ia),
-      (ia) => exactOwner(ia) && parentCatMatch(ia),
-      (ia) => unowned(ia) && parentCatMatch(ia),
-      ownerMatch,
-    ];
-    let match: IndividualAccountInput | undefined;
-    for (const rule of matchRules) {
-      match = accounts.find((ia) => ia.category === spec.category && rule(ia));
-      if (match) break;
-    }
-    if (match) specToAccount.set(specKeyOf(spec), [indKey(match)]);
+    const parts = specParts(spec, indAccounts);
+    if (parts.some((ia) => !indAccounts.includes(ia)))
+      throw new Error(
+        `Contribution "${spec.name}" (${spec.contributionAccountId}) pays a part the opening state didn't declare`,
+      );
+    specToAccount.set(specKeyOf(spec), parts.map(indKey));
   }
 
   return {

@@ -121,6 +121,7 @@ describe("pay that moves apart", () => {
       {
         category: "brokerage",
         name: "Bo brokerage",
+        taxTreatment: "after_tax",
         method: "fixed_monthly",
         value: 1200,
         salaryFraction: 0,

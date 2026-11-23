@@ -94,7 +94,6 @@ export function buildProjectionState(
           contributionSpecs,
           ctx.indAccounts,
           ctx.indKey,
-          ctx.indParentCat,
         )
       : {
           specToAccount: new Map<string, SpecParts>(),

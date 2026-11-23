@@ -1,18 +1,8 @@
 /**
- * The decumulation-phase "Portfolio contribution continues after
- * retirement" block in decumulation-year.ts
- * used to match a contribution spec to its individual account by
- * `ia.name === spec.accountName` ALONE. Two household members with an
- * identically-named account (a common real pattern — "Long Term Brokerage"
- * is a natural name both spouses might independently choose) would silently
- * collide: whichever account happened to come first in `indAccounts` absorbed
- * BOTH people's continuing contributions.
- *
- * Fixed by reusing `state.specToAccount` — the same owner-aware
- * category+owner+taxType+parentCategory cascade `buildSpecToAccountMapping`
- * already builds once per year for the accumulation phase (single
- * computation path, RULES.md) — instead of re-deriving a second, weaker
- * name-only match.
+ * Portfolio contributions that continue after retirement land on each
+ * spec's own part (`state.specToAccount`, the accumulation phase's join),
+ * so two people's identically-named accounts ("Long Term Brokerage") each
+ * take their own person's contribution.
  */
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";

@@ -185,6 +185,7 @@ describe("the household's choices for these years", () => {
       {
         category: "401k",
         name: "Bo",
+        taxTreatment: "pre_tax",
         method: "percent_of_salary",
         value: 0.1,
         salaryFraction: 0.4,
@@ -279,6 +280,7 @@ describe("a stopped year that is also a 0% year", () => {
     {
       category: "401k",
       name: "Bo 401k",
+      taxTreatment: "pre_tax",
       method: "percent_of_salary",
       value: 0.1,
       salaryFraction: 0.4,
@@ -293,6 +295,7 @@ describe("a stopped year that is also a 0% year", () => {
     {
       category: "ira",
       name: "Bo IRA",
+      taxTreatment: "pre_tax",
       method: "fixed_monthly",
       value: 500,
       salaryFraction: 0.4,
@@ -337,8 +340,8 @@ describe("a stopped year that is also a 0% year", () => {
     // The draw covers the budget with nothing taken out for saving.
     expect(stopped.gapDraw!.contributions).toBe(0);
     expect(stopped.gapDraw!.need).toBe(56590);
-    expect(stopped.gapDraw!.withdrawal).toBe(59160.59);
-    expect(stopped.retirementBalance).toBe(1023901.56);
+    expect(stopped.gapDraw!.withdrawal).toBe(56590);
+    expect(stopped.retirementBalance).toBe(1042073.51);
   });
 });
 

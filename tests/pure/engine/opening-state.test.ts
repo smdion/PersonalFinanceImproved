@@ -18,6 +18,7 @@ import type { AccountBalances } from "@/lib/pure/accounts/account-balances.types
 import { accountIdKeyOf } from "@/lib/pure/accounts/account-part";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { PROJECTED_RETIREMENT_BROKERAGE_LABEL } from "@/lib/config/display-labels";
+import { buildCategoryRecord, zeroBalance } from "@/lib/config/account-types";
 
 /** No lump sums or other flows reach a slice the parts don't cover. */
 const zeroes = { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 };
@@ -60,13 +61,6 @@ const roth401k: IndividualAccountInput = {
 
 const keysOf = (parts: IndividualAccountInput[]) =>
   parts.map((p) => accountIdKeyOf(p));
-
-/** A Roth 401(k) spec whose contribution account is linked to no account. */
-const unlinkedSpec = () =>
-  makeContributionSpec({
-    contributionAccountId: 1,
-    account: { kind: "unlinked" },
-  });
 
 describe("declareOpeningParts", () => {
   it("a run with no accounts declares nothing", () => {
@@ -114,13 +108,83 @@ describe("declareOpeningParts", () => {
     });
   });
 
-  it("a synthetic account's missing tax part is synthetic too", () => {
-    const synthetic = { ...roth401k, origin: "synthetic" as const };
-    const parts = declareOpeningParts(
-      [retirementBrokerage, synthetic],
-      NO_FLOWS,
+  it("synthetic parts beside a real account are dropped at $0 and refused holding money", () => {
+    const { performanceAccountId: _id, ...noId } = roth401k;
+    const synthetic = { ...noId, origin: "synthetic" as const };
+    expect(
+      declareOpeningParts(
+        [retirementBrokerage, { ...synthetic, startingBalance: 0 }],
+        NO_FLOWS,
+      ),
+    ).toEqual(declareOpeningParts([retirementBrokerage], NO_FLOWS));
+    expect(() =>
+      declareOpeningParts([retirementBrokerage, synthetic], NO_FLOWS),
+    ).toThrow(/holds money/);
+  });
+
+  it("parts with no real account are left as given", () => {
+    const pot = syntheticOpeningParts(
+      buildCategoryRecord((c) => zeroBalance(c)),
     );
-    expect(parts[2]).toMatchObject({ taxType: "preTax", origin: "synthetic" });
+    expect(declareOpeningParts(pot, NO_FLOWS)).toEqual(pot);
+    const simpleSpec = makeContributionSpec({
+      contributionAccountId: 1,
+      account: { kind: "synthetic" },
+    });
+    expect(
+      declareOpeningParts(pot, {
+        ...NO_FLOWS,
+        contributionSpecs: [simpleSpec],
+      }),
+    ).toEqual(pot);
+  });
+
+  it("a contribution with no part declares its own $0 part, real, then its other tax part", () => {
+    const unlinked = makeContributionSpec({
+      personId: 1,
+      contributionAccountId: 4,
+      account: { kind: "unlinked" },
+    });
+    const parts = declareOpeningParts(
+      syntheticOpeningParts(buildCategoryRecord((c) => zeroBalance(c))),
+      { ...NO_FLOWS, contributionSpecs: [unlinked] },
+    );
+    expect(parts.filter((p) => p.origin === "synthetic")).toEqual([]);
+    expect(
+      parts
+        .filter((p) => p.contributionAccountId === 4)
+        .map((p) => [p.taxType, p.ownerPersonId, p.origin, p.startingBalance]),
+    ).toEqual([
+      ["taxFree", 1, "spec", 0],
+      ["preTax", 1, "spec", 0],
+    ]);
+    expect(keysOf(parts)).toContain("contrib:4:401k::taxFree::1");
+  });
+
+  it("a contribution linked to an account with no balance row declares that account's part", () => {
+    const linked = makeContributionSpec({
+      personId: 1,
+      contributionAccountId: 4,
+      account: { kind: "performance", performanceAccountId: 12 },
+    });
+    const parts = declareOpeningParts([retirementBrokerage], {
+      ...NO_FLOWS,
+      profileSwitches: [
+        {
+          year: 2030,
+          contributionSpecs: [linked],
+          contributionRate: 0,
+          employerMatchRateByCategory: zeroes,
+          baseYearContributions: zeroes,
+          baseYearEmployerMatch: zeroes,
+        },
+      ],
+    });
+    expect(keysOf(parts)).toEqual([
+      accountIdKeyOf(retirementBrokerage),
+      "acct:12:401k::taxFree::1",
+      "acct:12:401k::preTax::1",
+    ]);
   });
 
   it("an account held in both tax parts declares nothing more", () => {
@@ -283,15 +347,23 @@ describe("declareOpeningParts", () => {
     expect(parts.some((p) => p.origin === "projected")).toBe(false);
   });
 
+  // A spec that pays Ann's IRA, a part the run holds, so it declares none.
+  const iraSpec = (account = paysInto(ira)) =>
+    makeContributionSpec({
+      category: "ira",
+      contributionAccountId: 1,
+      account,
+    });
+
   it("specs throughout, or a stretch that saves nothing, declare none", () => {
-    const spec = unlinkedSpec();
+    const spec = iraSpec();
     const withSpecs = saving({ contributionSpecs: [spec] });
     expect(declareOpeningParts([ira], withSpecs)).toHaveLength(3);
     expect(declareOpeningParts([ira], saving({}, 0))).toHaveLength(3);
   });
 
   it("a profile switch to no specs that saves declares them; one that stops saving doesn't", () => {
-    const spec = unlinkedSpec();
+    const spec = iraSpec();
     const switchTo = (contributionRate: number) =>
       saving({
         contributionSpecs: [spec],
@@ -315,10 +387,11 @@ describe("declareOpeningParts", () => {
   const matching = (
     match: Partial<typeof zeroes>,
     byParent?: [string, number][],
+    spec = iraSpec(),
   ) =>
     saving(
       {
-        contributionSpecs: [unlinkedSpec()],
+        contributionSpecs: [spec],
         employerMatchRateByCategory: { ...zeroes, ...match },
         ...(byParent
           ? { employerMatchByParentCat: new Map([["401k", new Map(byParent)]]) }
@@ -340,12 +413,18 @@ describe("declareOpeningParts", () => {
   it("a match a part of its category takes, of any parent when the match names none, declares none", () => {
     const portfolio401k = { ...roth401k, parentCategory: "Portfolio" };
     const held = [retirementBrokerage, portfolio401k];
-    expect(declareOpeningParts(held, matching({ "401k": 0.04 }))).toEqual(
-      declareOpeningParts(held, NO_FLOWS),
-    );
+    // The spec pays the 401(k) held, so it declares none.
+    const spec = makeContributionSpec({
+      contributionAccountId: 1,
+      personId: 1,
+      account: paysInto(portfolio401k),
+    });
+    expect(
+      declareOpeningParts(held, matching({ "401k": 0.04 }, undefined, spec)),
+    ).toEqual(declareOpeningParts(held, NO_FLOWS));
     const named = declareOpeningParts(
       held,
-      matching({ "401k": 0.04 }, [["Retirement", 4000]]),
+      matching({ "401k": 0.04 }, [["Retirement", 4000]], spec),
     );
     expect(
       named.filter((p) => p.origin === "projected").map((p) => p.name),
@@ -366,7 +445,7 @@ describe("a slot's money with no spec of its tax type", () => {
     ...acct("Ann 401k", "401k", 100000, 1),
     parentCategory: "Retirement",
   };
-  const input = household([ann401k], {
+  const ann = {
     currentAge: 40,
     birthYear: 1986,
     retirementYear: 2050,
@@ -412,7 +491,8 @@ describe("a slot's money with no spec of its tax type", () => {
     socialSecurityEntries: [],
     perPersonBirthYears: [1986],
     people: onePerson(1986),
-  });
+  } satisfies Parameters<typeof household>[1];
+  const input = household([ann401k], ann);
 
   it("lands on the same account's declared part of that tax type", () => {
     const result = calculateProjection(input);
@@ -427,6 +507,24 @@ describe("a slot's money with no spec of its tax type", () => {
     expect(
       result.projectionByYear.flatMap((y) => y.warnings ?? []),
     ).not.toContainEqual(expect.stringContaining("drifted"));
+  });
+
+  it("a household with no balance yet runs its contributions' own parts", () => {
+    // No snapshot: synthetic parts at $0. The 401(k) contribution is linked
+    // to no account, so it pays its own contribution account's part.
+    const noSnapshot = household([], {
+      ...ann,
+      contributionSpecs: [
+        { ...ann.contributionSpecs[0]!, account: { kind: "unlinked" } },
+      ],
+    });
+    const year0 = calculateProjection(noSnapshot).projectionByYear[0]!;
+    const own = (taxType: string) =>
+      year0.individualAccountBalances.find(
+        (r) => r.accountKey === `contrib:1:401k::${taxType}::1`,
+      );
+    expect(own("preTax")?.contribution).toBe(4166.66);
+    expect(own("taxFree")?.contribution).toBe(4166.67);
   });
 });
 

@@ -25,7 +25,8 @@ import {
   taxTypeOnSide,
 } from "../../config/tax-treatment-buckets";
 import { roundToCents } from "../../utils/math";
-import { accountIdKeyOf } from "../accounts/account-part";
+import { accountIdKeyOf, hasRealAccount } from "../accounts/account-part";
+import { specParts } from "./individual-accounts/spec-accounts";
 import type {
   AccountBalances,
   IndividualAccountInput,
@@ -56,19 +57,23 @@ type Slice = Pick<
   "category" | "taxType" | "parentCategory"
 >;
 
-/**
- * The held parts; the projected Retirement brokerage when none is held; a
- * projected part for each slice a flow reaches that no part takes; then each
- * Roth-capable part's missing tax part, per owner, at $0.
- */
+/** The held parts and each spec's own part (none real: left as given); the
+ *  projected Retirement brokerage when none is held, a projected part for each
+ *  slice no part takes; then each Roth-capable part's other tax parts at $0. */
 export function declareOpeningParts(
   held: readonly IndividualAccountInput[],
   flows: OpeningFlows,
 ): IndividualAccountInput[] {
-  if (held.length === 0) return [];
-  const parts = [...held];
+  const parts = withSpecParts(
+    held.filter((ia) => ia.origin !== "synthetic"),
+    flows,
+  );
+  if (!parts.some(hasRealAccount)) return [...held];
+  refuseMixedRun(held, flows);
   const overflowCategory = getAllCategories().find(isOverflowTarget)!;
-  if (!held.some((ia) => isRetirementBrokerage(ia.category, ia.parentCategory)))
+  if (
+    !parts.some((ia) => isRetirementBrokerage(ia.category, ia.parentCategory))
+  )
     parts.push(
       projectedPart({
         category: overflowCategory,
@@ -96,6 +101,44 @@ export function declareOpeningParts(
     )
       parts.push(projectedPart(slice));
   return refuseSharedKeys(withOtherTaxParts(parts));
+}
+
+/** Every stretch's contribution specs: the opening profile's, each switch's. */
+const stretchSpecs = (flows: OpeningFlows) => [
+  ...(flows.contributionSpecs ?? []),
+  ...(flows.profileSwitches ?? []).flatMap((s) => s.contributionSpecs),
+];
+
+/** The parts, then each spec's own part where its account has none of its
+ *  key (`specParts`; the siblings the last step declares count). Simple's
+ *  specs pay the synthetic pot, which has no real account. */
+function withSpecParts(
+  parts: IndividualAccountInput[],
+  flows: OpeningFlows,
+): IndividualAccountInput[] {
+  for (const spec of stretchSpecs(flows)) {
+    if (spec.account.kind === "synthetic") continue;
+    const known = withOtherTaxParts([...parts]);
+    for (const part of specParts(spec, known))
+      if (!known.includes(part)) parts.push(part);
+  }
+  return parts;
+}
+
+/** A run with real accounts holds no synthetic money and no spec paying the
+ *  synthetic pot: either would sit beside the real accounts. */
+function refuseMixedRun(
+  held: readonly IndividualAccountInput[],
+  flows: OpeningFlows,
+): void {
+  const money = held.find(
+    (ia) =>
+      ia.origin === "synthetic" &&
+      (ia.startingBalance !== 0 || Boolean(ia.startingBasis)),
+  );
+  if (money) throw new Error("A synthetic part holds money beside accounts");
+  if (stretchSpecs(flows).some((s) => s.account.kind === "synthetic"))
+    throw new Error("A spec pays the synthetic pot beside real accounts");
 }
 
 /** Each part its own key: two parts with one key would share one balance in
