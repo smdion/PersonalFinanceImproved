@@ -46,7 +46,7 @@ function makeInput(overrides: {
   retirementAge?: number;
 }): ProjectionInput {
   return engineInput(
-    withCapsAge({
+    withCapsAge<FixtureInput>({
       budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.2,
@@ -163,7 +163,7 @@ function makeInput(overrides: {
       asOfDate: AS_OF,
       filingStatus: "MFJ",
       perPersonBirthYears: overrides.perPersonBirthYears,
-    }) as FixtureInput,
+    }),
   );
 }
 

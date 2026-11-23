@@ -111,7 +111,7 @@ function makeInput(samAccount?: ContributionSpec["account"]): ProjectionInput {
   ];
 
   return engineInput(
-    withCapsAge({
+    withCapsAge<FixtureInput>({
       budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.2,
@@ -216,7 +216,7 @@ function makeInput(samAccount?: ContributionSpec["account"]): ProjectionInput {
       asOfDate: AS_OF,
       individualAccounts,
       contributionSpecs,
-    }) as FixtureInput,
+    }),
   );
 }
 

@@ -533,7 +533,8 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
     overrides: Partial<FixtureInput> = {},
   ): ProjectionInput {
     return engineInput(
-      withCapsAge({
+      withCapsAge<FixtureInput>({
+        budgetContributionLines: 0,
         accumulationDefaults: makeAccumulationDefaults({
           contributionRate: 0.29,
           accountSplits: {
@@ -561,6 +562,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
           },
           distributionTaxRates: {
             ...shippedTaxTables(),
+            rothBracketOverlay: true,
             traditionalFallbackRate: 0.22,
             roth: 0,
             hsa: 0,
@@ -685,7 +687,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
           },
         ],
         ...overrides,
-      }) as FixtureInput,
+      }),
     );
   }
 
@@ -803,7 +805,8 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
     overrides: Partial<FixtureInput> = {},
   ): ProjectionInput {
     return engineInput(
-      withCapsAge({
+      withCapsAge<FixtureInput>({
+        budgetContributionLines: 0,
         accumulationDefaults: makeAccumulationDefaults({
           accountSplits: {
             "401k": 0.4,
@@ -830,6 +833,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
           },
           distributionTaxRates: {
             ...shippedTaxTables(),
+            rothBracketOverlay: true,
             traditionalFallbackRate: 0.22,
             roth: 0,
             hsa: 0,
@@ -941,7 +945,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
           },
         ],
         ...overrides,
-      }) as FixtureInput,
+      }),
     );
   }
 

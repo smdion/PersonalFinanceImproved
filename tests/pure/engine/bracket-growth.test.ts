@@ -272,7 +272,7 @@ function makeInput(
   } = {},
 ): ProjectionInput {
   return engineInput(
-    withCapsAge({
+    withCapsAge<FixtureInput>({
       budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.2,
@@ -379,7 +379,7 @@ function makeInput(
       ssStartAge: 67,
       asOfDate: AS_OF,
       filingStatus: "MFJ",
-    }) as FixtureInput,
+    }),
   );
 }
 
@@ -453,7 +453,7 @@ function makeLtcgHeavyInput(
   preTax = 200000,
 ): ProjectionInput {
   return engineInput(
-    withCapsAge({
+    withCapsAge<FixtureInput>({
       budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.2,
@@ -561,7 +561,7 @@ function makeLtcgHeavyInput(
       ssStartAge: 67,
       asOfDate: AS_OF,
       filingStatus: "MFJ",
-    }) as FixtureInput,
+    }),
   );
 }
 
@@ -812,7 +812,7 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
     { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
   ];
   return engineInput(
-    withCapsAge({
+    withCapsAge<FixtureInput>({
       budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.2,
@@ -925,7 +925,7 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
       asOfDate: new Date("2025-03-07"),
       filingStatus: "MFJ",
       enableIrmaaAwareness: true,
-    }) as FixtureInput,
+    }),
   );
 }
 
@@ -993,7 +993,7 @@ function makeAcaHouseholdInput(): ProjectionInput {
     { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
   ];
   return engineInput(
-    withCapsAge({
+    withCapsAge<FixtureInput>({
       budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.2,
@@ -1098,7 +1098,7 @@ function makeAcaHouseholdInput(): ProjectionInput {
       filingStatus: "MFJ",
       enableAcaAwareness: true,
       householdSize: 2,
-    }) as FixtureInput,
+    }),
   );
 }
 

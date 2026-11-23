@@ -32,7 +32,7 @@ const BASE_SD = 32200;
 
 function makeInput(withObbba: boolean): ProjectionInput {
   return engineInput(
-    withCapsAge({
+    withCapsAge<FixtureInput>({
       budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.2,
@@ -149,7 +149,7 @@ function makeInput(withObbba: boolean): ProjectionInput {
       ssStartAge: 67,
       asOfDate: AS_OF,
       filingStatus: "MFJ",
-    }) as FixtureInput,
+    }),
   );
 }
 

@@ -45,7 +45,8 @@ export function household(
     roth: sum(cat, "taxFree"),
   });
   const afterTax = sum("brokerage", "afterTax");
-  const input: Partial<FixtureInput> = {
+  const fields: Omit<FixtureInput, "people"> &
+    Partial<Pick<FixtureInput, "people">> = {
     accumulationDefaults: makeAccumulationDefaults({
       contributionRate: 0,
       accountSplits: { "401k": 1, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
@@ -152,11 +153,16 @@ export function household(
   };
   // Unless stated, the people are the Social Security entries' (or the one
   // person by birth year), each born in January: 70½ in the year of 70.
-  input.people ??=
-    input.socialSecurityEntries?.map((e) => ({
-      personId: e.personId,
-      birthYear: e.birthYear,
-      birthMonth: 1,
-    })) ?? onePerson(input.birthYear!, input.primaryPersonId);
-  return withConsistentStart(withCapsAge(input as FixtureInput), input);
+  const input: FixtureInput = {
+    ...fields,
+    people:
+      fields.people ??
+      fields.socialSecurityEntries?.map((e) => ({
+        personId: e.personId,
+        birthYear: e.birthYear,
+        birthMonth: 1,
+      })) ??
+      onePerson(fields.birthYear!, fields.primaryPersonId),
+  };
+  return withConsistentStart(withCapsAge(input), input);
 }

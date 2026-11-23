@@ -20,7 +20,7 @@ const AS_OF = new Date("2025-03-07");
 
 function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
   return engineInput(
-    withCapsAge({
+    withCapsAge<FixtureInput>({
       budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         accountSplits: {
@@ -45,6 +45,7 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
           ...shippedTaxTables(),
+          rothBracketOverlay: true,
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -121,7 +122,7 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
       ssStartAge: 67,
       asOfDate: AS_OF,
       ...overrides,
-    }) as FixtureInput,
+    }),
   );
 }
 

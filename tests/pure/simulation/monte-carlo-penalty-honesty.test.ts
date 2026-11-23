@@ -35,7 +35,7 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
   // The one person is the age the fixture states.
   const currentAge = overrides.currentAge ?? 37;
   return engineInput(
-    withCapsAge({
+    withCapsAge<FixtureInput>({
       budgetContributionLines: 0,
       accumulationDefaults: makeAccumulationDefaults({
         contributionRate: 0.29,
@@ -61,6 +61,7 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
           ...shippedTaxTables(),
+          rothBracketOverlay: true,
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -130,7 +131,7 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
       ssStartAge: 67,
       asOfDate: AS_OF,
       ...overrides,
-    }) as FixtureInput,
+    }),
   );
 }
 
