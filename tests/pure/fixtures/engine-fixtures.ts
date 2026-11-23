@@ -13,6 +13,7 @@ import type {
   AccumulationSlot,
   DecumulationSlot,
   ContributionSpec,
+  ContributionSpecAccount,
   AccumulationDefaults,
   DecumulationDefaults,
 } from "@/lib/pure/engine/types";
@@ -266,8 +267,26 @@ export function makeDecumulationDefaults(
 // ContributionSpec
 // ---------------------------------------------------------------------------
 
+/** The account a fixture spec pays into: the given fixture account's
+ *  performance account (one it holds, or one it names with no part yet). */
+export function paysInto(
+  account: Pick<IndividualAccountInput, "performanceAccountId">,
+): ContributionSpecAccount {
+  if (account.performanceAccountId == null)
+    throw new Error("paysInto: the fixture account has no performance account");
+  return {
+    kind: "performance",
+    performanceAccountId: account.performanceAccountId,
+  };
+}
+
+/** A fixture spec in a run with no account parts: it pays the synthetic pot. */
+export const ON_THE_POT: ContributionSpecAccount = { kind: "synthetic" };
+
+/** A fixture spec; it states its identity and the account it pays into. */
 export function makeContributionSpec(
-  overrides: Partial<ContributionSpec> = {},
+  overrides: Partial<ContributionSpec> &
+    Pick<ContributionSpec, "contributionAccountId" | "account">,
 ): ContributionSpec {
   return {
     category: "401k",

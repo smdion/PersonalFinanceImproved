@@ -18,7 +18,10 @@ import type {
 import type { AccountCategory } from "@/lib/config/account-types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
-import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
+import {
+  makeAccumulationDefaults,
+  ON_THE_POT,
+} from "../fixtures/engine-fixtures";
 import { onePerson } from "../../fixtures/engine-people";
 import { engineInput, type FixtureInput } from "../fixtures/engine-input";
 
@@ -147,6 +150,8 @@ describe("T24 — per-person catch-up gating (H10)", () => {
         taxTreatment: "pre_tax",
         allocationPriority: 0,
         personId: 1,
+        contributionAccountId: 1,
+        account: ON_THE_POT,
       },
       {
         category: "401k" as AccountCategory,
@@ -159,6 +164,8 @@ describe("T24 — per-person catch-up gating (H10)", () => {
         taxTreatment: "pre_tax",
         allocationPriority: 0,
         personId: 2,
+        contributionAccountId: 2,
+        account: ON_THE_POT,
       },
     ];
 
@@ -201,6 +208,8 @@ describe("T24 — per-person catch-up gating (H10)", () => {
         baseAnnual: 24000,
         taxTreatment: "pre_tax",
         allocationPriority: 0,
+        contributionAccountId: 1,
+        account: ON_THE_POT,
       },
     ];
 
@@ -232,6 +241,8 @@ describe("year 0 — a contribution over its IRS limit, late in the year", () =>
       taxTreatment: "pre_tax",
       allocationPriority: 0,
       personId: 1,
+      contributionAccountId: 1,
+      account: ON_THE_POT,
       ...(configuredAnnual !== undefined ? { configuredAnnual } : {}),
     });
     const zero = { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 };
@@ -278,6 +289,8 @@ describe("year 0 — a contribution over its IRS limit, late in the year", () =>
               taxTreatment: "pre_tax",
               allocationPriority: 0,
               personId: 1,
+              contributionAccountId: 1,
+              account: ON_THE_POT,
               leftThisYear: 5000,
             },
           ],

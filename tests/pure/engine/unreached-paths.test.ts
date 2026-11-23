@@ -24,7 +24,9 @@ import { acct, household } from "../fixtures/two-person-household";
 import {
   makeAccumulationDefaults,
   makeContributionSpec,
+  paysInto,
 } from "../fixtures/engine-fixtures";
+import { withAccountId } from "../fixtures/engine-input";
 
 const FILE = path.join(__dirname, "__pins__", "unreached-paths.json");
 const WRITE = process.env.LEDGR_BASELINE_WRITE === "1";
@@ -627,6 +629,8 @@ describe("a match whose pool has no part (spreadMatch over none)", () => {
                 category: "ira",
                 name: "Ann IRA",
                 taxTreatment: "pre_tax",
+                contributionAccountId: 1,
+                account: paysInto(withAccountId(acct("Ann IRA", "ira", 0, 1))),
               }),
             ],
           }

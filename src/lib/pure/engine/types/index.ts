@@ -3,6 +3,8 @@
  *  imports from here type-only, so the schemas stay out of its bundle. */
 export type * from "./accumulation";
 export type * from "./contribution-spec";
+export type * from "./contribution-spec-account";
+export type * from "./retirement-contribution-slice";
 export type * from "./decumulation";
 export type * from "./routing";
 export type * from "./projection-result";

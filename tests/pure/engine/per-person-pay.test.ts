@@ -11,6 +11,11 @@ import type {
   ProjectionInput,
 } from "@/lib/pure/engine/types";
 import { acct, household } from "../fixtures/two-person-household";
+import { paysInto } from "../fixtures/engine-fixtures";
+import { withAccountId } from "../fixtures/engine-input";
+
+/** Bo's 401(k), which Bo's 401(k) spec pays. */
+const BO_401K = paysInto(withAccountId(acct("Bo 401k", "401k", 0, 2)));
 
 const returnRates = Array.from({ length: 60 }, (_, i) => ({
   label: `Age ${40 + i}`,
@@ -30,6 +35,8 @@ function twoEarners(
       personId: 2,
       employerShare: 1,
       personPayShare: 1,
+      contributionAccountId: 1,
+      account: BO_401K,
     },
   ],
 ): ProjectionInput {
@@ -119,6 +126,11 @@ describe("pay that moves apart", () => {
         salaryFraction: 0,
         baseAnnual: 1200,
         personId: 2,
+        // Bo's own brokerage, which holds no balance yet.
+        contributionAccountId: 1,
+        account: paysInto(
+          withAccountId(acct("Bo brokerage", "brokerage", 0, 2, "afterTax")),
+        ),
       },
     ]);
     const y = accumulation(input)[10]!;
@@ -140,6 +152,8 @@ describe("pay that moves apart", () => {
           personId: 2,
           employerShare: 1,
           personPayShare: 1,
+          contributionAccountId: 1,
+          account: BO_401K,
           ...spec,
         },
       ];

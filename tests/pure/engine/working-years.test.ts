@@ -13,7 +13,10 @@ import type {
 import type { AccountCategory } from "@/lib/config/account-types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
-import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
+import {
+  makeAccumulationDefaults,
+  ON_THE_POT,
+} from "../fixtures/engine-fixtures";
 import { onePerson } from "../../fixtures/engine-people";
 import { engineInput, type FixtureInput } from "../fixtures/engine-input";
 
@@ -139,6 +142,9 @@ const spec = (
   taxTreatment: "pre_tax",
   allocationPriority: 0,
   personId,
+  // No account parts here: each person's spec pays the synthetic pot.
+  contributionAccountId: 100 + personId,
+  account: ON_THE_POT,
   ...over,
 });
 

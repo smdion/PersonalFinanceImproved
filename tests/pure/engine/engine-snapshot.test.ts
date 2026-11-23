@@ -13,6 +13,7 @@
 import {
   withConsistentStart,
   makeAccumulationDefaults,
+  ON_THE_POT,
 } from "../fixtures/engine-fixtures";
 import { expectFirstRmdAndClaimYears } from "../fixtures/retirement-milestones";
 import { describe, it, expect } from "vitest";
@@ -432,6 +433,8 @@ describe("engine snapshot parity", () => {
         taxTreatment: "pre_tax",
         allocationPriority: 0,
         personId: 1,
+        contributionAccountId: 1,
+        account: ON_THE_POT,
       },
       {
         category: "401k" as AccountCategory,
@@ -444,6 +447,8 @@ describe("engine snapshot parity", () => {
         taxTreatment: "tax_free",
         allocationPriority: 0,
         personId: 1,
+        contributionAccountId: 2,
+        account: ON_THE_POT,
       },
       {
         category: "hsa" as AccountCategory,
@@ -456,6 +461,8 @@ describe("engine snapshot parity", () => {
         taxTreatment: "hsa",
         allocationPriority: 0,
         personId: 1,
+        contributionAccountId: 3,
+        account: ON_THE_POT,
       },
       {
         category: "ira" as AccountCategory,
@@ -468,6 +475,8 @@ describe("engine snapshot parity", () => {
         taxTreatment: "tax_free",
         allocationPriority: 0,
         personId: 1,
+        contributionAccountId: 4,
+        account: ON_THE_POT,
       },
       {
         category: "brokerage" as AccountCategory,
@@ -480,6 +489,8 @@ describe("engine snapshot parity", () => {
         taxTreatment: "after_tax",
         allocationPriority: 0,
         personId: 1,
+        contributionAccountId: 5,
+        account: ON_THE_POT,
       },
     ];
 
@@ -2022,6 +2033,8 @@ describe("engine snapshot parity", () => {
         baseAnnual: 15000,
         taxTreatment: "pre_tax",
         allocationPriority: 0,
+        contributionAccountId: 1,
+        account: ON_THE_POT,
       },
       {
         category: "401k",
@@ -2032,6 +2045,8 @@ describe("engine snapshot parity", () => {
         baseAnnual: 7500,
         taxTreatment: "tax_free",
         allocationPriority: 0,
+        contributionAccountId: 2,
+        account: ON_THE_POT,
       },
       {
         category: "hsa",
@@ -2043,6 +2058,8 @@ describe("engine snapshot parity", () => {
         baseAnnual: 4300,
         taxTreatment: "hsa",
         allocationPriority: 0,
+        contributionAccountId: 3,
+        account: ON_THE_POT,
       },
       {
         category: "ira",
@@ -2053,6 +2070,8 @@ describe("engine snapshot parity", () => {
         baseAnnual: 7000,
         taxTreatment: "tax_free",
         allocationPriority: 0,
+        contributionAccountId: 4,
+        account: ON_THE_POT,
       },
       {
         category: "brokerage",
@@ -2063,6 +2082,8 @@ describe("engine snapshot parity", () => {
         baseAnnual: 12000,
         taxTreatment: "after_tax",
         allocationPriority: 0,
+        contributionAccountId: 5,
+        account: ON_THE_POT,
       },
     ];
     const input = makeInput({
@@ -2089,6 +2110,8 @@ describe("engine snapshot parity", () => {
         allocationPriority: 0,
         personId: 1,
         ownerName: "Person A",
+        contributionAccountId: 1,
+        account: ON_THE_POT,
       },
       {
         category: "401k",
@@ -2101,6 +2124,8 @@ describe("engine snapshot parity", () => {
         allocationPriority: 0,
         personId: 2,
         ownerName: "Person B",
+        contributionAccountId: 2,
+        account: ON_THE_POT,
       },
       {
         category: "hsa",
@@ -2112,6 +2137,8 @@ describe("engine snapshot parity", () => {
         baseAnnual: 4300,
         taxTreatment: "hsa",
         allocationPriority: 0,
+        contributionAccountId: 3,
+        account: ON_THE_POT,
       },
     ];
     const input = makeInput({

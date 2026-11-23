@@ -34,6 +34,7 @@ import {
   makeIndividualAccount,
   makeAccumulationSlot,
   makeContributionSpec,
+  paysInto,
 } from "../fixtures/engine-fixtures";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import { initRothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
@@ -126,19 +127,6 @@ describe("buildSpecToAccountMapping", () => {
   const indKey = makeIndKey();
 
   it("matches spec to account by exact category + owner + taxType", () => {
-    const specs: ContributionSpec[] = [
-      {
-        category: "401k" as AccountCategory,
-        name: "Alice 401k",
-        method: "percent_of_salary" as const,
-        value: 0.14,
-        salaryFraction: 1,
-        baseAnnual: 16800,
-        taxTreatment: "pre_tax",
-        allocationPriority: 0,
-        ownerName: "Alice",
-      },
-    ];
     const accounts: IndividualAccountInput[] = [
       makeIndividualAccount({
         name: "Alice 401k",
@@ -153,6 +141,21 @@ describe("buildSpecToAccountMapping", () => {
         ownerName: "Alex",
       }),
     ];
+    const specs: ContributionSpec[] = [
+      {
+        category: "401k" as AccountCategory,
+        name: "Alice 401k",
+        method: "percent_of_salary" as const,
+        value: 0.14,
+        salaryFraction: 1,
+        baseAnnual: 16800,
+        taxTreatment: "pre_tax",
+        allocationPriority: 0,
+        ownerName: "Alice",
+        contributionAccountId: 1,
+        account: paysInto(accounts[0]!),
+      },
+    ];
     const parentCat = new Map<string, string>();
     const { specToAccount } = buildSpecToAccountMapping(
       specs,
@@ -164,6 +167,14 @@ describe("buildSpecToAccountMapping", () => {
   });
 
   it("falls back to unowned account when no exact owner match", () => {
+    const accounts: IndividualAccountInput[] = [
+      makeIndividualAccount({
+        name: "Roth IRA",
+        category: "ira",
+        taxType: "taxFree",
+        // No ownerName or ownerPersonId
+      }),
+    ];
     const specs: ContributionSpec[] = [
       {
         category: "ira" as AccountCategory,
@@ -175,15 +186,9 @@ describe("buildSpecToAccountMapping", () => {
         taxTreatment: "tax_free",
         allocationPriority: 0,
         ownerName: "Unknown",
+        contributionAccountId: 1,
+        account: paysInto(accounts[0]!),
       },
-    ];
-    const accounts: IndividualAccountInput[] = [
-      makeIndividualAccount({
-        name: "Roth IRA",
-        category: "ira",
-        taxType: "taxFree",
-        // No ownerName or ownerPersonId
-      }),
     ];
     const parentCat = new Map<string, string>();
     const { specToAccount } = buildSpecToAccountMapping(
@@ -207,6 +212,8 @@ describe("buildSpecToAccountMapping", () => {
         baseAnnual: 8346,
         taxTreatment: "hsa",
         allocationPriority: 0,
+        contributionAccountId: 1,
+        account: { kind: "unlinked" },
       },
     ];
     const accounts: IndividualAccountInput[] = [
@@ -1165,6 +1172,8 @@ describe("distributeContributions", () => {
         baseAnnual: 12000,
         taxTreatment: "pre_tax",
         ownerName: "Alice",
+        contributionAccountId: 1,
+        account: paysInto(accounts[0]!),
       }),
       makeContributionSpec({
         category: "401k",
@@ -1175,6 +1184,8 @@ describe("distributeContributions", () => {
         baseAnnual: 7200,
         taxTreatment: "tax_free",
         ownerName: "Alice",
+        contributionAccountId: 2,
+        account: paysInto(accounts[1]!),
       }),
     ];
 
@@ -1265,6 +1276,8 @@ describe("distributeContributions", () => {
       makeContributionSpec({
         category: "brokerage",
         name: "Brok A",
+        contributionAccountId: 1,
+        account: paysInto(brokA),
         method: "percent_of_salary",
         value: 0.1,
         salaryFraction: 1,
@@ -1281,6 +1294,8 @@ describe("distributeContributions", () => {
         baseAnnual: 6000,
         taxTreatment: "after_tax",
         ownerName: "Alice",
+        contributionAccountId: 2,
+        account: paysInto(brokB),
       }),
     ];
 
@@ -1334,6 +1349,8 @@ describe("distributeContributions", () => {
       makeContributionSpec({
         category: "brokerage",
         name: "Brok A",
+        contributionAccountId: 1,
+        account: paysInto(brokA),
         method: "fixed_per_period",
         value: 500,
         salaryFraction: 1,
@@ -1384,6 +1401,8 @@ describe("distributeContributions", () => {
       makeContributionSpec({
         category: "brokerage",
         name: "Brok A",
+        contributionAccountId: 1,
+        account: paysInto(brokA),
         taxTreatment: "after_tax",
         baseAnnual: 6000,
       }),
@@ -1428,6 +1447,8 @@ describe("distributeContributions", () => {
       makeContributionSpec({
         category: "brokerage",
         name: "Brok A",
+        contributionAccountId: 1,
+        account: paysInto(brokA),
         method: "percent_of_salary",
         value: 0.05,
         salaryFraction: 1,
@@ -1483,6 +1504,8 @@ describe("distributeContributions", () => {
       makeContributionSpec({
         category: "brokerage",
         name: "Brok A",
+        contributionAccountId: 1,
+        account: paysInto(brokA),
         method: "percent_of_salary",
         value: 0.05,
         salaryFraction: 1,
@@ -1532,6 +1555,8 @@ describe("distributeContributions", () => {
       makeContributionSpec({
         category: "brokerage",
         name: "Brok A",
+        contributionAccountId: 1,
+        account: paysInto(brokA),
         method: "fixed_monthly",
         contributionScaling: "fixed_amount",
         baseAnnual: 4000,
@@ -1579,6 +1604,8 @@ describe("distributeContributions", () => {
       makeContributionSpec({
         category: "brokerage",
         name: "Brok A",
+        contributionAccountId: 1,
+        account: paysInto(brokA),
         method: "fixed_monthly",
         baseAnnual: 10000,
         taxTreatment: "after_tax",

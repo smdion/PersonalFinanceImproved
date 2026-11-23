@@ -33,6 +33,7 @@ import {
 } from "../../benchmarks/benchmark-helpers";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { withAccountId } from "../fixtures/engine-input";
+import { paysInto } from "../fixtures/engine-fixtures";
 
 const MFJ_BRACKETS = [
   { threshold: 23850, baseWithholding: 0, rate: 0.1 },
@@ -66,6 +67,7 @@ const spec = (
   annual: number,
   taxTreatment: ContributionSpec["taxTreatment"],
   parentCategory: string,
+  contributionAccountId: number,
 ): ContributionSpec => ({
   name,
   category,
@@ -78,6 +80,9 @@ const spec = (
   parentCategory,
   personId: 1,
   ownerName: "Alex",
+  contributionAccountId,
+  // It pays the account of its name.
+  account: paysInto(account(name, category, "", 0, { parentCategory })),
 });
 
 /** A working household whose buckets, per-category balances and
@@ -120,7 +125,9 @@ function household(): ProjectionInput {
         startingBasis: 20000,
       }),
     ],
-    contributionSpecs: [spec("401k", "401k", 20000, "pre_tax", "Retirement")],
+    contributionSpecs: [
+      spec("401k", "401k", 20000, "pre_tax", "Retirement", 1),
+    ],
     baseYearContributions: {
       "401k": 20000,
       "403b": 0,
@@ -154,7 +161,14 @@ function withPortfolioSavings(input: ProjectionInput): ProjectionInput {
     ...p,
     contributionSpecs: [
       ...p.contributionSpecs!,
-      spec("Long-term brokerage", "brokerage", 12000, "after_tax", "Portfolio"),
+      spec(
+        "Long-term brokerage",
+        "brokerage",
+        12000,
+        "after_tax",
+        "Portfolio",
+        2,
+      ),
     ],
     baseYearContributions: { ...p.baseYearContributions!, brokerage: 12000 },
   };

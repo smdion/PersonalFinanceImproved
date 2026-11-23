@@ -23,9 +23,16 @@ import type {
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
-import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
+import {
+  makeAccumulationDefaults,
+  paysInto,
+} from "../fixtures/engine-fixtures";
 import { onePerson } from "../../fixtures/engine-people";
-import { engineInput, type FixtureInput } from "../fixtures/engine-input";
+import {
+  engineInput,
+  withAccountId,
+  type FixtureInput,
+} from "../fixtures/engine-input";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -91,6 +98,8 @@ function makeInput(): ProjectionInput {
       allocationPriority: 0,
       personId: 1,
       ownerName: "Alex",
+      contributionAccountId: 1,
+      account: paysInto(withAccountId(individualAccounts[3]!)),
       parentCategory: "Portfolio",
       retirementBehavior: "continues_after_retirement",
     },
@@ -106,6 +115,8 @@ function makeInput(): ProjectionInput {
       allocationPriority: 0,
       personId: 2,
       ownerName: "Sam",
+      contributionAccountId: 2,
+      account: paysInto(withAccountId(individualAccounts[4]!)),
       parentCategory: "Portfolio",
       retirementBehavior: "continues_after_retirement",
     },

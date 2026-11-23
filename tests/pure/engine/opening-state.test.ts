@@ -5,7 +5,9 @@ import { onePerson } from "../../fixtures/engine-people";
 import {
   makeAccumulationDefaults,
   makeContributionSpec,
+  paysInto,
 } from "../fixtures/engine-fixtures";
+import { withAccountId } from "../fixtures/engine-input";
 import {
   declareOpeningParts,
   openingParts,
@@ -58,6 +60,13 @@ const roth401k: IndividualAccountInput = {
 
 const keysOf = (parts: IndividualAccountInput[]) =>
   parts.map((p) => accountIdKeyOf(p));
+
+/** A Roth 401(k) spec whose contribution account is linked to no account. */
+const unlinkedSpec = () =>
+  makeContributionSpec({
+    contributionAccountId: 1,
+    account: { kind: "unlinked" },
+  });
 
 describe("declareOpeningParts", () => {
   it("a run with no accounts declares nothing", () => {
@@ -275,14 +284,14 @@ describe("declareOpeningParts", () => {
   });
 
   it("specs throughout, or a stretch that saves nothing, declare none", () => {
-    const spec = makeContributionSpec();
+    const spec = unlinkedSpec();
     const withSpecs = saving({ contributionSpecs: [spec] });
     expect(declareOpeningParts([ira], withSpecs)).toHaveLength(3);
     expect(declareOpeningParts([ira], saving({}, 0))).toHaveLength(3);
   });
 
   it("a profile switch to no specs that saves declares them; one that stops saving doesn't", () => {
-    const spec = makeContributionSpec();
+    const spec = unlinkedSpec();
     const switchTo = (contributionRate: number) =>
       saving({
         contributionSpecs: [spec],
@@ -309,7 +318,7 @@ describe("declareOpeningParts", () => {
   ) =>
     saving(
       {
-        contributionSpecs: [makeContributionSpec()],
+        contributionSpecs: [unlinkedSpec()],
         employerMatchRateByCategory: { ...zeroes, ...match },
         ...(byParent
           ? { employerMatchByParentCat: new Map([["401k", new Map(byParent)]]) }
@@ -353,54 +362,57 @@ describe("a slot's money with no spec of its tax type", () => {
   // Ann (40, working) holds a Traditional 401(k) and saves through a
   // pre-tax spec only; year 0's paycheck amounts follow her 401(k) split,
   // half Roth.
-  const input = household(
-    [{ ...acct("Ann 401k", "401k", 100000, 1), parentCategory: "Retirement" }],
-    {
-      currentAge: 40,
-      birthYear: 1986,
-      retirementYear: 2050,
-      projectionEndYear: 2030,
-      currentSalary: 100000,
-      accumulationDefaults: makeAccumulationDefaults({
-        contributionRate: 0.1,
-        accountSplits: { "401k": 1, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
-        taxSplits: { "401k": 0.5, ira: 1 },
-      }),
-      contributionSpecs: [
-        {
-          category: "401k",
-          name: "Ann 401k",
-          accountName: "Ann 401k",
-          method: "percent_of_salary",
-          value: 10,
-          salaryFraction: 1,
-          baseAnnual: 10000,
-          taxTreatment: "pre_tax",
-          allocationPriority: 0,
-          personId: 1,
-          ownerName: "Ann",
-          parentCategory: "Retirement",
-        },
-      ],
-      baseYearContributions: {
-        "401k": 10000,
-        "403b": 0,
-        hsa: 0,
-        ira: 0,
-        brokerage: 0,
+  const ann401k = {
+    ...acct("Ann 401k", "401k", 100000, 1),
+    parentCategory: "Retirement",
+  };
+  const input = household([ann401k], {
+    currentAge: 40,
+    birthYear: 1986,
+    retirementYear: 2050,
+    projectionEndYear: 2030,
+    currentSalary: 100000,
+    accumulationDefaults: makeAccumulationDefaults({
+      contributionRate: 0.1,
+      accountSplits: { "401k": 1, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
+      taxSplits: { "401k": 0.5, ira: 1 },
+    }),
+    contributionSpecs: [
+      {
+        category: "401k",
+        name: "Ann 401k",
+        accountName: "Ann 401k",
+        method: "percent_of_salary",
+        value: 10,
+        salaryFraction: 1,
+        baseAnnual: 10000,
+        taxTreatment: "pre_tax",
+        allocationPriority: 0,
+        personId: 1,
+        ownerName: "Ann",
+        contributionAccountId: 1,
+        account: paysInto(withAccountId(ann401k)),
+        parentCategory: "Retirement",
       },
-      baseYearEmployerMatch: {
-        "401k": 0,
-        "403b": 0,
-        hsa: 0,
-        ira: 0,
-        brokerage: 0,
-      },
-      socialSecurityEntries: [],
-      perPersonBirthYears: [1986],
-      people: onePerson(1986),
+    ],
+    baseYearContributions: {
+      "401k": 10000,
+      "403b": 0,
+      hsa: 0,
+      ira: 0,
+      brokerage: 0,
     },
-  );
+    baseYearEmployerMatch: {
+      "401k": 0,
+      "403b": 0,
+      hsa: 0,
+      ira: 0,
+      brokerage: 0,
+    },
+    socialSecurityEntries: [],
+    perPersonBirthYears: [1986],
+    people: onePerson(1986),
+  });
 
   it("lands on the same account's declared part of that tax type", () => {
     const result = calculateProjection(input);

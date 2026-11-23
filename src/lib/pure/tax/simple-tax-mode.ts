@@ -16,6 +16,7 @@ import { syntheticOpeningParts } from "../engine";
 import { isHeldPart } from "../accounts/account-part";
 import type {
   AccumulationDefaults,
+  ContributionSpec,
   ProjectionInput,
   RetirementContributionSlice,
 } from "../engine/types";
@@ -34,6 +35,12 @@ export type SimpleTaxModeParts = {
     taxSplits: AccumulationDefaults["taxSplits"];
   };
 };
+
+/** A spec in Simple pays the synthetic pot: Simple discards account
+ *  identity, for specs as for parts. */
+function onThePot(spec: ContributionSpec): ContributionSpec {
+  return { ...spec, account: { kind: "synthetic" } };
+}
 
 /** Lump sums that stay retirement money: the account they'd land in is
  *  retirement money; with no individual account to judge by, unless they
@@ -86,7 +93,9 @@ export function toSimpleTaxMode(
         grossUpForTaxes: false,
       },
     },
-    contributionSpecs: input.contributionSpecs?.filter(isRetirementSpec),
+    contributionSpecs: input.contributionSpecs
+      ?.filter(isRetirementSpec)
+      .map(onThePot),
     baseYearContributions: parts.defaults.baseYearContributions,
     baseYearEmployerMatch: parts.defaults.baseYearEmployerMatch,
     employerMatchRateByCategory: parts.defaults.employerMatchRateByCategory,
@@ -99,7 +108,9 @@ export function toSimpleTaxMode(
         );
       return {
         ...sw,
-        contributionSpecs: sw.contributionSpecs.filter(isRetirementSpec),
+        contributionSpecs: sw.contributionSpecs
+          .filter(isRetirementSpec)
+          .map(onThePot),
         ...sw.retirementOnly,
       };
     }),

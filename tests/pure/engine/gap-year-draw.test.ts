@@ -12,6 +12,8 @@ import {
 } from "@/lib/pure/tax/simple-tax-mode";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { acct, household } from "../fixtures/two-person-household";
+import { paysInto } from "../fixtures/engine-fixtures";
+import { withAccountId } from "../fixtures/engine-input";
 
 const returnRates = Array.from({ length: 70 }, (_, i) => ({
   label: `Age ${30 + i}`,
@@ -190,6 +192,9 @@ describe("the household's choices for these years", () => {
         personId: 2,
         employerShare: 1,
         personPayShare: 1,
+        // Bo's own 401(k), which holds no balance yet.
+        contributionAccountId: 1,
+        account: paysInto(withAccountId(acct("Bo 401k", "401k", 0, 2))),
       },
     ] as ProjectionInput["contributionSpecs"];
     const employerMatchRateByCategory = {
@@ -281,6 +286,9 @@ describe("a stopped year that is also a 0% year", () => {
       personId: 2,
       employerShare: 1,
       personPayShare: 1,
+      // Bo's own accounts, which hold no balance yet.
+      contributionAccountId: 1,
+      account: paysInto(withAccountId(acct("Bo 401k", "401k", 0, 2))),
     },
     {
       category: "ira",
@@ -291,6 +299,8 @@ describe("a stopped year that is also a 0% year", () => {
       baseAnnual: 6000,
       personId: 2,
       personPayShare: 1,
+      contributionAccountId: 2,
+      account: paysInto(withAccountId(acct("Bo IRA", "ira", 0, 2))),
     },
   ] as ProjectionInput["contributionSpecs"];
   const run = () => {
@@ -538,6 +548,8 @@ describe("a gap year's Portfolio saving", () => {
       allocationPriority: 0,
       parentCategory: "Portfolio",
       contributionScaling: "fixed_amount",
+      contributionAccountId: 1,
+      account: paysInto(withAccountId(portfolioRoth)),
     },
   ] as ProjectionInput["contributionSpecs"];
   const run = (annualExpenses: number) => {

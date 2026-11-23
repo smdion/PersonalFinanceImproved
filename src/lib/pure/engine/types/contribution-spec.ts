@@ -1,5 +1,7 @@
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContributionMethod } from "@/lib/config/enum-values";
+import type { ContributionSpecAccount } from "./contribution-spec-account";
+import type { RetirementContributionSlice } from "./retirement-contribution-slice";
 
 /**
  * Per-account contribution spec derived from paycheck/contributions DB data.
@@ -31,6 +33,10 @@ export type ContributionSpec = {
   personId?: number | null;
   /** Owner name for matching to individual accounts. */
   ownerName?: string;
+  /** The spec's identity: its contribution account's id. */
+  contributionAccountId: number;
+  /** The account its money goes to. */
+  account: ContributionSpecAccount;
   /** Matched individual account display name (data-driven from DB). */
   accountName?: string;
   /** User's self-imposed annual contribution target (null = no cap). */
@@ -81,12 +87,4 @@ export type ProfileSwitch = {
    *  — what Simple tax mode swaps in (simple-tax-mode.ts). Set by the
    *  payload; switches built elsewhere never reach Simple. */
   retirementOnly?: RetirementContributionSlice;
-};
-
-/** A contribution profile's base-year amounts and match over retirement
- *  money only (built from paycheck data next to the all-accounts ones). */
-export type RetirementContributionSlice = {
-  baseYearContributions: Record<AccountCategory, number>;
-  baseYearEmployerMatch: Record<AccountCategory, number>;
-  employerMatchRateByCategory: Record<AccountCategory, number>;
 };

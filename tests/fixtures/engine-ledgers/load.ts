@@ -38,7 +38,11 @@ import type {
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { readTaxData, shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../../pure/fixtures/engine-fixtures";
-import { withAccountIds } from "../../pure/fixtures/engine-input";
+import {
+  withAccountId,
+  withAccountIds,
+} from "../../pure/fixtures/engine-input";
+import { paysInto } from "../../pure/fixtures/engine-fixtures";
 import { calendarMonth } from "@/lib/utils/date";
 import {
   engineInput,
@@ -282,8 +286,16 @@ export function ledgerInput(
     matchByParent.set(into.category, byParent);
   }
 
-  const specs: ContributionSpec[] = contributions.map((c) => {
+  const specs: ContributionSpec[] = contributions.map((c, i) => {
     const a = account(c.account);
+    // The ledger names each contribution's account: it pays that one.
+    const paysTo = withAccountId<IndividualAccountInput>({
+      name: a.id,
+      category: a.category,
+      taxType: TAX_TYPE[a.tax],
+      startingBalance: 0,
+      parentCategory: a.parent,
+    });
     const p = person(c.person);
     const base = annual(c);
     contribByCat[a.category] += base;
@@ -299,6 +311,8 @@ export function ledgerInput(
       taxTreatment: TREATMENT[c.payroll],
       personId: PERSON_ID[c.person],
       ownerName: c.person,
+      contributionAccountId: i + 1,
+      account: paysInto(paysTo),
       accountName: c.account,
       targetAnnual: null,
       allocationPriority: 0,

@@ -8,6 +8,7 @@ import { planRetirementAge } from "@/lib/pure/household/household-timeline";
 import {
   withConsistentStart,
   makeAccumulationDefaults,
+  ON_THE_POT,
 } from "../fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import type {
@@ -1027,6 +1028,8 @@ describe("findCoastFireAge — contributions stop on the per-account (spec) path
           taxTreatment: "pre_tax",
           allocationPriority: 0,
           parentCategory: "Retirement",
+          contributionAccountId: 1,
+          account: ON_THE_POT,
         },
       ],
       baseYearContributions: {

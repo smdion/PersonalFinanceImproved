@@ -11,6 +11,7 @@
 import {
   consistentStart,
   makeAccumulationDefaults,
+  paysInto,
 } from "../fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
@@ -39,7 +40,7 @@ import { shippedTaxTables } from "../../helpers/tax-data";
 import { onePerson } from "../../fixtures/engine-people";
 import { engineInput, type FixtureInput } from "../fixtures/engine-input";
 import { openingTotals } from "@/lib/pure/engine/opening-state";
-import { withAccountIds } from "../fixtures/engine-input";
+import { withAccountId, withAccountIds } from "../fixtures/engine-input";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -411,6 +412,10 @@ function withAccountsAndSpecs(input: ProjectionInput): ProjectionInput {
     ...(category === "brokerage" ? { startingBasis: brokerage.basis } : {}),
   }));
   const rate = input.accumulationDefaults.contributionRate;
+  const held = withAccountIds(accounts);
+  // Each spec pays the account of its name.
+  const accountNamed = (name: string) =>
+    paysInto(held.find((ia) => ia.name === name)!);
   const specs = (
     [
       ["401k", "401k", 0.6, "pre_tax"],
@@ -419,7 +424,7 @@ function withAccountsAndSpecs(input: ProjectionInput): ProjectionInput {
       ["HSA", "hsa", 0.05, "hsa"],
       ["Brokerage", "brokerage", 0.15, "after_tax"],
     ] as const
-  ).map(([name, category, share, taxTreatment]) => ({
+  ).map(([name, category, share, taxTreatment], i) => ({
     name,
     category,
     method: "percent_of_salary" as const,
@@ -429,6 +434,8 @@ function withAccountsAndSpecs(input: ProjectionInput): ProjectionInput {
     taxTreatment,
     allocationPriority: 0,
     parentCategory: "Retirement",
+    contributionAccountId: i + 1,
+    account: accountNamed(name),
   }));
   const base = (c: AccountCategory) =>
     specs
@@ -436,7 +443,7 @@ function withAccountsAndSpecs(input: ProjectionInput): ProjectionInput {
       .reduce((t, sp) => t + sp.baseAnnual, 0);
   return {
     ...input,
-    individualAccounts: withAccountIds(accounts),
+    individualAccounts: held,
     contributionSpecs: specs,
     baseYearContributions: {
       "401k": base("401k"),
@@ -2048,6 +2055,32 @@ describe("engine invariants", () => {
     // $40k to a 401(k) (over the IRS limit → overflow), $5k each to a
     // Retirement and a Portfolio brokerage, no targets; no growth so the
     // balances are pure contributions.
+    const overflowAccounts: IndividualAccountInput[] = [
+      {
+        name: "401k",
+        category: "401k",
+        taxType: "preTax",
+        startingBalance: 100000,
+        parentCategory: "Retirement",
+      },
+      {
+        name: "Retirement brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 10000,
+        parentCategory: "Retirement",
+      },
+      {
+        name: "Long-term brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 10000,
+        parentCategory: "Portfolio",
+      },
+    ];
+    // Each spec pays the account of its name.
+    const overflowAccountNamed = (name: string) =>
+      paysInto(withAccountId(overflowAccounts.find((a) => a.name === name)!));
     const overflowFixture = (): FixtureInput => ({
       ...makeFixture({
         currentAge: 40,
@@ -2095,7 +2128,7 @@ describe("engine invariants", () => {
           ],
           ["Long-term brokerage", "brokerage", 5000, "after_tax", "Portfolio"],
         ] as const
-      ).map(([name, category, annual, taxTreatment, parentCategory]) => ({
+      ).map(([name, category, annual, taxTreatment, parentCategory], i) => ({
         name,
         category,
         method: "fixed_monthly" as const,
@@ -2105,6 +2138,8 @@ describe("engine invariants", () => {
         taxTreatment,
         allocationPriority: 0,
         parentCategory,
+        contributionAccountId: i + 1,
+        account: overflowAccountNamed(name),
       })),
       baseYearContributions: {
         "401k": 40000,
@@ -2113,29 +2148,7 @@ describe("engine invariants", () => {
         ira: 0,
         brokerage: 10000,
       } as ProjectionInput["baseYearContributions"],
-      individualAccounts: [
-        {
-          name: "401k",
-          category: "401k",
-          taxType: "preTax",
-          startingBalance: 100000,
-          parentCategory: "Retirement",
-        },
-        {
-          name: "Retirement brokerage",
-          category: "brokerage",
-          taxType: "afterTax",
-          startingBalance: 10000,
-          parentCategory: "Retirement",
-        },
-        {
-          name: "Long-term brokerage",
-          category: "brokerage",
-          taxType: "afterTax",
-          startingBalance: 10000,
-          parentCategory: "Portfolio",
-        },
-      ],
+      individualAccounts: overflowAccounts,
     });
     const overflowInput = () => engineInput(overflowFixture());
 
@@ -2707,6 +2720,42 @@ describe("engine invariants", () => {
             (sp) => sp.parentCategory === "Portfolio",
           ),
         ).toBe(false);
+      });
+
+      it("states every spec's account as the synthetic pot, in the defaults and every switch", () => {
+        const base = overflowInput();
+        const retirementSpecs = base.contributionSpecs!.filter(
+          (sp) => sp.parentCategory !== "Portfolio",
+        );
+        const simple = toSimpleTaxMode(
+          {
+            ...base,
+            profileSwitches: [
+              {
+                year: base.asOfDate.getFullYear() + 5,
+                contributionSpecs: retirementSpecs,
+                employerMatchRateByCategory: zero,
+                baseYearContributions: zero,
+                baseYearEmployerMatch: zero,
+                contributionRate: 0.2,
+                retirementOnly: parts.defaults,
+              },
+            ],
+          },
+          parts,
+        );
+        const specs = [
+          ...simple.contributionSpecs!,
+          ...simple.profileSwitches!.flatMap((sw) => sw.contributionSpecs),
+        ];
+        expect(specs.length).toBeGreaterThan(2);
+        expect(specs.map((sp) => sp.account.kind)).toEqual(
+          specs.map(() => "synthetic"),
+        );
+        // A spec keeps its own identity.
+        expect(
+          simple.contributionSpecs!.map((sp) => sp.contributionAccountId),
+        ).toEqual(retirementSpecs.map((sp) => sp.contributionAccountId));
       });
     });
 

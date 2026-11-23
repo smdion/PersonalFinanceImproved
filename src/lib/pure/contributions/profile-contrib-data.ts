@@ -23,6 +23,7 @@ import { rowPaySchedule } from "./row-pay";
 import { aggregateContributionsByCategory } from "./category-totals";
 import { matchAccountForContribution } from "./account-match";
 import { yearZeroFields } from "./cap-request";
+import { specAccountOf } from "./spec-account";
 
 /** Context needed from the main buildEnginePayload for spec building. */
 type ProfileContributionContext = {
@@ -260,14 +261,12 @@ export function buildProfileContribData(
           "pre_tax") as ContributionSpec["taxTreatment"],
         personId: c.personId,
         ownerName: contribOwner,
+        contributionAccountId: c.id,
+        account: specAccountOf(c.performanceAccountId),
         accountName: matchedAccount?.name,
         targetAnnual: c.targetAnnual ? Number(c.targetAnnual) : null,
         allocationPriority: c.allocationPriority,
-        parentCategory:
-          c.parentCategory ??
-          (c.performanceAccountId
-            ? ctx.perfCategoryMap.get(c.performanceAccountId)
-            : undefined),
+        parentCategory: contribParentCat,
         ownership: c.ownership,
         retirementBehavior: (c.performanceAccountId
           ? ctx.perfRetirementBehaviorMap.get(c.performanceAccountId)

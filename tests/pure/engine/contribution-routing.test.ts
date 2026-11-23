@@ -12,6 +12,7 @@ import {
   makeYearLimits,
   makeEmployerMatch,
   makeContributionSpec,
+  ON_THE_POT,
 } from "../fixtures/engine-fixtures";
 
 function slotFor<T extends { category: string }>(slots: T[], cat: string) {
@@ -300,11 +301,18 @@ function route(
   return routeFromSpecs(specs, capped, yearLimits, employerMatch, config);
 }
 
+/** A routing-only spec: no account parts here, so it pays the synthetic pot. */
+const unaccounted = (contributionAccountId: number) => ({
+  contributionAccountId,
+  account: ON_THE_POT,
+});
+
 describe("routeFromSpecs", () => {
   const config = makeAccumulationConfig();
 
   it("percent_of_salary: projectedSalary × salaryFraction × value", () => {
     const spec = makeContributionSpec({
+      ...unaccounted(1),
       category: "ira",
       method: "percent_of_salary",
       value: 0.1,
@@ -321,6 +329,7 @@ describe("routeFromSpecs", () => {
 
   it("contributionScaling fixed_amount: baseAnnual × limitGrowthFactor, salary-independent", () => {
     const spec = makeContributionSpec({
+      ...unaccounted(1),
       category: "hsa",
       method: "fixed_monthly",
       contributionScaling: "fixed_amount",
@@ -335,6 +344,7 @@ describe("routeFromSpecs", () => {
 
   it("fixedContribScalesWithSalary category: baseAnnual × (projectedSalary / baseSalary)", () => {
     const spec = makeContributionSpec({
+      ...unaccounted(1),
       category: "brokerage",
       method: "fixed_monthly",
       baseAnnual: 10000,
@@ -348,6 +358,7 @@ describe("routeFromSpecs", () => {
 
   it("plain fixed (no scaling flag, no fixed_amount): baseAnnual × limitGrowthFactor", () => {
     const spec = makeContributionSpec({
+      ...unaccounted(1),
       category: "403b",
       method: "fixed_monthly",
       baseAnnual: 5000,
@@ -367,6 +378,7 @@ describe("routeFromSpecs — IRS caps per person", () => {
     const { slots, warnings, totalOverflow } = route(
       [
         makeContributionSpec({
+          ...unaccounted(1),
           category: "401k",
           method: "fixed_monthly",
           baseAnnual: 25000 / 1.03,
@@ -375,6 +387,7 @@ describe("routeFromSpecs — IRS caps per person", () => {
           ownerName: "Avery",
         }),
         makeContributionSpec({
+          ...unaccounted(2),
           category: "401k",
           method: "fixed_monthly",
           baseAnnual: 10000 / 1.03,
@@ -403,6 +416,7 @@ describe("routeFromSpecs — IRS caps per person", () => {
     const { slots, totalOverflow, warnings } = route(
       [
         makeContributionSpec({
+          ...unaccounted(1),
           category: "401k",
           method: "fixed_monthly",
           baseAnnual: 15000 / 1.03,
@@ -444,6 +458,7 @@ describe("routeFromSpecs — HSA with no coverage type", () => {
     const { slots, totalOverflow } = route(
       [
         makeContributionSpec({
+          ...unaccounted(1),
           category: "hsa",
           method: "fixed_monthly",
           baseAnnual: 6000 / 1.03,

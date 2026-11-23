@@ -270,7 +270,7 @@
     "src/lib/pure/contributions/joint-accounts.ts": 165,
     "src/lib/pure/contributions/paycheck-accounts.ts": 156,
     "src/lib/pure/contributions/person-snapshot.ts": 210,
-    "src/lib/pure/contributions/profile-contrib-data.ts": 324,
+    "src/lib/pure/contributions/profile-contrib-data.ts": 323,
     "src/lib/pure/contributions/profile-fields.ts": 45,
     "src/lib/pure/contributions/roth-ira.ts": 177,
     "src/lib/pure/contributions/savings-rate.ts": 140,
@@ -311,7 +311,7 @@
     "src/lib/pure/engine/roth-conversion.ts": 381,
     "src/lib/pure/engine/tax-estimation.ts": 401,
     "src/lib/pure/engine/types/accumulation.ts": 121,
-    "src/lib/pure/engine/types/contribution-spec.ts": 92,
+    "src/lib/pure/engine/types/contribution-spec.ts": 90,
     "src/lib/pure/engine/types/decumulation.ts": 224,
     "src/lib/pure/engine/types/projection-result.ts": 568,
     "src/lib/pure/engine/types/routing.ts": 81,
@@ -952,7 +952,7 @@
       "capContributionsByLimitGroup": 229
     },
     "src/lib/pure/contributions/profile-contrib-data.ts": {
-      "buildProfileContribData": 230
+      "buildProfileContribData": 228
     },
     "src/lib/pure/engine/contribution-routing.ts": {
       "routePercentage": 189
