@@ -384,4 +384,87 @@ describe("computeTaxBucketBreakdown", () => {
     });
     expect(result.accountRollup).toEqual([]);
   });
+
+  describe("a row whose tax type doesn't fit its account type", () => {
+    it("counts a 401(k) row marked after-tax as Traditional, in the buckets and the entry", () => {
+      const result = computeTaxBucketBreakdown(
+        { accounts: [account({ taxType: "afterTax", amount: 1000 })] },
+        people,
+        [],
+      );
+      expect(result.portfolioByTaxType).toMatchObject({
+        preTax: 1000,
+        afterTax: 0,
+      });
+      expect(result.portfolioByAccount["401k"]).toMatchObject({
+        traditional: 1000,
+        roth: 0,
+      });
+      expect(
+        result.accountBreakdownByCategory["401k"]!.map((e) => e.taxType),
+      ).toEqual(["preTax"]);
+      expect(result.accountRollup.map((e) => e.taxType)).toEqual(["preTax"]);
+    });
+
+    it("counts a brokerage row marked pre-tax as after-tax", () => {
+      const result = computeTaxBucketBreakdown(
+        {
+          accounts: [
+            account({
+              accountType: "brokerage",
+              taxType: "preTax",
+              amount: 500,
+              performanceAccountId: 9,
+            }),
+          ],
+        },
+        people,
+        [],
+      );
+      expect(result.portfolioByTaxType).toMatchObject({
+        preTax: 0,
+        afterTax: 500,
+      });
+    });
+
+    it("books a sub-type row by its account's category, not the row's own", () => {
+      const result = computeTaxBucketBreakdown(
+        {
+          accounts: [
+            account({ amount: 100 }),
+            account({
+              subType: "Rollover",
+              accountType: "brokerage",
+              taxType: "preTax",
+              amount: 200,
+            }),
+          ],
+        },
+        people,
+        [],
+      );
+      expect(result.portfolioByTaxType).toMatchObject({
+        preTax: 300,
+        afterTax: 0,
+      });
+    });
+
+    it("joins a mistyped row to its account's part of the booked type", () => {
+      const result = computeTaxBucketBreakdown(
+        {
+          accounts: [
+            account({ amount: 100 }),
+            account({ taxType: "afterTax", amount: 50 }),
+          ],
+        },
+        people,
+        [],
+      );
+      expect(result.accountBreakdownByCategory["401k"]).toHaveLength(1);
+      expect(result.accountBreakdownByCategory["401k"]![0]).toMatchObject({
+        taxType: "preTax",
+        amount: 150,
+      });
+    });
+  });
 });

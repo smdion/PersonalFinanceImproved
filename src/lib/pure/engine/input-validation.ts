@@ -5,6 +5,7 @@
 import type { ProjectionInput } from "./types/projection-result";
 import { formatPercent } from "../../utils/percent";
 import { MAX_INFLATION_RATE, MIN_INFLATION_RATE } from "../../constants";
+import { bookedTaxType } from "../../config/tax-treatment-buckets";
 
 /**
  * Validate and clamp engine inputs. Pushes warnings for any clamped values.
@@ -25,6 +26,14 @@ export function validateEngineInputs(
   // start from without them (synthetic parts stand in for no account).
   if (input.individualAccounts.length === 0)
     throw new Error("The engine input has no account parts to start from");
+  // Parts arrive booked: each part's tax type is its category's own.
+  for (const ia of input.individualAccounts) {
+    const booked = bookedTaxType(ia.category, ia.taxType);
+    if (booked !== ia.taxType)
+      throw new Error(
+        `Part "${ia.name}" (${ia.category}) has tax type "${ia.taxType}", which its account type books as "${booked}"`,
+      );
+  }
   // A NaN age would read as "nobody 65+" and turn on the ACA logic.
   const ages = [input.currentAge, ...(input.perPersonBirthYears ?? [])];
   if (!ages.every(Number.isFinite))

@@ -23,7 +23,10 @@ import {
 } from "@/lib/pure/accounts/account-balance";
 import { accountDisplayName } from "@/lib/utils/account-name";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
-import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
+import {
+  bookedTaxType,
+  emptyTaxBucketMap,
+} from "@/lib/config/tax-treatment-buckets";
 import { toNumber } from "@/lib/utils/numbers";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import { entryKeyOf } from "@/lib/pure/accounts/account-part";
@@ -64,7 +67,8 @@ type AccountRollupEntry = {
   /** Null for snapshot rows with no performance account. */
   performanceAccountId: number | null;
   ownerPersonId: number | null;
-  taxType: string;
+  /** The row's booked tax type (`bookedTaxType`). */
+  taxType: PortfolioTaxType;
   category: string;
   amount: number;
   /** The snapshot rows this entry holds (`portfolio_accounts.id`). */
@@ -74,7 +78,8 @@ type AccountRollupEntry = {
 type AccountBreakdownEntry = {
   name: string;
   amount: number;
-  taxType: string;
+  /** The rows' booked tax type (`bookedTaxType`). */
+  taxType: PortfolioTaxType;
   ownerName?: string;
   ownerPersonId?: number;
   accountType?: string;
@@ -151,9 +156,11 @@ export function computeTaxBucketBreakdown(
         : 0;
     };
 
-    for (const { row: a, category: cat } of withRowCategories(
+    for (const { row, category: cat } of withRowCategories(
       snapshotData.accounts,
     )) {
+      const key = bookedTaxType(cat, row.taxType);
+      const a = { ...row, taxType: key };
       // Only engine-relevant categories (Retirement + Portfolio) — pages
       // filter engine output by parentCategory for the correct subset.
       if (a.parentCategory && !ENGINE_CATEGORIES.has(a.parentCategory))
@@ -164,8 +171,6 @@ export function computeTaxBucketBreakdown(
         ? personNameById.get(a.ownerPersonId)
         : undefined;
       const displayName = accountDisplayName(a, ownerName);
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- snapshot rows store one of the four tax types
-      const key = a.taxType as PortfolioTaxType;
       portfolioByTaxType[key] += a.amount;
 
       const pCat = a.parentCategory ?? "Retirement";
@@ -280,7 +285,7 @@ export function computeTaxBucketBreakdown(
 /** Merges one snapshot row into its breakdown entry and, for Retirement money, its
  *  rollup entry: rows with one engine key (`entryKeyOf`) are one entry. */
 function mergeRowIntoEntries(
-  a: TaxBucketSnapshotAccount,
+  a: TaxBucketSnapshotAccount & { taxType: PortfolioTaxType },
   facts: {
     category: AccountCategory;
     displayName: string;

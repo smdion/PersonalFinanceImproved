@@ -626,6 +626,14 @@ describe("the starting money as parts", () => {
     );
   });
 
+  it("a run refuses a part whose tax type its account type doesn't book, naming the part", () => {
+    expect(() =>
+      calculateProjection(
+        household([acct("Ann 401k", "401k", 1000, 1, "afterTax")]),
+      ),
+    ).toThrow(/Ann 401k.*"afterTax".*"preTax"/);
+  });
+
   it("the opening parts are the held accounts, or synthetic parts when none is held", () => {
     expect(openingParts([roth401k], byCategory)).toEqual([roth401k]);
     expect(openingParts([], byCategory)).toEqual(

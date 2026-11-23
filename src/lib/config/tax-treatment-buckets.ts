@@ -1,7 +1,11 @@
 // Portfolio tax buckets as plain values, with no Zod, so the client
 // projection cards and the engine can read them without bundling it.
 import type { PortfolioTaxType, TaxTreatment } from "./enum-values";
-import { type AccountCategory, getAccountTypeConfig } from "./account-types";
+import {
+  type AccountCategory,
+  getAccountTypeConfig,
+  isTaxFreeBucket,
+} from "./account-types";
 
 /** A fresh zero counter per portfolio tax type. */
 export function emptyTaxBucketMap(): Record<PortfolioTaxType, number> {
@@ -55,4 +59,17 @@ export function taxTypeOnSide(
   if (balanceStructure === "roth_traditional")
     return ROTH_SPLIT_PARTS[side === "roth" ? "roth" : "traditional"];
   return balanceStructure === "single_bucket" ? "hsa" : "afterTax";
+}
+
+/** The tax type a stored row of `category` counts as: a Roth-capable
+ *  account's row is Roth only when stored tax-free, else Traditional; any
+ *  other category's row is its one tax bucket, whatever was stored. */
+export function bookedTaxType(
+  category: AccountCategory,
+  storedTaxType: string,
+): PortfolioTaxType {
+  return taxTypeOnSide(
+    category,
+    isTaxFreeBucket(storedTaxType) ? "roth" : "traditional",
+  );
 }
