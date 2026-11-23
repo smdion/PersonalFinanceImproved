@@ -24,11 +24,12 @@ import type {
   ProjectionContext,
   ProjectionLoopState,
 } from "@/lib/pure/engine/projection-year-handlers/types";
+import type { PortfolioTaxType } from "@/lib/config/enum-values";
 
 const indKey = makeIndKey();
 const part = (
   name: string,
-  taxType: string,
+  taxType: PortfolioTaxType,
   startingBalance: number,
   parentCategory = "Retirement",
   category: "ira" | "401k" | "brokerage" = "ira",

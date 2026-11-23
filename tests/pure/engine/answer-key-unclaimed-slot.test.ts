@@ -15,7 +15,7 @@ import { withAccountId } from "../fixtures/engine-input";
 const part = (
   name: string,
   category: IndividualAccountInput["category"],
-  taxType: string,
+  taxType: IndividualAccountInput["taxType"],
   startingBalance: number,
   ownerPersonId?: number,
   parentCategory = "Retirement",

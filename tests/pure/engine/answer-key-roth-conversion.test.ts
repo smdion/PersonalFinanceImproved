@@ -179,7 +179,11 @@ describe("answer key: the conversion's tax from a Retirement brokerage part", ()
       startingBalance: 500_000,
       parentCategory: "Retirement",
     });
-    const iraRoth = { ...ira, taxType: "taxFree", startingBalance: 0 };
+    const iraRoth = makeIndividualAccount({
+      ...ira,
+      taxType: "taxFree",
+      startingBalance: 0,
+    });
     const brokerage = makeIndividualAccount({
       name: "Brokerage",
       category: "brokerage",

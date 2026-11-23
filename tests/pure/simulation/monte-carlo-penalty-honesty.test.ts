@@ -19,6 +19,7 @@ import {
   make5050GlidePath,
 } from "../../benchmarks/benchmark-helpers";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
@@ -137,7 +138,7 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
  *  (non-medical penalty until 65) are penalty-exposed like the Roth growth:
  *  only the brokerage and the Roth basis are reachable before 59½ — a real
  *  gap. (Untracked, the aggregate 401(k)/HSA read as reachable money.) */
-function makeRothIndividualAccounts() {
+function makeRothIndividualAccounts(): IndividualAccountInput[] {
   const owner = {
     ownerName: "Owner",
     ownerPersonId: 1,

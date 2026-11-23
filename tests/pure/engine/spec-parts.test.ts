@@ -12,7 +12,7 @@ import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balance
 const indKey = makeIndKey();
 const part = (
   ownerPersonId: number,
-  taxType: string,
+  taxType: IndividualAccountInput["taxType"],
 ): IndividualAccountInput => ({
   name: "Joint IRA",
   category: "ira",

@@ -201,7 +201,10 @@ describe("declareOpeningParts", () => {
   });
 
   it("an IRA held in parts by two owners declares each owner's missing part", () => {
-    const ira = (ownerPersonId: number, taxType: string) => ({
+    const ira = (
+      ownerPersonId: number,
+      taxType: IndividualAccountInput["taxType"],
+    ) => ({
       name: "Joint IRA",
       performanceAccountId: 5,
       category: "ira" as const,
@@ -324,7 +327,7 @@ describe("declareOpeningParts", () => {
     ...retirementBrokerage,
     name: "Ann IRA",
     category: "ira" as const,
-    taxType: "preTax",
+    taxType: "preTax" as const,
     startingBasis: undefined,
   };
 
@@ -618,12 +621,6 @@ describe("the starting money as parts", () => {
     });
     expect(balances.taxFree).toBe(1000.01);
     expect(balances.preTax).toBe(2000);
-  });
-
-  it("a part whose tax type is no tax bucket throws, naming the part", () => {
-    expect(() => openingTotals([{ ...roth401k, taxType: "roth401k" }])).toThrow(
-      /Alice 401\(k\).*"roth401k"/,
-    );
   });
 
   it("a run refuses a part whose tax type its account type doesn't book, naming the part", () => {

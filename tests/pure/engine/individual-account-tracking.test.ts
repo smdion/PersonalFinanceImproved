@@ -136,7 +136,10 @@ describe("buildSpecToAccountMapping", () => {
   const indKey = makeIndKey();
 
   // One account (performance account 9) and the specs that pay it.
-  const part = (taxType: string, ownerPersonId?: number) =>
+  const part = (
+    taxType: IndividualAccountInput["taxType"],
+    ownerPersonId?: number,
+  ) =>
     makeIndividualAccount({
       name: "IRA",
       category: "ira",

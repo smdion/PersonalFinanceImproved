@@ -1803,40 +1803,43 @@ describe("engine invariants", () => {
         {
           name: "401k",
           category: "401k" as const,
-          taxType: "preTax",
+          taxType: "preTax" as const,
           startingBalance: 80000,
         },
         {
           name: "401k",
           category: "401k" as const,
-          taxType: "taxFree",
+          taxType: "taxFree" as const,
           startingBalance: 20000,
         },
         {
           name: "IRA",
           category: "ira" as const,
-          taxType: "preTax",
+          taxType: "preTax" as const,
           startingBalance: 30000,
         },
         {
           name: "IRA",
           category: "ira" as const,
-          taxType: "taxFree",
+          taxType: "taxFree" as const,
           startingBalance: 20000,
         },
         {
           name: "HSA",
           category: "hsa" as const,
-          taxType: "hsa",
+          taxType: "hsa" as const,
           startingBalance: 15000,
         },
         {
           name: "Retirement brokerage",
           category: "brokerage" as const,
-          taxType: "afterTax",
+          taxType: "afterTax" as const,
           startingBalance: 30000,
         },
-      ].map((a) => ({ ...a, parentCategory: "Retirement" }));
+      ].map((a): IndividualAccountInput => ({
+        ...a,
+        parentCategory: "Retirement",
+      }));
       if (portfolio > 0)
         individualAccounts.push({
           name: "Long-term brokerage",

@@ -3,6 +3,7 @@
 
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalance } from "@/lib/config/account-types.types";
+import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 import type { SeparationSource } from "@/lib/pure/accounts/early-access";
 
@@ -57,8 +58,8 @@ export type IndividualAccountInput = {
   portfolioAccountId?: number;
   /** Waterfall category this account belongs to. */
   category: AccountCategory;
-  /** Tax type: 'taxFree' for Roth, 'preTax'/'hsa'/'afterTax' for others. */
-  taxType: string;
+  /** The part's tax type: one its category books (`bookedTaxType`). */
+  taxType: PortfolioTaxType;
   /** Raw account type from DB (e.g. "401k", "IRA Traditional", "ESPP"). */
   accountType?: string;
   /** Starting balance from portfolio snapshot. */

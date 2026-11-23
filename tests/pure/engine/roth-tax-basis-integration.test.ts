@@ -25,6 +25,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
@@ -142,7 +143,7 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
  *  per-category balances describe the same household. A second person
  *  owns it, the same in every case, so only the Roth owner's age differs
  *  between the qualified and non-qualified runs. */
-function otherAccounts() {
+function otherAccounts(): IndividualAccountInput[] {
   const owner = {
     ownerName: "Bob",
     ownerPersonId: 2,
@@ -187,7 +188,7 @@ function makeRothHousehold(ownerBirthYear: number) {
   };
 }
 
-function makeRothIndividualAccounts() {
+function makeRothIndividualAccounts(): IndividualAccountInput[] {
   return [
     ...otherAccounts(),
     {

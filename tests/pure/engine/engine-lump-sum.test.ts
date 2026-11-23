@@ -83,7 +83,7 @@ const indKey = makeIndKey();
 const part = (
   name: string,
   category: AccountCategory,
-  taxType: string,
+  taxType: IndividualAccountInput["taxType"],
   performanceAccountId: number,
   extra: Partial<IndividualAccountInput> = {},
 ): IndividualAccountInput => ({

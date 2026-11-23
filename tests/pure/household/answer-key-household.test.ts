@@ -341,7 +341,7 @@ describe("household: Coast FIRE reads retirement money only", () => {
                 {
                   name: "Brokerage",
                   category: "brokerage" as const,
-                  taxType: "afterTax",
+                  taxType: "afterTax" as const,
                   startingBalance: portfolio,
                   startingBasis: portfolio,
                   parentCategory: "Portfolio",

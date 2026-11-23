@@ -16,6 +16,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/pure/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
@@ -130,7 +131,7 @@ function makeInput(overrides: Partial<FixtureInput> = {}): ProjectionInput {
 
 /** The fixture's other money, tracked as accounts so they and the
  *  per-category balances describe the same household. */
-function otherAccounts() {
+function otherAccounts(): IndividualAccountInput[] {
   const owner = {
     ownerName: "Alice",
     ownerPersonId: 1,

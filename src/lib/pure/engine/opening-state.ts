@@ -14,7 +14,7 @@ import {
   isTaxFreeBucket,
   zeroBalance,
 } from "../../config/account-types";
-import { PORTFOLIO_TAX_TYPE_VALUES } from "../../config/enum-values";
+import type { PortfolioTaxType } from "../../config/enum-values";
 import {
   PERF_CATEGORY_RETIREMENT,
   PROJECTED_RETIREMENT_BROKERAGE_LABEL,
@@ -35,7 +35,8 @@ import type {
 import type { ProjectionInput } from "./types/projection-result";
 
 /** The two tax parts of an account type that `supportsRothSplit`. */
-const SPLIT_TAX_TYPES: readonly string[] = Object.values(ROTH_SPLIT_PARTS);
+const SPLIT_TAX_TYPES: readonly PortfolioTaxType[] =
+  Object.values(ROTH_SPLIT_PARTS);
 
 /** The engine input's flows that can reach a slice no part covers. */
 export type OpeningFlows = Pick<
@@ -322,7 +323,11 @@ export function syntheticOpeningParts(
   return getEngineCategories().flatMap((category) => {
     const balance = byCategory[category];
     const { displayLabel, taxBucketKey } = getAccountTypeConfig(category);
-    const part = (taxType: string, money: number, basis?: number) => ({
+    const part = (
+      taxType: PortfolioTaxType,
+      money: number,
+      basis?: number,
+    ) => ({
       name: displayLabel,
       category,
       taxType,
@@ -354,8 +359,8 @@ export function openingParts(
 }
 
 /** The tax buckets and per-category balances the parts hold, by the payload's
- *  rules: a part's tax type picks its bucket (none: throws); a Roth-capable
- *  category books Roth parts as Roth, others Traditional; basis is the parts'. */
+ *  rules: a part's tax type picks its bucket; a Roth-capable category books
+ *  Roth parts as Roth, others Traditional; basis is the parts'. */
 export function openingTotals(parts: readonly IndividualAccountInput[]): {
   balances: TaxBuckets;
   accountBalance: AccountBalances;
@@ -365,12 +370,7 @@ export function openingTotals(parts: readonly IndividualAccountInput[]): {
   for (const ia of parts) {
     const money = ia.startingBalance;
     const balance = accountBalance[ia.category];
-    const bucket = PORTFOLIO_TAX_TYPE_VALUES.find((t) => t === ia.taxType);
-    if (!bucket)
-      throw new Error(
-        `openingTotals: part "${ia.name}" (${ia.category}) has tax type "${ia.taxType}", not a tax bucket`,
-      );
-    balances[bucket] += money;
+    balances[ia.taxType] += money;
     if (balance.structure !== "roth_traditional") balance.balance += money;
     else if (isTaxFreeBucket(ia.taxType)) balance.roth += money;
     else balance.traditional += money;

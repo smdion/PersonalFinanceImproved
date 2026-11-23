@@ -23,6 +23,7 @@ import type {
   ProjectionInput,
 } from "@/lib/pure/engine/types";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
+import { taxTypeOnSide } from "@/lib/config/tax-treatment-buckets";
 import {
   CORRELATIONS,
   IBBOTSON_CLASSES,
@@ -46,7 +47,7 @@ const MFJ_BRACKETS = [
 const account = (
   name: string,
   category: IndividualAccountInput["category"],
-  taxType: string,
+  taxType: IndividualAccountInput["taxType"],
   startingBalance: number,
   extra: Partial<IndividualAccountInput> = {},
 ): IndividualAccountInput =>
@@ -82,7 +83,11 @@ const spec = (
   ownerName: "Alex",
   contributionAccountId,
   // It pays the account of its name.
-  account: paysInto(account(name, category, "", 0, { parentCategory })),
+  account: paysInto(
+    account(name, category, taxTypeOnSide(category, undefined), 0, {
+      parentCategory,
+    }),
+  ),
 });
 
 /** A working household whose buckets, per-category balances and

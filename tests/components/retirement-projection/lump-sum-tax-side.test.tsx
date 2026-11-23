@@ -49,7 +49,7 @@ const rows = [
   row("Invented 401k", "401k", "preTax", 93),
   row("Invented 401k", "401k", "taxFree", 93),
   row("Invented Brokerage", "brokerage", "afterTax", 94),
-] as IndividualAccountYearBalance[];
+] as (IndividualAccountYearBalance & Pick<IndividualAccountInput, "taxType">)[];
 
 function addLumpSum(amount: string, option: string) {
   fireEvent.change(screen.getByLabelText("Account"), {

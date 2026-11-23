@@ -2,6 +2,8 @@
 // Pure type definitions for account types
 // ---------------------------------------------------------------------------
 
+import type { PortfolioTaxType } from "./enum-values";
+
 /** How an account type stores its balances. */
 export type BalanceStructure =
   "roth_traditional" | "single_bucket" | "basis_tracking";
@@ -55,7 +57,7 @@ export type AccountTypeConfig = {
   supportsRothSplit: boolean;
   balanceStructure: BalanceStructure;
   withdrawalTaxType: WithdrawalTaxType;
-  taxBucketKey: string; // maps to byTaxType routing key
+  taxBucketKey: PortfolioTaxType; // maps to byTaxType routing key
   supportedTaxTreatments: readonly string[];
   /** IRS ordering of a Roth (taxFree) distribution: "basis_first" (Roth IRA: basis before growth)
    *  or "pro_rata" (designated Roth 401k/403b: prorated, IRS Notice 2009-68); null where the
