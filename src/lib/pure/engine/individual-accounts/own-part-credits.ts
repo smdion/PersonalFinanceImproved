@@ -6,11 +6,11 @@ import {
   isRetirementMoney,
 } from "../../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../../config/tax-treatment-buckets";
-import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
+import { roundToCents } from "../../../utils/math";
 import type { IndKeyFn } from "../../accounts/account-part";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import type { AccumulationSlot } from "../types/routing";
-import { credit } from "./ledger";
+import { creditByWeight } from "./part-weights";
 
 /** The run's parts, their parents, and the balances a credit writes to. */
 type Ledger = Record<"indAccounts", readonly IndividualAccountInput[]> &
@@ -37,32 +37,10 @@ function slotTaxParts(
   return [[config.taxBucketKey, employee]];
 }
 
-/** Each part's weight: its balance; when all are $0, its account's other
- *  parts' (each person's); when those are $0 too, equal. */
-function weightsOf(ledger: Ledger, parts: IndividualAccountInput[]) {
-  const balance = (ia: IndividualAccountInput) =>
-    Math.max(0, ledger.indBalance.get(ledger.indKey(ia)) ?? 0);
-  const own = parts.map(balance);
-  if (sumBy(own, (w) => w) > 0) return own;
-  const otherParts = parts.map((part) =>
-    sumBy(
-      ledger.indAccounts.filter(
-        (ia) =>
-          ia.taxType !== part.taxType &&
-          ledger.indKey({ ...ia, taxType: part.taxType }) ===
-            ledger.indKey(part),
-      ),
-      balance,
-    ),
-  );
-  if (sumBy(otherParts, (w) => w) > 0) return otherParts;
-  return parts.map(() => 1);
-}
-
 /**
  * A slot's employee money that no spec in its category claims, by tax part:
  * the run's Retirement-parented parts of each slice take it by weight
- * (`weightsOf`), the last part the cents left. Credits contributions too.
+ * (`creditByWeight`). Credits contributions too.
  */
 export function unclaimedSlot(
   ledger: Ledger,
@@ -82,16 +60,6 @@ export function unclaimedSlot(
         ),
     );
     if (amount === 0 || parts.length === 0) continue;
-    const weights = weightsOf(ledger, parts);
-    const total = sumBy(weights, (w) => w);
-    let left = amount;
-    parts.forEach((ia, i) => {
-      const share =
-        i === parts.length - 1
-          ? left
-          : roundToCents(amount * safeDivide(weights[i]!, total, 0));
-      left = roundToCents(left - share);
-      credit(ledger.indKey(ia), share, [contributions, ledger.indBalance]);
-    });
+    creditByWeight(ledger, parts, amount, [contributions, ledger.indBalance]);
   }
 }
