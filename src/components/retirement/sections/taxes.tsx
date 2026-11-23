@@ -343,7 +343,7 @@ export function TaxesSection({
         <div>
           <label htmlFor={`${id}-order`} className="text-muted">
             Discretionary Withdrawal Order
-            <HelpTip text="Beyond your Traditional bracket target, which free source drains first: Roth basis (default) or brokerage's 0%-capital-gains room. Brokerage-first uses up the 0% room sooner, but a brokerage gain still counts toward MAGI for ACA/IRMAA even when it's taxed at 0% federally — Roth withdrawals never touch MAGI. If you have ACA or IRMAA awareness on, brokerage-first trades subsidy/surcharge risk for using that room sooner." />
+            <HelpTip text="Beyond your Traditional bracket target, which free source drains first: Roth basis (default) or brokerage's 0%-capital-gains room. Brokerage-first uses up the 0% room sooner, but a brokerage gain still counts toward MAGI for ACA/IRMAA even when it's taxed at 0% federally — Roth withdrawals never touch MAGI. So brokerage-first can raise the IRMAA surcharge the projection charges from 65, whether IRMAA awareness is on or off, and with awareness on it leaves less room for Roth conversions below the next cliff. Before 65 it can cost you an ACA subsidy." />
           </label>
           <div className="font-medium">
             <select

@@ -37,7 +37,7 @@ export function HealthcareSection({
         <div>
           <span className="text-muted">
             IRMAA (65+)
-            <HelpTip text="Medicare Part B+D surcharges triggered by MAGI cliffs. Crossing a cliff by $1 costs $1,000-$6,900+/year per person. Engine warns when Roth conversions or withdrawals approach a cliff." />
+            <HelpTip text="Medicare Part B+D surcharges triggered by MAGI cliffs. Crossing a cliff by $1 costs $1,000-$6,900+/year per person. The projection charges the surcharge for anyone 65+ whether this is on or off. On: Roth conversions stop below the next cliff." />
           </span>
           <div className="font-medium">
             <button

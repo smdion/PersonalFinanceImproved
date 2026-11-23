@@ -808,14 +808,14 @@ export function DecumulationMethodologyContent() {
         <p>
           <strong>IRMAA</strong> (Income-Related Monthly Adjustment Amount) adds
           Medicare Part B and Part D surcharges at age 65+ based on modified AGI
-          from two years prior. The engine works out the surcharge and, when
-          it&apos;s about to push you over the next tier, caps that year&apos;s
-          Roth conversion to stay under the cliff. In Healthcare you choose
-          whether the surcharge is in your budget (nothing more is withdrawn) or
-          on top of it (it&apos;s added to what the year needs). The first two
-          retirement years read your last working years&apos; wages, as Social
-          Security does until you file Form SSA-44. Standard Part B and D
-          premiums aren&apos;t modeled: put them in your budget.
+          from two years prior. The engine works out the surcharge, IRMAA
+          awareness on or off; on, it also caps a Roth conversion to stay under
+          the next tier. In Healthcare you choose whether the surcharge is in
+          your budget (nothing more is withdrawn) or on top of it (it&apos;s
+          added to what the year needs). The first two retirement years read
+          your last working years&apos; wages, as Social Security does until you
+          file Form SSA-44. Standard Part B and D premiums aren&apos;t modeled:
+          put them in your budget.
         </p>
         <p>
           <strong>ACA</strong> (Affordable Care Act) subsidy cliffs apply before
