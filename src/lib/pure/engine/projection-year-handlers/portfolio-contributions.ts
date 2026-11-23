@@ -1,11 +1,9 @@
 /** The decumulation year's Portfolio contributions, reported only. */
 import { roundToCents } from "../../../utils/math";
-import {
-  isOverflowTarget,
-  isRetirementMoney,
-} from "../../../config/account-types";
+import { isRetirementMoney } from "../../../config/account-types";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
-import { portfolioFirst, specKeyOf } from "../individual-accounts/ledger";
+import { rampBrokerages } from "../../accounts/brokerage-ramp";
+import { specKeyOf } from "../individual-accounts/ledger";
 import { creditSpecParts } from "../individual-accounts/spec-accounts";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
@@ -54,14 +52,7 @@ export function decumulationPortfolioContributions(
     decumBrokerageContribution += decumRampAmount;
     // The ramp spread over brokerages by balance (Portfolio ones first; the
     // projection-only one only with no real brokerage), as accumulation does.
-    const brokerages = indAccounts.filter((ia) =>
-      isOverflowTarget(ia.category),
-    );
-    const realBrokerages = brokerages.filter((ia) => ia.origin !== "projected");
-    const rampAccounts =
-      realBrokerages.length > 0
-        ? portfolioFirst(realBrokerages, (ia) => ia.parentCategory)
-        : brokerages;
+    const rampAccounts = rampBrokerages(indAccounts);
     const rampTotal = rampAccounts.reduce(
       (s, ia) => s + (indBalance.get(indKey(ia)) ?? 0),
       0,
