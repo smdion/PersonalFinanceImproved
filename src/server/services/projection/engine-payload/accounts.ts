@@ -10,6 +10,7 @@ import {
   computeTaxBucketBreakdown,
   unlinkedRowsWarning,
 } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
+import { rebookedRowsWarning } from "@/lib/pure/accounts/tax-buckets/rebooked-rows";
 import { buildIndividualAccounts } from "./individual-accounts";
 import type { RetirementData } from "./load";
 import type { perPersonSettingsFor } from "./settings-for";
@@ -103,6 +104,7 @@ export function startingAccounts(
     ...(rmdTarget.warning ? [rmdTarget.warning] : []),
     ...basisWarnings,
     ...unlinkedRowsWarning(accountBreakdownByCategory),
+    ...(snapshotData ? rebookedRowsWarning(snapshotData.accounts, people) : []),
   ];
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
 

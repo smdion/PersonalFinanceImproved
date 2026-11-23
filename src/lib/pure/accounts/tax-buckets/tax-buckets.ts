@@ -35,6 +35,11 @@ import { withRowCategories } from "@/lib/pure/accounts/tax-buckets/snapshot-row-
 /** parentCategory values the projection engine includes in starting balances. */
 const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
 
+/** A snapshot row the projection counts: one with such a parent, or none. */
+export function isProjectedRow(row: { parentCategory: string | null }) {
+  return !row.parentCategory || ENGINE_CATEGORIES.has(row.parentCategory);
+}
+
 /** One portfolio snapshot row, as the loader reads it. */
 export type TaxBucketSnapshotAccount = {
   /** The row's own id (`portfolio_accounts.id`), unique within a snapshot. */
@@ -135,8 +140,7 @@ export function computeTaxBucketBreakdown(
     const perfById = new Map(perfAccounts.map((p) => [p.id, p]));
     const rowsTotalByPerf = new Map<number, number>();
     for (const a of snapshotData.accounts) {
-      if (a.parentCategory && !ENGINE_CATEGORIES.has(a.parentCategory))
-        continue;
+      if (!isProjectedRow(a)) continue;
       if (a.performanceAccountId == null) continue;
       rowsTotalByPerf.set(
         a.performanceAccountId,
@@ -163,8 +167,7 @@ export function computeTaxBucketBreakdown(
       const a = { ...row, taxType: key };
       // Only engine-relevant categories (Retirement + Portfolio) — pages
       // filter engine output by parentCategory for the correct subset.
-      if (a.parentCategory && !ENGINE_CATEGORIES.has(a.parentCategory))
-        continue;
+      if (!isProjectedRow(a)) continue;
       const knownBasis = rowBasis(a);
       const basis = knownBasis ?? 0;
       const ownerName = a.ownerPersonId
