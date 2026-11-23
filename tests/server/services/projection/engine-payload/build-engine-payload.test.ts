@@ -1225,3 +1225,64 @@ describe("each retirement profile stands alone", () => {
     expect(await householdRetirementYear(appDb, new Date())).toBeNull();
   });
 });
+
+describe("buildEnginePayload — a snapshot row linked to no account", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
+  let cleanup: () => void;
+  let snapshotId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    appDb = ctx.rawDb;
+    cleanup = ctx.cleanup;
+    const personId = await seedPerson(db, "Alex", "1985-06-15");
+    await markPrimary(db, personId);
+    await seedRetirementSettings(db, personId);
+    seedJob(db, personId, { annualSalary: "150000" });
+    const budgetId = await insertBudgetProfile(db, "Main Budget");
+    await insertBudgetItem(db, budgetId, "Essentials", "Rent", [3000]);
+    const perfAcctId = seedPerformanceAccount(db, {
+      parentCategory: "Retirement",
+      accountType: "401k",
+      ownerPersonId: personId,
+    });
+    snapshotId = seedSnapshot(db, "2025-06-15", [
+      { performanceAccountId: perfAcctId, amount: "250000", taxType: "preTax" },
+    ]);
+  });
+
+  afterAll(() => cleanup());
+
+  const noteOf = async () => {
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
+    });
+    return (payload!.baseEngineInput.inputWarnings ?? []).filter((w) =>
+      w.includes("isn't linked to an account"),
+    );
+  };
+
+  it("puts the unlinked-row note in the projection's input warnings, and none while every row is linked", async () => {
+    expect(await noteOf()).toEqual([]);
+    const schema = await getSchema();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+    (db as any)
+      .insert(schema.portfolioAccounts)
+      .values({
+        snapshotId,
+        performanceAccountId: null,
+        amount: "1000",
+        taxType: "preTax",
+        institution: "Fidelity",
+        accountType: "401k",
+        ownerPersonId: null,
+      })
+      .run();
+    expect(await noteOf()).toEqual([
+      expect.stringMatching(/^1 snapshot row isn't linked to an account/),
+    ]);
+  });
+});
