@@ -14,7 +14,10 @@ import {
   makeAccumulationDefaults,
 } from "../fixtures/engine-fixtures";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
-import { declareOpeningParts } from "@/lib/pure/engine/opening-state";
+import {
+  declareOpeningParts,
+  openingTotals,
+} from "@/lib/pure/engine/opening-state";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { shippedTaxTables } from "../../helpers/tax-data";
 
@@ -685,17 +688,8 @@ describe("performRothConversion (nonRetirement scope)", () => {
     // room is large (see makeRothInput's own comment: ~151550) -- without
     // the retirement-only cap, conversion would size against the full
     // blended balance.
-    const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
-    const accountBalance = makeAccountBalances({
-      preTax: 500000,
-      afterTax: 300000,
-    });
-    accountBalance["401k"] = {
-      structure: "roth_traditional",
-      traditional: 500000,
-      roth: 0,
-    };
     const ia = accts();
+    const { balances, accountBalance } = openingTotals(ia);
     const result = performRothConversion(
       makeRothInput({
         balances,
@@ -715,17 +709,8 @@ describe("performRothConversion (nonRetirement scope)", () => {
   });
 
   it("debits only the Retirement-parented account's indBal, leaving the Portfolio-parented account untouched", () => {
-    const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
-    const accountBalance = makeAccountBalances({
-      preTax: 500000,
-      afterTax: 300000,
-    });
-    accountBalance["401k"] = {
-      structure: "roth_traditional",
-      traditional: 500000,
-      roth: 0,
-    };
     const ia = accts();
+    const { balances, accountBalance } = openingTotals(ia);
     const indBalance = indBalFor(ia);
     performRothConversion(
       makeRothInput({
@@ -750,14 +735,10 @@ describe("performRothConversion (nonRetirement scope)", () => {
     // it's Retirement-parented) -- same as the blended total here, so this
     // asserts the gate doesn't spuriously fail when nonRetirement has
     // nothing to exclude from THIS category.
-    const balances = makeTaxBuckets({ preTax: 100000, afterTax: 300000 });
-    const accountBalance = makeAccountBalances({
-      preTax: 100000,
-      afterTax: 300000,
-    });
     const ia = accts().filter(
       (a) => a.category !== "401k" || a.parentCategory === "Retirement",
     );
+    const { balances, accountBalance } = openingTotals(ia);
     const result = performRothConversion(
       makeRothInput({
         balances,
@@ -775,11 +756,6 @@ describe("performRothConversion (nonRetirement scope)", () => {
   });
 
   it("skips the conversion entirely when Retirement-only brokerage can't cover the tax cost, even though blended brokerage could", () => {
-    const balances = makeTaxBuckets({ preTax: 100000, afterTax: 300000 });
-    const accountBalance = makeAccountBalances({
-      preTax: 100000,
-      afterTax: 300000,
-    });
     const ia = declareOpeningParts(
       [
         makeIndividualAccount({
@@ -812,6 +788,7 @@ describe("performRothConversion (nonRetirement scope)", () => {
       roth: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
       grandTotal: 299500,
     };
+    const { balances, accountBalance } = openingTotals(ia);
     const result = performRothConversion(
       makeRothInput({
         balances,

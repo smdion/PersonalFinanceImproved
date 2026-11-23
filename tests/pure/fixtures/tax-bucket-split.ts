@@ -1,5 +1,5 @@
 /** Per-category balances from tax buckets, for test fixtures that state
- *  only the buckets. */
+ *  only the buckets (and hold no account parts). */
 import type {
   TaxBuckets,
   AccountBalances,
@@ -12,7 +12,8 @@ import {
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 
 /** Derive AccountBalances from TaxBuckets using a config-derived split
- *  (test fixtures only; it puts 150% of pre-tax into accounts). */
+ *  (test fixtures only; it puts 150% of pre-tax into accounts). For runs with
+ *  no account parts: a test with parts takes both from `openingTotals(parts)`. */
 export function accountBalancesFromTaxBuckets(b: TaxBuckets): AccountBalances {
   // Without real per-account data, split preTax/taxFree proportionally across
   // limit groups that contain roth_traditional categories. Weights are derived

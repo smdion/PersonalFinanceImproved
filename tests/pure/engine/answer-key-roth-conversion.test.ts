@@ -34,6 +34,7 @@ import type { TaxBuckets } from "@/lib/pure/accounts/account-balances.types";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { getBasis } from "@/lib/pure/accounts/account-balance";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
+import { openingTotals } from "@/lib/pure/engine/opening-state";
 import { makeIndividualAccount } from "../fixtures/engine-fixtures";
 
 const y2026 = readTaxData().years["2026"]!;
@@ -193,25 +194,7 @@ describe("answer key: the conversion's tax from a Retirement brokerage part", ()
       parts.map((p) => [indKey(p), p.startingBalance]),
     );
     const brokBasis = new Map([[indKey(brokerage), 20_000]]);
-    const balances: TaxBuckets = {
-      preTax: 500_000,
-      taxFree: 0,
-      hsa: 0,
-      afterTax: 50_000,
-      afterTaxBasis: 20_000,
-    };
-    const accountBalance = accountBalancesFromTaxBuckets(balances);
-    accountBalance.ira = {
-      structure: "roth_traditional",
-      traditional: 500_000,
-      roth: 0,
-    };
-    for (const other of ["401k", "403b"] as const)
-      accountBalance[other] = {
-        structure: "roth_traditional",
-        traditional: 0,
-        roth: 0,
-      };
+    const { balances, accountBalance } = openingTotals(parts);
     const none = { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 };
     const r = performRothConversion({
       enableRothConversions: true,
