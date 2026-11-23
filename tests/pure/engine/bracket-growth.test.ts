@@ -724,6 +724,55 @@ describe("growIrmaaBrackets", () => {
     const grown = growIrmaaBrackets(IRMAA_BRACKETS, 1.5, 1.5);
     expect(Object.keys(grown).sort()).toEqual(["HOH", "MFJ", "Single"]);
   });
+
+  // The top tier is the last row by position, per filing status: no row's
+  // threshold or count marks it.
+  it("takes each filing status's last row as its top tier", () => {
+    const grown = growIrmaaBrackets(
+      {
+        Single: [
+          { magiThreshold: 100, annualSurcharge: 10 },
+          { magiThreshold: 200, annualSurcharge: 20 },
+          { magiThreshold: 300, annualSurcharge: 30 },
+        ],
+        MFJ: [{ magiThreshold: 400, annualSurcharge: 40 }],
+      },
+      2,
+      3,
+    );
+    expect(grown.Single!.map((b) => b.magiThreshold)).toEqual([200, 400, 900]);
+    expect(grown.MFJ!.map((b) => b.magiThreshold)).toEqual([1200]);
+    expect(grown.MFJ![0]!.annualSurcharge).toBe(80);
+  });
+
+  it("holds a table's last row when the statutory top tier isn't in it", () => {
+    const fourTiers = {
+      Single: IRMAA_BRACKETS.Single!.filter((b) => b.magiThreshold < 500_000),
+    };
+    const grown = growIrmaaBrackets(fourTiers, 1.03, 1);
+    const last = fourTiers.Single.length - 1;
+    expect(grown.Single![last]!.magiThreshold).toBe(
+      fourTiers.Single[last]!.magiThreshold,
+    );
+    expect(grown.Single![0]!.magiThreshold).toBeCloseTo(
+      fourTiers.Single[0]!.magiThreshold * 1.03,
+      5,
+    );
+  });
+
+  it("takes the last row as the top tier even when its threshold isn't the highest", () => {
+    const grown = growIrmaaBrackets(
+      {
+        Single: [
+          { magiThreshold: 500, annualSurcharge: 10 },
+          { magiThreshold: 100, annualSurcharge: 20 },
+        ],
+      },
+      2,
+      3,
+    );
+    expect(grown.Single!.map((b) => b.magiThreshold)).toEqual([1000, 300]);
+  });
 });
 
 // Phase 3 end-to-end wiring guard (2026-08-31) -- IRMAA has TWO
