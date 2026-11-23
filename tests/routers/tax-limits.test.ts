@@ -604,7 +604,7 @@ describe("settings.contributionLimits — provenance", () => {
   });
 
   it("after an approved community update: it's what Ledgr ships, Reset returns to it, and a restore re-applies it", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       const update = readTaxData();
       update.dataVersion += 1;
@@ -617,7 +617,7 @@ describe("settings.contributionLimits — provenance", () => {
           status: "applied",
         })
         .run();
-      await applyReferenceData(db as never);
+      await applyReferenceData(rawDb);
       expect(await ira2026(caller)).toMatchObject({ origin: "community" });
       const listed = (await caller.settings.contributionLimits.list()).find(
         (r) => r.taxYear === 2026 && r.limitType === "ira_limit",
@@ -645,7 +645,7 @@ describe("settings.contributionLimits — provenance", () => {
           ),
         )
         .run();
-      await applyReferenceData(db as never);
+      await applyReferenceData(rawDb);
       expect(Number((await ira2026(caller)).value)).toBe(7600);
     } finally {
       cleanup();
@@ -653,7 +653,7 @@ describe("settings.contributionLimits — provenance", () => {
   });
 
   it("applying the tax data is one transaction: a failure in the update undoes the shipped pass", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       const row = await ira2026(caller);
       db.update(schema.contributionLimits)
@@ -663,7 +663,7 @@ describe("settings.contributionLimits — provenance", () => {
       const bad = readTaxData();
       bad.formatVersion = 99; // the community pass throws before writing
       await expect(
-        reconcileTaxDataFiles(db as never, [
+        reconcileTaxDataFiles(rawDb, [
           { file: readTaxData(), mode: "seed" },
           { file: bad, mode: "community" },
         ]),

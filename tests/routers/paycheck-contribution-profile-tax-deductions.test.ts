@@ -476,7 +476,9 @@ describe("applyContributionAccountEdit — periodsPerYear resolves from the glob
           jobId: null,
           personId,
           accountType: "brokerage",
-          parentCategory: "Brokerage",
+          // A brokerage's parent category (account-types.ts); PostgreSQL's
+          // CHECK holds parent_category to Retirement or Portfolio.
+          parentCategory: "Portfolio",
           taxTreatment: "after_tax",
           employerMatchType: "none",
           isActive: true,

@@ -128,11 +128,10 @@ describe("investments router", () => {
     vi.useRealTimers();
   });
 
-  // The loaders take the app's database type; tests run them on SQLite.
+  // The loaders take the app's database: the caller's own (rawDb), which on
+  // PostgreSQL hands back Date columns as the app reads them.
   type AppDb = Parameters<typeof loadLatestHoldings>[0];
-  const db = (): AppDb =>
-    // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation (SQLite test db for the PG-typed loader)
-    ctx.db as unknown as AppDb;
+  const db = (): AppDb => ctx.rawDb;
   const listTransactions = (
     filter: Parameters<typeof loadClassifiedTransactions>[1] = {},
   ) => loadClassifiedTransactions(db(), filter);
