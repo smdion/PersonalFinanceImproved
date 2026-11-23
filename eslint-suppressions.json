@@ -3543,13 +3543,13 @@
   },
   "src/lib/pure/accounts/tax-buckets/tax-buckets.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 2
+      "count": 1
     },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 14
+      "count": 12
     },
     "ratchet/no-guarded-division": {
       "count": 1

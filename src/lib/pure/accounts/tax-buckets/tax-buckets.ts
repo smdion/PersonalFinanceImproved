@@ -27,6 +27,7 @@ import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { toNumber } from "@/lib/utils/numbers";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import { entryKeyOf } from "@/lib/pure/accounts/account-part";
+import { withRowCategories } from "@/lib/pure/accounts/tax-buckets/snapshot-row-category";
 
 /** parentCategory values the projection engine includes in starting balances. */
 const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
@@ -123,15 +124,6 @@ export function computeTaxBucketBreakdown(
   const rollupByKey = new Map<string, AccountRollupEntry>();
 
   if (snapshotData) {
-    // Sub-type rows (Rollover, Employer Match, etc.) inherit their parent
-    // performance account's primary accountType.
-    const parentTypeByPerfId = new Map<number, string>();
-    for (const a of snapshotData.accounts) {
-      if (a.performanceAccountId != null && !a.subType) {
-        parentTypeByPerfId.set(a.performanceAccountId, a.accountType);
-      }
-    }
-
     // Cost basis is kept per performance account (cost_basis); each of its
     // snapshot rows (sub-type rows share the account) gets its share by
     // amount. An account with no row in the snapshot contributes nothing.
@@ -159,7 +151,9 @@ export function computeTaxBucketBreakdown(
         : 0;
     };
 
-    for (const a of snapshotData.accounts) {
+    for (const { row: a, category: cat } of withRowCategories(
+      snapshotData.accounts,
+    )) {
       // Only engine-relevant categories (Retirement + Portfolio) — pages
       // filter engine output by parentCategory for the correct subset.
       if (a.parentCategory && !ENGINE_CATEGORIES.has(a.parentCategory))
@@ -170,10 +164,6 @@ export function computeTaxBucketBreakdown(
         ? personNameById.get(a.ownerPersonId)
         : undefined;
       const displayName = accountDisplayName(a, ownerName);
-      const cat =
-        a.subType && a.performanceAccountId != null
-          ? (parentTypeByPerfId.get(a.performanceAccountId) ?? a.accountType)
-          : a.accountType;
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- snapshot rows store one of the four tax types
       const key = a.taxType as PortfolioTaxType;
       portfolioByTaxType[key] += a.amount;
@@ -189,8 +179,7 @@ export function computeTaxBucketBreakdown(
       portfolioByTaxType.afterTaxBasis += basis;
       portfolioByTaxTypeByParentCat[pCat].afterTaxBasis += basis;
 
-      const catAsBalance = cat as AccountCategory;
-      const balance = portfolioByAccount[catAsBalance];
+      const balance = portfolioByAccount[cat];
       if (balance.structure === "roth_traditional") {
         if (isTaxFreeBucket(a.taxType)) addRoth(balance, a.amount);
         else addTraditional(balance, a.amount);
@@ -228,7 +217,7 @@ export function computeTaxBucketBreakdown(
       mergeRowIntoEntries(
         a,
         {
-          category: catAsBalance,
+          category: cat,
           displayName,
           ownerName,
           isRetirement: isRetirementParent(pCat),
