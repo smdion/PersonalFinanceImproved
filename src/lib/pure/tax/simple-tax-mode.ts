@@ -11,8 +11,7 @@ import {
 } from "../../config/account-types";
 import { roundToCents } from "../../utils/math";
 import { rampIsPortfolioSaving } from "../accounts/brokerage-ramp";
-import { resolveLumpSumTargets } from "../engine/projection-year-handlers/lump-sum";
-import { syntheticOpeningParts } from "../engine";
+import { resolveLumpSumTargets, syntheticOpeningParts } from "../engine";
 import { isHeldPart } from "../accounts/account-part";
 import type {
   AccumulationDefaults,

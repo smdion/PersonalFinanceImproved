@@ -10,11 +10,6 @@
     "to": "src/lib/pure/engine/inflation-path.ts"
   },
   {
-    "rule": "engine-through-index",
-    "from": "src/lib/pure/tax/simple-tax-mode.ts",
-    "to": "src/lib/pure/engine/projection-year-handlers/lump-sum.ts"
-  },
-  {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/display-labels.ts",
     "to": "src/lib/pure/household/profiles.ts"

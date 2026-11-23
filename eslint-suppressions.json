@@ -4083,7 +4083,7 @@
   },
   "src/lib/pure/engine/projection-year-handlers/lump-sum.ts": {
     "ratchet/no-abbreviation": {
-      "count": 4
+      "count": 3
     }
   },
   "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": {

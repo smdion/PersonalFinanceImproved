@@ -7,6 +7,7 @@ export {
   openingParts,
   syntheticOpeningParts,
 } from "./opening-state";
+export { resolveLumpSumTargets } from "./lump-sum-targets";
 export { projectionPriceLevel } from "./price-level";
 
 export {

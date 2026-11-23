@@ -7,7 +7,6 @@ import type { LumpSum } from "../types/year-overrides";
 import {
   getAccountTypeConfig,
   isTaxFreeBucket,
-  isRetirementMoney,
 } from "../../../config/account-types";
 import { taxTypeOnSide } from "../../../config/tax-treatment-buckets";
 import {
@@ -17,7 +16,7 @@ import {
   addBasis,
 } from "../../accounts/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
-import { portfolioFirst, retirementFirst } from "../individual-accounts/ledger";
+import { resolveLumpSumTargets } from "../lump-sum-targets";
 import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
 
 /**
@@ -73,37 +72,4 @@ export function applyLumpSums(
       });
     }
   }
-}
-
-/**
- * A lump sum's parts, of its category and tax type, ordered by whose money it is (its parent; unset:
- * Retirement first; Portfolio money skips the projection-only part while another exists): the
- * named one, else (a name none carries) the first parent's, shared by balance; unnamed, the first.
- */
-export function resolveLumpSumTargets(
-  ls: LumpSum,
-  indAccounts: readonly IndividualAccountInput[],
-): IndividualAccountInput[] {
-  const taxType = taxTypeOnSide(ls.targetAccount, ls.taxType);
-  const parts = indAccounts.filter(
-    (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
-  );
-  const parentOf = (ia: IndividualAccountInput) => ia.parentCategory;
-  const real = parts.filter((ia) => ia.origin !== "projected");
-  const ordered = isRetirementMoney(ls.targetParentCategory)
-    ? retirementFirst(parts, parentOf)
-    : real.length > 0
-      ? portfolioFirst(real, parentOf)
-      : parts;
-  const first = ordered[0];
-  if (!ls.targetAccountName || !first) return ordered.slice(0, 1);
-  const named = parts.filter((ia) => ia.name === ls.targetAccountName);
-  const owned = named.find((ia) => ia.ownerName === ls.targetOwnerName);
-  if (ls.targetOwnerName && owned) return [owned];
-  if (named.length > 0) return [named[0]!];
-  return ordered.filter(
-    (ia) =>
-      isRetirementMoney(ia.parentCategory) ===
-      isRetirementMoney(first.parentCategory),
-  );
 }
