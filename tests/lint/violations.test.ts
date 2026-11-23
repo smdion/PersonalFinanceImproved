@@ -2063,8 +2063,6 @@ describe("one config entry adds an account type", () => {
 const BUILT_AT_LOAD = [
   "src/app/(dashboard)/historical/historical-content.tsx ALL_portfolioBreakdownCols",
   "src/components/retirement-projection/table/projection-table-decum-row.model.ts CATEGORY_ORDER",
-  "src/components/retirement-projection/types.ts emptyAccumForm",
-  "src/components/retirement-projection/types.ts emptyDecumForm",
   "src/components/retirement-projection/projection-display.ts catDisplayLabel",
   "src/components/retirement-projection/table/bucket-slots.ts bucketSlotMap",
   "src/components/retirement-projection/table/bucket-slots.ts _singleBucketCategories",

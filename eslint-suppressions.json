@@ -2344,11 +2344,8 @@
     }
   },
   "src/components/retirement-projection/types.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
-    },
     "ratchet/no-abbreviation": {
-      "count": 7
+      "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 3
@@ -2376,7 +2373,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 32
+      "count": 24
     }
   },
   "src/components/retirement-projection/use-projection-queries.ts": {

@@ -1,13 +1,7 @@
-/** Domain types for the projection card — tooltip data shapes, accumulation/decumulation override form types, serialized override payloads, and account split computation inputs. */
+/** Domain types for the projection card — tooltip data shapes, lump sum events, serialized override payloads, and account split computation inputs. */
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { WithdrawalRoutingMode } from "@/lib/config/withdrawal-routing";
 import type { LumpSumTargetIds } from "./lump-sum-target";
-import {
-  getDefaultAccumulationOrder,
-  getDefaultDecumulationOrder,
-  buildCategoryRecord,
-  categoriesWithTaxPreference,
-} from "@/lib/config/account-types";
 
 // ---------------------------------------------------------------------------
 // Tooltip builder types
@@ -128,7 +122,7 @@ export type TooltipData =
     };
 
 // ---------------------------------------------------------------------------
-// Accumulation override form types
+// Lump sum events
 // ---------------------------------------------------------------------------
 
 /** Standalone lump sum entry with year — used by shared LumpSumForm and DB persistence. */
@@ -144,79 +138,6 @@ export type LumpSumEvent = {
   taxType: "traditional" | "roth" | "";
   label: string;
 } & LumpSumTargetIds;
-
-export type AccumOverrideForm = {
-  year: string;
-  personName: string; // '' = household-wide
-  contributionRate: string;
-  routingMode: "waterfall" | "percentage" | "";
-  accountOrder: AccountCategory[];
-  accountSplits: Record<AccountCategory, string>;
-  taxSplits: Record<string, string>;
-  accountCaps: Record<AccountCategory, string>;
-  taxTypeCaps: { traditional: string; roth: string };
-  reset: boolean;
-  notes: string;
-};
-
-export const emptyAccumForm: AccumOverrideForm = {
-  year: String(new Date().getFullYear() + 1),
-  personName: "",
-  contributionRate: "",
-  routingMode: "",
-  accountOrder: getDefaultAccumulationOrder(),
-  accountSplits: buildCategoryRecord(() => "") as Record<
-    AccountCategory,
-    string
-  >,
-  taxSplits: Object.fromEntries(
-    categoriesWithTaxPreference().map((cat) => [cat, ""]),
-  ),
-  accountCaps: buildCategoryRecord(() => "") as Record<AccountCategory, string>,
-  taxTypeCaps: { traditional: "", roth: "" },
-  reset: false,
-  notes: "",
-};
-
-// ---------------------------------------------------------------------------
-// Decumulation override form types
-// ---------------------------------------------------------------------------
-
-export type DecumOverrideForm = {
-  year: string;
-  personName: string; // '' = household-wide
-  withdrawalRoutingMode: WithdrawalRoutingMode | "";
-  withdrawalOrder: AccountCategory[];
-  withdrawalSplits: Record<AccountCategory, string>;
-  withdrawalTaxPreference: Record<AccountCategory, "traditional" | "roth" | "">;
-  withdrawalAccountCaps: Record<AccountCategory, string>;
-  withdrawalTaxTypeCaps: { traditional: string; roth: string };
-  rothConversionTarget: string; // '' = no change, '0' = disable, '0.10'/'0.12'/etc = target bracket
-  reset: boolean;
-  notes: string;
-};
-
-export const emptyDecumForm: DecumOverrideForm = {
-  year: String(new Date().getFullYear() + 1),
-  personName: "",
-  withdrawalRoutingMode: "",
-  withdrawalOrder: getDefaultDecumulationOrder(),
-  withdrawalSplits: buildCategoryRecord(() => "") as Record<
-    AccountCategory,
-    string
-  >,
-  withdrawalTaxPreference: buildCategoryRecord(
-    () => "" as "traditional" | "roth" | "",
-  ) as Record<AccountCategory, "traditional" | "roth" | "">,
-  withdrawalAccountCaps: buildCategoryRecord(() => "") as Record<
-    AccountCategory,
-    string
-  >,
-  withdrawalTaxTypeCaps: { traditional: "", roth: "" },
-  rothConversionTarget: "",
-  reset: false,
-  notes: "",
-};
 
 // ---------------------------------------------------------------------------
 // Serialized override types (what we store in state / send to API)

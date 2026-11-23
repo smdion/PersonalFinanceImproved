@@ -21,13 +21,7 @@ import {
   DEFAULT_WITHDRAWAL_ROUTING_MODE,
   type WithdrawalRoutingMode,
 } from "@/lib/config/withdrawal-routing";
-import type {
-  AccumOverrideForm,
-  DecumOverrideForm,
-  AccumOverride,
-  DecumOverride,
-} from "./types";
-import { emptyAccumForm, emptyDecumForm } from "./types";
+import type { AccumOverride, DecumOverride } from "./types";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
 import { SIMULATION_DEFAULT_TRIALS } from "@/lib/constants";
 import { SK_DIAG_MODE } from "@/lib/constants/settings-keys";
@@ -125,16 +119,6 @@ export function useProjectionFormState() {
       return typeof updater === "function" ? updater(prev) : updater;
     });
   };
-
-  // --- Override form UI state ---
-  const [showAccumForm, setShowAccumForm] = useState(false);
-  const [accumForm, setAccumForm] = useState<AccumOverrideForm>({
-    ...emptyAccumForm,
-  });
-  const [showDecumForm, setShowDecumForm] = useState(false);
-  const [decumForm, setDecumForm] = useState<DecumOverrideForm>({
-    ...emptyDecumForm,
-  });
 
   // --- View state ---
   const [projectionMode, setProjectionMode] = useState<
@@ -251,14 +235,6 @@ export function useProjectionFormState() {
     setAccumOverrides,
     decumOverrides,
     setDecumOverrides,
-    showAccumForm,
-    setShowAccumForm,
-    accumForm,
-    setAccumForm,
-    showDecumForm,
-    setShowDecumForm,
-    decumForm,
-    setDecumForm,
     projectionMode,
     setProjectionMode,
     simulationTrials,
