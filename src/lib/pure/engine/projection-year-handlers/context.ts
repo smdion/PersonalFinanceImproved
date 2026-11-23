@@ -13,7 +13,7 @@ import { MONTHS_PER_YEAR } from "../../../constants";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import { getStrategyDefaults } from "@/lib/config/withdrawal-strategies";
 import { makeIndKey } from "../individual-accounts/ledger";
-import { isHeldPart } from "../../accounts/account-part";
+import { hasRealAccount } from "../../accounts/account-part";
 import { declareOpeningParts } from "../opening-state";
 import { getRmdStartAge } from "../../../config/rmd-tables";
 import type { BrokerageGoal, ProjectionContext } from "./types";
@@ -154,7 +154,7 @@ export function buildProjectionContext(
   }
 
   const parts = input.individualAccounts;
-  const holdsAccounts = parts.some(isHeldPart);
+  const holdsAccounts = parts.some(hasRealAccount);
   const indAccounts = holdsAccounts ? openingParts(input) : [];
   const indKey = makeIndKey();
   const indParentCat = new Map<string, string>();

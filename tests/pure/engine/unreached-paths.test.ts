@@ -555,13 +555,16 @@ describe("a run whose parts are all synthetic takes the household path", () => {
       acct("Bo 401k", "401k", 500000, owned ? 2 : undefined),
     ].map((p) => ({ ...p, parentCategory: "Retirement" }));
   // The household as built with its accounts held, then the same parts
-  // marked synthetic: the money is unchanged, no real account stands behind it.
+  // marked synthetic: the money is unchanged, no real account (no id) stands
+  // behind it.
   const synthetic = (input: ProjectionInput): ProjectionInput => ({
     ...input,
-    individualAccounts: input.individualAccounts.map((p) => ({
-      ...p,
-      origin: "synthetic" as const,
-    })),
+    individualAccounts: input.individualAccounts.map(
+      ({ performanceAccountId: _id, ...p }) => ({
+        ...p,
+        origin: "synthetic" as const,
+      }),
+    ),
   });
   const retired = (owned: boolean) =>
     household(

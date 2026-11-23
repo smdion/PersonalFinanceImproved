@@ -66,10 +66,13 @@ export type IndividualAccountInput = {
   /** The household's chosen account for reinvested RMD money (Retirement
    *  settings) — resolved by the payload; at most one account. */
   rmdExcessTarget?: boolean;
-  /** Absent: a held account. "declared": a $0 sibling of one, shown once it
-   *  holds money; "projected": the projection-only Retirement brokerage;
-   *  "synthetic": no real account behind it, the household's rules, no rows. */
-  origin?: "declared" | "projected" | "synthetic";
+  /** Absent: held. "declared"/"spec": a held part's $0 sibling, or a
+   *  contribution's own $0 part, shown once it holds money; "projected": the
+   *  projection-only Retirement brokerage; "synthetic": no account, no rows. */
+  origin?: "declared" | "spec" | "projected" | "synthetic";
+  /** The contribution account whose own part this is, when it is linked to
+   *  no performance account (`contrib:`). */
+  contributionAccountId?: number;
   /** Starting cost basis (brokerage-type accounts), from the account's own
    *  `cost_basis`. Absent: the engine shares the aggregate basis out by
    *  balance. */

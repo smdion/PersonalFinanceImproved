@@ -14,12 +14,16 @@ type AccountPart = {
 };
 
 /** What names a part's account by id and category: its performance account,
- *  else its snapshot row (each has one parent); the engine's own parts by
- *  origin, category and parent. */
+ *  else its snapshot row, else its contribution account (each has one
+ *  parent); the engine's own parts by origin, category and parent. */
 type PartIdentity = Partial<
   Pick<
     IndividualAccountInput,
-    "performanceAccountId" | "portfolioAccountId" | "origin" | "parentCategory"
+    | "performanceAccountId"
+    | "portfolioAccountId"
+    | "contributionAccountId"
+    | "origin"
+    | "parentCategory"
   >
 > &
   Pick<AccountPart, "category" | "taxType"> & { ownerPersonId?: number | null };
@@ -34,8 +38,8 @@ function partKey(
 }
 
 /** The key of one account part by its account's id (`acct:`, `row:`,
- *  `projected:` or `synthetic:`). A row id is one snapshot's: the key holds for
- *  one run, never stored or compared across snapshots or restores. */
+ *  `contrib:`, `projected:` or `synthetic:`). A row id is one snapshot's: the
+ *  key holds for one run, never stored or compared across restores. */
 export function accountIdKeyOf(part: PartIdentity): AccountKey {
   return partKey(identityOf(part), part);
 }
@@ -61,6 +65,8 @@ function identityOf(part: PartIdentity): string {
     return `acct:${part.performanceAccountId}:${part.category}`;
   if (part.portfolioAccountId != null)
     return `row:${part.portfolioAccountId}:${part.category}`;
+  if (part.contributionAccountId != null)
+    return `contrib:${part.contributionAccountId}:${part.category}`;
   if (part.origin === "synthetic") return `synthetic:${part.category}`;
   if (part.origin === "projected")
     return `projected:${part.category}:${part.parentCategory}`;
@@ -75,8 +81,18 @@ export type IndKeyFn = (
     Pick<AccountPart, "name" | "ownerPersonId">,
 ) => string;
 
-/** A part with a real account behind it: no `origin` (the engine's declared
- *  siblings, the projected brokerage and synthetic parts all carry one). */
+/** A part the user entered: no `origin` (the engine's declared siblings and
+ *  spec parts, the projected brokerage and synthetic parts all carry one). */
 export function isHeldPart(part: { origin?: string }): boolean {
   return part.origin == null;
+}
+
+/** A part of a real account: a performance account, a snapshot row or a
+ *  contribution account (`acct:`, `row:`, `contrib:`), entered or declared. */
+export function hasRealAccount(part: PartIdentity): boolean {
+  return (
+    part.performanceAccountId != null ||
+    part.portfolioAccountId != null ||
+    part.contributionAccountId != null
+  );
 }
