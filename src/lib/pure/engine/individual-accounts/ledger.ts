@@ -53,15 +53,9 @@ export function credit(
   for (const map of into) map.set(account, (map.get(account) ?? 0) + amount);
 }
 
-/** Creates spec key from contribution spec fields. */
-export function specKeyOf(spec: {
-  name: string;
-  personId?: number | null;
-  taxTreatment: string;
-}): string {
-  return spec.personId != null
-    ? `${spec.name}::${spec.personId}::${spec.taxTreatment}`
-    : `${spec.name}::${spec.taxTreatment}`;
+/** A spec's key: its identity, its contribution account's id. */
+export function specKeyOf(spec: { contributionAccountId: number }): string {
+  return `spec:${spec.contributionAccountId}`;
 }
 
 /**

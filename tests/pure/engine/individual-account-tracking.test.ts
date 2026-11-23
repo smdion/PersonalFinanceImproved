@@ -104,22 +104,32 @@ describe("makeIndKey", () => {
 });
 
 describe("specKeyOf", () => {
-  it("creates key without personId", () => {
-    expect(specKeyOf({ name: "Roth IRA", taxTreatment: "tax_free" })).toBe(
-      "Roth IRA::tax_free",
+  it("is the spec's contribution account, whatever its name, person or tax treatment", () => {
+    const spec = (over: Partial<ContributionSpec>) =>
+      makeContributionSpec({
+        contributionAccountId: 3,
+        account: { kind: "unlinked" },
+        ...over,
+      });
+    expect(specKeyOf(spec({}))).toBe(
+      specKeyOf(spec({ name: "Other", personId: 2, taxTreatment: "pre_tax" })),
+    );
+    expect(specKeyOf(spec({}))).not.toBe(
+      specKeyOf(spec({ contributionAccountId: 4 })),
     );
   });
 
-  it("creates key with personId", () => {
-    expect(
-      specKeyOf({ name: "Roth IRA", personId: 3, taxTreatment: "tax_free" }),
-    ).toBe("Roth IRA::3::tax_free");
-  });
-
-  it("excludes null personId", () => {
-    expect(
-      specKeyOf({ name: "Roth IRA", personId: null, taxTreatment: "tax_free" }),
-    ).toBe("Roth IRA::tax_free");
+  it("two specs of one person, type and tax treatment keep two keys", () => {
+    const twoJobs = [1, 2].map((contributionAccountId) =>
+      makeContributionSpec({
+        name: "401k",
+        personId: 1,
+        taxTreatment: "pre_tax",
+        contributionAccountId,
+        account: { kind: "unlinked" },
+      }),
+    );
+    expect(new Set(twoJobs.map(specKeyOf)).size).toBe(2);
   });
 });
 
@@ -163,7 +173,7 @@ describe("buildSpecToAccountMapping", () => {
       indKey,
       parentCat,
     );
-    expect(specToAccount.get("Alice 401k::pre_tax")).toBe(indKey(accounts[0]!));
+    expect(specToAccount.get(specKeyOf(specs[0]!))).toBe(indKey(accounts[0]!));
   });
 
   it("falls back to unowned account when no exact owner match", () => {
@@ -231,6 +241,23 @@ describe("buildSpecToAccountMapping", () => {
       parentCat,
     );
     expect(specToAccount.size).toBe(0);
+  });
+
+  it("refuses two specs with one contribution account", () => {
+    const spec = (name: string) =>
+      makeContributionSpec({
+        name,
+        contributionAccountId: 7,
+        account: { kind: "unlinked" },
+      });
+    expect(() =>
+      buildSpecToAccountMapping(
+        [spec("A"), spec("B")],
+        [makeIndividualAccount({ name: "401k", category: "401k" })],
+        indKey,
+        new Map(),
+      ),
+    ).toThrow(/one contribution account \(7\)/);
   });
 });
 
@@ -1190,8 +1217,8 @@ describe("distributeContributions", () => {
     ];
 
     const specToAccount = new Map<string, string>();
-    specToAccount.set("Trad 401k::pre_tax", indKey(accounts[0]!));
-    specToAccount.set("Roth 401k::tax_free", indKey(accounts[1]!));
+    specToAccount.set(specKeyOf(specs[0]!), indKey(accounts[0]!));
+    specToAccount.set(specKeyOf(specs[1]!), indKey(accounts[1]!));
     const accountsWithSpecs = new Set(specToAccount.values());
 
     const slots: AccumulationSlot[] = [
@@ -1300,8 +1327,8 @@ describe("distributeContributions", () => {
     ];
 
     const specToAccount = new Map<string, string>();
-    specToAccount.set("Brok A::after_tax", indKey(brokA));
-    specToAccount.set("Brok B::after_tax", indKey(brokB));
+    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
+    specToAccount.set(specKeyOf(specs[1]!), indKey(brokB));
 
     const slots: AccumulationSlot[] = [
       makeAccumulationSlot("brokerage", {
@@ -1362,7 +1389,7 @@ describe("distributeContributions", () => {
     ];
 
     const specToAccount = new Map<string, string>();
-    specToAccount.set("Brok A::after_tax", indKey(brokA));
+    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
 
     const result = distributeContributions({
       slots: [],
@@ -1409,7 +1436,7 @@ describe("distributeContributions", () => {
     ];
 
     const specToAccount = new Map<string, string>();
-    specToAccount.set("Brok A::after_tax", indKey(brokA));
+    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
 
     const result = distributeContributions({
       slots: [],
@@ -1458,7 +1485,7 @@ describe("distributeContributions", () => {
     ];
 
     const specToAccount = new Map<string, string>();
-    specToAccount.set("Brok A::after_tax", indKey(brokA));
+    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
 
     const result = distributeContributions({
       slots: [],
@@ -1514,7 +1541,7 @@ describe("distributeContributions", () => {
       }),
     ];
     const specToAccount = new Map<string, string>();
-    specToAccount.set("Brok A::after_tax", indKey(brokA));
+    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
 
     const result = distributeContributions({
       slots: [],
@@ -1564,7 +1591,7 @@ describe("distributeContributions", () => {
       }),
     ];
     const specToAccount = new Map<string, string>();
-    specToAccount.set("Brok A::after_tax", indKey(brokA));
+    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
 
     const result = distributeContributions({
       slots: [],
@@ -1612,7 +1639,7 @@ describe("distributeContributions", () => {
       }),
     ];
     const specToAccount = new Map<string, string>();
-    specToAccount.set("Brok A::after_tax", indKey(brokA));
+    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
 
     const result = distributeContributions({
       slots: [],

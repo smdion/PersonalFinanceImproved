@@ -282,7 +282,7 @@
     "src/lib/pure/engine/aca-check.ts": 72,
     "src/lib/pure/engine/contribution-routing.ts": 615,
     "src/lib/pure/engine/individual-accounts/contributions.ts": 373,
-    "src/lib/pure/engine/individual-accounts/ledger.ts": 145,
+    "src/lib/pure/engine/individual-accounts/ledger.ts": 139,
     "src/lib/pure/engine/individual-accounts/reconcile.ts": 351,
     "src/lib/pure/engine/individual-accounts/withdrawals.ts": 320,
     "src/lib/pure/engine/irmaa-check.ts": 83,

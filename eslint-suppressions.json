@@ -4008,9 +4008,6 @@
   "src/lib/pure/engine/individual-accounts/ledger.ts": {
     "ratchet/no-abbreviation": {
       "count": 14
-    },
-    "ratchet/no-string-closed-set-field": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/individual-accounts/reconcile.ts": {

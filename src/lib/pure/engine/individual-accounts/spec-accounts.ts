@@ -19,6 +19,7 @@ export function buildSpecToAccountMapping(
   // The projection-only retirement brokerage has no contributions of its own.
   const accounts = indAccounts.filter((ia) => ia.origin !== "projected");
 
+  refuseSharedSpecKeys(contributionSpecs);
   for (const spec of contributionSpecs) {
     const specTaxType = TAX_TREATMENT_TO_TAX_TYPE[spec.taxTreatment];
     const parentCatMatch = (ia: {
@@ -58,4 +59,18 @@ export function buildSpecToAccountMapping(
   }
 
   return { specToAccount, accountsWithSpecs: new Set(specToAccount.values()) };
+}
+
+/** Each spec of a stretch is its own contribution account: two with one id
+ *  would share one key, the second's amount overwriting the first's. */
+function refuseSharedSpecKeys(specs: readonly ContributionSpec[]): void {
+  const keys = new Set<string>();
+  for (const spec of specs) {
+    const key = specKeyOf(spec);
+    if (keys.has(key))
+      throw new Error(
+        `Two contribution specs have one contribution account (${spec.contributionAccountId}): "${spec.name}" and another`,
+      );
+    keys.add(key);
+  }
 }
