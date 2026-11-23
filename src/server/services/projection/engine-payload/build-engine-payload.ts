@@ -27,6 +27,7 @@ import {
   resolveCompensation,
 } from "@/lib/pure/household/compensation";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
+import { unlinkedSpecsNote } from "@/lib/pure/contributions/unlinked-specs";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { openingParts } from "@/lib/pure/engine";
 import { toNumber } from "@/lib/utils/numbers";
@@ -493,9 +494,8 @@ export async function buildEnginePayload(
       capHousehold,
       lastAccumulationYear,
     });
-  // The active profile, capped at each later year's ages until the first
-  // Contribution Profile switch: a year whose ages cap it differently (catch-up
-  // from 50, 60–63, 64) switches to it capped then.
+  // The active profile capped at each later year's ages until the first switch:
+  // a year whose ages cap it differently (50, 60–63, 64) switches to it then.
   const firstContribSwitchYear = Math.min(
     ...profileSwitchOverrides
       .filter(
@@ -522,8 +522,8 @@ export async function buildEnginePayload(
     );
   profileSwitches.push(...activeAgeSteps);
   profileSwitches.sort((a, b) => a.year - b.year);
-  // A switch row that sets a salary adds to the salary overrides after the
-  // plain rows, so for a year both set, the switch row's salary wins.
+  inputWarnings.push(...unlinkedSpecsNote(contributionSpecs, profileSwitches));
+  // A switch row's salary goes after the plain rows, so it wins a year both set.
   perPersonSalaryOverrides.push(...perPersonSalaryAdds);
   dbSalaryOverrides.push(...householdSalaryAdds);
 

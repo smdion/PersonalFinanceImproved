@@ -1062,7 +1062,7 @@
       "computeCoastFireSimulation": 230
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 729
+      "buildEnginePayload": 728
     },
     "src/server/services/projection/engine-payload/profile-switches.ts": {
       "buildProfileSwitches": 276

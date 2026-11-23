@@ -68,7 +68,8 @@ export function UnlinkedContributionsBanner({
         account
       </p>
       <p className="mt-1 text-xs text-amber-700">
-        Unlinked contributions are excluded from retirement projections.
+        Unlinked contributions are projected as accounts of their own. Link each
+        to its account to keep its balance and contributions together.
       </p>
       <div className="mt-2 space-y-1.5">
         {unlinkedContributions.map((c) => {
