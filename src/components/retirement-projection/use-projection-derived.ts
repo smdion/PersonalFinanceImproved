@@ -35,6 +35,7 @@ import type {
 import { renderTooltip as _renderTooltip } from "./tooltip-renderer";
 import { ROTH_CONVERSION_BRACKET_PRESETS } from "./projection-display";
 import { filterYearByParentCategory } from "./parent-category-filter";
+import { accountOption } from "./lump-sum-target";
 import { _singleBucketCategories } from "./table/bucket-slots";
 
 export function useProjectionDerived(
@@ -559,12 +560,7 @@ export function useProjectionDerived(
     if (!first) return [];
     return first.individualAccountBalances
       .filter((ia) => isRetirementParent(ia.parentCategory))
-      .map((ia) => ({
-        name: ia.name,
-        category: ia.category,
-        taxType: ia.taxType,
-        ownerName: ia.ownerName,
-      }));
+      .map((ia) => accountOption(ia));
   }, [result]);
 
   const commonReturn = {

@@ -10,6 +10,7 @@ import {
   LumpSumForm,
   LumpSumBadge,
 } from "@/components/retirement-projection/lump-sum-form";
+import { accountOption } from "@/components/retirement-projection/lump-sum-target";
 import { isPortfolioParent } from "@/lib/config/account-types";
 import { GoalStatusTable } from "./brokerage-goal-status";
 import type { LumpSumEvent } from "@/components/retirement-projection/types";
@@ -179,11 +180,7 @@ export function BrokerageGoalsPanel({
             accounts={
               data.result.projectionByYear[0]?.individualAccountBalances
                 .filter((ia) => isPortfolioParent(ia.parentCategory))
-                .map((ia) => ({
-                  name: ia.name,
-                  category: ia.category,
-                  taxType: ia.taxType,
-                })) ?? []
+                .map((ia) => accountOption(ia, false)) ?? []
             }
             onAdd={(ls) => setBrokerageLumpSums((prev) => [...prev, ls])}
             allowWithdrawals

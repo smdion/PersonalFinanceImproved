@@ -574,6 +574,7 @@ describe("useProjectionDerived", () => {
         category: "401k",
         taxType: "preTax",
         ownerName: "Alice",
+        ownerPersonId: 1,
       },
     ]);
   });

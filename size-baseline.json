@@ -5,10 +5,10 @@
     "src/app/(dashboard)/brokerage/brokerage-figures.ts": 86,
     "src/app/(dashboard)/brokerage/brokerage-funding.tsx": 291,
     "src/app/(dashboard)/brokerage/brokerage-goal-status.tsx": 64,
-    "src/app/(dashboard)/brokerage/brokerage-sections.tsx": 291,
+    "src/app/(dashboard)/brokerage/brokerage-sections.tsx": 288,
     "src/app/(dashboard)/brokerage/brokerage-year-table-head.tsx": 36,
     "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 283,
-    "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 138,
+    "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 137,
     "src/app/(dashboard)/budget/budget-content.tsx": 634,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 332,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 922,
@@ -131,7 +131,7 @@
     "src/components/retirement-projection/coast-fire-card.tsx": 397,
     "src/components/retirement-projection/decumulation-config.tsx": 441,
     "src/components/retirement-projection/index.tsx": 159,
-    "src/components/retirement-projection/overrides/override-field-parts.tsx": 118,
+    "src/components/retirement-projection/overrides/override-field-parts.tsx": 117,
     "src/components/retirement-projection/overrides/override-forms.tsx": 375,
     "src/components/retirement-projection/overrides/override-items.ts": 178,
     "src/components/retirement-projection/overrides/override-options.ts": 67,
@@ -192,7 +192,7 @@
     "src/components/retirement-projection/table/projection-table-decum-withdrawals.model.ts": 230,
     "src/components/retirement-projection/table/projection-table.tsx": 431,
     "src/components/retirement-projection/tooltip-renderer.tsx": 407,
-    "src/components/retirement-projection/use-projection-derived.ts": 618,
+    "src/components/retirement-projection/use-projection-derived.ts": 614,
     "src/components/retirement-projection/use-projection-queries.ts": 814,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
     "src/components/retirement/assumptions-band.tsx": 404,
@@ -726,7 +726,7 @@
       "DecumulationConfig": 338
     },
     "src/components/retirement-projection/lump-sum-form.tsx": {
-      "LumpSumForm": 159
+      "LumpSumForm": 158
     },
     "src/components/retirement-projection/overrides/overrides-panel.tsx": {
       "OverridesPanel": 347,
@@ -762,7 +762,7 @@
       "renderTooltip": 327
     },
     "src/components/retirement-projection/use-projection-derived.ts": {
-      "useProjectionDerived": 579
+      "useProjectionDerived": 574
     },
     "src/components/retirement-projection/use-projection-form-state.ts": {
       "useProjectionFormState": 293

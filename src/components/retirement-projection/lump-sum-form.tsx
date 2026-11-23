@@ -9,14 +9,11 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { goldilocksPlan } from "@/lib/pure/advice/goldilocks";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { LumpSumEvent } from "./types";
+import { pickedTarget, type PickedAccount } from "./lump-sum-target";
 
-type AccountOption = {
-  name: string;
+type AccountOption = PickedAccount & {
   category: string;
   taxType?: string;
-  /** Owner of this account — shown + stored so two household
-   *  members' identically-named accounts don't collide when targeted. */
-  ownerName?: string;
 };
 
 /** Composite key for the account picker's `<option>` — plain `name` alone
@@ -70,8 +67,7 @@ export function LumpSumForm({
       year: form.year,
       amount: finalAmount,
       targetAccount: form.targetAccount,
-      targetAccountName: form.targetAccountName,
-      targetOwnerName: form.targetOwnerName,
+      ...pickedTarget(accounts, form),
       taxType: form.taxType,
       label: form.label,
     });

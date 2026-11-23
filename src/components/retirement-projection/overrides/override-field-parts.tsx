@@ -1,6 +1,7 @@
 import type { AccumOverride, DecumOverride } from "../types";
 import type { ProjectionState } from "../projection-table-types";
 import { LumpSumForm } from "../lump-sum-form";
+import { lumpSumTarget } from "../lump-sum-target";
 import { investedAtStartOf } from "@/lib/pure/advice/goldilocks";
 
 export type LumpSumFieldsProps = {
@@ -29,9 +30,7 @@ export function LumpSumFields({
           id: ls.id,
           amount: Math.abs(parseFloat(ls.amount)),
           targetAccount: ls.targetAccount,
-          ...(ls.targetAccountName
-            ? { targetAccountName: ls.targetAccountName }
-            : {}),
+          ...lumpSumTarget(ls),
           ...(ls.targetOwnerName
             ? { targetOwnerName: ls.targetOwnerName }
             : {}),

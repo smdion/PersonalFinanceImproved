@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import type { AccumOverride } from "@/components/retirement-projection/types";
+import { lumpSumTarget } from "@/components/retirement-projection/lump-sum-target";
 import { isPortfolioParent, tracksCostBasis } from "@/lib/config/account-types";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
@@ -54,9 +55,7 @@ export function useBrokeragePage() {
         targetAccount: ls.targetAccount,
         // Brokerage-page lump sums are Portfolio savings.
         targetParentCategory: "Portfolio" as const,
-        ...(ls.targetAccountName
-          ? { targetAccountName: ls.targetAccountName }
-          : {}),
+        ...lumpSumTarget(ls),
         ...(ls.label ? { label: ls.label } : {}),
       });
     }

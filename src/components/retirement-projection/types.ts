@@ -1,6 +1,7 @@
 /** Domain types for the projection card — tooltip data shapes, accumulation/decumulation override form types, serialized override payloads, and account split computation inputs. */
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { WithdrawalRoutingMode } from "@/lib/config/withdrawal-routing";
+import type { LumpSumTargetIds } from "./lump-sum-target";
 import {
   getDefaultAccumulationOrder,
   getDefaultDecumulationOrder,
@@ -155,7 +156,7 @@ export type LumpSumEvent = {
   targetOwnerName: string;
   taxType: "traditional" | "roth" | "";
   label: string;
-};
+} & LumpSumTargetIds;
 
 export type AccumOverrideForm = {
   year: string;
@@ -258,6 +259,9 @@ export type AccumOverride = {
     /** See LumpSum.targetParentCategory. */
     targetParentCategory?: "Retirement" | "Portfolio";
     label?: string;
+    /** See LumpSumTargetIds. */
+    targetPerformanceAccountId?: number | null;
+    targetOwnerPersonId?: number | null;
   }>;
   reset?: boolean;
   notes?: string;
@@ -281,6 +285,9 @@ export type DecumOverride = {
     targetOwnerName?: string;
     taxType?: "traditional" | "roth";
     label?: string;
+    /** See LumpSumTargetIds. */
+    targetPerformanceAccountId?: number | null;
+    targetOwnerPersonId?: number | null;
   }>;
   reset?: boolean;
   notes?: string;
