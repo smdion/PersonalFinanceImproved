@@ -1,24 +1,29 @@
 /**
- * A lump sum's account part, resolved once per run before the year logic
- * (`calculateProjection`, into the run context): the one place a lump sum's
- * account name is matched. The year logic reads only `RunLumpSum`.
+ * A lump sum's account part, resolved once per run into the run context: its
+ * stored account id first, else the one name match. The year logic reads only `RunLumpSum`.
  */
-import type { IndividualAccountInput } from "../accounts/account-balances.types";
-import type { AccountKey } from "../accounts/account-balances.types";
+import type {
+  AccountKey,
+  IndividualAccountInput,
+} from "../accounts/account-balances.types";
 import { accountIdKeyOf, hasRealAccount } from "../accounts/account-part";
 import { isRetirementMoney } from "../../config/account-types";
 import { taxTypeOnSide } from "../../config/tax-treatment-buckets";
 import { declareOpeningParts } from "./opening-state";
 import { portfolioFirst, retirementFirst } from "./individual-accounts/ledger";
-import type { LumpSum } from "./types/year-overrides";
+import type {
+  LumpSum,
+  UnresolvedLumpSum,
+  UnresolvedLumpSumReason,
+} from "./types/year-overrides";
 import type { ProjectionInput } from "./types/projection-result";
 
 /** Where a lump sum lands: the one part its target picks, by key; no single
- *  part (shared by balance within its parent, J15); or no account named
- *  (the first part). */
+ *  part (shared by balance within its parent, J15), and why; or no account
+ *  named (the first part). */
 export type LumpSumTarget =
   | { kind: "part"; key: AccountKey }
-  | { kind: "unresolved"; reason: "noMatch" }
+  | { kind: "unresolved"; reason: UnresolvedLumpSumReason }
   | { kind: "unnamed" };
 
 /** A lump sum as the year logic reads it: its target resolved, its account
@@ -46,36 +51,91 @@ function partsOf(
   );
 }
 
-/** A lump sum's target among `parts`: the part of its category and tax type
- *  its name picks (its owner's, else the first); a name none carries is
- *  unresolved; no name, unnamed. */
+/** A lump sum's target among `parts`: its stored account, else (no id, or
+ *  an absent one, as a restore that skipped the ladder leaves) its name. */
 export function lumpSumTargetOf(
   ls: LumpSum,
   parts: readonly IndividualAccountInput[],
 ): LumpSumTarget {
+  const own = partsOf(ls, parts);
+  const id = ls.targetPerformanceAccountId;
+  if (id != null) return storedTarget(ls, id, own);
   if (!ls.targetAccountName) return { kind: "unnamed" };
-  const named = partsOf(ls, parts).filter(
-    (ia) => ia.name === ls.targetAccountName,
-  );
-  const owned = named.find((ia) => ia.ownerName === ls.targetOwnerName);
-  const part = (ls.targetOwnerName && owned) || named[0];
-  return part
-    ? { kind: "part", key: accountIdKeyOf(part) }
-    : { kind: "unresolved", reason: "noMatch" };
+  return namedTarget(ls, own);
 }
 
-/** The target of each of the run's lump sums, resolved over the parts the
- *  run declares (none when it holds no real account). */
-export function lumpSumTargets(input: ProjectionInput): LumpSumTargets {
-  const lumpSums = [
+/** The stored account's part of the lump sum's tax type, its owner's (none
+ *  stored: joint); no such part is unresolved, never a name match. */
+function storedTarget(
+  ls: LumpSum,
+  performanceAccountId: number,
+  own: readonly IndividualAccountInput[],
+): LumpSumTarget {
+  const key = accountIdKeyOf({
+    performanceAccountId,
+    category: ls.targetAccount,
+    taxType: taxTypeOnSide(ls.targetAccount, ls.taxType),
+    ownerPersonId: ls.targetOwnerPersonId ?? null,
+  });
+  return own.some((ia) => accountIdKeyOf(ia) === key)
+    ? { kind: "part", key }
+    : { kind: "unresolved", reason: "accountGone" };
+}
+
+/** The one part a name picks (its owner name's parts, when it has any);
+ *  several or none is unresolved. An unlinked account's part is its row's. */
+function namedTarget(
+  ls: LumpSum,
+  own: readonly IndividualAccountInput[],
+): LumpSumTarget {
+  const named = own.filter((ia) => ia.name === ls.targetAccountName);
+  const owned = named.filter((ia) => ia.ownerName === ls.targetOwnerName);
+  const picked = ls.targetOwnerName && owned.length > 0 ? owned : named;
+  if (picked.length === 1)
+    return { kind: "part", key: accountIdKeyOf(picked[0]!) };
+  return {
+    kind: "unresolved",
+    reason: picked.length > 1 ? "nameMatchesSeveral" : "nameMatchesNone",
+  };
+}
+
+/** A run's lump sums resolved: the parts they resolve over (the run's
+ *  declared parts; none when it holds no real account), each one's target,
+ *  and those that pick no single part, by year (none without parts). */
+export type ResolvedLumpSums = {
+  parts: readonly IndividualAccountInput[];
+  targets: LumpSumTargets;
+  unresolved: UnresolvedLumpSum[];
+};
+
+/** Resolves every lump sum of the run's overrides, both phases. */
+export function resolveLumpSums(input: ProjectionInput): ResolvedLumpSums {
+  const years = [
     ...input.accumulationOverrides,
     ...input.decumulationOverrides,
-  ].flatMap((o) => o.lumpSums ?? []);
-  const declared = lumpSums.some((ls) => ls.targetAccountName)
-    ? declareOpeningParts(input.individualAccounts, input)
-    : [];
+  ].flatMap((o) => (o.lumpSums ?? []).map((ls) => ({ year: o.year, ls })));
+  const declared =
+    years.length > 0
+      ? declareOpeningParts(input.individualAccounts, input)
+      : [];
   const parts = declared.some(hasRealAccount) ? declared : [];
-  return new Map(lumpSums.map((ls) => [ls, lumpSumTargetOf(ls, parts)]));
+  const targets = new Map(
+    years.map(({ ls }) => [ls, lumpSumTargetOf(ls, parts)]),
+  );
+  const unresolved = years.flatMap(({ year, ls }) => {
+    const target = targets.get(ls)!;
+    return target.kind === "unresolved" && parts.length > 0
+      ? [
+          {
+            year,
+            category: ls.targetAccount,
+            amount: ls.amount,
+            reason: target.reason,
+          },
+        ]
+      : [];
+  });
+  return { parts, targets, unresolved };
 }
 
 /** The year's lump sums as the year logic reads them: each with its target

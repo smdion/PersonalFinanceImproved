@@ -7,7 +7,13 @@ export {
   openingParts,
   syntheticOpeningParts,
 } from "./opening-state";
-export { lumpSumParts, lumpSumTargetOf } from "./lump-sum-targets";
+export {
+  lumpSumParts,
+  lumpSumTargetOf,
+  resolveLumpSums,
+  runLumpSums,
+} from "./lump-sum-targets";
+export type { ResolvedLumpSums } from "./lump-sum-targets";
 export { projectionPriceLevel } from "./price-level";
 
 export {

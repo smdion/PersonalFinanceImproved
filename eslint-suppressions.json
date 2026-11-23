@@ -4670,7 +4670,7 @@
   },
   "src/lib/pure/tax/simple-tax-mode.ts": {
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-string-closed-set-field": {
       "count": 1

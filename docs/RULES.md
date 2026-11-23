@@ -90,6 +90,7 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Two lists have no full order on PostgreSQL** (`settings.taxBrackets.list` and `netWorth.listSnapshotTotals`, `KNOWN_GAPS` in `tests/baseline/router-baseline-postgres.test.ts`), so PostgreSQL can list their rows in another order than SQLite, until each read names a full order (v0.11.3).
 - **A lump sum saved to a Roth part before v0.11.1 is put in the account's Traditional part:** it was saved with no tax side, and both tax parts share one performance account id, so the side can't be recovered. Re-save the lump sum (delete it and add it again) to put it in the Roth part.
 - **There are two kinds of calendar day,** the household's local day and SimpleFIN's UTC day (DESIGN § Time Resolution), until one day rules both (v0.11.3: merging them moves dates). Never compare one with the other.
+- **A lump sum shared by balance because it picks no single part** (its saved account is gone, or its name matches no part or several) **isn't named on the Retirement page yet:** the engine's resolver reports it (`resolveLumpSums`' `unresolved`), until a page shows it (LS1, v0.11.1).
 
 ## Data-Driven Architecture
 

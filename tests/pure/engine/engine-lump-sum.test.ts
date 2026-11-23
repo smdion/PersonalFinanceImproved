@@ -1,6 +1,6 @@
 /**
  * Unit tests for projection-year-handler helpers:
- *   - applyLumpSums (lump-sum.ts), its lump sums resolved as `lumpSumTargets` does
+ *   - applyLumpSums (lump-sum.ts), its lump sums resolved as `resolveLumpSums` does
  *   - updatePerPersonTradBalance (helpers.ts lines 20-25)
  *
  * These are pure functions that only touch specific fields of ProjectionContext
@@ -72,7 +72,7 @@ function makeState(
   } as unknown as ProjectionLoopState;
 }
 
-/** Each lump sum's target over `parts`, as `lumpSumTargets` resolves them
+/** Each lump sum's target over `parts`, as `resolveLumpSums` resolves them
  *  for the run's context. */
 const targetsOf = (ls: LumpSum[], parts: readonly IndividualAccountInput[]) =>
   new Map(ls.map((l) => [l, lumpSumTargetOf(l, parts)]));

@@ -14,15 +14,16 @@ export type LumpSum = {
   targetAccount: AccountCategory;
   taxType?: RothSplitSide;
   /** Specific individual account name (e.g., "Long Term Brokerage (Vanguard)").
-   *  When set, the engine adds the lump sum to this exact account in indBalance. */
+   *  Matched to its part only when no account id is stored, once per run
+   *  (lump-sum-targets.ts); the year logic never reads it. */
   targetAccountName?: string;
   /** Owner of the targeted account, since two members can share an account name.
-   *  When set, the engine matches (name, ownerName) before name alone.
+   *  When set, the name's part of this owner is picked before the others.
    *  Undefined ⇒ name-only match. */
   targetOwnerName?: string;
-  /** The named account's performance account (null: no single account
-   *  matched) and owner (null: joint), beside the names, which still pick
-   *  the account. */
+  /** The named account's performance account and owner (null: joint): the
+   *  account, read before the names. A null id (no single account matched)
+   *  or an absent one leaves it to the names. */
   targetPerformanceAccountId?: number | null;
   targetOwnerPersonId?: number | null;
   /** Whose money it is when no account is named: "Portfolio" for the Brokerage
@@ -37,4 +38,18 @@ export type RetirementYearOverride = {
   year: number;
   value: number;
   notes?: string;
+};
+
+/** Why a lump sum picks no single part: its stored account has no part of
+ *  its tax type and owner, or its name (with no id) matches none or several. */
+export type UnresolvedLumpSumReason =
+  "accountGone" | "nameMatchesNone" | "nameMatchesSeveral";
+
+/** A lump sum shared by balance within its parent because it picks no
+ *  single part (J15): the fact a view words (`resolveLumpSums`). */
+export type UnresolvedLumpSum = {
+  year: number;
+  category: AccountCategory;
+  amount: number;
+  reason: UnresolvedLumpSumReason;
 };

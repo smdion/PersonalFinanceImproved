@@ -1,7 +1,7 @@
 /**
  * Simple tax mode (simulation only, cFIREsim-comparable): retirement money as one tax-free pot,
  * with nothing that lands in Portfolio money in the Advanced projection. Built from the Advanced
- * input while it has its accounts, so lump sums follow `lumpSumTargetOf`/`lumpSumParts`.
+ * input while it has its accounts, so lump sums follow the run's resolver (`resolveLumpSums`).
  */
 import {
   buildCategoryRecord,
@@ -13,7 +13,8 @@ import { roundToCents } from "../../utils/math";
 import { rampIsPortfolioSaving } from "../accounts/brokerage-ramp";
 import {
   lumpSumParts,
-  lumpSumTargetOf,
+  resolveLumpSums,
+  runLumpSums,
   syntheticOpeningParts,
 } from "../engine";
 import { isHeldPart } from "../accounts/account-part";
@@ -23,11 +24,9 @@ import type {
   ProjectionInput,
   RetirementContributionSlice,
 } from "../engine/types";
-import type {
-  IndividualAccountInput,
-  TaxBuckets,
-} from "../accounts/account-balances.types";
+import type { TaxBuckets } from "../accounts/account-balances.types";
 import type { LumpSum } from "../engine/types";
+import type { ResolvedLumpSums } from "../engine";
 export type SimpleTaxModeParts = {
   /** Starting balances of retirement money (by tax type). */
   retirementBuckets: TaxBuckets;
@@ -45,19 +44,19 @@ function onThePot(spec: ContributionSpec): ContributionSpec {
   return { ...spec, account: { kind: "synthetic" } };
 }
 
-/** Lump sums that stay retirement money: the account they'd land in is
- *  retirement money; with no individual account to judge by, unless they
- *  are marked as Portfolio savings. */
+/** Lump sums that stay retirement money: the part they'd land in, as the
+ *  run resolves it, is retirement money; with no account to judge by,
+ *  unless they are marked as Portfolio savings. */
 function withRetirementLumpSums<T extends { lumpSums?: LumpSum[] }>(
   override: T,
-  indAccounts: readonly IndividualAccountInput[],
+  resolved: ResolvedLumpSums,
 ): T {
   if (!override.lumpSums) return override;
   return {
     ...override,
     lumpSums: override.lumpSums.filter((ls) => {
-      const target = lumpSumTargetOf(ls, indAccounts);
-      const [part] = lumpSumParts({ ...ls, target }, indAccounts);
+      const [run] = runLumpSums([ls], resolved.targets);
+      const [part] = lumpSumParts(run!, resolved.parts);
       return part
         ? isRetirementMoney(part.parentCategory)
         : isRetirementMoney(ls.targetParentCategory);
@@ -71,6 +70,7 @@ export function toSimpleTaxMode(
 ): ProjectionInput {
   // The real accounts: a household with none passes synthetic parts.
   const indAccounts = input.individualAccounts.filter(isHeldPart);
+  const lumpSums = resolveLumpSums(input);
   const b = parts.retirementBuckets;
   const total = roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
   const isRetirementSpec = (s: { parentCategory?: string }) =>
@@ -129,10 +129,10 @@ export function toSimpleTaxMode(
       ? 0
       : input.brokerageContributionRamp,
     accumulationOverrides: input.accumulationOverrides.map((o) =>
-      withRetirementLumpSums(o, indAccounts),
+      withRetirementLumpSums(o, lumpSums),
     ),
     decumulationOverrides: input.decumulationOverrides.map((o) =>
-      withRetirementLumpSums(o, indAccounts),
+      withRetirementLumpSums(o, lumpSums),
     ),
     // Simple discards account identity: one tax-free pot, every retirement
     // dollar in the brokerage category, held by synthetic parts (the
