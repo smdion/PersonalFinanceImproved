@@ -547,7 +547,6 @@ describe("a gap year's Portfolio saving", () => {
       taxTreatment: "tax_free",
       personId: 2,
       ownerName: "Bo",
-      accountName: "Bo Portfolio Roth",
       allocationPriority: 0,
       parentCategory: "Portfolio",
       contributionScaling: "fixed_amount",

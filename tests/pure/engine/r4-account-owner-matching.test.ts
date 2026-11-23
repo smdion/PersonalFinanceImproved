@@ -26,7 +26,7 @@ import {
 
 const AS_OF = new Date("2025-03-07");
 
-function makeInput(): ProjectionInput {
+function makeInput(samAccount?: ContributionSpec["account"]): ProjectionInput {
   const individualAccounts: IndividualAccountInput[] = [
     {
       name: "401k",
@@ -79,7 +79,6 @@ function makeInput(): ProjectionInput {
     {
       category: "brokerage",
       name: "Long Term Brokerage",
-      accountName: "Long Term Brokerage",
       method: "fixed_monthly",
       value: 500, // $500/mo -> $6,000/yr
       salaryFraction: 1,
@@ -96,7 +95,6 @@ function makeInput(): ProjectionInput {
     {
       category: "brokerage",
       name: "Long Term Brokerage",
-      accountName: "Long Term Brokerage",
       method: "fixed_monthly",
       value: 300, // $300/mo -> $3,600/yr, deliberately DIFFERENT from Alex's
       salaryFraction: 1,
@@ -106,7 +104,7 @@ function makeInput(): ProjectionInput {
       personId: 2,
       ownerName: "Sam",
       contributionAccountId: 2,
-      account: paysInto(withAccountId(individualAccounts[4]!)),
+      account: samAccount ?? paysInto(withAccountId(individualAccounts[4]!)),
       parentCategory: "Portfolio",
       retirementBehavior: "continues_after_retirement",
     },
@@ -222,7 +220,7 @@ function makeInput(): ProjectionInput {
   );
 }
 
-describe("R4 — decumulation Portfolio-continuing-contributions matches by owner, not name alone", () => {
+describe("R4 — decumulation Portfolio-continuing contributions land on each spec's own part", () => {
   it("routes each person's continuing contribution to THEIR OWN identically-named account", () => {
     const result = calculateProjection(makeInput());
     const firstDecumYear = result.projectionByYear.find(
@@ -254,5 +252,19 @@ describe("R4 — decumulation Portfolio-continuing-contributions matches by owne
     // nothing silently dropped, nothing double-counted onto one account.
     expect(alexAcct.contribution + samAcct.contribution).toBeGreaterThan(9400);
     expect(alexAcct.contribution + samAcct.contribution).toBeLessThan(10100);
+  });
+
+  it("a contribution linked to an account with no balance row yet shows on that account's own part", () => {
+    const result = calculateProjection(
+      makeInput({ kind: "performance", performanceAccountId: 777 }),
+    );
+    const firstDecumYear = result.projectionByYear.find(
+      (y) => y.phase === "decumulation",
+    )!;
+    const own = firstDecumYear.individualAccountBalances.find(
+      (a) => a.accountKey === "acct:777:brokerage::afterTax::2",
+    );
+    expect(own?.contribution).toBeGreaterThan(3500);
+    expect(own?.contribution).toBeLessThan(3800);
   });
 });

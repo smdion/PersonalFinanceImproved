@@ -36,18 +36,12 @@ export function decumulationPortfolioContributions(
       const amount = roundToCents(spec.baseAnnual * lgf);
       if (amount <= 0) continue;
       decumBrokerageContribution += amount;
-      if (spec.accountName) {
-        // The spec's parts from state.specToAccount (as accumulation pays
-        // them); by name only when the spec has none.
-        const named = indAccounts.find((ia) => ia.name === spec.accountName);
-        const parts =
-          state.specToAccount.get(specKeyOf(spec)) ??
-          (named ? [indKey(named)] : []);
-        if (parts.length > 0)
-          creditSpecParts({ indAccounts, indKey, indBalance }, parts, amount, [
-            decumContributionByAccount,
-          ]);
-      }
+      // The spec's parts, as accumulation pays them.
+      const parts = state.specToAccount.get(specKeyOf(spec));
+      if (parts)
+        creditSpecParts({ indAccounts, indKey, indBalance }, parts, amount, [
+          decumContributionByAccount,
+        ]);
     }
   }
   // Portfolio contribution ramp (report-only — not applied to balances)

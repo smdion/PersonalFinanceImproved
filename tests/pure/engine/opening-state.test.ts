@@ -460,7 +460,6 @@ describe("a slot's money with no spec of its tax type", () => {
       {
         category: "401k",
         name: "Ann 401k",
-        accountName: "Ann 401k",
         method: "percent_of_salary",
         value: 10,
         salaryFraction: 1,

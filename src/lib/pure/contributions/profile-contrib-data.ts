@@ -10,7 +10,6 @@ import {
   getAllCategories,
 } from "@/lib/config/account-types";
 import type { AccountOwnership } from "@/lib/config/enum-values";
-import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
 import { type CapPassed, computeValue } from "./contribution-caps";
 import { fractionFromPercent } from "./contribution-amount";
 import { toNumber } from "@/lib/utils/numbers";
@@ -21,7 +20,6 @@ import {
 } from "./contribution-rows";
 import { rowPaySchedule } from "./row-pay";
 import { aggregateContributionsByCategory } from "./category-totals";
-import { matchAccountForContribution } from "./account-match";
 import { yearZeroFields } from "./cap-request";
 import { specAccountOf } from "./spec-account";
 
@@ -31,16 +29,6 @@ type ProfileContributionContext = {
   perfRetirementBehaviorMap: Map<number, string>;
   perfContributionScalingMap: Map<number, string>;
   personNameById: Map<number, string>;
-  accountBreakdownByCategory: Record<
-    string,
-    {
-      name: string;
-      taxType: string;
-      accountType?: string;
-      ownerName?: string;
-      parentCategory?: string;
-    }[]
-  >;
 };
 
 /** Result of building engine contribution data from a resolved profile. */
@@ -230,23 +218,13 @@ export function buildProfileContribData(
         );
       }
 
-      // Match contribution to its individual account
       const contribOwner =
         c.personId != null ? ctx.personNameById.get(c.personId) : undefined;
-      const matchTaxType =
-        portfolioTaxTypeOf(c.taxTreatment ?? "pre_tax") ?? c.taxTreatment;
-      const catAccounts = ctx.accountBreakdownByCategory[cat] ?? [];
       const contribParentCat =
         c.parentCategory ??
         (c.performanceAccountId
           ? ctx.perfCategoryMap.get(c.performanceAccountId)
           : undefined);
-      const matchedAccount = matchAccountForContribution(catAccounts, {
-        contribOwner,
-        matchTaxType,
-        accountType: c.accountType,
-        contribParentCat,
-      });
 
       return {
         category: cat,
@@ -263,7 +241,6 @@ export function buildProfileContribData(
         ownerName: contribOwner,
         contributionAccountId: c.id,
         account: specAccountOf(c.performanceAccountId),
-        accountName: matchedAccount?.name,
         targetAnnual: c.targetAnnual ? Number(c.targetAnnual) : null,
         allocationPriority: c.allocationPriority,
         parentCategory: contribParentCat,

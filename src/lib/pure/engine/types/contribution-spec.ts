@@ -37,8 +37,6 @@ export type ContributionSpec = {
   contributionAccountId: number;
   /** The account its money goes to. */
   account: ContributionSpecAccount;
-  /** Matched individual account display name (data-driven from DB). */
-  accountName?: string;
   /** User's self-imposed annual contribution target (null = no cap). */
   targetAnnual?: number | null;
   /** Overflow allocation priority (lower = higher priority, 0 = default). */

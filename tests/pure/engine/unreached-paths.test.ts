@@ -430,7 +430,6 @@ const specs = [
   {
     category: "401k",
     name: "Ann 401k",
-    accountName: "Ann 401k",
     method: "percent_of_salary",
     value: 0.1,
     salaryFraction: 1,
@@ -445,7 +444,6 @@ const specs = [
   {
     category: "brokerage",
     name: "Ann brokerage",
-    accountName: "Ann brokerage",
     method: "fixed_monthly",
     value: 500,
     salaryFraction: 1,

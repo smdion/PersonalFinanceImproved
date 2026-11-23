@@ -455,7 +455,6 @@ export async function buildEnginePayload(
     perfRetirementBehaviorMap,
     perfContributionScalingMap,
     personNameById,
-    accountBreakdownByCategory,
   };
 
   // The row as the profile's contribution data reads it: its type narrowed, no label as null.

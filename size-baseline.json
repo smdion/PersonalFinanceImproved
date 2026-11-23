@@ -255,7 +255,6 @@
     "src/lib/pure/advice/milestones/wealth.ts": 157,
     "src/lib/pure/budget/active-profile.ts": 9,
     "src/lib/pure/budget/annual-total.ts": 49,
-    "src/lib/pure/contributions/account-match.ts": 66,
     "src/lib/pure/contributions/account-type-snapshots.ts": 289,
     "src/lib/pure/contributions/accumulation-order.ts": 28,
     "src/lib/pure/contributions/cap-pass.ts": 181,
@@ -270,7 +269,7 @@
     "src/lib/pure/contributions/joint-accounts.ts": 165,
     "src/lib/pure/contributions/paycheck-accounts.ts": 156,
     "src/lib/pure/contributions/person-snapshot.ts": 210,
-    "src/lib/pure/contributions/profile-contrib-data.ts": 323,
+    "src/lib/pure/contributions/profile-contrib-data.ts": 300,
     "src/lib/pure/contributions/profile-fields.ts": 45,
     "src/lib/pure/contributions/roth-ira.ts": 177,
     "src/lib/pure/contributions/savings-rate.ts": 140,
@@ -295,7 +294,7 @@
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 162,
     "src/lib/pure/engine/projection-year-handlers/funding-shortfall.ts": 57,
     "src/lib/pure/engine/projection-year-handlers/goal-draws.ts": 121,
-    "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 94,
+    "src/lib/pure/engine/projection-year-handlers/portfolio-contributions.ts": 88,
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": 452,
     "src/lib/pure/engine/projection-year-handlers/rate-ceiling.ts": 59,
     "src/lib/pure/engine/projection-year-handlers/rmd-step.ts": 236,
@@ -311,7 +310,7 @@
     "src/lib/pure/engine/roth-conversion.ts": 381,
     "src/lib/pure/engine/tax-estimation.ts": 401,
     "src/lib/pure/engine/types/accumulation.ts": 121,
-    "src/lib/pure/engine/types/contribution-spec.ts": 90,
+    "src/lib/pure/engine/types/contribution-spec.ts": 88,
     "src/lib/pure/engine/types/decumulation.ts": 224,
     "src/lib/pure/engine/types/projection-result.ts": 568,
     "src/lib/pure/engine/types/routing.ts": 81,
@@ -418,7 +417,7 @@
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 207,
     "src/server/services/projection/coast-fire.ts": 294,
-    "src/server/services/projection/engine-payload/build-engine-payload.ts": 808,
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": 807,
     "src/server/services/projection/engine-payload/load.ts": 146,
     "src/server/services/projection/engine-payload/profile-switches.ts": 444,
     "src/server/services/projection/projection-cache.ts": 183,
@@ -952,7 +951,7 @@
       "capContributionsByLimitGroup": 229
     },
     "src/lib/pure/contributions/profile-contrib-data.ts": {
-      "buildProfileContribData": 228
+      "buildProfileContribData": 217
     },
     "src/lib/pure/engine/contribution-routing.ts": {
       "routePercentage": 189
@@ -1063,7 +1062,7 @@
       "computeCoastFireSimulation": 230
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 730
+      "buildEnginePayload": 729
     },
     "src/server/services/projection/engine-payload/profile-switches.ts": {
       "buildProfileSwitches": 276

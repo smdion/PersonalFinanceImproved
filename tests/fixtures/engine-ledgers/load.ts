@@ -313,7 +313,6 @@ export function ledgerInput(
       ownerName: c.person,
       contributionAccountId: i + 1,
       account: paysInto(paysTo),
-      accountName: c.account,
       targetAnnual: null,
       allocationPriority: 0,
       parentCategory: a.parent,
