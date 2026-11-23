@@ -66,9 +66,9 @@ export function taxTypeOnSide(
   return balanceStructure === "single_bucket" ? "hsa" : "afterTax";
 }
 
-/** The tax type a stored row of `category` counts as: a Roth-capable
- *  account's row is Roth only when stored tax-free, else Traditional; any other
- *  its one bucket. A type this version doesn't know holds any: as stored. */
+/** The tax type a stored row of `category` counts as: in a Roth-capable
+ *  account, Roth only when stored tax-free, else Traditional; in any other,
+ *  the account's one tax type; in a type this version doesn't know, as stored. */
 export function bookedTaxType(
   category: AccountCategory,
   storedTaxType: string,
