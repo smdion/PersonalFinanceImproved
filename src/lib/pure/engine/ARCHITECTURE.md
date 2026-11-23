@@ -41,6 +41,7 @@ projection-year-handlers/    one year of work
   decumulation-row.ts        the decumulation year's row, from what its stages settled
   lump-sum.ts                one-time lump sums (both phases)
   stated-need.ts             the first decumulation year's stated need
+  settle.ts                  settle: called once at each settled point, where a flow's writes have all landed
   helpers.ts, types.ts
 individual-accounts/         the per-account ledger: ledger, spec-accounts, contributions, other-tax-part, withdrawals, reconcile
 withdrawal-routing/          one year's withdrawal by mode: waterfall, percentage, bracket filling

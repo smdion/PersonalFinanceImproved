@@ -8,6 +8,7 @@ import {
   type DecumulationFlow,
 } from "./tax-year-settlement";
 import { repriceConversionYear } from "./conversion-year-reprice";
+import { settle as settleAt } from "./settle";
 import type {
   DecumulationYear,
   ProjectionContext,
@@ -28,7 +29,9 @@ export function settleYearTax(
 
   const settled = { ...flow, priced, parts };
   const settle = settleYearDraws(ctx, state, thisYear, settled);
+  settleAt(state, "decumulation.draws");
   const conversion = yearRothConversion(ctx, state, thisYear, settled);
+  settleAt(state, "decumulation.conversion");
   const repriced = repriceConversionYear(ctx, thisYear, {
     rmd,
     priced,

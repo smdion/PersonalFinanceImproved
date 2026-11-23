@@ -9,6 +9,7 @@ import {
   clampIndividualBasis,
 } from "../individual-accounts/reconcile";
 import { updatePerPersonTradBalance } from "./helpers";
+import { settle } from "./settle";
 import type {
   DecumulationYear,
   ProjectionContext,
@@ -45,6 +46,9 @@ export function growYearToRows(
     flow.contributions;
   const { decumulationIndWithdrawal: individualWithdrawal, basisDraws } =
     flow.drawn;
+  // The Portfolio contributions, reported only, are the last flow before
+  // growth: nothing writes between them and here.
+  settle(state, "decumulation.portfolioContributions");
   // Apply growth, to the tax buckets and to each account (negatives at 0)
   applyGrowth({ effectiveReturn: returnRate, balances, accountBalance });
   const individualGrowth = holdsAccounts
@@ -56,6 +60,7 @@ export function growYearToRows(
         true,
       )
     : new Map<string, number>();
+  settle(state, "decumulation.growth");
 
   // Update RMD tracking: year-end Traditional balance (after growth) for next year's RMD
   state.priorYearEndTradBalance = balances.preTax;
@@ -116,5 +121,6 @@ export function growYearToRows(
         individualBalance,
       ),
   );
+  settle(state, "decumulation.beforeReconcile");
   return { individualYearBalances };
 }

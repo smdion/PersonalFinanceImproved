@@ -2,6 +2,7 @@
 import type { resolveDecumulationConfig } from "../override-resolution";
 import { rmdIncomeByOwner } from "./decumulation-income";
 import { qcdStep } from "./rmd-step";
+import { settle } from "./settle";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** Each owner's RMD owed this year, then the QCDs debited from their IRAs. */
@@ -13,5 +14,6 @@ export function yearRmdAndQcd(
 ) {
   const owed = rmdIncomeByOwner(ctx, state, year);
   const qcd = qcdStep(ctx, state, year, config);
+  settle(state, "decumulation.qcd");
   return { owed, qcd };
 }

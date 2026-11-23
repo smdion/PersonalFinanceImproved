@@ -15,6 +15,7 @@ import {
 } from "./contribution-credits";
 import { recordIrmaaTaxYear } from "./irmaa-lookback";
 import { fullYearWages, workingYearIncome } from "./working-year-wages";
+import { settle } from "./settle";
 
 /** The year's contributions credited and spread to each account, the gap
  *  year's draw, the year's growth and the brokerage goals' draws. */
@@ -96,7 +97,9 @@ export function runWorkingYearFlows(
     activeEmployerMatchByParentCategory,
     individualBasis,
   );
+  settle(state, "accumulation.contributions");
   const { gapRun, gapDraw } = yearGapDraw(ctx, state, gapNeed, routeWarnings);
+  settle(state, "accumulation.gapDraw");
   const wages = fullYearWages(projectedSalary, slots, proRate, lateYearCut);
   const income = workingYearIncome(wages, gapRun?.income);
   recordIrmaaTaxYear(state.irmaaTaxYears, year, income);
@@ -115,6 +118,7 @@ export function runWorkingYearFlows(
         effectiveReturn,
       )
     : new Map<string, number>();
+  settle(state, "accumulation.growth");
 
   const { goalWithdrawals } = brokerageGoalDraws(
     brokerageGoalsByYear,
@@ -130,6 +134,10 @@ export function runWorkingYearFlows(
     accountBalance,
     OVERFLOW_CATEGORY,
   );
+  settle(state, "accumulation.goalDraws");
+  // Nothing writes between the goal draws and the year's close, whose
+  // rows are read before its reconcile.
+  settle(state, "accumulation.beforeReconcile");
   return {
     individualContributions,
     individualMatch,
