@@ -9,16 +9,14 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { goldilocksPlan } from "@/lib/pure/advice/goldilocks";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { LumpSumEvent } from "./types";
-import { pickedTarget, type PickedAccount } from "./lump-sum-target";
+import {
+  choiceKey,
+  pickedTarget,
+  pickerChoices,
+  type PickedAccount,
+} from "./lump-sum-target";
 
 type AccountOption = PickedAccount & { category: string };
-
-/** Composite key for the account picker's `<option>` — plain `name` alone
- *  collides (duplicate `key`/`value`) when two owners share an account
- *  name, silently making the picker unable to distinguish them. */
-function optionKey(a: AccountOption): string {
-  return `${a.name}::${a.ownerName ?? ""}`;
-}
 
 type LumpSumFormProps = {
   /** Individual accounts available for targeting. */
@@ -41,12 +39,14 @@ export function LumpSumForm({
   defaultYear,
   investedAtStartOf,
 }: LumpSumFormProps) {
+  const choices = pickerChoices(accounts);
   const [form, setForm] = useState({
     year: defaultYear ?? String(new Date().getFullYear() + 1),
     direction: "in" as "in" | "out",
     amount: "",
-    targetAccountName: accounts[0]?.name ?? "",
-    targetOwnerName: accounts[0]?.ownerName ?? "",
+    targetAccountName: choices[0]?.picked.targetAccountName ?? "",
+    targetOwnerName: choices[0]?.picked.targetOwnerName ?? "",
+    targetSide: choices[0]?.picked.targetSide,
     targetAccount: (accounts[0]?.category ?? "brokerage") as AccountCategory,
     label: "",
   });
@@ -129,31 +129,28 @@ export function LumpSumForm({
           <span className="text-caption text-muted">Account</span>
           <select
             value={
-              accounts.some((a) => a.name === form.targetAccountName)
-                ? optionKey({
-                    name: form.targetAccountName,
-                    category: form.targetAccount,
-                    ownerName: form.targetOwnerName || undefined,
-                  })
+              choices.some((c) => c.key === choiceKey(form))
+                ? choiceKey(form)
                 : form.targetAccount
             }
             onChange={(e) => {
               const val = e.target.value;
-              const account = accounts.find((a) => optionKey(a) === val);
+              const choice = choices.find((c) => c.key === val);
               setForm((f) => ({
                 ...f,
-                targetAccountName: account ? account.name : "",
-                targetOwnerName: account?.ownerName ?? "",
-                targetAccount: account
-                  ? (account.category as AccountCategory)
+                targetAccountName: choice?.picked.targetAccountName ?? "",
+                targetOwnerName: choice?.picked.targetOwnerName ?? "",
+                targetSide: choice?.picked.targetSide,
+                targetAccount: choice
+                  ? (choice.account.category as AccountCategory)
                   : (val as AccountCategory),
               }));
             }}
             className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
           >
-            {accounts.map((a) => (
-              <option key={optionKey(a)} value={optionKey(a)}>
-                {a.ownerName ? `${a.name} (${a.ownerName})` : a.name}
+            {choices.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.label}
               </option>
             ))}
           </select>

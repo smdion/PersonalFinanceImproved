@@ -1,10 +1,10 @@
 /**
  * A lump sum saves the tax side of the part it picks: a lump sum added in
  * Changes by year to a Roth part carries `taxType: "roth"`, so the engine
- * puts it in that named part, not in the account's Traditional parts. A pick
- * whose name and owner span both of an account's tax parts, or a category
- * with no Roth side, saves no side (Traditional). The writers that
- * rebuild a lump sum from its fields keep a saved side.
+ * puts it in that named part, not in the account's Traditional parts. An
+ * account held in both tax parts under one name and owner shows one option
+ * per part, labelled with its side; a category with no Roth side saves no
+ * side (Traditional). The writers that rebuild a lump sum keep a saved side.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -121,13 +121,75 @@ describe("a lump sum's tax side, as the forms save it", () => {
     ]);
   });
 
-  it("no side when the pick spans both tax parts, or the category has none", () => {
+  it("no side for a category without one", () => {
     const saved = savedFromChangesByYear([
-      ["1000", "Invented 401k::Invented Earner"],
       ["2000", "Invented Brokerage::Invented Earner"],
     ]);
-    expect(saved).toHaveLength(2);
-    for (const ls of saved) expect(ls).not.toHaveProperty("taxType");
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).not.toHaveProperty("taxType");
+  });
+
+  it("an account held in both tax parts under one name and owner: one labelled option per part, and each saves its side", () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const [trad, roth] = savedFromChangesByYear([
+      ["1000", "Invented 401k::Invented Earner::traditional"],
+      ["2000", "Invented 401k::Invented Earner::roth"],
+    ]);
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "Invented Roth IRA (Invented Earner)",
+      "Invented Trad IRA (Invented Earner)",
+      "Invented 401k (Invented Earner) (Traditional)",
+      "Invented 401k (Invented Earner) (Roth)",
+      "Invented Brokerage (Invented Earner)",
+    ]);
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+    expect(trad).toMatchObject({
+      targetAccountName: "Invented 401k",
+      taxType: "traditional",
+      targetPerformanceAccountId: 93,
+      targetOwnerPersonId: 61,
+    });
+    expect(roth).toMatchObject({
+      targetAccountName: "Invented 401k",
+      taxType: "roth",
+      targetPerformanceAccountId: 93,
+      targetOwnerPersonId: 61,
+    });
+    const parts = rows.map((r): IndividualAccountInput => ({
+      name: r.name,
+      category: r.category,
+      taxType: r.taxType,
+      ownerName: r.ownerName,
+      ownerPersonId: r.ownerPersonId,
+      parentCategory: r.parentCategory,
+      startingBalance: r.balance,
+    }));
+    expect(
+      resolveLumpSumTargets(roth as LumpSum, parts).map((t) => t.taxType),
+    ).toEqual(["taxFree"]);
+  });
+
+  it("the Brokerage page: the Roth part of an account held in both tax parts can be picked", () => {
+    const onAdd = vi.fn<(ls: LumpSumEvent) => void>();
+    render(
+      <LumpSumForm
+        accounts={rows.map((r) => accountOption(r, false))}
+        onAdd={onAdd}
+        allowWithdrawals
+      />,
+    );
+    expect(
+      screen.getByRole("option", { name: "Invented 401k (Roth)" }),
+    ).toBeTruthy();
+    addLumpSum("500", "Invented 401k::::roth");
+    expect(onAdd.mock.calls[0]?.[0]).toMatchObject({
+      targetAccountName: "Invented 401k",
+      taxType: "roth",
+      targetPerformanceAccountId: 93,
+    });
   });
 
   it("the Brokerage page's event carries the side, and its rebuild keeps it", () => {
