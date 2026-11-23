@@ -8,6 +8,7 @@ import { eq, desc, sql, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
 import { roundToCents, safeDivide, toDecimalColumn } from "@/lib/utils/math";
+import { getSnapshotRows } from "@/server/data/snapshot-rows";
 import {
   refreshSnapshotYearDerivatives,
   pushSnapshotIfConfigured,
@@ -202,10 +203,7 @@ export async function createPortfolioSnapshot(
           // Pulled amounts and the year's derivatives are refreshed together in one
           // transaction, so Performance and Net Worth agree about this save.
           const pulled = await ctx.db.transaction(async (tx) => {
-            const pullSnapshotAccounts = await tx
-              .select()
-              .from(schema.portfolioAccounts)
-              .where(eq(schema.portfolioAccounts.snapshotId, snapshot.id));
+            const pullSnapshotAccounts = await getSnapshotRows(tx, snapshot.id);
             let pulled = 0;
             for (const mapping of pullMappings) {
               const m = mapping as {
@@ -252,10 +250,7 @@ export async function createPortfolioSnapshot(
               pulled++;
             }
             if (pulled > 0) {
-              const finalRows = await tx
-                .select()
-                .from(schema.portfolioAccounts)
-                .where(eq(schema.portfolioAccounts.snapshotId, snapshot.id));
+              const finalRows = await getSnapshotRows(tx, snapshot.id);
               await refreshSnapshotYearDerivatives(
                 tx,
                 input.snapshotDate,

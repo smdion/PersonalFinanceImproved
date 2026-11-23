@@ -5,10 +5,9 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { roundToCents } from "@/lib/utils/math";
-import * as schema from "@/lib/db/schema";
+import { getSnapshotRows } from "@/server/data/snapshot-rows";
 import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api";
 import type { NewBudgetTransaction } from "@/lib/budget-api/types";
@@ -105,10 +104,7 @@ async function loadSnapshotBalancesByPerformanceAccountId(
   db: Db,
   snapshotId: number,
 ): Promise<Map<number, number>> {
-  const snapshotAccounts = await db
-    .select()
-    .from(schema.portfolioAccounts)
-    .where(eq(schema.portfolioAccounts.snapshotId, snapshotId));
+  const snapshotAccounts = await getSnapshotRows(db, snapshotId);
 
   const balanceByPerformanceAccountId = new Map<number, number>();
   for (const account of snapshotAccounts) {

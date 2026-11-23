@@ -10,19 +10,19 @@ import type { BudgetTransaction } from "@/lib/budget-api/types";
 import { BudgetApiError, userMessageFor } from "@/lib/budget-api/errors";
 import type { Db } from "@/lib/db";
 
-/** Fake db exposing only the select().from().where() chain the helper
- *  uses to load portfolioAccounts for a snapshot. */
+/** Fake db exposing only the select().from().where().orderBy() chain the
+ *  helper uses to load portfolioAccounts for a snapshot. */
 function makeFakeDb(
   accounts: { performanceAccountId: number | null; amount: string }[],
 ): Db {
   return {
     select: () => ({
       from: () => ({
-        where: () => Promise.resolve(accounts),
+        where: () => ({ orderBy: () => Promise.resolve(accounts) }),
       }),
     }),
     // Db is a full Drizzle instance; this test only exercises the
-    // select/from/where chain used by pushSnapshotToBudgetApi, so a
+    // select/from/where/orderBy chain used by pushSnapshotToBudgetApi, so a
     // minimal stub cast is unavoidable.
     // eslint-disable-next-line no-restricted-syntax
   } as unknown as Db;

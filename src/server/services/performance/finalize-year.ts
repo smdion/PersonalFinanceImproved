@@ -40,6 +40,7 @@ import {
   yearGrossIncome,
 } from "@/lib/pure/investments/finalize-year";
 import { portfolioByTaxLocationFrom } from "@/lib/pure/net-worth/tax-location";
+import { getSnapshotRows } from "@/server/data/snapshot-rows";
 
 export async function finalizePerformanceYear(
   ctx: { db: Db; scope: RequestScope },
@@ -405,12 +406,7 @@ export async function finalizePerformanceYear(
 
     const snapAccounts =
       nearestSnapshot.length > 0
-        ? await tx
-            .select()
-            .from(schema.portfolioAccounts)
-            .where(
-              eq(schema.portfolioAccounts.snapshotId, nearestSnapshot[0]!.id),
-            )
+        ? await getSnapshotRows(tx, nearestSnapshot[0]!.id)
         : [];
     const portfolioByTaxLocation = portfolioByTaxLocationFrom(snapAccounts);
 

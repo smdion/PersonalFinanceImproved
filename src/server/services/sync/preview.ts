@@ -17,6 +17,7 @@ import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { calculateMortgage } from "@/lib/pure/debts/mortgage";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
+import { getSnapshotRows } from "@/server/data/snapshot-rows";
 import {
   matchBudgetItems,
   matchSavingsGoals,
@@ -231,10 +232,7 @@ export async function computeSyncPreview(
   }> = [];
   if (latestSnapshot) {
     const [snapAccounts, allPeople, perfAccounts] = await Promise.all([
-      ctx.db
-        .select()
-        .from(schema.portfolioAccounts)
-        .where(eq(schema.portfolioAccounts.snapshotId, latestSnapshot.id)),
+      getSnapshotRows(ctx.db, latestSnapshot.id),
       ctx.db.select().from(schema.people),
       ctx.db.select().from(schema.performanceAccounts),
     ]);

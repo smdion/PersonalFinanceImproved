@@ -4,6 +4,7 @@ import { protectedProcedure, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { portfolioSnapshotInput } from "./portfolio-snapshot-input";
 import { createCheckedPortfolioSnapshot } from "./snapshot-tax-types";
+import { getSnapshotRows } from "@/server/data/snapshot-rows";
 
 export const portfolioSnapshotProcedures = {
   /** Get the latest snapshot with its accounts (for pre-filling a new snapshot form). */
@@ -15,10 +16,7 @@ export const portfolioSnapshotProcedures = {
       .limit(1);
     const latest = snapshots[0];
     if (!latest) return null;
-    const accounts = await ctx.db
-      .select()
-      .from(schema.portfolioAccounts)
-      .where(eq(schema.portfolioAccounts.snapshotId, latest.id));
+    const accounts = await getSnapshotRows(ctx.db, latest.id);
     return { snapshot: latest, accounts };
   }),
 

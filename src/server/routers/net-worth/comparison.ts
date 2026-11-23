@@ -1,4 +1,4 @@
-import { eq, asc } from "drizzle-orm";
+import { asc } from "drizzle-orm";
 import { z } from "zod/v4";
 import { protectedProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
@@ -12,6 +12,7 @@ import { getEffectiveOtherAssets } from "@/server/services/net-worth/other-asset
 import { getEffectiveCash } from "@/server/services/budget/account-balances";
 import { toNumber } from "@/lib/utils/numbers";
 import { portfolioByTaxTypeFrom } from "@/lib/pure/net-worth/tax-location";
+import { getSnapshotRows } from "@/server/data/snapshot-rows";
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 
 export const comparisonProcedures = {
@@ -102,10 +103,7 @@ export const comparisonProcedures = {
         }
 
         // Load accounts for this snapshot
-        const accounts = await ctx.db
-          .select()
-          .from(schema.portfolioAccounts)
-          .where(eq(schema.portfolioAccounts.snapshotId, closest.id));
+        const accounts = await getSnapshotRows(ctx.db, closest.id);
 
         const total = accounts.reduce((s, a) => s + toNumber(a.amount), 0);
         const byTaxType = portfolioByTaxTypeFrom(accounts);

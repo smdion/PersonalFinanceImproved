@@ -69,7 +69,8 @@ export async function loadLatestSubAccounts(db: Db): Promise<SubAccount[]> {
           eq(schema.portfolioAccounts.snapshotId, latest.id),
           eq(schema.portfolioAccounts.isActive, true),
         ),
-      ),
+      )
+      .orderBy(asc(schema.portfolioAccounts.id)),
     db
       .select({ id: schema.people.id, name: schema.people.name })
       .from(schema.people),
@@ -134,7 +135,7 @@ export async function loadAccountPartHistory(
         eq(schema.portfolioSnapshots.id, pa.snapshotId),
       )
       .where(inArray(pa.performanceAccountId, [...performanceAccountIds]))
-      .orderBy(asc(schema.portfolioSnapshots.snapshotDate)),
+      .orderBy(asc(schema.portfolioSnapshots.snapshotDate), asc(pa.id)),
     db
       .select({ id: schema.people.id, name: schema.people.name })
       .from(schema.people),

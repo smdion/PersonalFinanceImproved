@@ -9,6 +9,7 @@ import {
 } from "@/server/data/snapshots";
 import { refuseTaxTypeEdit, refuseUnheldTaxType } from "./snapshot-tax-types";
 import { refreshSnapshotYearDerivatives } from "@/server/services/net-worth/snapshot-derivatives";
+import { getSnapshotRows } from "@/server/data/snapshot-rows";
 import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
 import { zDecimal } from "@/lib/utils/zod-fields";
 import {
@@ -110,13 +111,7 @@ export const snapshotAccountProcedures = {
           .set({ ...metaUpdates, amount: input.amount })
           .where(eq(schema.portfolioAccounts.id, input.id));
 
-        const allRows = await tx
-          .select({
-            performanceAccountId: schema.portfolioAccounts.performanceAccountId,
-            amount: schema.portfolioAccounts.amount,
-          })
-          .from(schema.portfolioAccounts)
-          .where(eq(schema.portfolioAccounts.snapshotId, snap.id));
+        const allRows = await getSnapshotRows(tx, snap.id);
 
         return refreshSnapshotYearDerivatives(tx, snap.snapshotDate, allRows);
       });
@@ -202,13 +197,7 @@ export const snapshotAccountProcedures = {
           .returning();
         // The year's ending balances follow the snapshot, same shared
         // path as create/updateAccount.
-        const allRows = await tx
-          .select({
-            performanceAccountId: schema.portfolioAccounts.performanceAccountId,
-            amount: schema.portfolioAccounts.amount,
-          })
-          .from(schema.portfolioAccounts)
-          .where(eq(schema.portfolioAccounts.snapshotId, snap.id));
+        const allRows = await getSnapshotRows(tx, snap.id);
         await refreshSnapshotYearDerivatives(tx, snap.snapshotDate, allRows);
         return inserted!;
       });

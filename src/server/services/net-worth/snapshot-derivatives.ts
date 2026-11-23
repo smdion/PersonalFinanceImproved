@@ -2,7 +2,7 @@
  * The values derived from a portfolio snapshot's balances (Performance ending balances and
  * rollups, the budget-API push), in one place for both the create and single-balance edit paths.
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { userMessageFor } from "@/lib/budget-api/errors";
@@ -65,7 +65,8 @@ export async function loadYearEndSnapshots(
         schema.portfolioAccounts.snapshotId,
         Array.from(last.values(), (v) => v.id),
       ),
-    );
+    )
+    .orderBy(asc(schema.portfolioAccounts.id));
   return Array.from(last, ([year, snap]) => {
     const own = rows.filter((a) => a.snapshotId === snap.id);
     const byAccountOwner = new Map<string, number>();
