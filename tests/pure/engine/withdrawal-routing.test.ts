@@ -5,6 +5,10 @@ import { routeWithdrawalsBracketFilling } from "@/lib/pure/engine/withdrawal-rou
 import { routeForMode } from "@/lib/pure/engine/withdrawal-routing";
 import { computeBracketTraditionalCap } from "@/lib/pure/engine/withdrawal-routing/caps";
 import {
+  traditionalCapUnmetWarning,
+  withoutUnmetWarning,
+} from "@/lib/pure/engine/withdrawal-routing/unmet-warning";
+import {
   makeDecumulationConfig,
   makeAccountBalances,
   TEST_BRACKETS,
@@ -129,6 +133,25 @@ describe("waterfall routing", () => {
     const { slots } = routeWithdrawalsWaterfall(60000, config, balances);
     const totalTrad = slots.reduce((s, sl) => s + sl.traditionalWithdrawal, 0);
     expect(totalTrad).toBeLessThanOrEqual(20000);
+  });
+
+  it("drops a pass's Traditional cap line and keeps its other lines", () => {
+    const config = makeDecumulationConfig({
+      withdrawalOrder: ["401k"],
+      withdrawalTaxTypeCaps: { traditional: 20000, roth: null },
+    });
+    const balances = makeAccountBalances({
+      preTax: 100000,
+      taxFree: 0,
+      hsa: 0,
+      afterTax: 0,
+      afterTaxBasis: 0,
+    });
+    const { warnings } = routeWithdrawalsWaterfall(30000, config, balances);
+    expect(warnings).toContain(traditionalCapUnmetWarning(10000, "401k"));
+    const other =
+      "401k withdrawal capped at $5,000 — $1,000 shifts to next account";
+    expect(withoutUnmetWarning([...warnings, other])).toEqual([other]);
   });
 
   it("returns an unmet need as a number, with no sentence about it", () => {

@@ -13,6 +13,7 @@ import {
   getTotalBalance,
 } from "../../accounts/account-balance";
 import type { RouteResult } from "./types";
+import { traditionalCapUnmetWarning } from "./unmet-warning";
 
 /**
  * Route withdrawals from accounts for one year.
@@ -99,9 +100,8 @@ export function routeWithdrawalsWaterfall(
         rothWithdrawal = roundToCents(rothWithdrawal + extraRoth);
         cappedByTaxType = true;
         if (excess > extraRoth) {
-          warnings.push(
-            `Traditional withdrawal cap hit — $${roundToCents(excess - extraRoth).toLocaleString()} unmet from ${category}`,
-          );
+          const unmet = roundToCents(excess - extraRoth);
+          warnings.push(traditionalCapUnmetWarning(unmet, category));
         }
       }
       const rothCap = config.withdrawalTaxTypeCaps.roth;
