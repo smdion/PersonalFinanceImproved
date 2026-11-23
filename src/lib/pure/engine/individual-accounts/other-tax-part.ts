@@ -6,6 +6,8 @@ import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../../config/tax-treatment-buckets";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { credit, specKeyOf } from "./ledger";
+import { partShares } from "./part-weights";
+import type { SpecParts } from "./spec-accounts";
 
 /**
  * A slot's money of a tax type no spec in its category carries: on each spec
@@ -13,17 +15,14 @@ import { credit, specKeyOf } from "./ledger";
  * the specs' own amounts.
  */
 export function otherParts(
-  {
-    indAccounts: accounts,
-    indKey: keyOf,
-    indBalance: balances,
-  }: Record<"indAccounts", IndividualAccountInput[]> &
+  ledger: Record<"indAccounts", IndividualAccountInput[]> &
     Record<"indKey", IndKeyFn> &
     Record<"indBalance", Map<string, number>>,
-  specAccount: Map<string, string>,
+  specAccount: Map<string, SpecParts>,
   specRaw: Map<string, number>,
   contributions: Map<string, number>,
 ) {
+  const { indAccounts: accounts, indKey: keyOf, indBalance: balances } = ledger;
   return (
     specs: ContributionSpec[],
     taxTreatment: "pre_tax" | "tax_free",
@@ -34,10 +33,16 @@ export function otherParts(
     const weights = new Map<string, number>();
     for (const sp of specs) {
       const sk = specKeyOf(sp);
-      const held = accounts.find((ia) => keyOf(ia) === specAccount.get(sk));
-      if (!held) continue;
-      const part = keyOf({ ...held, taxType });
-      weights.set(part, (weights.get(part) ?? 0) + (specRaw.get(sk) ?? 0));
+      // Each of the spec's parts, by its share of the spec's money.
+      const held = (specAccount.get(sk) ?? []).flatMap((key) =>
+        accounts.filter((ia) => keyOf(ia) === key),
+      );
+      const shares = partShares(ledger, held);
+      held.forEach((ia, i) => {
+        const part = keyOf({ ...ia, taxType });
+        const raw = (specRaw.get(sk) ?? 0) * shares[i]!;
+        weights.set(part, (weights.get(part) ?? 0) + raw);
+      });
     }
     const total = sumBy([...weights.values()], (w) => w);
     for (const [part, w] of weights) {

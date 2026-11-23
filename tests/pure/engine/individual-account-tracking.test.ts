@@ -173,7 +173,9 @@ describe("buildSpecToAccountMapping", () => {
       indKey,
       parentCat,
     );
-    expect(specToAccount.get(specKeyOf(specs[0]!))).toBe(indKey(accounts[0]!));
+    expect(specToAccount.get(specKeyOf(specs[0]!))).toEqual([
+      indKey(accounts[0]!),
+    ]);
   });
 
   it("falls back to unowned account when no exact owner match", () => {
@@ -1216,10 +1218,10 @@ describe("distributeContributions", () => {
       }),
     ];
 
-    const specToAccount = new Map<string, string>();
-    specToAccount.set(specKeyOf(specs[0]!), indKey(accounts[0]!));
-    specToAccount.set(specKeyOf(specs[1]!), indKey(accounts[1]!));
-    const accountsWithSpecs = new Set(specToAccount.values());
+    const specToAccount = new Map<string, readonly string[]>();
+    specToAccount.set(specKeyOf(specs[0]!), [indKey(accounts[0]!)]);
+    specToAccount.set(specKeyOf(specs[1]!), [indKey(accounts[1]!)]);
+    const accountsWithSpecs = new Set([...specToAccount.values()].flat());
 
     const slots: AccumulationSlot[] = [
       makeAccumulationSlot("401k", {
@@ -1326,9 +1328,9 @@ describe("distributeContributions", () => {
       }),
     ];
 
-    const specToAccount = new Map<string, string>();
-    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
-    specToAccount.set(specKeyOf(specs[1]!), indKey(brokB));
+    const specToAccount = new Map<string, readonly string[]>();
+    specToAccount.set(specKeyOf(specs[0]!), [indKey(brokA)]);
+    specToAccount.set(specKeyOf(specs[1]!), [indKey(brokB)]);
 
     const slots: AccumulationSlot[] = [
       makeAccumulationSlot("brokerage", {
@@ -1346,7 +1348,7 @@ describe("distributeContributions", () => {
       indBalance,
       indParentCat: new Map(),
       specToAccount,
-      accountsWithSpecs: new Set(specToAccount.values()),
+      accountsWithSpecs: new Set([...specToAccount.values()].flat()),
       projectedSalary: 120000,
       currentSalary: 120000,
       limitGrowthRate: 0.03,
@@ -1388,8 +1390,8 @@ describe("distributeContributions", () => {
       }),
     ];
 
-    const specToAccount = new Map<string, string>();
-    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
+    const specToAccount = new Map<string, readonly string[]>();
+    specToAccount.set(specKeyOf(specs[0]!), [indKey(brokA)]);
 
     const result = distributeContributions({
       slots: [],
@@ -1399,7 +1401,7 @@ describe("distributeContributions", () => {
       indBalance,
       indParentCat: new Map(),
       specToAccount,
-      accountsWithSpecs: new Set(specToAccount.values()),
+      accountsWithSpecs: new Set([...specToAccount.values()].flat()),
       projectedSalary: 120000,
       currentSalary: 120000,
       limitGrowthRate: 0.03,
@@ -1435,8 +1437,8 @@ describe("distributeContributions", () => {
       }),
     ];
 
-    const specToAccount = new Map<string, string>();
-    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
+    const specToAccount = new Map<string, readonly string[]>();
+    specToAccount.set(specKeyOf(specs[0]!), [indKey(brokA)]);
 
     const result = distributeContributions({
       slots: [],
@@ -1446,7 +1448,7 @@ describe("distributeContributions", () => {
       indBalance,
       indParentCat: new Map(),
       specToAccount,
-      accountsWithSpecs: new Set(specToAccount.values()),
+      accountsWithSpecs: new Set([...specToAccount.values()].flat()),
       projectedSalary: 120000,
       currentSalary: 120000,
       limitGrowthRate: 0.03,
@@ -1484,8 +1486,8 @@ describe("distributeContributions", () => {
       }),
     ];
 
-    const specToAccount = new Map<string, string>();
-    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
+    const specToAccount = new Map<string, readonly string[]>();
+    specToAccount.set(specKeyOf(specs[0]!), [indKey(brokA)]);
 
     const result = distributeContributions({
       slots: [],
@@ -1495,7 +1497,7 @@ describe("distributeContributions", () => {
       indBalance,
       indParentCat: new Map(),
       specToAccount,
-      accountsWithSpecs: new Set(specToAccount.values()),
+      accountsWithSpecs: new Set([...specToAccount.values()].flat()),
       projectedSalary: 120000,
       currentSalary: 120000,
       limitGrowthRate: 0.03,
@@ -1540,8 +1542,8 @@ describe("distributeContributions", () => {
         taxTreatment: "after_tax",
       }),
     ];
-    const specToAccount = new Map<string, string>();
-    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
+    const specToAccount = new Map<string, readonly string[]>();
+    specToAccount.set(specKeyOf(specs[0]!), [indKey(brokA)]);
 
     const result = distributeContributions({
       slots: [],
@@ -1551,7 +1553,7 @@ describe("distributeContributions", () => {
       indBalance,
       indParentCat: new Map(),
       specToAccount,
-      accountsWithSpecs: new Set(specToAccount.values()),
+      accountsWithSpecs: new Set([...specToAccount.values()].flat()),
       projectedSalary: 120000,
       currentSalary: 120000,
       limitGrowthRate: 0.03,
@@ -1590,8 +1592,8 @@ describe("distributeContributions", () => {
         taxTreatment: "after_tax",
       }),
     ];
-    const specToAccount = new Map<string, string>();
-    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
+    const specToAccount = new Map<string, readonly string[]>();
+    specToAccount.set(specKeyOf(specs[0]!), [indKey(brokA)]);
 
     const result = distributeContributions({
       slots: [],
@@ -1601,7 +1603,7 @@ describe("distributeContributions", () => {
       indBalance,
       indParentCat: new Map(),
       specToAccount,
-      accountsWithSpecs: new Set(specToAccount.values()),
+      accountsWithSpecs: new Set([...specToAccount.values()].flat()),
       // Deliberately mismatched from currentSalary to prove this branch
       // ignores salary entirely.
       projectedSalary: 250000,
@@ -1638,8 +1640,8 @@ describe("distributeContributions", () => {
         taxTreatment: "after_tax",
       }),
     ];
-    const specToAccount = new Map<string, string>();
-    specToAccount.set(specKeyOf(specs[0]!), indKey(brokA));
+    const specToAccount = new Map<string, readonly string[]>();
+    specToAccount.set(specKeyOf(specs[0]!), [indKey(brokA)]);
 
     const result = distributeContributions({
       slots: [],
@@ -1649,7 +1651,7 @@ describe("distributeContributions", () => {
       indBalance,
       indParentCat: new Map(),
       specToAccount,
-      accountsWithSpecs: new Set(specToAccount.values()),
+      accountsWithSpecs: new Set([...specToAccount.values()].flat()),
       projectedSalary: 130000,
       currentSalary: 120000,
       limitGrowthRate: 0.03,

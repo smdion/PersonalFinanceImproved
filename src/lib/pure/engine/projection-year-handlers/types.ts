@@ -25,6 +25,7 @@ import type { DecumulationOverride } from "../types/decumulation";
 import type { SpendingCrossYearState } from "../types/spending-strategy";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { makeIndKey } from "../individual-accounts/ledger";
+import type { SpecParts } from "../individual-accounts/spec-accounts";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { BrokerageBasis } from "../brokerage-basis";
@@ -83,7 +84,8 @@ export type ProjectionLoopState = {
   indBasis: Map<string, RothBasisState>;
   /** Brokerage cost basis per basis-tracking account (brokerage-basis.ts). */
   brokBasis: BrokerageBasis;
-  specToAccount: Map<string, string>;
+  /** Each spec's account parts, by spec key (`SpecParts`). */
+  specToAccount: Map<string, SpecParts>;
   accountsWithSpecs: Set<string>;
 
   // Contribution/profile tracking (mutable due to profile switches)

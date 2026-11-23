@@ -33,22 +33,29 @@ function weightsOf(ledger: Ledger, parts: IndividualAccountInput[]) {
   return parts.map(() => 1);
 }
 
-/** `amount` over `parts` by weight (`weightsOf`), the last part the cents
- *  left; each share credited to the part in every map of `into`. */
+/** Each part's share of money spread over `parts` (`weightsOf`). */
+export function partShares(
+  ledger: Ledger,
+  parts: IndividualAccountInput[],
+): number[] {
+  const weights = weightsOf(ledger, parts);
+  const total = sumBy(weights, (w) => w);
+  return weights.map((w) => safeDivide(w, total, 0));
+}
+
+/** `amount` over `parts` by their shares (`partShares`), the last part the
+ *  cents left; each share credited to the part in every map of `into`. */
 export function creditByWeight(
   ledger: Ledger,
   parts: IndividualAccountInput[],
   amount: number,
   into: Map<string, number>[],
 ): void {
-  const weights = weightsOf(ledger, parts);
-  const total = sumBy(weights, (w) => w);
+  const shares = partShares(ledger, parts);
   let left = amount;
   parts.forEach((ia, i) => {
     const share =
-      i === parts.length - 1
-        ? left
-        : roundToCents(amount * safeDivide(weights[i]!, total, 0));
+      i === parts.length - 1 ? left : roundToCents(amount * shares[i]!);
     left = roundToCents(left - share);
     credit(ledger.indKey(ia), share, into);
   });

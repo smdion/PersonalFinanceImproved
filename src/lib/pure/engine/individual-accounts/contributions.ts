@@ -17,6 +17,7 @@ import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { rampBrokerages } from "@/lib/pure/accounts/brokerage-ramp";
 import { credit, retirementFirst, specKeyOf } from "./ledger";
 import { otherParts } from "./other-tax-part";
+import { creditSpecParts, onSpecParts, type SpecParts } from "./spec-accounts";
 import { unclaimedSlot } from "./own-part-credits";
 
 interface DistributeContributionsInput {
@@ -26,7 +27,7 @@ interface DistributeContributionsInput {
   indKey: IndKeyFn;
   indBalance: Map<string, number>;
   indParentCat: Map<string, string>;
-  specToAccount: Map<string, string>;
+  specToAccount: Map<string, SpecParts>;
   accountsWithSpecs: Set<string>;
   projectedSalary: number;
   currentSalary: number;
@@ -53,7 +54,6 @@ interface DistributeContributionsResult {
 /**
  * Distribute slot-level contributions to individual accounts using spec weights.
  * Also handles employer match, overflow, intentional tracking, and ramp distribution.
- *
  * Mutates `indBalance` in place.
  */
 export function distributeContributions(
@@ -88,7 +88,7 @@ export function distributeContributions(
   // --- Step 1: Compute raw projected amount per spec (for weighting only) ---
   const lgf = Math.pow(1 + limitGrowthRate, y);
   const specRaw = new Map<string, number>();
-  const specAccount = new Map<string, string>();
+  const specAccount = new Map<string, SpecParts>();
   for (const spec of contributionSpecs) {
     const sk = specKeyOf(spec);
     const accountName = specToAccount.get(sk);
@@ -123,11 +123,11 @@ export function distributeContributions(
       for (const sp of allSpecs) {
         if (isRetirementMoney(sp.parentCategory)) continue;
         const sk = specKeyOf(sp);
-        const accountName = specAccount.get(sk);
-        if (!accountName) continue;
+        const parts = specAccount.get(sk);
+        if (!parts) continue;
         const portion = roundToCents(Math.min(specRaw.get(sk) ?? 0, remaining));
         if (portion <= 0) continue;
-        credit(accountName, portion, [indContributions, indBalance]);
+        creditSpecParts(input, parts, portion, [indContributions, indBalance]);
         remaining -= portion;
       }
       const specs = allSpecs.filter((sp) =>
@@ -142,12 +142,12 @@ export function distributeContributions(
 
       for (const sp of fixedSpecs) {
         const sk = specKeyOf(sp);
-        const accountName = specAccount.get(sk);
-        if (!accountName) continue;
+        const parts = specAccount.get(sk);
+        if (!parts) continue;
         const rawAmount = specRaw.get(sk) ?? 0;
         const portion = roundToCents(Math.min(rawAmount, remaining));
         if (portion <= 0) continue;
-        credit(accountName, portion, [indContributions, indBalance]);
+        creditSpecParts(input, parts, portion, [indContributions, indBalance]);
         remaining -= portion;
       }
 
@@ -158,14 +158,17 @@ export function distributeContributions(
         );
         for (const sp of scalingSpecs) {
           const sk = specKeyOf(sp);
-          const accountName = specAccount.get(sk);
-          if (!accountName) continue;
+          const parts = specAccount.get(sk);
+          if (!parts) continue;
           const weight =
             rawTotal > 0
               ? (specRaw.get(sk) ?? 0) / rawTotal
               : 1 / scalingSpecs.length;
           const portion = roundToCents(remaining * weight);
-          credit(accountName, portion, [indContributions, indBalance]);
+          creditSpecParts(input, parts, portion, [
+            indContributions,
+            indBalance,
+          ]);
         }
       }
     };
@@ -255,7 +258,7 @@ export function distributeContributions(
       .filter(
         (s) =>
           isOverflowTarget(s.category) &&
-          brokKeys.has(specToAccount.get(specKeyOf(s)) ?? ""),
+          specToAccount.get(specKeyOf(s))?.some((k) => brokKeys.has(k)),
       )
       .sort((a, b) => a.allocationPriority - b.allocationPriority);
 
@@ -266,11 +269,11 @@ export function distributeContributions(
       const sk = specKeyOf(spec);
       const accountName = specToAccount.get(sk);
       if (!accountName) continue;
-      const currentContribution = indContributions.get(accountName) ?? 0;
+      const currentContribution = onSpecParts(indContributions, accountName);
       const room = Math.max(0, spec.targetAnnual - currentContribution);
       const portion = roundToCents(Math.min(remaining, room));
       if (portion > 0) {
-        credit(accountName, portion, [
+        creditSpecParts(input, accountName, portion, [
           indContributions,
           indBalance,
           indOverflow,
@@ -285,7 +288,7 @@ export function distributeContributions(
         for (const spec of noTargetSpecs) {
           const accountName = specToAccount.get(specKeyOf(spec));
           if (!accountName) continue;
-          credit(accountName, perAccount, [
+          creditSpecParts(input, accountName, perAccount, [
             indContributions,
             indBalance,
             indOverflow,
@@ -298,7 +301,7 @@ export function distributeContributions(
         if (lastSpec) {
           const accountName = specToAccount.get(specKeyOf(lastSpec));
           if (accountName) {
-            credit(accountName, remaining, [
+            creditSpecParts(input, accountName, remaining, [
               indContributions,
               indBalance,
               indOverflow,
@@ -336,10 +339,7 @@ export function distributeContributions(
         proRate,
       }),
     );
-    indIntentional.set(
-      accountName,
-      (indIntentional.get(accountName) ?? 0) + projected,
-    );
+    creditSpecParts(input, accountName, projected, [indIntentional]);
   }
 
   // --- Step 6: Distribute ramp to brokerage accounts ---

@@ -7,7 +7,10 @@ import { isPreTaxType, isTaxFreeBucket } from "../../../config/account-types";
 import { openingTotals } from "../opening-state";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { initialCrossYearState } from "../spending-strategy";
-import { buildSpecToAccountMapping } from "../individual-accounts/spec-accounts";
+import {
+  buildSpecToAccountMapping,
+  type SpecParts,
+} from "../individual-accounts/spec-accounts";
 import { initRothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
@@ -94,7 +97,7 @@ export function buildProjectionState(
           ctx.indParentCat,
         )
       : {
-          specToAccount: new Map<string, string>(),
+          specToAccount: new Map<string, SpecParts>(),
           accountsWithSpecs: new Set<string>(),
         };
 

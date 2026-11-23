@@ -6,6 +6,7 @@ import {
 } from "../../../config/account-types";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { portfolioFirst, specKeyOf } from "../individual-accounts/ledger";
+import { creditSpecParts } from "../individual-accounts/spec-accounts";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** Contributions that continue into retirement and the brokerage ramp, per
@@ -36,20 +37,16 @@ export function decumulationPortfolioContributions(
       if (amount <= 0) continue;
       decumBrokerageContribution += amount;
       if (spec.accountName) {
-        // The spec's account from state.specToAccount (owner-aware, as accumulation
-        // matches it), so two owners' same-named accounts don't collide; by name
-        // only when the spec has no entry.
-        const matchedKey = state.specToAccount.get(specKeyOf(spec));
-        const matchingAccount = matchedKey
-          ? ctx.indAccounts.find((ia) => indKey(ia) === matchedKey)
-          : ctx.indAccounts.find((ia) => ia.name === spec.accountName);
-        if (matchingAccount) {
-          const k = indKey(matchingAccount);
-          decumContributionByAccount.set(
-            k,
-            (decumContributionByAccount.get(k) ?? 0) + amount,
-          );
-        }
+        // The spec's parts from state.specToAccount (as accumulation pays
+        // them); by name only when the spec has none.
+        const named = indAccounts.find((ia) => ia.name === spec.accountName);
+        const parts =
+          state.specToAccount.get(specKeyOf(spec)) ??
+          (named ? [indKey(named)] : []);
+        if (parts.length > 0)
+          creditSpecParts({ indAccounts, indKey, indBalance }, parts, amount, [
+            decumContributionByAccount,
+          ]);
       }
     }
   }

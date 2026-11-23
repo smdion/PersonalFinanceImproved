@@ -3,7 +3,13 @@ import type { ContributionSpec } from "../types/contribution-spec";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../../config/tax-treatment-buckets";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
-import { specKeyOf } from "./ledger";
+import { sumBy } from "../../../utils/math";
+import { credit, specKeyOf } from "./ledger";
+import { creditByWeight } from "./part-weights";
+
+/** The account parts a spec pays, by key: one, or (a joint spec on an
+ *  account held in owner parts) each owner's part of its tax type. */
+export type SpecParts = readonly string[];
 
 /**
  * Build mapping from contribution spec keys to individual account keys.
@@ -14,8 +20,8 @@ export function buildSpecToAccountMapping(
   indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
   indParentCat: Map<string, string>,
-): { specToAccount: Map<string, string>; accountsWithSpecs: Set<string> } {
-  const specToAccount = new Map<string, string>();
+): { specToAccount: Map<string, SpecParts>; accountsWithSpecs: Set<string> } {
+  const specToAccount = new Map<string, SpecParts>();
   // The projection-only retirement brokerage has no contributions of its own.
   const accounts = indAccounts.filter((ia) => ia.origin !== "projected");
 
@@ -55,10 +61,41 @@ export function buildSpecToAccountMapping(
       match = accounts.find((ia) => ia.category === spec.category && rule(ia));
       if (match) break;
     }
-    if (match) specToAccount.set(specKeyOf(spec), indKey(match));
+    if (match) specToAccount.set(specKeyOf(spec), [indKey(match)]);
   }
 
-  return { specToAccount, accountsWithSpecs: new Set(specToAccount.values()) };
+  return {
+    specToAccount,
+    accountsWithSpecs: new Set([...specToAccount.values()].flat()),
+  };
+}
+
+/** A spec's money: on its one part, or over several by weight
+ *  (`creditByWeight`), credited in every map of `into`. */
+export function creditSpecParts(
+  ledger: Parameters<typeof creditByWeight>[0],
+  parts: SpecParts,
+  amount: number,
+  into: Map<string, number>[],
+): void {
+  if (parts.length === 1) {
+    credit(parts[0]!, amount, into);
+    return;
+  }
+  const byKey = new Map(
+    ledger.indAccounts.map((ia) => [ledger.indKey(ia), ia]),
+  );
+  creditByWeight(
+    ledger,
+    parts.map((key) => byKey.get(key)!),
+    amount,
+    into,
+  );
+}
+
+/** The amount the maps hold for a spec's parts, together. */
+export function onSpecParts(map: Map<string, number>, parts: SpecParts) {
+  return sumBy(parts, (key) => map.get(key) ?? 0);
 }
 
 /** Each spec of a stretch is its own contribution account: two with one id
