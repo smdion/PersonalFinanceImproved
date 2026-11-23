@@ -7,6 +7,7 @@ import { describe, it, expect } from "vitest";
 import {
   changedLeaves,
   fileChanges,
+  parseArgs,
   summaryLine,
 } from "../../scripts/baseline-diff";
 import { splitFailures, summary } from "../../scripts/vitest-failures";
@@ -50,6 +51,22 @@ describe("baseline-diff", () => {
     expect(changedLeaves({ a: [1, { b: 2 }] }, { a: [1, { b: 2 }] })).toEqual(
       [],
     );
+  });
+
+  it("reads the rev and the limit in any order", () => {
+    expect(parseArgs(["origin/v0.11.1"])).toEqual({
+      rev: "origin/v0.11.1",
+      limit: 200,
+    });
+    expect(parseArgs(["origin/v0.11.1", "--limit", "5"])).toEqual({
+      rev: "origin/v0.11.1",
+      limit: 5,
+    });
+    expect(parseArgs(["--limit", "5", "origin/v0.11.1"])).toEqual({
+      rev: "origin/v0.11.1",
+      limit: 5,
+    });
+    expect(parseArgs([])).toEqual({ rev: "HEAD", limit: 200 });
   });
 });
 

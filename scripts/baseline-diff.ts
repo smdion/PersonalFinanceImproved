@@ -7,7 +7,7 @@
  * Leaves are compared one by one; a field that appears or disappears shows
  * "(none)" on its missing side.
  *
- * Usage: tsx scripts/baseline-diff.ts [<rev>] [--limit N]
+ * Usage: tsx scripts/baseline-diff.ts [<rev>] [--limit N], in either order
  *   <rev> defaults to HEAD; --limit caps the lines printed (default 200).
  */
 import { execFileSync } from "child_process";
@@ -85,12 +85,20 @@ function git(args: string[]): string {
   return execFileSync("git", args, { cwd: ROOT, encoding: "utf8" });
 }
 
-function main() {
-  const args = process.argv.slice(2);
+/** The rev and the line cap, read from the arguments in any order. */
+export function parseArgs(args: string[]): { rev: string; limit: number } {
   const limitAt = args.indexOf("--limit");
   const limit = limitAt >= 0 ? Number(args[limitAt + 1]) : 200;
+  // Without --limit, limitAt + 1 is 0: compare against -1 so the first
+  // argument (the rev) is never mistaken for the limit's value.
+  const valueAt = limitAt >= 0 ? limitAt + 1 : -1;
   const rev =
-    args.find((a, i) => !a.startsWith("--") && i !== limitAt + 1) ?? "HEAD";
+    args.find((a, i) => !a.startsWith("--") && i !== valueAt) ?? "HEAD";
+  return { rev, limit };
+}
+
+function main() {
+  const { rev, limit } = parseArgs(process.argv.slice(2));
   const files = git(["diff", "--name-only", rev, "--", BASELINE_DIR])
     .split("\n")
     .filter((f) => f.endsWith(".json"));
