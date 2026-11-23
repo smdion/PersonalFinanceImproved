@@ -5,7 +5,10 @@
  */
 import type { WithholdingBracket } from "./tax-estimation";
 import type { LtcgBracketTable } from "../../config/tax-tables";
-import type { IrmaaBracketTable } from "../../config/irmaa-tables";
+import {
+  irmaaTopTierIndex,
+  type IrmaaBracketTable,
+} from "../../config/irmaa-tables";
 
 /**
  * Years from the tax data's vintage (`taxDataYear`, not the projection's `yearIndex`) to `year`,
@@ -75,8 +78,8 @@ export function growLtcgBrackets(
 
 /**
  * Grows IRMAA brackets: `magiThreshold` and `annualSurcharge` both scale, so the surcharge keeps
- * its weight against grown tax terms in the bracket optimizer's `lifetimeTax`. The top tier's
- * threshold grows by `topThresholdGrowth` (it is held until indexing starts: `irmaaTopTierVintage`).
+ * its weight against the bracket optimizer's grown tax terms. The top tier (`irmaaTopTierIndex`,
+ * marked on grown rows) grows by `topThresholdGrowth`, held until `irmaaTopTierVintage`.
  */
 export function growIrmaaBrackets(
   brackets: IrmaaBracketTable,
@@ -84,12 +87,13 @@ export function growIrmaaBrackets(
   topThresholdGrowth: number,
 ): IrmaaBracketTable {
   const grown: IrmaaBracketTable = {};
-  for (const [filingStatus, entries] of Object.entries(brackets)) {
-    grown[filingStatus] = entries.map((b, i) => ({
+  for (const [row, entries] of Object.entries(brackets)) {
+    const top = irmaaTopTierIndex(row, entries);
+    grown[row] = entries.map((b, i) => ({
       magiThreshold:
-        b.magiThreshold *
-        (i === entries.length - 1 ? topThresholdGrowth : growthFactor),
+        b.magiThreshold * (i === top ? topThresholdGrowth : growthFactor),
       annualSurcharge: b.annualSurcharge * growthFactor,
+      topTier: i === top,
     }));
   }
   return grown;

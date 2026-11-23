@@ -228,6 +228,59 @@ describe("answer key: the top tier's threshold before indexing starts", () => {
 });
 
 // ---------------------------------------------------------------------------
+// B3. A stored table without the top tier: every tier is ordinary
+// ---------------------------------------------------------------------------
+
+describe("answer key: a table without the top tier", () => {
+  // The top tier is the $500,000 / $750,000 row (20 CFR 418.1115(b)(5),
+  // (c)(5)); a table a user stored without it (or an older year's) has only
+  // "greater than" tiers that index each year (42 USC 1395r(i)(5)(A)).
+  const fourTiers = () => {
+    const shipped = shippedTaxTables(2026).irmaaBrackets;
+    return {
+      Single: shipped.Single!.filter((b) => b.magiThreshold < 500_000),
+      MFJ: shipped.MFJ!.filter((b) => b.magiThreshold < 750_000),
+    };
+  };
+
+  it("ret/IM21:no-top-row [RET-16] 2027 premiums from the 2026 Single table without its top row, 3%, MAGI 208,000: the third tier, 4,758.60", () => {
+    // 171,000 × 1.03 = 176,130 < 208,000 ≤ 205,000 × 1.03 = 211,150: the
+    // third tier, 4,620.00 × 1.03 = 4,758.60. Holding 205,000 as if it were
+    // the top tier charged the fourth, 6,355.20 × 1.03 = 6,545.86.
+    const grown = growIrmaaBrackets(fourTiers(), 1.03, 1);
+    cents(getIrmaaCost(208_000, "Single", grown), 4758.6);
+    // The next cliff is the grown fourth threshold itself, not a cent under.
+    cents(getNextIrmaaCliff(208_000, "Single", grown)!, 211_150);
+  });
+
+  it("ret/IM7:no-top-row [RET-14] the last row starts above its threshold: Single 205,000 pays the third tier, 4,620.00", () => {
+    cents(getIrmaaCost(205_000, "Single", fourTiers()), 4620);
+    cents(getIrmaaCost(205_001, "Single", fourTiers()), 6355.2);
+    cents(getNextIrmaaCliff(200_000, "Single", fourTiers())!, 205_000);
+    expect(getNextIrmaaCliff(205_001, "Single", fourTiers())).toBeNull();
+  });
+
+  it("ret/IM21:grown-ordinary [RET-16] a grown table keeps each row's tier: an ordinary last row grown past 750,000 still starts above it", () => {
+    // MFJ without its top row, grown ×2: 410,000 → 820,000, still ordinary.
+    const grown = growIrmaaBrackets(fourTiers(), 2, 1);
+    cents(getIrmaaCost(820_000, "MFJ", grown), 4620 * 2);
+    cents(getNextIrmaaCliff(800_000, "MFJ", grown)!, 820_000);
+  });
+
+  it("ret/IM21:grown-deflation [RET-16] a grown statutory table keeps its top tier when it grows below the floor", () => {
+    // A Simulation trial's deflation (×0.9): 750,000 → 675,000, still the top
+    // tier, at or above it: 6,936.00 × 0.95.
+    const grown = growIrmaaBrackets(
+      shippedTaxTables(2026).irmaaBrackets,
+      0.95,
+      0.9,
+    );
+    cents(getIrmaaCost(675_000, "MFJ", grown), 6936 * 0.95);
+    cents(getNextIrmaaCliff(600_000, "MFJ", grown)!, 674_999.99);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // C. 2025's table, and the MAGI IRMAA reads
 // ---------------------------------------------------------------------------
 

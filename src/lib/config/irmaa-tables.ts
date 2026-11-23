@@ -9,7 +9,35 @@ export type IrmaaBracket = {
   magiThreshold: number;
   /** Annual surcharge per person (Part B + Part D combined, above standard premium). */
   annualSurcharge: number;
+  /** Whether this row is the statutory top tier, set when a table grows
+   *  (`growIrmaaBrackets`), since a grown threshold can't show it. A stored
+   *  row has none; its threshold decides (`irmaaTopTierIndex`). */
+  topTier?: boolean;
 };
+
+/** The lowest the top tier's threshold can be, by table row: $500,000,
+ *  $750,000 jointly (20 CFR 418.1115(b)(5), (c)(5)), held through 2027 and
+ *  indexed upward after. No ordinary tier is near it. */
+const IRMAA_TOP_TIER_FLOOR: Readonly<Record<string, number>> = {
+  Single: 500_000,
+  HOH: 500_000,
+  MFJ: 750_000,
+};
+
+/** The index of a row's statutory top tier, or -1: the last tier, when a
+ *  grown table marks it or a stored one's threshold reaches the floor. A table
+ *  without it (user-edited, or a year before the tier) has ordinary tiers only. */
+export function irmaaTopTierIndex(
+  row: string,
+  tiers: readonly IrmaaBracket[],
+): number {
+  const last = tiers.length - 1;
+  const b = tiers[last];
+  if (b === undefined) return -1;
+  const floor = IRMAA_TOP_TIER_FLOOR[row];
+  const top = b.topTier ?? (floor !== undefined && b.magiThreshold >= floor);
+  return top ? last : -1;
+}
 
 /** The top tier's thresholds ($500,000 / $750,000 jointly) aren't indexed
  *  before 2028 (42 USC 1395r(i)(5)(C); 20 CFR 418.1115(e)(2)); later years
@@ -34,11 +62,12 @@ export type IrmaaBracketTable = Record<string, IrmaaBracket[]>;
 function bracketsFor(
   brackets: IrmaaBracketTable,
   filingStatus: ReturnFilingStatus,
-): IrmaaBracket[] {
-  const b = brackets[filingRules(filingStatus).jointRow];
+): { tiers: IrmaaBracket[]; top: number } {
+  const row = filingRules(filingStatus).jointRow;
+  const b = brackets[row];
   if (!b || b.length === 0)
     throw new Error(`No IRMAA brackets for filing status ${filingStatus}`);
-  return b;
+  return { tiers: b, top: irmaaTopTierIndex(row, b) };
 }
 
 /**
@@ -52,11 +81,10 @@ export function getIrmaaCost(
   filingStatus: ReturnFilingStatus,
   brackets: IrmaaBracketTable,
 ): number {
-  const tiers = bracketsFor(brackets, filingStatus);
+  const { tiers, top } = bracketsFor(brackets, filingStatus);
   let surcharge = 0;
   tiers.forEach((b, i) => {
-    if (reachesTier(magi, b, i === tiers.length - 1))
-      surcharge = b.annualSurcharge;
+    if (reachesTier(magi, b, i === top)) surcharge = b.annualSurcharge;
   });
   return surcharge;
 }
@@ -69,7 +97,7 @@ function reachesTier(magi: number, b: IrmaaBracket, top: boolean): boolean {
 
 /**
  * The most MAGI can be and stay under the next tier: a lower tier's threshold,
- * the top tier's less a cent; null in the top tier.
+ * the top tier's less a cent; null in the last tier.
  *
  * @param brackets The year's IRMAA brackets (`irmaa_brackets`, resolved).
  */
@@ -78,11 +106,10 @@ export function getNextIrmaaCliff(
   filingStatus: ReturnFilingStatus,
   brackets: IrmaaBracketTable,
 ): number | null {
-  const tiers = bracketsFor(brackets, filingStatus);
+  const { tiers, top } = bracketsFor(brackets, filingStatus);
   for (const [i, b] of tiers.entries()) {
-    const top = i === tiers.length - 1;
-    if (!reachesTier(magi, b, top))
-      return top ? roundToCents(b.magiThreshold - 0.01) : b.magiThreshold;
+    if (!reachesTier(magi, b, i === top))
+      return i === top ? roundToCents(b.magiThreshold - 0.01) : b.magiThreshold;
   }
-  return null; // in the top tier
+  return null; // in the last tier
 }

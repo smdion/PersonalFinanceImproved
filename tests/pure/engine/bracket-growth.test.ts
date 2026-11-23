@@ -14,6 +14,7 @@ import {
   computeTaxableSS,
 } from "@/lib/pure/engine/tax-estimation";
 import { computeLtcgTax } from "@/lib/pure/tax/ltcg";
+import type { IrmaaBracketTable } from "@/lib/config/irmaa-tables";
 import { NIIT_THRESHOLDS } from "@/lib/config/niit";
 import { computeNiit } from "@/lib/pure/tax/niit";
 import {
@@ -691,12 +692,22 @@ describe("growIrmaaBrackets", () => {
   const DB_BRACKETS = {
     MFJ: [
       { magiThreshold: 206000, annualSurcharge: 1056 },
-      { magiThreshold: 258000, annualSurcharge: 2640 },
+      { magiThreshold: 750000, annualSurcharge: 2640 },
     ],
   };
+  /** A grown table's thresholds by row, and which row it marks as the top tier. */
+  const thresholds = (t: IrmaaBracketTable, row: string) =>
+    t[row]!.map((b) => b.magiThreshold);
+  const topTiers = (t: IrmaaBracketTable, row: string) =>
+    t[row]!.map((b) => b.topTier);
 
-  it("is a no-op at growthFactor 1", () => {
-    expect(growIrmaaBrackets(DB_BRACKETS, 1, 1)).toEqual(DB_BRACKETS);
+  it("is a no-op at growthFactor 1, marking the top tier", () => {
+    expect(growIrmaaBrackets(DB_BRACKETS, 1, 1)).toEqual({
+      MFJ: [
+        { ...DB_BRACKETS.MFJ[0], topTier: false },
+        { ...DB_BRACKETS.MFJ[1], topTier: true },
+      ],
+    });
   });
 
   // Unlike growLtcgBrackets (threshold only), BOTH fields scale here --
@@ -708,7 +719,7 @@ describe("growIrmaaBrackets", () => {
     const grown = growIrmaaBrackets(DB_BRACKETS, 1.5, 1.2);
     expect(grown.MFJ![0]!.magiThreshold).toBeCloseTo(206000 * 1.5, 5);
     expect(grown.MFJ![0]!.annualSurcharge).toBeCloseTo(1056 * 1.5, 5);
-    expect(grown.MFJ![1]!.magiThreshold).toBeCloseTo(258000 * 1.2, 5);
+    expect(grown.MFJ![1]!.magiThreshold).toBeCloseTo(750000 * 1.2, 5);
     expect(grown.MFJ![1]!.annualSurcharge).toBeCloseTo(2640 * 1.5, 5);
   });
 
@@ -725,53 +736,92 @@ describe("growIrmaaBrackets", () => {
     expect(Object.keys(grown).sort()).toEqual(["HOH", "MFJ", "Single"]);
   });
 
-  // The top tier is the last row by position, per filing status: no row's
-  // threshold or count marks it.
-  it("takes each filing status's last row as its top tier", () => {
-    const grown = growIrmaaBrackets(
-      {
-        Single: [
-          { magiThreshold: 100, annualSurcharge: 10 },
-          { magiThreshold: 200, annualSurcharge: 20 },
-          { magiThreshold: 300, annualSurcharge: 30 },
-        ],
-        MFJ: [{ magiThreshold: 400, annualSurcharge: 40 }],
-      },
-      2,
-      3,
-    );
-    expect(grown.Single!.map((b) => b.magiThreshold)).toEqual([200, 400, 900]);
-    expect(grown.MFJ!.map((b) => b.magiThreshold)).toEqual([1200]);
-    expect(grown.MFJ![0]!.annualSurcharge).toBe(80);
-  });
+  // The statutory top tier is the last row when its threshold reaches the
+  // statute's floor for its row ($500,000; $750,000 jointly), never the last
+  // row by position: a table without it grows every row as an ordinary tier.
+  it.each([2025, 2026] as const)(
+    "holds the %i table's $500,000 / $750,000 row and grows the rest",
+    (year) => {
+      const shipped = shippedTaxTables(year).irmaaBrackets;
+      const grown = growIrmaaBrackets(shipped, 1.03, 1);
+      for (const [row, top] of [
+        ["Single", 500_000],
+        ["HOH", 500_000],
+        ["MFJ", 750_000],
+      ] as const) {
+        const stored = thresholds(shipped, row);
+        expect(thresholds(grown, row)).toEqual([
+          ...stored.slice(0, -1).map((t) => t * 1.03),
+          top,
+        ]);
+        expect(topTiers(grown, row)).toEqual([
+          false,
+          false,
+          false,
+          false,
+          true,
+        ]);
+      }
+    },
+  );
 
-  it("holds a table's last row when the statutory top tier isn't in it", () => {
+  it("grows every row of a table without the top tier, its last row too", () => {
+    // 2026 Single without the $500,000 row, to 2027 at 3%: 205,000 grows to
+    // 211,150 (it was held, so MAGI 208,000 paid that tier).
     const fourTiers = {
       Single: IRMAA_BRACKETS.Single!.filter((b) => b.magiThreshold < 500_000),
     };
     const grown = growIrmaaBrackets(fourTiers, 1.03, 1);
-    const last = fourTiers.Single.length - 1;
-    expect(grown.Single![last]!.magiThreshold).toBe(
-      fourTiers.Single[last]!.magiThreshold,
+    expect(thresholds(grown, "Single")).toEqual(
+      [109_000, 137_000, 171_000, 205_000].map((t) => t * 1.03),
     );
-    expect(grown.Single![0]!.magiThreshold).toBeCloseTo(
-      fourTiers.Single[0]!.magiThreshold * 1.03,
-      5,
-    );
+    expect(grown.Single![3]!.magiThreshold).toBeCloseTo(211_150, 5);
+    expect(topTiers(grown, "Single")).toEqual([false, false, false, false]);
   });
 
-  it("takes the last row as the top tier even when its threshold isn't the highest", () => {
+  it("reads a one-row table by its threshold", () => {
     const grown = growIrmaaBrackets(
       {
-        Single: [
-          { magiThreshold: 500, annualSurcharge: 10 },
-          { magiThreshold: 100, annualSurcharge: 20 },
-        ],
+        Single: [{ magiThreshold: 205_000, annualSurcharge: 10 }],
+        MFJ: [{ magiThreshold: 750_000, annualSurcharge: 40 }],
       },
       2,
       3,
     );
-    expect(grown.Single!.map((b) => b.magiThreshold)).toEqual([1000, 300]);
+    expect(thresholds(grown, "Single")).toEqual([410_000]);
+    expect(topTiers(grown, "Single")).toEqual([false]);
+    expect(thresholds(grown, "MFJ")).toEqual([2_250_000]);
+    expect(topTiers(grown, "MFJ")).toEqual([true]);
+    expect(grown.MFJ![0]!.annualSurcharge).toBe(80);
+  });
+
+  it("grows every row of a year before the top tier existed", () => {
+    // 2018's thresholds (CMS 2018 fact sheet; surcharges here are
+    // placeholders): the last tier, above $160,000 / $320,000, is ordinary.
+    const y2018 = {
+      Single: tiers([85_000, 107_000, 133_000, 160_000], [1, 2, 3, 4]),
+      MFJ: tiers([170_000, 214_000, 266_000, 320_000], [1, 2, 3, 4]),
+    };
+    const grown = growIrmaaBrackets(y2018, 2, 1);
+    expect(thresholds(grown, "Single")).toEqual([
+      170_000, 214_000, 266_000, 320_000,
+    ]);
+    expect(thresholds(grown, "MFJ")).toEqual([
+      340_000, 428_000, 532_000, 640_000,
+    ]);
+    expect(topTiers(grown, "MFJ")).toEqual([false, false, false, false]);
+  });
+
+  it("takes an indexed top threshold above the floor as the top tier", () => {
+    // A table from 2028 on: the top tier indexed past $500,000.
+    const grown = growIrmaaBrackets(
+      { HOH: tiers([112_000, 515_000], [1, 2]) },
+      1.5,
+      1.2,
+    );
+    expect(grown.HOH![0]!.magiThreshold).toBeCloseTo(168_000, 5);
+    expect(grown.HOH![1]!.magiThreshold).toBeCloseTo(618_000, 5);
+    expect(topTiers(grown, "HOH")).toEqual([false, true]);
   });
 });
 
