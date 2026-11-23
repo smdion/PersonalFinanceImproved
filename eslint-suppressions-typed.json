@@ -311,7 +311,7 @@
   },
   "src/server/services/net-worth/year-end-history.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
+      "count": 2
     }
   },
   "src/server/services/performance/performance-edit.ts": {

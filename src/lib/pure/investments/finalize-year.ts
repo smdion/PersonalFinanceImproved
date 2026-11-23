@@ -1,10 +1,8 @@
 /** What finalizing a Performance year writes: the finalized annual rows,
- *  next year's opening rows, the year's gross income and the tax-location
- *  split. finalizePerformanceYear writes them in one transaction. */
+ *  next year's opening rows and the year's gross income.
+ *  finalizePerformanceYear writes them in one transaction. */
 import { toNumber } from "@/lib/utils/numbers";
-import { isPortfolioParent } from "@/lib/config/account-types";
 import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
-import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { findActiveJob, type JobLike } from "@/lib/pure/household/profiles";
 import {
   resolvePersonYearIncome,
@@ -168,27 +166,4 @@ export function nearestToYearEnd<T extends { snapshotDate: string }>(
         daysFromYearEnd(a.snapshotDate) - daysFromYearEnd(b.snapshotDate),
     )
     .slice(0, 1);
-}
-
-/** A snapshot's accounts summed by tax type, Portfolio-parented apart
- *  from the rest (Retirement). */
-export function portfolioByTaxLocationFrom(
-  snapAccounts: {
-    parentCategory: StoredParentCategory;
-    taxType: PortfolioTaxType;
-    amount: string;
-  }[],
-) {
-  const portfolioByTaxLocation: {
-    retirement: Record<string, number>;
-    portfolio: Record<string, number>;
-  } = { retirement: {}, portfolio: {} };
-
-  for (const a of snapAccounts) {
-    const bucket = isPortfolioParent(a.parentCategory)
-      ? portfolioByTaxLocation.portfolio
-      : portfolioByTaxLocation.retirement;
-    bucket[a.taxType] = (bucket[a.taxType] ?? 0) + toNumber(a.amount);
-  }
-  return portfolioByTaxLocation;
 }

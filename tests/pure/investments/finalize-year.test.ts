@@ -9,7 +9,6 @@ import {
   nearestToYearEnd,
   nextYearAccountRow,
   nextYearAnnualRow,
-  portfolioByTaxLocationFrom,
   yearGrossIncome,
 } from "@/lib/pure/investments/finalize-year";
 
@@ -163,22 +162,5 @@ describe("the tax-location split", () => {
       before,
     ]);
     expect(nearestToYearEnd("2025-12-31", [undefined, undefined])).toEqual([]);
-  });
-
-  it("sums by tax type, Portfolio-parented apart from the rest", () => {
-    expect(
-      portfolioByTaxLocationFrom([
-        { parentCategory: "Retirement", taxType: "preTax", amount: "100.50" },
-        { parentCategory: "Retirement", taxType: "preTax", amount: "50" },
-        { parentCategory: "Portfolio", taxType: "taxFree", amount: "20" },
-      ]),
-    ).toEqual({
-      retirement: { preTax: 150.5 },
-      portfolio: { taxFree: 20 },
-    });
-    expect(portfolioByTaxLocationFrom([])).toEqual({
-      retirement: {},
-      portfolio: {},
-    });
   });
 });

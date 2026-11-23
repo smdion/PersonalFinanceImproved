@@ -11,6 +11,7 @@ import { parseAppSettings } from "@/lib/pure/household/app-settings";
 import { getEffectiveOtherAssets } from "@/server/services/net-worth/other-assets";
 import { getEffectiveCash } from "@/server/services/budget/account-balances";
 import { toNumber } from "@/lib/utils/numbers";
+import { portfolioByTaxTypeFrom } from "@/lib/pure/net-worth/tax-location";
 import { getEffectiveOtherLiabilities } from "@/server/services/debts/other-liabilities";
 
 export const comparisonProcedures = {
@@ -107,11 +108,7 @@ export const comparisonProcedures = {
           .where(eq(schema.portfolioAccounts.snapshotId, closest.id));
 
         const total = accounts.reduce((s, a) => s + toNumber(a.amount), 0);
-        const byTaxType: Record<string, number> = {};
-        for (const a of accounts) {
-          const key = a.taxType;
-          byTaxType[key] = (byTaxType[key] ?? 0) + toNumber(a.amount);
-        }
+        const byTaxType = portfolioByTaxTypeFrom(accounts);
 
         return { total, byTaxType, snapshotDate: closest.snapshotDate };
       }

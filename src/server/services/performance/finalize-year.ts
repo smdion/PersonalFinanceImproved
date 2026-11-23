@@ -37,9 +37,9 @@ import {
   nearestToYearEnd,
   nextYearAccountRow,
   nextYearAnnualRow,
-  portfolioByTaxLocationFrom,
   yearGrossIncome,
 } from "@/lib/pure/investments/finalize-year";
+import { portfolioByTaxLocationFrom } from "@/lib/pure/net-worth/tax-location";
 
 export async function finalizePerformanceYear(
   ctx: { db: Db; scope: RequestScope },

@@ -34,7 +34,6 @@ import { payPeriodConfig } from "@/lib/config/pay-periods";
 import {
   accountTypeToPerformanceCategory,
   PERF_CATEGORY_PORTFOLIO,
-  PERF_CATEGORY_RETIREMENT,
 } from "@/lib/config/display-labels";
 import { sumAccounts, computeReturn } from "@/lib/pure/investments/returns";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
@@ -50,9 +49,9 @@ import {
   yearEndPerformance,
   yearEndPerformanceSummary,
   type CategoryPerformance,
-  type TaxLocationBreakdown,
   type YearEndRow,
 } from "@/lib/pure/net-worth/year-end-rows";
+import { portfolioByTaxLocationFrom } from "@/lib/pure/net-worth/tax-location";
 import { yearEndWealthMetrics } from "@/lib/pure/net-worth/year-end-metrics";
 import { activeProfileIdFrom } from "@/server/data/active-profile";
 
@@ -472,24 +471,10 @@ export async function buildYearEndHistory(
       })(),
       performanceByParentCategory:
         perfByParentCategoryByYear.get(currentYear) ?? {},
-      portfolioByTaxLocation: (() => {
-        // For current year, use actual snapshot accounts with real taxType + parentCategory
-        if (!snapshotData) return null;
-        const breakdown: TaxLocationBreakdown = {
-          retirement: {},
-          portfolio: {},
-        };
-        for (const a of snapshotData.accounts) {
-          const parentCat = a.parentCategory ?? PERF_CATEGORY_RETIREMENT;
-          const taxType = a.taxType ?? "preTax";
-          const bucket =
-            parentCat === PERF_CATEGORY_PORTFOLIO
-              ? breakdown.portfolio
-              : breakdown.retirement;
-          bucket[taxType] = (bucket[taxType] ?? 0) + a.amount;
-        }
-        return breakdown;
-      })(),
+      // The current year reads the latest snapshot's rows.
+      portfolioByTaxLocation: snapshotData
+        ? portfolioByTaxLocationFrom(snapshotData.accounts)
+        : null,
       // YTD ratio from paycheck schedule (salary-weighted average across jobs).
       // Uses perfLastUpdated as the reference date — annualization should match
       // the point in time when performance data was recorded, not today.

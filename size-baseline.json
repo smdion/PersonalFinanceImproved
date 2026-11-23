@@ -325,7 +325,7 @@
     "src/lib/pure/engine/withdrawal-solver.ts": 455,
     "src/lib/pure/household/compensation.ts": 322,
     "src/lib/pure/household/retirement-profile.ts": 65,
-    "src/lib/pure/investments/finalize-year.ts": 194,
+    "src/lib/pure/investments/finalize-year.ts": 169,
     "src/lib/pure/investments/holding-periods.ts": 408,
     "src/lib/pure/investments/performance-account-rows.ts": 207,
     "src/lib/pure/investments/performance-annual-rows.ts": 483,
@@ -363,7 +363,7 @@
     "src/server/routers/contribution-profiles.ts": 533,
     "src/server/routers/demo.ts": 65,
     "src/server/routers/milestones.ts": 50,
-    "src/server/routers/net-worth/comparison.ts": 245,
+    "src/server/routers/net-worth/comparison.ts": 242,
     "src/server/routers/net-worth/index.ts": 19,
     "src/server/routers/net-worth/portfolio-snapshot-input.ts": 25,
     "src/server/routers/net-worth/portfolio-snapshots.ts": 38,
@@ -408,7 +408,7 @@
     "src/server/services/net-worth/other-assets.ts": 85,
     "src/server/services/net-worth/snapshot-write.ts": 291,
     "src/server/services/net-worth/year-assets.ts": 211,
-    "src/server/services/net-worth/year-end-history.ts": 584,
+    "src/server/services/net-worth/year-end-history.ts": 569,
     "src/server/services/paycheck/household-totals.ts": 91,
     "src/server/services/paycheck/job-net-pay.ts": 250,
     "src/server/services/paycheck/summary.ts": 644,
@@ -1009,7 +1009,7 @@
       "validateTaxDataFile": 163
     },
     "src/server/routers/net-worth/comparison.ts": {
-      "comparisonProcedures.computeComparison.query()": 215
+      "comparisonProcedures.computeComparison.query()": 211
     },
     "src/server/routers/net-worth/snapshots.ts": {
       "snapshotProcedures.listSnapshots.query()": 213
@@ -1043,7 +1043,7 @@
       "createPortfolioSnapshot": 270
     },
     "src/server/services/net-worth/year-end-history.ts": {
-      "buildYearEndHistory": 488
+      "buildYearEndHistory": 474
     },
     "src/server/services/paycheck/job-net-pay.ts": {
       "computeJobNetPayPerCheck": 209
