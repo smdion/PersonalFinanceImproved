@@ -21,6 +21,7 @@ import pg from "pg";
 import { runMigrator } from "../routers/fresh-install-cases";
 import { backupFenceCases } from "./backup-fence-cases";
 import { versionRestoreSettingsCases } from "./version-restore-settings-cases";
+import { versionRestoreConverterCases } from "./version-restore-converter-cases";
 import { backupJsonValueCases } from "./backup-json-values-cases";
 import {
   closedSetImportCases,
@@ -69,6 +70,7 @@ describe.skipIf(skipWithoutPostgres)(
     unknownAccountTypeCases(fresh);
     danglingReferenceCases(fresh);
     versionRestoreSettingsCases(fresh);
+    versionRestoreConverterCases(fresh);
     backupJsonValueCases(fresh);
   },
 );

@@ -227,18 +227,17 @@ export async function restoreVersion(
     .from(schema.stateVersionTables)
     .where(eq(schema.stateVersionTables.versionId, versionId));
 
-  // Transform version-row data if it was created at an older schema version
+  // Transform version-row data if it was created at an older schema version.
+  // Every table the version lists goes in, an empty one as empty, as an import's.
   const rawTableMap: Record<string, unknown[]> = {};
   for (const t of tableDatas)
-    if (Array.isArray(t.data) && t.data.length > 0)
-      rawTableMap[t.tableName] = t.data;
+    rawTableMap[t.tableName] = Array.isArray(t.data) ? t.data : [];
 
   const { tables: transformedMap } = transformFromSource(
     rawTableMap,
     { from: version.schemaVersion, to: CURRENT_SCHEMA_VERSION },
     isPostgres() ? "postgres" : "sqlite",
   );
-  for (const t of tableDatas) transformedMap[t.tableName] ??= [];
 
   // Rebuild the table data map with transformed data, including tables the
   // transform rebuilt that the version doesn't carry (e.g. a newer schema's).
