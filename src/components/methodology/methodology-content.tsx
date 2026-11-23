@@ -504,12 +504,12 @@ export function MethodologyContent() {
               ACA awareness is reporting-only; IRMAA caps conversions.
             </strong>{" "}
             The engine charges the IRMAA surcharge for anyone 65+, whether IRMAA
-            awareness is on or off; ACA awareness reports how close pre-65 years
-            come to the subsidy cliff. IRMAA awareness adds one thing: Roth
-            conversions are capped to stay under the next IRMAA cliff. ACA never
-            caps a conversion or withdrawal — use its warning to adjust by hand
-            with a change by year. Neither ever reduces a Traditional withdrawal
-            amount.
+            awareness is on or off (none in Simple tax mode: no filing status);
+            ACA awareness reports how close pre-65 years come to the subsidy
+            cliff. IRMAA awareness adds one thing: Roth conversions are capped
+            to stay under the next IRMAA cliff. ACA never caps a conversion or
+            withdrawal — use its warning to adjust by hand with a change by
+            year. Neither ever reduces a Traditional withdrawal amount.
           </li>
           <li>
             <strong>Parametric vs historical.</strong> Log-normal returns can
