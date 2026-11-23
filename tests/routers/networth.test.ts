@@ -75,11 +75,21 @@ async function seedFullData(
 
   seedSnapshot(db, "2024-06-15", [
     { performanceAccountId: perfAcctId, amount: "80000", taxType: "preTax" },
-    { performanceAccountId: perfAcctId2, amount: "40000", taxType: "afterTax" },
+    {
+      performanceAccountId: perfAcctId2,
+      amount: "40000",
+      taxType: "afterTax",
+      accountType: "brokerage",
+    },
   ]);
   seedSnapshot(db, "2025-01-15", [
     { performanceAccountId: perfAcctId, amount: "100000", taxType: "preTax" },
-    { performanceAccountId: perfAcctId2, amount: "50000", taxType: "afterTax" },
+    {
+      performanceAccountId: perfAcctId2,
+      amount: "50000",
+      taxType: "afterTax",
+      accountType: "brokerage",
+    },
   ]);
 
   const profileId = await seedBudgetProfile(db);
