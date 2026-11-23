@@ -36,7 +36,8 @@ projection-year-handlers/    one year of work
   funding-shortfall.ts       the unmet need (raw) and whether it's material
   year-cliffs.ts             IRMAA and ACA cliff checks
   portfolio-contributions.ts Portfolio contributions after retirement, reported only
-  year-end.ts                growth, year-end state, account rows, reconciliation
+  year-end.ts                the year's close: the stage below, then reconciliation and year-end balances
+  year-end-rows.ts           growYearToRows: growth, year-end state, account rows, dust
   decumulation-row.ts        the decumulation year's row, from what its stages settled
   lump-sum.ts                one-time lump sums (both phases)
   stated-need.ts             the first decumulation year's stated need
@@ -145,7 +146,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 12. `yearCliffChecks` (`year-cliffs.ts`) — records the year's tax year for later IRMAA years (`recordIrmaaTaxYear`; a working year records its wages, `workingYearIncome`, in `runWorkingYearFlows`); the year's IRMAA charge (the year-start one, else `settleIrmaaCharge` from this year's own MAGI; `checkHouseholdIrmaa`, per person `checkIrmaa` × people 65+) and its warnings; `checkAca`
 13. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine), whether it's material, and the IRMAA paid on top
 14. `decumulationPortfolioContributions` (`portfolio-contributions.ts`) — Portfolio contributions after retirement, reported only
-15. `closeDecumulationYear` (`year-end.ts`) — `applyGrowth`, `cleanupDust`, `reconcileIndividualToAggregate`, `syncAggregateBasis`, the year's row
+15. `closeDecumulationYear` (`year-end.ts`) — `growYearToRows` (`year-end-rows.ts`: `applyGrowth`, the rows, `cleanupDust`), `reconcileIndividualToAggregate`, `syncAggregateBasis`, the year's row
 
 Steps 9 to 11 are one stage, the tax settlement: `settleYearTax` (`tax-settlement.ts`) runs them in order and returns what each settled. The year's tax is priced with one deduction, `priced.standardDeduction`, which the conversion and the re-price read back.
 

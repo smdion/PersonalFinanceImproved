@@ -1,21 +1,12 @@
 /** The decumulation year's close: growth, year-end state and balances. */
-import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
 import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import { scopedBalances } from "../balance-utils";
-import { cleanupDust } from "../balance-deduction";
+import { followReconciliation, syncAggregateBasis } from "../brokerage-basis";
 import {
-  followDraws,
-  followReconciliation,
-  syncAggregateBasis,
-} from "../brokerage-basis";
-import { applyGrowth } from "../growth-application";
-import { applyIndividualGrowth } from "../individual-accounts/ledger";
-import {
-  buildIndividualYearBalances,
   clampIndividualBasis,
   reconcileIndividualToAggregate,
 } from "../individual-accounts/reconcile";
-import { updatePerPersonTradBalance } from "./helpers";
+import { growYearToRows } from "./year-end-rows";
 import type {
   DecumulationYear,
   ProjectionContext,
@@ -35,66 +26,12 @@ export function closeDecumulationYear(
     contributions: ReturnType<typeof decumulationPortfolioContributions>;
   },
 ) {
-  const { holdsAccounts, indAccounts, indKey, indParentCat } = ctx;
-  const { balances, accountBalance, spendingState } = state;
+  const { holdsAccounts, indAccounts, indKey } = ctx;
+  const { balances, accountBalance } = state;
   const { indBalance, indBasis, brokBasis } = state;
-  const { year, age, eligibility } = thisYear;
-  const { returnRate } = thisYear.setup;
-  const { decumContributionByAccount } = flow.contributions;
-  const { decumulationIndWithdrawal, basisDraws } = flow.drawn;
+  const { year, age } = thisYear;
   const { routeWarnings } = flow.route;
-  // Apply growth, to the tax buckets and to each account (negatives at 0)
-  applyGrowth({ effectiveReturn: returnRate, balances, accountBalance });
-  const decumulationIndGrowth = holdsAccounts
-    ? applyIndividualGrowth(indAccounts, indKey, indBalance, returnRate, true)
-    : new Map<string, number>();
-
-  // Update RMD tracking: year-end Traditional balance (after growth) for next year's RMD
-  state.priorYearEndTradBalance = balances.preTax;
-  // Update spending strategy state: prior year return + spending
-  spendingState.priorYearReturn = returnRate;
-  spendingState.priorYearSpending = state.projectedExpenses;
-  // Each owner's RMD base is year-end, after growth — like the household's
-  // above and accumulation's.
-  updatePerPersonTradBalance(ctx, state);
-
-  // The Portfolio contributions passed in, if any.
-  const decumulationIndContributions =
-    decumContributionByAccount.size > 0
-      ? decumContributionByAccount
-      : undefined;
-
-  // Tracked Roth basis clamped to the balance before the row is built
-  // (clampBasisToBalance): losses can leave basis above what's held.
-  if (holdsAccounts) {
-    clampIndividualBasis(indAccounts, indKey, indBasis, indBalance);
-  }
-
-  // Build individual account year balances (decumulation)
-  const decumulationIndYearBalances: IndividualAccountYearBalance[] =
-    holdsAccounts
-      ? buildIndividualYearBalances(
-          indAccounts,
-          indKey,
-          indBalance,
-          indParentCat,
-          "decumulation",
-          {
-            contribs: decumulationIndContributions,
-            growth: decumulationIndGrowth,
-            withdrawal: decumulationIndWithdrawal,
-            basis: indBasis,
-            draws: basisDraws,
-            brokerageBasis: brokBasis,
-          },
-          eligibility,
-        )
-      : [];
-
-  // Zero out rounding dust
-  followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
-    cleanupDust(balances, accountBalance, indAccounts, indKey, indBalance),
-  );
+  const { individualYearBalances } = growYearToRows(ctx, state, thisYear, flow);
 
   // indBalance reconciled to accountBalance once a year (the tracks drift), after dust
   // cleanup and before the basis re-clamp, so next year's eligibility can't
@@ -147,5 +84,5 @@ export function closeDecumulationYear(
     state.retirementDepletionAge = age;
   }
 
-  return { decumulationIndYearBalances, yearEnd };
+  return { individualYearBalances, yearEnd };
 }

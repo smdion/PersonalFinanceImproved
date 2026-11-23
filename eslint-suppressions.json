@@ -4148,7 +4148,7 @@
   },
   "src/lib/pure/engine/projection-year-handlers/year-end.ts": {
     "ratchet/no-abbreviation": {
-      "count": 11
+      "count": 5
     }
   },
   "src/lib/pure/engine/projection-year-handlers/year-need.ts": {
