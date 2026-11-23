@@ -16,6 +16,7 @@ import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 import { zDecimal, zYear } from "@/lib/utils/zod-fields";
 import { firstRow } from "@/lib/utils/first-row";
 import { listBrokerageGoals } from "@/server/data/brokerage-goals";
+import { getSnapshotRows } from "@/server/data/snapshot-rows";
 
 /** Positive decimal amount — brokerage goal targets must be > 0. */
 const zPositiveDecimal = zDecimal.refine((v) => Number(v) > 0);
@@ -144,12 +145,7 @@ export const brokerageRouter = createTRPCRouter({
 
           if (latestSnapshot) {
             const [snapshotAccounts, perfAccounts] = await Promise.all([
-              ctx.db
-                .select()
-                .from(schema.portfolioAccounts)
-                .where(
-                  eq(schema.portfolioAccounts.snapshotId, latestSnapshot.id),
-                ),
+              getSnapshotRows(ctx.db, latestSnapshot.id),
               ctx.db.select().from(schema.performanceAccounts),
             ]);
             const perfAccountMap = new Map(perfAccounts.map((p) => [p.id, p]));

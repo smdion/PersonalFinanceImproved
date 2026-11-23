@@ -12,7 +12,7 @@
  *  entry at its old place, and an index scan would read saved order.
  *  Invented rows only. */
 import "./setup-mocks";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import {
@@ -22,6 +22,26 @@ import {
   seedSnapshot,
 } from "./setup";
 import { ROUTERS_ON_POSTGRES } from "./postgres-router-db";
+
+/** The budget app the brokerage case links; no app for the others. */
+const budgetApp = vi.hoisted(() => ({
+  active: "none" as "none" | "actual",
+  performanceAccountId: 0,
+}));
+vi.mock("@/lib/budget-api", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getActiveBudgetApi: vi.fn(async () => budgetApp.active),
+  getApiConnection: vi.fn(async () => ({
+    accountMappings: [
+      {
+        localName: "Invented 401k",
+        remoteAccountId: "remote-401k",
+        syncDirection: "push",
+        performanceAccountId: budgetApp.performanceAccountId,
+      },
+    ],
+  })),
+}));
 
 const AMOUNTS = ["0.1", "0.2", "0.3"];
 const SAVED_ORDER_SUM = 0.1 + 0.2 + 0.3;
@@ -95,6 +115,24 @@ describe("a snapshot's rows in saved order", () => {
         portfolio: {},
       });
     } finally {
+      cleanup();
+    }
+  });
+
+  it("the brokerage summary's snapshot balance sums them in saved order", async () => {
+    const { caller, cleanup, k401 } = await seeded();
+    Object.assign(budgetApp, { active: "actual", performanceAccountId: k401 });
+    try {
+      const { apiBalances } = await caller.brokerage.computeSummary();
+      expect(apiBalances).toEqual([
+        expect.objectContaining({
+          performanceAccountId: k401,
+          snapshotBalance: SAVED_ORDER_SUM,
+          source: "snapshot",
+        }),
+      ]);
+    } finally {
+      Object.assign(budgetApp, { active: "none", performanceAccountId: 0 });
       cleanup();
     }
   });
