@@ -147,6 +147,43 @@ describe("accumulation row view model", () => {
     expect(yr.gapDraw!.withdrawal).toBeGreaterThan(0);
     expect(data.withdrawals?.amount).toBeCloseTo(yr.gapDraw!.withdrawal / 2, 6);
   });
+
+  it("totalContributionTooltip keeps a gap year's household figures when the year has no account rows", () => {
+    const yr = { ...accum(2030), individualAccountBalances: [] };
+    const tooltip = (pt: ReturnType<ProjectionState["getPersonYearTotals"]>) =>
+      dataOf(
+        totalContributionTooltip(
+          yr,
+          pt,
+          pt ? 1 : "all",
+          undefined,
+          undefined,
+          deflate,
+          undefined,
+          undefined,
+          undefined,
+          (r) => r.reduce((t, ia) => t + (ia.draw?.withdrawal ?? 0), 0),
+          (r) => r,
+          renderTooltip,
+          pt != null,
+          pt ? "Ann" : "",
+          undefined,
+          [],
+          undefined,
+        ),
+      ) as { withdrawals?: { amount: number }; meta?: string };
+    const household = tooltip(null);
+    expect(household.withdrawals?.amount).toBeCloseTo(
+      yr.gapDraw!.withdrawal / 2,
+      6,
+    );
+    expect(household.meta).toBeDefined();
+    const person = tooltip(
+      {} as ReturnType<ProjectionState["getPersonYearTotals"]>,
+    );
+    expect(person.withdrawals).toBeUndefined();
+    expect(person.meta).toBeUndefined();
+  });
 });
 
 describe("decumulation row view model", () => {

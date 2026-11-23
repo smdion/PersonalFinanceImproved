@@ -61,7 +61,7 @@
   },
   "src/components/retirement-projection/table/projection-table-accum-row.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 4
+      "count": 2
     }
   },
   "src/components/retirement-projection/table/projection-table-decum-balances.model.ts": {

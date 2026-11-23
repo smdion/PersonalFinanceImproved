@@ -7,6 +7,7 @@ import type { computeAccountSplits } from "./projection-columns";
 import {
   contributionTaxTypeTotals,
   gapDrawnItems,
+  gapDrawnShown,
 } from "./projection-table-accum-row.model";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { itemTaxType, percentOf, proRateMonths } from "./projection-columns";
@@ -74,14 +75,13 @@ export function totalContributionTooltip(
       color: "green",
     });
   inOutItems.push(...contributionTaxTypeTotals(yearRow, pt, mine, deflate));
-  // A year a paycheck is gone: money comes out as well as in. With
-  // a person or category filter only the accounts shown count, and
-  // the household's figures (tax, the why) are left out.
+  // A year a paycheck is gone: money comes out as well as in. When the shown
+  // accounts don't hold the whole draw, the household's figures are left out.
   const gap = yearRow.gapDraw;
-  const gapScoped = !!gap && drawnTotal(iabs) < gap.withdrawal - 0.5;
-  if (gap) {
+  const gapScoped =
+    !!gap && gapDrawnShown(yearRow, pt, drawnTotal) < gap.withdrawal - 0.5;
+  if (gap)
     inOutItems.push(...gapDrawnItems(yearRow, scopedIabs(iabs), deflate));
-  }
   const money = (v: number) => formatCurrency(deflate(v, yearRow.year));
   const gapMeta = gap
     ? gap.withdrawal > 0

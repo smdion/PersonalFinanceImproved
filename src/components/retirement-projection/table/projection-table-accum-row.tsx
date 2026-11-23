@@ -56,6 +56,7 @@ import {
   salaryTooltip,
   displaySalary,
   savingsRateTooltip,
+  gapDrawnShown,
 } from "./projection-table-accum-row.model";
 import {
   categoryContributionTooltip,
@@ -201,13 +202,7 @@ export function AccumulationRow({
   ) => (pt ? rows.filter((ia) => ia.ownerPersonId === personFilter) : rows);
   const drawnTotal = (rows: NonNullable<typeof yr.individualAccountBalances>) =>
     scopedIabs(rows).reduce((t, ia) => t + (ia.draw?.withdrawal ?? 0), 0);
-  const gapOut = yr.gapDraw
-    ? (yr.individualAccountBalances?.length ?? 0) > 0
-      ? drawnTotal(yr.individualAccountBalances!)
-      : pt
-        ? 0
-        : yr.gapDraw.withdrawal
-    : 0;
+  const gapOut = gapDrawnShown(yr, pt, drawnTotal);
   return (
     <tr
       ref={rowRef}

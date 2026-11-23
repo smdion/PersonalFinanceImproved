@@ -118,6 +118,21 @@ export function contributionTaxTypeTotals(
   }
 }
 
+/** A gap year's draw from the accounts the row shows. A year with no account
+ *  rows shows the household's whole draw, or none under a person filter,
+ *  whose share it can't tell. */
+export function gapDrawnShown(
+  yearRow: EngineAccumulationYear,
+  pt: ReturnType<ProjectionState["getPersonYearTotals"]>,
+  drawnTotal: (rows: AccountBalances) => number,
+): number {
+  const gap = yearRow.gapDraw;
+  if (!gap) return 0;
+  const rows = yearRow.individualAccountBalances;
+  if (rows.length > 0) return drawnTotal(rows);
+  return pt ? 0 : gap.withdrawal;
+}
+
 /** Each account drawn from in a gap year, as a retirement year lists them:
  *  owner, tax type, and whether the money is penalty-free. */
 export function gapDrawnItems(
