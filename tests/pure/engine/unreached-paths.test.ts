@@ -438,6 +438,7 @@ const specs = [
     personId: 1,
     ownerName: "Ann",
     parentCategory: "Retirement",
+    allocationPriority: 0,
     contributionAccountId: 1,
     account: paysInto(withAccountId(acct("Ann 401k", "401k", 0, 1))),
   },
@@ -452,6 +453,7 @@ const specs = [
     personId: 1,
     ownerName: "Ann",
     parentCategory: "Portfolio",
+    allocationPriority: 0,
     contributionAccountId: 2,
     account: paysInto(
       withAccountId({
@@ -460,7 +462,7 @@ const specs = [
       }),
     ),
   },
-] as ProjectionInput["contributionSpecs"];
+] satisfies ProjectionInput["contributionSpecs"];
 const atRate = (contributionRate: number) => {
   const base = worker({ contributionSpecs: specs });
   return {

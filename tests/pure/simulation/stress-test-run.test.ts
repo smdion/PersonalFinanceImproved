@@ -21,9 +21,9 @@ describe("runStressTestScenarios (M2)", () => {
           ...makeBaseInput(),
           inflationRate,
           postRetirementInflationRate,
-        } as ProjectionInputArg,
+        },
         decumulationDefaults: makeDecumulationDefaults(),
-      } as never).map((r) => r.sustainableWithdrawal);
+      }).map((r) => r.sustainableWithdrawal);
     // The scenario sets inflation, so plans with one gap read the same.
     expect(run(0.03, 0.02)).toEqual(run(0.035, 0.025));
   });

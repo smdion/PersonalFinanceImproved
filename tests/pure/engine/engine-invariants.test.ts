@@ -2150,7 +2150,7 @@ describe("engine invariants", () => {
         hsa: 0,
         ira: 0,
         brokerage: 10000,
-      } as ProjectionInput["baseYearContributions"],
+      } satisfies ProjectionInput["baseYearContributions"],
       individualAccounts: overflowAccounts,
     });
     const overflowInput = () => engineInput(overflowFixture());
@@ -2193,7 +2193,7 @@ describe("engine invariants", () => {
         individualAccounts: [...base.individualAccounts].reverse(),
         accumulationOverrides: [
           { year, lumpSums: [{ amount: 50000, targetAccount: "brokerage" }] },
-        ] as ProjectionInput["accumulationOverrides"],
+        ] satisfies ProjectionInput["accumulationOverrides"],
       };
       const without = calculateProjection(base).projectionByYear.find(
         (y) => y.year === year,
@@ -2460,7 +2460,7 @@ describe("engine invariants", () => {
           ...base,
           accumulationOverrides: [
             { year, lumpSums: [{ amount: 50000, targetAccount: "brokerage" }] },
-          ] as ProjectionInput["accumulationOverrides"],
+          ] satisfies ProjectionInput["accumulationOverrides"],
         };
         expect(portfolioIn(input)).toBeCloseTo(portfolioIn(base), 0);
         brokerageAddsUp(input);
@@ -2589,7 +2589,7 @@ describe("engine invariants", () => {
                 },
               ],
             },
-          ] as ProjectionInput["accumulationOverrides"],
+          ] satisfies ProjectionInput["accumulationOverrides"],
           decumulationOverrides: [
             {
               year: y30,
@@ -2601,7 +2601,7 @@ describe("engine invariants", () => {
                 },
               ],
             },
-          ] as ProjectionInput["decumulationOverrides"],
+          ] satisfies ProjectionInput["decumulationOverrides"],
         };
         expect(endBalances(withPortfolio)).toEqual(endBalances(plain));
       });
@@ -2631,7 +2631,7 @@ describe("engine invariants", () => {
                 year: y1,
                 lumpSums: [{ amount: 50000, targetAccount: "brokerage" }],
               },
-            ] as ProjectionInput["accumulationOverrides"],
+            ] satisfies ProjectionInput["accumulationOverrides"],
           }),
         ).toBeGreaterThan(last(noPortfolio));
       });
@@ -2793,7 +2793,7 @@ describe("engine invariants", () => {
                 },
               ],
             },
-          ] as ProjectionInput["accumulationOverrides"],
+          ] satisfies ProjectionInput["accumulationOverrides"],
         }) - without,
       ).toBeCloseTo(20000, 0);
     });
@@ -3013,7 +3013,7 @@ describe("engine invariants", () => {
               year,
               lumpSums: [{ amount: 50000, targetAccount: "brokerage" }],
             },
-          ] as ProjectionInput["decumulationOverrides"],
+          ] satisfies ProjectionInput["decumulationOverrides"],
         });
       });
 

@@ -193,11 +193,12 @@ describe("the household's choices for these years", () => {
         personId: 2,
         employerShare: 1,
         personPayShare: 1,
+        allocationPriority: 0,
         // Bo's own 401(k), which holds no balance yet.
         contributionAccountId: 1,
         account: paysInto(withAccountId(acct("Bo 401k", "401k", 0, 2))),
       },
-    ] as ProjectionInput["contributionSpecs"];
+    ] satisfies ProjectionInput["contributionSpecs"];
     const employerMatchRateByCategory = {
       "401k": 0.04,
       "403b": 0,
@@ -288,6 +289,7 @@ describe("a stopped year that is also a 0% year", () => {
       personId: 2,
       employerShare: 1,
       personPayShare: 1,
+      allocationPriority: 0,
       // Bo's own accounts, which hold no balance yet.
       contributionAccountId: 1,
       account: paysInto(withAccountId(acct("Bo 401k", "401k", 0, 2))),
@@ -302,10 +304,11 @@ describe("a stopped year that is also a 0% year", () => {
       baseAnnual: 6000,
       personId: 2,
       personPayShare: 1,
+      allocationPriority: 0,
       contributionAccountId: 2,
       account: paysInto(withAccountId(acct("Bo IRA", "ira", 0, 2))),
     },
-  ] as ProjectionInput["contributionSpecs"];
+  ] satisfies ProjectionInput["contributionSpecs"];
   const run = () => {
     const base = couple({
       contributionSpecs,
@@ -553,7 +556,7 @@ describe("a gap year's Portfolio saving", () => {
       contributionAccountId: 1,
       account: paysInto(withAccountId(portfolioRoth)),
     },
-  ] as ProjectionInput["contributionSpecs"];
+  ] satisfies ProjectionInput["contributionSpecs"];
   const run = (annualExpenses: number) => {
     const row = year(
       couple({ contributionSpecs, annualExpenses }, [
