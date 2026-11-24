@@ -5636,9 +5636,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=2789645, balances.taxFree=2789644, delta=-1"
-       ],
        "withdrawalSized": false
       },
       {
@@ -5767,9 +5764,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=2938263, balances.taxFree=2938262, delta=-1"
-       ],
        "withdrawalSized": false
       },
       {
@@ -5898,9 +5892,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=3095885, balances.taxFree=3095884, delta=-1"
-       ],
        "withdrawalSized": false
       },
       {
@@ -6029,9 +6020,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=3263098, balances.taxFree=3263097, delta=-1"
-       ],
        "withdrawalSized": false
       },
       {
@@ -6160,9 +6148,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=3440531, balances.taxFree=3440530, delta=-1"
-       ],
        "withdrawalSized": false
       },
       {
@@ -6291,9 +6276,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=3628856, balances.taxFree=3628854, delta=-1"
-       ],
        "withdrawalSized": false
       },
       {
@@ -6422,9 +6404,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=3828787, balances.taxFree=3828785, delta=-2"
-       ],
        "withdrawalSized": false
       },
       {
@@ -6553,9 +6532,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=4041091, balances.taxFree=4041089, delta=-2"
-       ],
        "withdrawalSized": false
       },
       {
@@ -6684,9 +6660,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=4266585, balances.taxFree=4266583, delta=-2"
-       ],
        "withdrawalSized": false
       },
       {
@@ -6815,9 +6788,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=4506142, balances.taxFree=4506140, delta=-2"
-       ],
        "withdrawalSized": false
       },
       {
@@ -6946,9 +6916,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=4760695, balances.taxFree=4760693, delta=-2"
-       ],
        "withdrawalSized": false
       }
      ]
@@ -20573,9 +20540,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=292835, balances.taxFree=292834, delta=-1"
-       ],
        "withdrawalSized": false
       },
       {
@@ -20704,9 +20668,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=254230, balances.taxFree=254229, delta=-1"
-       ],
        "withdrawalSized": false
       },
       {
@@ -20835,9 +20796,6 @@
         }
        ],
        "unmetNeedMaterial": false,
-       "warnings": [
-        "[DIAG] Roth divergence: acctBal.roth=211149, balances.taxFree=211148, delta=-1"
-       ],
        "withdrawalSized": false
       }
      ]
@@ -27525,9 +27483,6 @@
        }
       ],
       "unmetNeedMaterial": false,
-      "warnings": [
-       "[DIAG] Roth divergence: acctBal.roth=6965554, balances.taxFree=6965553, delta=-1"
-      ],
       "withdrawalSized": false
      }
     ]

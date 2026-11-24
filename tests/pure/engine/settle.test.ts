@@ -1,15 +1,46 @@
 /**
  * The settled-point hook: every year calls it once at each of its phase's
- * settled points, in the year's order.
+ * settled points, in the year's order, and it leaves each tax bucket equal to
+ * the sum of the categories' cents in it.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type {
+  AccountBalances,
+  TaxBuckets,
+} from "@/lib/pure/accounts/account-balances.types";
 
-const calls = vi.hoisted(() => [] as { point: string; year: number }[]);
-vi.mock("@/lib/pure/engine/projection-year-handlers/settle", () => ({
-  settle: (state: { projectionByYear: { year: number }[] }, point: string) =>
-    calls.push({ point, year: state.projectionByYear.length }),
-}));
+type Settled = {
+  point: string;
+  year: number;
+  balances: TaxBuckets;
+  accountBalance: AccountBalances;
+};
+const calls = vi.hoisted(() => [] as Settled[]);
+vi.mock(
+  "@/lib/pure/engine/projection-year-handlers/settle",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("@/lib/pure/engine/projection-year-handlers/settle")
+      >();
+    return {
+      ...actual,
+      settle: (...args: Parameters<typeof actual.settle>) => {
+        const [state, point] = args;
+        actual.settle(...args);
+        calls.push({
+          point,
+          year: state.projectionByYear.length,
+          balances: { ...state.balances },
+          accountBalance: structuredClone(state.accountBalance),
+        });
+      },
+    };
+  },
+);
 
+import { getAllCategories } from "@/lib/config/account-types";
+import { taxTypeOnSide } from "@/lib/config/tax-treatment-buckets";
 import { calculateProjection } from "@/lib/pure/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
@@ -162,4 +193,48 @@ describe("settle", () => {
       ),
     );
   });
+
+  it("leaves each tax bucket equal to the sum of the categories' cents in it, at every settled point", () => {
+    // At 6.37% the parts' growth rounds to a cent the buckets' own growth
+    // doesn't (a Traditional and a Roth cent in the third year).
+    calculateProjection({
+      ...makeInput(),
+      returnRates: [{ label: "Age 60", rate: 0.0637 }],
+    });
+    expect(calls.length).toBeGreaterThan(0);
+    const drifted = calls.flatMap((c) => {
+      const held = cents(c.accountBalance);
+      return (Object.keys(held) as (keyof TaxBuckets)[])
+        .filter(
+          (bucket) => Math.round(c.balances[bucket] * 100) !== held[bucket],
+        )
+        .map(
+          (bucket) =>
+            `${c.year} ${c.point} ${bucket}: ${c.balances[bucket]} vs ${held[bucket] / 100}`,
+        );
+    });
+    expect(drifted).toEqual([]);
+  });
 });
+
+/** Each bucket's cents: the sum of what the categories hold in it, rounded
+ *  once. */
+function cents(
+  accountBalance: AccountBalances,
+): Record<keyof TaxBuckets, number> {
+  const sum = { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0, afterTaxBasis: 0 };
+  for (const category of getAllCategories()) {
+    const balance = accountBalance[category];
+    if (balance.structure === "roth_traditional") {
+      sum[taxTypeOnSide(category, "traditional")] += balance.traditional;
+      sum[taxTypeOnSide(category, "roth")] += balance.roth;
+      continue;
+    }
+    sum[taxTypeOnSide(category, undefined)] += balance.balance;
+    if (balance.structure === "basis_tracking")
+      sum.afterTaxBasis += balance.basis;
+  }
+  for (const bucket of Object.keys(sum) as (keyof TaxBuckets)[])
+    sum[bucket] = Math.round(sum[bucket] * 100);
+  return sum;
+}

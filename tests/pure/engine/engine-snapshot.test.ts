@@ -261,7 +261,7 @@ describe("engine snapshot parity", () => {
     // file header).
     expect(result.sustainableWithdrawal).toBe(193621.62);
     expect(result.retirementDepletionYear).toBeNull();
-    expect(metrics.finalYear?.allAccountsBalance).toBe(28676679.19);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(28676678.4);
 
     // Snapshot the key metrics
     expect(metrics).toMatchSnapshot();
@@ -303,7 +303,7 @@ describe("engine snapshot parity", () => {
 
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(129081.08);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(12767930.04);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(12767929.22);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -328,7 +328,7 @@ describe("engine snapshot parity", () => {
     expect(result.firstOverflowYear).not.toBeNull();
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(115900782.22);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(115900781.41);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -378,7 +378,7 @@ describe("engine snapshot parity", () => {
     // 2026-08-27, code review (this fixture previously relied on
     // toMatchSnapshot() alone for its financial content).
     expect(result.sustainableWithdrawal).toBe(39400);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(1612210.78);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(1612210.7);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -516,7 +516,7 @@ describe("engine snapshot parity", () => {
 
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(28805701.76);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(28805701.15);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -575,7 +575,7 @@ describe("engine snapshot parity", () => {
 
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(44813112.3);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(44813110.9);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -601,7 +601,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(178252.08);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(33520846.18);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(33520845.63);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -620,7 +620,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(28676679.19);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(28676678.4);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -682,7 +682,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(44813111.57);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(44813110.96);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -737,7 +737,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(173766.76);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(44998922.74);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(44998922.27);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -772,7 +772,7 @@ describe("engine snapshot parity", () => {
     // Age 73 was $24.7k short of spending: the tax gross-up now funds what
     // routing delivers, and the percentage router places the excess of an
     // emptied account instead of dropping it — no year falls short.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(29395542.46);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(29395541.5);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -813,7 +813,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(148543.4);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(10962418.99);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(10962417.75);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -858,7 +858,7 @@ describe("engine snapshot parity", () => {
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(39400);
     expect(result.retirementDepletionYear).toBeNull();
-    expect(metrics.finalYear?.allAccountsBalance).toBe(1751834.61);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(1751834.57);
 
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
@@ -976,7 +976,7 @@ describe("engine snapshot parity", () => {
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(26579.49);
     expect(result.retirementDepletionYear).toBeNull();
-    expect(metrics.finalYear?.allAccountsBalance).toBe(3436611.41);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(3436611.43);
 
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
@@ -1030,7 +1030,7 @@ describe("engine snapshot parity", () => {
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(39243.59);
     expect(result.retirementDepletionYear).toBeNull();
-    expect(metrics.finalYear?.allAccountsBalance).toBe(1968430.08);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(1968430.09);
 
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
@@ -1123,7 +1123,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(213916.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(34295569.56);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(34295569.57);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1141,7 +1141,7 @@ describe("engine snapshot parity", () => {
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(137031.28);
     expect(result.retirementDepletionYear).toBeNull();
-    expect(metrics.finalYear?.allAccountsBalance).toBe(4766541.35);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(4766541.02);
 
     expect(metrics).toMatchSnapshot();
   });
@@ -1185,7 +1185,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(101536.63);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2092232.62);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2092232.45);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1242,7 +1242,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(174797.29);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(24424845.4);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(24424844.57);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1259,7 +1259,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(161351.35);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(31418671.61);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(31418670.84);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1323,7 +1323,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(10250);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(1722197.59);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(1722197.64);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1390,7 +1390,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(79876.46);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(1285511.21);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(1285510.93);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1438,7 +1438,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(114879.39);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(3912631.22);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(3912631.26);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1488,7 +1488,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(87552.1);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(1363923.28);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(1363923.2);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1681,7 +1681,7 @@ describe("engine snapshot parity", () => {
     // v0.9.2: the shipped 2026 IRMAA table was corrected to CMS's (it held
     // 2024 thresholds and estimated surcharges) — cliffs moved up, surcharges
     // too.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(4132183.48);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(4132183.51);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -1764,7 +1764,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(63829.79);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(9258527.09);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(9258527.18);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1919,7 +1919,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(27265.69);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(169286.9);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(169286.85);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1993,7 +1993,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(32563.71);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(157559.07);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(157559.08);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2018,7 +2018,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(28717530.67);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(28717529.69);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2093,7 +2093,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(28676678.8);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(28676678.9);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2155,7 +2155,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(21030941.12);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(21030941.68);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2216,7 +2216,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(28676679.19);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(28676678.4);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2235,7 +2235,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(114088.87);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(8925786.96);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(8925786.87);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2312,7 +2312,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(60000);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2199785.15);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2199785.17);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2360,7 +2360,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(98468.03);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(13400949.96);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(13400949.79);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2443,7 +2443,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(91130.77);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(9764296.08);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(9764295.93);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -2460,7 +2460,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(42537701.82);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(42537700.84);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2481,7 +2481,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(171133.3);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(26317859.17);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(26317858.38);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2496,7 +2496,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(68418.48);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(700960.74);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(700960.54);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2568,7 +2568,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(79018.18);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(1165937.4);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(1165937.31);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2591,7 +2591,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(39113750.44);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(39113750.02);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2611,7 +2611,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(34831773.84);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(34831773.09);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2630,7 +2630,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(23309040.67);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(23309040.57);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2686,7 +2686,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(26579.49);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(149134.86);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(149134.73);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2771,7 +2771,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(193621.62);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(32149076.27);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(32149076.15);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2838,7 +2838,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(65000);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(552170.59);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(552170.58);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2922,7 +2922,7 @@ describe("engine snapshot parity", () => {
     // No `taxDataYear`, so IRMAA stays flat like every other table (it
     // alone used to grow from a built-in 2026; v0.9.0). v0.9.2: the
     // corrected 2026 IRMAA table, as fixture 31.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2508447.2);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2508447.35);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -3005,7 +3005,7 @@ describe("engine snapshot parity", () => {
     expect(result.sustainableWithdrawal).toBe(46428.57);
     // Same rmd-enforcement.ts residual fix
     // as fixture 31.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2502570.34);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2502570.37);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -3085,7 +3085,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(17148.94);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(5843935.86);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(5843935.91);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -3165,7 +3165,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(15549.67);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2786319.24);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2786319.23);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -3237,7 +3237,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(53970.21);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(1419653.05);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(1419652.95);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3294,7 +3294,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(71769.68);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(3165727.32);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(3165727.12);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3374,7 +3374,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(75645);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(3976345.2);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(3976345.15);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3394,7 +3394,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(133689.06);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(6723408.22);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(6723408.29);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3442,7 +3442,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(285222.17);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(29171675);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(29171673.49);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3504,7 +3504,7 @@ describe("engine snapshot parity", () => {
     // 2026-08-27, code review (this fixture previously relied on
     // toMatchSnapshot() alone for its financial content).
     expect(result.sustainableWithdrawal).toBe(116041.87);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(4549937.43);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(4549937.47);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -3669,7 +3669,7 @@ describe("engine snapshot parity", () => {
     // stopping at the RMD) never gets to compound in the account across
     // the remaining 10-year horizon, same direction the allAccountsBalance drop
     // in fixture 66/67 shows.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2242061.03);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2242061.04);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -3823,7 +3823,7 @@ describe("engine snapshot parity", () => {
     // than before the QCD-cap fix (was 6893089.39) — the extra $10k/yr
     // QCD (cap raised 105k->115k) leaves the account as charity instead
     // of compounding.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(6848515.19);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(6848515.18);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -3951,7 +3951,7 @@ describe("engine snapshot parity", () => {
     // extra $10k/yr QCD (cap raised 105k->115k) reduces what's left to
     // spend as "excess" by the same amount, so the portfolio's own
     // trajectory nets out the same either way.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(6459482.7);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(6459482.69);
     expect(metrics.finalYear?.allAccountsBalance).toBeLessThan(6877392.31); // vs. fixture 66's "reinvest"
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();

@@ -200,7 +200,7 @@ describe("monte carlo integration", () => {
     // uses for financial content that otherwise relies on
     // toMatchSnapshot() alone).
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBeCloseTo(28266067.195, 1);
+    expect(result.medianEndBalance).toBeCloseTo(28266066.805, 1);
 
     expect(extractSummary(result)).toMatchSnapshot();
   });
@@ -233,7 +233,7 @@ describe("monte carlo integration", () => {
     // around the 3% inflation-risk mean, floored at 0%, and two
     // inflation-heavy trials ran out at 87–88).
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBeCloseTo(28595806.63, 1);
+    expect(result.medianEndBalance).toBeCloseTo(28595806.265, 1);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -263,7 +263,7 @@ describe("monte carlo integration", () => {
 
     expect(result.numTrials).toBe(50);
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBeCloseTo(11317872.43, 2);
+    expect(result.medianEndBalance).toBeCloseTo(11317872.18, 2);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -325,7 +325,7 @@ describe("monte carlo integration", () => {
     // Near-retirement with large balances should have high success rate
     expect(result.successRate).toBeGreaterThan(0);
     expect(result.successRate).toBe(0.94);
-    expect(result.medianEndBalance).toBeCloseTo(3493612.635, 2);
+    expect(result.medianEndBalance).toBeCloseTo(3493612.665, 2);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
