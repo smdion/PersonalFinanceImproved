@@ -1,6 +1,4 @@
 /** A working year's flows, in order: contributions, the gap draw, growth, goal draws. */
-import { applyGrowth } from "../growth-application";
-import { applyIndividualGrowth } from "../individual-accounts/ledger";
 import type { resolveAccumulationConfig } from "../override-resolution";
 import type {
   PreYearSetup,
@@ -16,6 +14,7 @@ import {
 import { recordIrmaaTaxYear } from "./irmaa-lookback";
 import { fullYearWages, workingYearIncome } from "./working-year-wages";
 import { settle } from "./settle";
+import { growYear } from "./year-growth";
 
 /** The year's contributions credited and spread to each account, the gap
  *  year's draw, the year's growth and the brokerage goals' draws. */
@@ -109,15 +108,7 @@ export function runWorkingYearFlows(
     yearIndex === 0
       ? Math.pow(1 + returnRate, firstYearFraction) - 1
       : returnRate;
-  applyGrowth({ effectiveReturn, balances, accountBalance });
-  const individualGrowth = holdsAccounts
-    ? applyIndividualGrowth(
-        individualAccounts,
-        individualKey,
-        individualBalance,
-        effectiveReturn,
-      )
-    : new Map<string, number>();
+  const individualGrowth = growYear(ctx, state, effectiveReturn, false);
   settle(state, "accumulation.growth");
 
   const { goalWithdrawals } = brokerageGoalDraws(

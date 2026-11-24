@@ -42,6 +42,7 @@ projection-year-handlers/    one year of work
   lump-sum.ts                one-time lump sums (both phases)
   stated-need.ts             the first decumulation year's stated need
   settle.ts                  settle: called once at each settled point, where a flow's writes have all landed
+  year-growth.ts             growYear: the year's growth, each account part first, then the totals
   helpers.ts, types.ts
 individual-accounts/         the per-account ledger: ledger, spec-accounts, contributions, other-tax-part, withdrawals, reconcile
 withdrawal-routing/          one year's withdrawal by mode: waterfall, percentage, bracket filling
@@ -127,7 +128,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 
 **Every year** — `runPreYearSetup`: return rate, profile switches, the spending strategy's target (from the retirement balance), the Portfolio exclusion for the year.
 
-**Accumulation** — `runAccumulationYear`, in this order: `sizeYearContributions` (`year-contributions.ts`, nothing credited yet: `yearZeroBasis` and `yearContributionTarget` (`contribution-target.ts`: year 0's basis, the target, the employer match), `yearContributionLimits` and `routeYearSlots` (`contribution-slots.ts`, with `applyRateCeiling`), `yearContributionTotals`, the brokerage ramp, and a gap year's need, `gapYearNeed`), then the year's money flows, `runWorkingYearFlows` (`working-year-flows.ts`): `creditYearContributions` (lump sums) and `distributeYearContributions` (`contribution-credits.ts`), `yearGapDraw` (`goal-draws.ts`), `applyGrowth`, `brokerageGoalDraws` (Portfolio brokerages); then `closeYearAccounts` (`year-end-accounts.ts`: the per-account rows, `reconcileIndividualToAggregate`, `syncAggregateBasis`).
+**Accumulation** — `runAccumulationYear`, in this order: `sizeYearContributions` (`year-contributions.ts`, nothing credited yet: `yearZeroBasis` and `yearContributionTarget` (`contribution-target.ts`: year 0's basis, the target, the employer match), `yearContributionLimits` and `routeYearSlots` (`contribution-slots.ts`, with `applyRateCeiling`), `yearContributionTotals`, the brokerage ramp, and a gap year's need, `gapYearNeed`), then the year's money flows, `runWorkingYearFlows` (`working-year-flows.ts`): `creditYearContributions` (lump sums) and `distributeYearContributions` (`contribution-credits.ts`), `yearGapDraw` (`goal-draws.ts`), `growYear` (`year-growth.ts`), `brokerageGoalDraws` (Portfolio brokerages); then `closeYearAccounts` (`year-end-accounts.ts`: the per-account rows, `reconcileIndividualToAggregate`, `syncAggregateBasis`).
 
 **When the phases change** — dates come from `lib/pure/household/household-timeline.ts`: plan dates (retirement year, end year) count from the primary person; per-person rules (catch-up, RMDs, 59½, the senior deduction) use that person's age; withdrawals start when the last person with a job retires (`retirementYear`), and the projection's last row is the year before `projectionEndYear` (the last person's end age): the end year itself isn't run, so a Projection to 95 stops at 94 (RULES.md § Known Gaps). Nothing averages the people.
 
@@ -151,7 +152,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 12. `yearCliffChecks` (`year-cliffs.ts`) — records the year's tax year for later IRMAA years (`recordIrmaaTaxYear`; a working year records its wages, `workingYearIncome`, in `runWorkingYearFlows`); the year's IRMAA charge (the year-start one, else `settleIrmaaCharge` from this year's own MAGI; `checkHouseholdIrmaa`, per person `checkIrmaa` × people 65+) and its warnings; `checkAca`
 13. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine), whether it's material, and the IRMAA paid on top
 14. `decumulationPortfolioContributions` (`portfolio-contributions.ts`) — Portfolio contributions after retirement, reported only
-15. `closeDecumulationYear` (`year-end.ts`) — `growYearToRows` (`year-end-rows.ts`: `applyGrowth`, the rows, `cleanupDust`), `reconcileIndividualToAggregate`, `syncAggregateBasis`, the year's row
+15. `closeDecumulationYear` (`year-end.ts`) — `growYearToRows` (`year-end-rows.ts`: `growYear`, the rows, `cleanupDust`), `reconcileIndividualToAggregate`, `syncAggregateBasis`, the year's row
 
 Steps 9 to 11 are one stage, the tax settlement: `settleYearTax` (`tax-settlement.ts`) runs them in order and returns what each settled. The year's tax is priced with one deduction, `priced.standardDeduction`, which the conversion and the re-price read back.
 

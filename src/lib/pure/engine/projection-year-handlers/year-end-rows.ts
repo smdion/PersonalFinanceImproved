@@ -2,14 +2,13 @@
 import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
 import { cleanupDust } from "../balance-deduction";
 import { followDraws } from "../brokerage-basis";
-import { applyGrowth } from "../growth-application";
-import { applyIndividualGrowth } from "../individual-accounts/ledger";
 import {
   buildIndividualYearBalances,
   clampIndividualBasis,
 } from "../individual-accounts/reconcile";
 import { updatePerPersonTradBalance } from "./helpers";
 import { settle } from "./settle";
+import { growYear } from "./year-growth";
 import type {
   DecumulationYear,
   ProjectionContext,
@@ -49,17 +48,8 @@ export function growYearToRows(
   // The Portfolio contributions, reported only, are the last flow before
   // growth: nothing writes between them and here.
   settle(state, "decumulation.portfolioContributions");
-  // Apply growth, to the tax buckets and to each account (negatives at 0)
-  applyGrowth({ effectiveReturn: returnRate, balances, accountBalance });
-  const individualGrowth = holdsAccounts
-    ? applyIndividualGrowth(
-        individualAccounts,
-        individualKey,
-        individualBalance,
-        returnRate,
-        true,
-      )
-    : new Map<string, number>();
+  // Apply growth, to each account (negatives at 0) and the totals
+  const individualGrowth = growYear(ctx, state, returnRate, true);
   settle(state, "decumulation.growth");
 
   // Update RMD tracking: year-end Traditional balance (after growth) for next year's RMD
