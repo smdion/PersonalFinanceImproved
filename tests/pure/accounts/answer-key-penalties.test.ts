@@ -182,7 +182,7 @@ function rothYear(opts: {
 }
 
 const NO_DATE_59_HALF =
-  'v0.11 Retirement rules "59½ tested by year" (verdict N3; decision D12.4: split by month)';
+  'v0.11.1 RR8 "Clocks: 59½ by date" (verdict N3; decision D12.4: split by month)';
 const SKEPTIC_CONFIRMED =
   'v0.11 Retirement rules "Retirement rules the skeptic confirmed"';
 
