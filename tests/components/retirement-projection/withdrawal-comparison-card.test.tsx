@@ -35,9 +35,10 @@ vi.mock("@/lib/trpc", async () => ({
 
 const ANALYZE = "projection.computeStrategyAnalysis";
 
-const strategies: ComponentProps<
-  typeof WithdrawalComparisonCard
->["strategies"] = [
+type CardProps = ComponentProps<typeof WithdrawalComparisonCard>;
+type Comparison = CardProps["comparison"];
+
+const strategies: Comparison["strategies"] = [
   {
     strategy: "fixed",
     label: "Fixed Withdrawal",
@@ -103,20 +104,26 @@ const strategies: ComponentProps<
   },
 ];
 
-function baseProps(
-  overrides: Partial<
-    React.ComponentProps<typeof WithdrawalComparisonCard>
-  > = {},
-) {
+function baseProps({
+  strategies: comparedStrategies = strategies,
+  notes = [],
+  ...overrides
+}: Partial<CardProps> &
+  Partial<Pick<Comparison, "strategies" | "notes">> = {}) {
   return {
-    strategies,
-    activeStrategy: "fixed",
+    comparison: {
+      strategies: comparedStrategies,
+      activeStrategy: "fixed",
+      presetLabel: "",
+      notConfigured: null,
+      retirementAge: 65,
+      notes,
+    },
     dollarMode: "nominal" as const,
     onDollarModeChange: vi.fn(),
     inflationRate: 0.03,
-    notes: [],
     ...overrides,
-  };
+  } satisfies CardProps;
 }
 
 describe("WithdrawalComparisonCard", () => {

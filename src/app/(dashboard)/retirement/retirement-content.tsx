@@ -246,15 +246,11 @@ export function RetirementContent() {
           </div>
         ) : comparisonData && "retirementAge" in comparisonData ? (
           <WithdrawalComparisonCard
-            strategies={comparisonData.strategies}
-            activeStrategy={comparisonData.activeStrategy}
-            presetLabel={comparisonData.presetLabel}
-            notConfigured={comparisonData.notConfigured}
+            comparison={comparisonData}
             dollarMode={dollarMode}
             onDollarModeChange={setDollarMode}
             inflationRate={parseFloat(settings.annualInflation)}
             analyzerInput={comparisonInput}
-            notes={comparisonData.notes}
           />
         ) : (
           <div className="text-muted p-4 text-center text-xs">

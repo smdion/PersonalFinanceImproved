@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  SIMULATION_NOT_CONFIGURED_MESSAGE,
-  type SimulationNotConfigured,
-} from "@/lib/pure/simulation/monte-carlo";
+import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/pure/simulation/monte-carlo";
 import { strategySummary } from "@/lib/pure/retirement/strategy-summary";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import type { DollarBasis } from "@/lib/config/enum-values";
@@ -27,10 +24,11 @@ const RATE_TONE_CLASS = {
   red: "text-red-400",
 } as const;
 
-type StrategyResult = Extract<
+/** A comparison that ran: its strategies, the preset and the setup notes. */
+type StrategyComparison = Extract<
   RouterOutputs["projection"]["computeStrategyComparison"],
-  { strategies: unknown }
->["strategies"][number];
+  { retirementAge: number }
+>;
 
 type AnalyzerInput = {
   contributionProfileId?: number;
@@ -44,31 +42,22 @@ type AnalyzerInput = {
 };
 
 type Props = {
-  strategies: StrategyResult[];
-  activeStrategy: string | null;
-  /** The Simulation preset behind the Success and Stability columns. */
-  presetLabel?: string;
-  /** Why those columns are empty (the Simulation can't run), or null. */
-  notConfigured?: SimulationNotConfigured | null;
+  comparison: StrategyComparison;
   dollarMode: DollarBasis;
   onDollarModeChange: (mode: DollarBasis) => void;
   inflationRate: number;
   analyzerInput?: AnalyzerInput;
-  /** What building the runs' inputs left out (the engine's input warnings). */
-  notes: readonly string[];
 };
 
 export function WithdrawalComparisonCard({
-  strategies,
-  activeStrategy,
-  presetLabel,
-  notConfigured,
+  comparison,
   dollarMode,
   onDollarModeChange,
   inflationRate,
   analyzerInput,
-  notes,
 }: Props) {
+  const { strategies, activeStrategy, presetLabel, notConfigured, notes } =
+    comparison;
   const [chartMetric, setChartMetric] =
     useState<ChartMetric>("retirementBalance");
   const [analyzerEnabled, setAnalyzerEnabled] = useState(false);
