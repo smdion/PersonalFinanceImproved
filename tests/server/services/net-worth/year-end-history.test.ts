@@ -247,7 +247,7 @@ describe("buildYearEndHistory", () => {
     expect(row2023.perfReturnPct).not.toBeNull();
   });
 
-  it("includes rollovers in the Modified-Dietz return% denominator", async () => {
+  it("includes rollovers in the Simple Dietz return% denominator", async () => {
     // Regression test: year-end-history.ts previously hand-rolled the denominator
     // without `rollovers`, diverging from computeReturn() in
     // src/lib/pure/investments/returns.ts. Uses a fresh year (2021) to avoid

@@ -872,7 +872,7 @@ describe("performance router", () => {
         .run();
     });
 
-    it("fills in null annualReturnPct via Modified Dietz formula", async () => {
+    it("fills in null annualReturnPct via Simple Dietz formula", async () => {
       const summary = await caller.performance.computeSummary();
       const row = summary.annualRows.find(
         (r: { year: number; category: string }) =>
@@ -2199,7 +2199,7 @@ import {
 } from "@/lib/pure/investments/returns";
 
 describe("finalizeYear — pure computation logic", () => {
-  describe("computeReturn (Modified Dietz)", () => {
+  describe("computeReturn (Simple Dietz)", () => {
     it("computes return for typical account data", () => {
       // contribs = totalContributions (employee + employer combined) = 25000
       // gainLoss / (beginBal + (contribs + rollovers - distributions - fees) / 2)
