@@ -267,7 +267,7 @@ export const contributionProfileRouter = createTRPCRouter({
     const accounts = rawContribRows.map((row) => {
       const accountName = contributionAccountName(
         row,
-        { perfAccountMap, jobs },
+        { performanceAccountsById: perfAccountMap, jobs },
         nameMap,
       );
       // Same-person/same-type siblings need disambiguating, same rule

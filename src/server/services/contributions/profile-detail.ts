@@ -55,7 +55,7 @@ export async function loadContributionProfileDetail(
 
     const accountName = contributionAccountName(
       row,
-      { perfAccountMap, jobs },
+      { performanceAccountsById: perfAccountMap, jobs },
       nameMap,
     );
 

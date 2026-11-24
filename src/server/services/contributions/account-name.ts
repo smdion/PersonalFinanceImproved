@@ -10,12 +10,18 @@ type LiveData = Awaited<ReturnType<typeof loadLiveContribData>>;
  */
 export function contributionAccountName(
   row: LiveData["rawContribRows"][number],
-  live: Pick<LiveData, "perfAccountMap" | "jobs">,
+  live: {
+    performanceAccountsById: LiveData["perfAccountMap"];
+    jobs: readonly Pick<
+      LiveData["jobs"][number],
+      "personId" | "endDate" | "isSpeculative" | "employerName"
+    >[];
+  },
   nameMap: Map<number, string>,
 ): string {
   const linked =
     row.performanceAccountId != null
-      ? live.perfAccountMap.get(row.performanceAccountId)
+      ? live.performanceAccountsById.get(row.performanceAccountId)
       : undefined;
   const institution =
     linked?.institution ??

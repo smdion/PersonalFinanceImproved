@@ -7,6 +7,8 @@ import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   createTestCaller,
+  seedContributionAccount,
+  seedContributionProfile,
   seedPerformanceAccount,
   seedStandardDataset,
 } from "./setup";
@@ -103,5 +105,56 @@ describe("a snapshot row of an account type this version doesn't know", () => {
     expect(response.portfolioByTaxType.preTax).toBe(100000);
     expect(response.accounts.map((a) => a.balance)).toEqual([100000]);
     expect(response.unknownTypeNotes).toEqual([ROW_NOTE]);
+  });
+});
+
+describe("a contribution account of an account type this version doesn't know", () => {
+  let ctx: Ctx;
+  let contributionProfileId: number;
+
+  beforeAll(async () => {
+    ctx = await createTestCaller();
+    const { personId, jobId, perfAcctId } = seedHousehold(ctx.db);
+    const known = seedContributionAccount(ctx.db, {
+      personId,
+      jobId,
+      performanceAccountId: perfAcctId,
+    });
+    const unknown = seedContributionAccount(ctx.db, {
+      accountType: "future_type",
+      personId,
+      jobId,
+      performanceAccountId: seedUnknownAccount(ctx.db, personId),
+    });
+    const tenPercent = {
+      contributionValue: "0.10",
+      contributionMethod: "percent_of_salary",
+    };
+    contributionProfileId = seedContributionProfile(ctx.db, {
+      contributionActiveFields: {
+        contributionAccounts: {
+          [String(known)]: tenPercent,
+          [String(unknown)]: tenPercent,
+        },
+      },
+    });
+  });
+  afterAll(() => ctx.cleanup());
+
+  it("the projection runs on the known accounts and says so", async () => {
+    const data = await fetchRetirementData(ctx.rawDb, {
+      contributionProfileId,
+    });
+    const payload = await buildEnginePayload(ctx.rawDb, data, {
+      asOf: new Date(),
+      contributionProfileId,
+    });
+    expect(payload!.contributionSpecs.map((s) => s.category)).toEqual(["401k"]);
+    const response = await ctx.caller.projection.computeProjection({
+      selection: { contribution: contributionProfileId },
+    });
+    expect(response.result!.warnings).toContain(
+      'Future Plan is saved as account type "future_type", which this version doesn\'t know, so the projection leaves out its contributions. Update Ledgr or change its account type.',
+    );
   });
 });

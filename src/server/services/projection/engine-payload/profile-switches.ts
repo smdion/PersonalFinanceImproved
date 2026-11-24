@@ -142,7 +142,6 @@ export function buildProfileSwitches<
   // excluding accounts it has no value for.
   const liveContribRows = allContribsRaw.map((c) => ({
     ...c,
-    accountType: c.accountType as AccountCategory,
     parentCategory: c.parentCategory,
     taxTreatment: c.taxTreatment,
     employerMatchType: c.employerMatchType,

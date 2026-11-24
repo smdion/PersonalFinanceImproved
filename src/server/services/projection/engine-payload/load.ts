@@ -10,6 +10,7 @@ import { getAllPeople } from "@/server/data/people";
 import { getLatestSnapshot } from "@/server/data/snapshots";
 import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { getActiveContributionAccountsByType } from "@/server/data/contribution-accounts";
 import { applySalaryProfileRow } from "@/lib/pure/household/compensation";
 import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import {
@@ -40,11 +41,7 @@ export async function fetchRetirementData(
       .select()
       .from(schema.returnRateTable)
       .orderBy(asc(schema.returnRateTable.age)),
-    allContribsRaw: db
-      .select()
-      .from(schema.contributionAccounts)
-      .where(eq(schema.contributionAccounts.isActive, true))
-      .orderBy(asc(schema.contributionAccounts.id)),
+    contributionAccounts: getActiveContributionAccountsByType(db),
     // Unfiltered: resolveTaxParams picks the year, anchoring every slice on one.
     allLimits: db.select().from(schema.contributionLimits),
     snapshotData: getLatestSnapshot(db, opts?.snapshotId),
@@ -106,9 +103,12 @@ export async function fetchRetirementData(
     Object.entries(reads).map(async ([name, read]) => [name, await read]),
   );
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- each entry holds its own read's result, under its own name
-  return Object.fromEntries(settled) as {
+  const read = Object.fromEntries(settled) as {
     [K in keyof typeof reads]: Awaited<(typeof reads)[K]>;
   };
+  // An account of an unknown type stays out (startingAccounts notes each).
+  const { known, unknown } = read.contributionAccounts;
+  return { ...read, allContribsRaw: known, unknownTypeContributions: unknown };
 }
 
 /** What fetchRetirementData returns: each read's result, by name. */

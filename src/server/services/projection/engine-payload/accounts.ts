@@ -12,9 +12,11 @@ import {
 } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { rebookedRowsWarning } from "@/lib/pure/accounts/tax-buckets/rebooked-rows";
 import {
+  unknownTypeContributionNote,
   unknownTypeNote,
   unknownTypeRows,
 } from "@/lib/pure/accounts/tax-buckets/unknown-type-rows";
+import { contributionAccountName } from "@/server/services/contributions/account-name";
 import { buildIndividualAccounts } from "./individual-accounts";
 import type { RetirementData } from "./load";
 import type { perPersonSettingsFor } from "./settings-for";
@@ -114,6 +116,18 @@ export function startingAccounts(
     ),
   ];
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
+  const performanceAccountsById = new Map(perfAccounts.map((p) => [p.id, p]));
+  for (const account of data.unknownTypeContributions)
+    inputWarnings.push(
+      unknownTypeContributionNote(
+        contributionAccountName(
+          account,
+          { performanceAccountsById, jobs: allJobs },
+          personNameById,
+        ),
+        account.accountType,
+      ),
+    );
 
   const birthYearByPersonId = new Map(
     perPersonSettings.map((p) => [p.personId, p.birthYear]),

@@ -420,7 +420,7 @@
     "src/server/services/projection/coast-fire.ts": 294,
     "src/server/services/projection/engine-payload/build-engine-payload.ts": 807,
     "src/server/services/projection/engine-payload/load.ts": 146,
-    "src/server/services/projection/engine-payload/profile-switches.ts": 444,
+    "src/server/services/projection/engine-payload/profile-switches.ts": 443,
     "src/server/services/projection/projection-cache.ts": 183,
     "src/server/services/projection/relocation-analysis.ts": 452,
     "src/server/services/projection/relocation-projection.ts": 484,
@@ -1063,7 +1063,7 @@
       "buildEnginePayload": 728
     },
     "src/server/services/projection/engine-payload/profile-switches.ts": {
-      "buildProfileSwitches": 276
+      "buildProfileSwitches": 275
     },
     "src/server/services/projection/relocation-analysis.ts": {
       "computeRelocationAnalysis": 355

@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import type { TaxBucketSnapshotAccount } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import {
+  contributionsByType,
+  unknownTypeContributionNote,
   unknownTypeNote,
   unknownTypeRows,
 } from "@/lib/pure/accounts/tax-buckets/unknown-type-rows";
@@ -78,6 +80,25 @@ describe("unknownTypeNote", () => {
       }),
     ).toBe(
       'Plan is saved as account type "future_type", which this version doesn\'t know, so the projection and Tax Buckets leave out its $40,000. Update Ledgr or change its account type.',
+    );
+  });
+});
+
+describe("contributionsByType", () => {
+  it("splits contribution accounts by whether their type is known, in order", () => {
+    const rows = [
+      { id: 1, accountType: "401k" },
+      { id: 2, accountType: "future_type" },
+      { id: 3, accountType: "ira" },
+    ];
+    const { known, unknown } = contributionsByType(rows);
+    expect(known.map((r) => r.id)).toEqual([1, 3]);
+    expect(unknown.map((r) => r.id)).toEqual([2]);
+  });
+
+  it("notes a left-out account's contributions", () => {
+    expect(unknownTypeContributionNote("Plan", "future_type")).toBe(
+      'Plan is saved as account type "future_type", which this version doesn\'t know, so the projection leaves out its contributions. Update Ledgr or change its account type.',
     );
   });
 });
