@@ -174,7 +174,7 @@ describe("clampBalances (pins current behavior)", () => {
   });
 });
 
-describe("reinvestRmdExcess (pins current behavior)", () => {
+describe("reinvestRmdExcess: what the RMD added past the draw's cost (D1), reinvested by balance or spent", () => {
   // An RMD addition larger than any over-draw below, so the excess is the
   // whole over-draw (D1's bound doesn't bind).
   const RMD_ADDED_ALL = 1_000_000;
