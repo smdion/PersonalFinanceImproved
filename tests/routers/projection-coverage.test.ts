@@ -327,6 +327,7 @@ describe("projection router — computeProjection edge cases (continued)", () =>
       expect(await caller.projection.computeCoastFire({})).toEqual({
         result: null,
         notConfigured: "no_return_rate",
+        notes: [],
       });
     } finally {
       cleanup();
@@ -2115,7 +2116,7 @@ describe("projection router — computeCoastFire", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const response = await caller.projection.computeCoastFire({});
-      expect(response).toEqual({ result: null });
+      expect(response).toEqual({ result: null, notes: [] });
     } finally {
       cleanup();
     }

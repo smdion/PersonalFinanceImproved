@@ -11,6 +11,7 @@ import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
 import { planAgeLabel } from "@/lib/pure/household/household-timeline";
 import { RETIRED_PLAN_FAILS } from "@/components/dashboard/coast-fire-label";
+import { EngineWarnings } from "@/components/retirement-projection/engine-warnings";
 
 export function CoastFireNote() {
   const { input, ready } = usePlanEngineInput();
@@ -42,12 +43,16 @@ export function CoastFireNote() {
           ? RETIRED_PLAN_FAILS
           : "Your projection needs contributions all the way to retirement";
   return (
-    <p className="text-caption text-muted -mt-2 mb-3">
-      {text}, on average returns (the Simulation can be stricter) —{" "}
-      <Link href="/retirement" className="text-blue-600 hover:underline">
-        see Coast FIRE on Retirement
-      </Link>
-      .
-    </p>
+    <>
+      <p className="text-caption text-muted -mt-2 mb-3">
+        {text}, on average returns (the Simulation can be stricter) —{" "}
+        <Link href="/retirement" className="text-blue-600 hover:underline">
+          see Coast FIRE on Retirement
+        </Link>
+        .
+      </p>
+      {/* The input's setup notes, as the Retirement page shows them. */}
+      <EngineWarnings warnings={data.notes} />
+    </>
   );
 }

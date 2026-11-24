@@ -144,6 +144,15 @@ async function taxProjectionNotes(ctx: Ctx) {
   return notes;
 }
 
+/** The notes beside Coast FIRE (the dashboard's Retirement card and the
+ *  Contributions page's Coast FIRE note). */
+async function coastFireNotes(ctx: Ctx) {
+  const coastFire = await ctx.caller.projection.computeCoastFire({});
+  const notes = "notes" in coastFire ? coastFire.notes : undefined;
+  if (!notes) throw new Error("no notes in Coast FIRE");
+  return notes;
+}
+
 const ROW_NOTE =
   'Future Plan is saved as account type "future_type", which this version doesn\'t know, so the projection and Tax Buckets leave out its $40,000. Update Ledgr or change its account type.';
 
@@ -208,6 +217,10 @@ describe("a snapshot row of an account type this version doesn't know", () => {
 
   it("the Tax Optimization page's tax projection names it too", async () => {
     expect(await taxProjectionNotes(ctx)).toEqual([ROW_NOTE]);
+  });
+
+  it("Coast FIRE names it too", async () => {
+    expect(await coastFireNotes(ctx)).toEqual([ROW_NOTE]);
   });
 
   it("Tax Buckets leaves it out and names it", async () => {
@@ -417,6 +430,10 @@ describe("saved settings naming an account type this version doesn't know", () =
 
   it("the Tax Optimization page's tax projection names each one, once", async () => {
     expectEachNamedOnce(await taxProjectionNotes(ctx));
+  });
+
+  it("Coast FIRE names each one, once", async () => {
+    expectEachNamedOnce(await coastFireNotes(ctx));
   });
 
   it("percentage routing draws the year's need from the splits left", async () => {

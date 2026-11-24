@@ -162,6 +162,15 @@ describe("RetirementCard dashboard cache-peek features", () => {
     render(<RetirementCard />);
     expect(screen.getByText("(simulated: 2041)")).toBeInTheDocument();
   });
+
+  it("shows what Coast FIRE's projection left out, once", () => {
+    setQuery("projection.computeCoastFire", {
+      result: { status: "found", coastFireAge: 50 },
+      notes: ["A Coast FIRE note"],
+    });
+    render(<RetirementCard />);
+    expect(screen.getAllByText("A Coast FIRE note")).toHaveLength(1);
+  });
 });
 
 describe("RetirementCard nest egg: simulated or baseline", () => {

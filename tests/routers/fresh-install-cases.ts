@@ -178,6 +178,7 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
       expect(await admin.projection.computeCoastFire({})).toEqual({
         result: null,
         notConfigured: "no_return_rate",
+        notes: [],
       });
       expect(
         await admin.projection.computeCoastFireSimulation({}),

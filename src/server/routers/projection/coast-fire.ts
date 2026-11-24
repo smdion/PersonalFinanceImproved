@@ -12,6 +12,7 @@ import { findCoastFireAge } from "@/lib/pure/retirement/coast-fire";
 import {
   prepareEngineInput,
   prepareProjectionRun,
+  setupNotes,
 } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
@@ -43,14 +44,16 @@ export const coastFireRouter = createTRPCRouter({
         selection: input.selection,
         snapshotId: input.snapshotId,
       });
-      if (!payload) return { result: null };
+      const none = { result: null, notes: [] };
+      if (!payload) return none;
       if (payload.notConfigured)
-        return { result: null, notConfigured: payload.notConfigured };
+        return { ...none, notConfigured: payload.notConfigured };
 
       const engineInput = await prepareEngineInput(ctx.db, payload, input);
+      const notes = setupNotes([engineInput], []);
 
       // Its today's-dollar figures come from the run's own price level.
-      return { result: findCoastFireAge(engineInput) };
+      return { result: findCoastFireAge(engineInput), notes };
     }),
 
   /**

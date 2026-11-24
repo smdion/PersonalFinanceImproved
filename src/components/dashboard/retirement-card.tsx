@@ -29,6 +29,7 @@ import {
 import { PlanTimeRows, RetirementBudgetRow } from "./retirement-card-plan-rows";
 import { retirementCardFigures } from "./retirement-card-figures";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
+import { EngineWarnings } from "@/components/retirement-projection/engine-warnings";
 
 function RetirementCardImpl() {
   const projection = useDashboardProjection();
@@ -148,6 +149,7 @@ function RetirementCardImpl() {
             <SimulatedSuccessRow simulationSummary={simulationSummary} />
             {renderLastRunRow(simulationSummary, coastFireSimulationSummary)}
             <DurationRow endAge={endAge} outcome={outcome} />
+            <EngineWarnings warnings={coastFireData?.notes ?? []} />
           </div>
         </div>
         <div className="md:border-subtle md:border-l md:pl-8">
