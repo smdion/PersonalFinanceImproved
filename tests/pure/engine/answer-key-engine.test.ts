@@ -53,7 +53,6 @@ import {
 const GROSS_UP = 1;
 
 const SAME_YEAR_MAGI = `v0.11 Tax "Senior deduction must use same-year MAGI in every year"`;
-const NIIT_UNFUNDED = `v0.11 Engine "NIIT unfunded when RMD money is reinvested"`;
 const END_YEAR = `v0.11 Engine "Plan 'to 95' stops at 94" (D10: run the end year)`;
 const BUDGET_CHANGES = `v0.11 Engine "Budget changes by year are in today's dollars" (decision: the engine inflates them; D12.11)`;
 const BUDGET_LINE = `v0.11 Simulation "Success isn't comparable across strategies" (decision: the budget line grows with inflation for every strategy)`;
@@ -321,7 +320,7 @@ describe("answer key: NIIT funded before RMD money is reinvested (verdict E6)", 
   // 3.8% × min(90,780.35, 343,944.91 − 200,000) = 3,449.65 (IRC 1411;
   // Form 8960); total 68,727.36. Decided: spend the full 150,000 and
   // reinvest what's left after all tax: 354,031.62 − 150,000 − 68,727.36
-  // = 135,304.26, unmet 0. Today the NIIT isn't funded before the
+  // = 135,304.26, unmet 0. Before EN6 the NIIT wasn't funded before the
   // reinvestment: spending 146,550.35 (short by exactly the NIIT),
   // reinvested 138,753.91, no unmet need shown. Key: W moved +$0.01 with
   // 5f379577, so ±$1.
@@ -342,37 +341,29 @@ describe("answer key: NIIT funded before RMD money is reinvested (verdict E6)", 
     );
 
   describe("engine/E6", () => {
-    xfail({
-      id: "engine/E6 [TAX-20]",
-      todo: NIIT_UNFUNDED,
-      run: () => {
-        const out: Record<string, number> = {};
-        for (const mode of ["waterfall", "bracket_filling"] as const) {
-          const r = e6(mode);
-          out[`${mode}.spending`] = r.spending;
-          out[`${mode}.niit`] = r.niitAmount;
-          out[`${mode}.reinvested`] = r.rmdExcessAmount;
-          out[`${mode}.unmet`] = r.unmetNeed ?? 0;
-        }
-        return out;
-      },
-      expected: {
-        "waterfall.spending": 150_000,
-        "waterfall.niit": 3_449.65,
-        "waterfall.reinvested": 135_304.26,
-        "waterfall.unmet": 0,
-        "bracket_filling.spending": 150_000,
-        "bracket_filling.niit": 3_449.65,
-        "bracket_filling.reinvested": 135_304.26,
-        "bracket_filling.unmet": 0,
-      },
-      today: {
-        "waterfall.spending": 146_550.35,
-        "waterfall.reinvested": 138_753.91,
-        "bracket_filling.spending": 146_550.35,
-        "bracket_filling.reinvested": 138_753.91,
-      },
-      tolerance: GROSS_UP,
+    it("engine/E6 [TAX-20] NIIT is funded before the RMD excess is reinvested", () => {
+      const out: Record<string, number> = {};
+      for (const mode of ["waterfall", "bracket_filling"] as const) {
+        const r = e6(mode);
+        out[`${mode}.spending`] = r.spending;
+        out[`${mode}.niit`] = r.niitAmount;
+        out[`${mode}.reinvested`] = r.rmdExcessAmount;
+        out[`${mode}.unmet`] = r.unmetNeed ?? 0;
+      }
+      cents(
+        out,
+        {
+          "waterfall.spending": 150_000,
+          "waterfall.niit": 3_449.65,
+          "waterfall.reinvested": 135_304.26,
+          "waterfall.unmet": 0,
+          "bracket_filling.spending": 150_000,
+          "bracket_filling.niit": 3_449.65,
+          "bracket_filling.reinvested": 135_304.26,
+          "bracket_filling.unmet": 0,
+        },
+        GROSS_UP,
+      );
     });
   });
 });

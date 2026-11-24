@@ -15,6 +15,7 @@ import { performRothConversion } from "../roth-conversion";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
+import { drawNiit } from "../../tax/niit";
 import { applyLumpSums } from "./lump-sum";
 import { perOwnerRmds } from "./helpers";
 import { irmaaOutsideNeed } from "./irmaa-charge";
@@ -88,8 +89,10 @@ export function priceYearTax(
     taxableSS = taxableSSFor(ssIncome, taxFromSlots, filingStatus);
     taxFromSlots = priceTax(taxableSS);
   }
-
-  return { priceTax, taxableSS, taxFromSlots, standardDeduction };
+  // The tax the draw was sized to pay, NIIT included (withdrawal-solver.ts).
+  const niit = drawNiit(taxFromSlots, taxableSS, filingStatus);
+  const drawTax = roundToCents(taxFromSlots.taxCost + niit);
+  return { priceTax, taxableSS, taxFromSlots, standardDeduction, drawTax };
 }
 
 /** The priced year's parts the settlement reads (the brokerage slot's basis
@@ -170,7 +173,7 @@ export function settleYearDraws(
   const { config, year, age } = thisYear;
   const { slots } = flow.route;
   const { surplusCredit } = flow.parts;
-  const { taxFromSlots } = flow.priced;
+  const { taxFromSlots, drawTax } = flow.priced;
   const { rmdOverrodeRouting, totalWithdrawal } = flow.rmd;
   const { afterTaxNeed, irmaa } = flow.need;
   const basisOut = taxFromSlots.brokerageBasisOut;
@@ -182,12 +185,9 @@ export function settleYearDraws(
     applyLumpSums(config.lumpSums, ctx, state),
   );
 
-  // RMD money past the need and the year-start charge it leaves out, shown in
-  // the UI; rmdExcessHandling reinvests it (cash in: new basis where it lands)
-  // or spends it. The withdrawal pays the tax less Social Security's surplus.
-  const withdrawalTax = roundToCents(
-    taxFromSlots.taxCost - surplusCredit(taxFromSlots.taxCost),
-  );
+  // RMD money past the need and the year-start charge, reinvested or spent; the
+  // draw pays its tax and sized NIIT (row NIIT: the re-price), less SS surplus.
+  const withdrawalTax = roundToCents(drawTax - surplusCredit(drawTax));
   const rmdExcessAmount = followInflows(
     indAccounts,
     indKey,

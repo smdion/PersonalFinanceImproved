@@ -21,8 +21,8 @@ $2,595,144.66
 Range $2,219,846.59 – $2,806,234.69
 Baseline: $2,107,214.40 (fixed returns)
 End Balance
-$771,952.83
-Range $603,602.07 – $1,081,919.83 in 2080
+$771,936.04
+Range $603,598.33 – $1,081,681.38 in 2080
 Baseline: $654,615.11 (fixed returns)
 Coast FIRE?
 2032 (Jordan, 48)
@@ -296,7 +296,7 @@ $0.00
 $109,864.85
 $0.00
 $916,505.90
-$979,998.61
+$979,997.26
 ~$10,032.19 tax (10.5% eff.) + $6,881.24 on Social Security
 2080
 DRAW
@@ -311,7 +311,7 @@ $0.00
 $86,236.35
 $1,045.27
 $654,615.11
-$771,952.83
+$771,936.04
 ~$5,846.56 tax (8.5% eff.) + $5,523.22 on Social Security
 Lifetime Tax Paid (Retirement)$499,723.08(15.0% effective)
 How contributions & distributions are projected
