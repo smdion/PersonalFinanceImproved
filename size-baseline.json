@@ -195,7 +195,7 @@
     "src/components/retirement-projection/tooltip-renderer.tsx": 407,
     "src/components/retirement-projection/use-projection-derived.ts": 614,
     "src/components/retirement-projection/use-projection-queries.ts": 814,
-    "src/components/retirement-projection/withdrawal-comparison-chart.tsx": 114,
+    "src/components/retirement-projection/withdrawal-comparison-chart.tsx": 110,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 457,
     "src/components/retirement/assumptions-band.tsx": 404,
     "src/components/retirement/sections/taxes.tsx": 534,
