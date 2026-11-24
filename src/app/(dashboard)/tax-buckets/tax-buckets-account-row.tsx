@@ -8,8 +8,8 @@ import {
   isPreTaxType,
   isAfterTaxType,
   isHsaTaxType,
-  isHsaCategory,
-  isIraCategory,
+  hasEarlyAccessRule,
+  paysMedical,
   tracksRothBasis,
   getDisplayConfig,
 } from "@/lib/config/account-types";
@@ -24,12 +24,8 @@ export type AccountEntry = AccountAnalysisEntry;
  *  `taxTypeLabel(taxType)`; named differently to avoid a same-name clash. */
 export function bucketTaxTypeLabel(category: string, taxType: string): string {
   const label = getDisplayConfig(category).displayLabel;
-  if (isTaxFreeBucket(taxType)) {
-    return isIraCategory(category) ? "Roth IRA" : `Roth ${label}`;
-  }
-  if (isPreTaxType(taxType)) {
-    return isIraCategory(category) ? "Traditional IRA" : `Traditional ${label}`;
-  }
+  if (isTaxFreeBucket(taxType)) return `Roth ${label}`;
+  if (isPreTaxType(taxType)) return `Traditional ${label}`;
   if (isAfterTaxType(taxType)) return "Brokerage";
   if (isHsaTaxType(taxType)) return "HSA";
   return taxType;
@@ -99,7 +95,7 @@ export function AccountDetailRow({
           </Badge>
           <HelpTip
             text={
-              isHsaCategory(entry.category)
+              hasEarlyAccessRule(entry.category, "hsa_non_medical")
                 ? "At 65, non-medical HSA withdrawals stop incurring the 20% penalty — ordinary income tax still applies. Qualified medical withdrawals are always penalty-free and tax-free at any age."
                 : "At 59½, retirement-account withdrawals become penalty-free generally. There's no Rule-of-55 equivalent for an IRA (only SEPP/72(t), not modeled here)."
             }
@@ -126,7 +122,7 @@ export function AccountDetailRow({
               </span>
             </div>
           ))}
-          {isHsaCategory(entry.category) && (
+          {paysMedical(entry.category) && (
             <div className="text-caption flex items-center justify-between">
               <span className="text-muted">Qualified medical expenses</span>
               <span className="flex items-center gap-2">

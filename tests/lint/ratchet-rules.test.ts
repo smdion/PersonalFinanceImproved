@@ -418,7 +418,7 @@ describe("ratchet/no-identity-predicate-import", () => {
     ).toEqual([1, 1]);
   });
 
-  it("leaves Tax Buckets' four files to them until v0.11", async () => {
+  it("leaves Tax Buckets' two early-access files to them until v0.11.1", async () => {
     const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
     const code =
       "import { isHsaCategory } from '@/lib/config/account-types';\nexport const f = isHsaCategory;\n";
@@ -432,7 +432,7 @@ describe("ratchet/no-identity-predicate-import", () => {
     expect(await counted("src/components/demo/part.tsx")).toBe(true);
     expect(
       await counted("src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts"),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       await counted("src/lib/pure/accounts/tax-buckets/tax-bucket-analysis.ts"),
     ).toBe(false);

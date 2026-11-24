@@ -837,8 +837,6 @@ export const ratchetConfig = [
   {
     // Tax Buckets still branches on the predicates until v0.11.
     files: [
-      "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx",
-      "src/app/(dashboard)/tax-buckets/tax-buckets-grouping.ts",
       "src/lib/pure/accounts/tax-buckets/tax-bucket-analysis.ts",
       "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts",
     ],

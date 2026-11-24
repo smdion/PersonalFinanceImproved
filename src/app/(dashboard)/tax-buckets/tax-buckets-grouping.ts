@@ -1,7 +1,7 @@
 import {
   isTaxFreeBucket,
-  isHsaCategory,
-  isIraCategory,
+  isTripleTaxAdvantaged,
+  getAccountTypeConfig,
   tracksCostBasis,
 } from "@/lib/config/account-types";
 import { penaltyFreePrefixAmount } from "@/lib/pure/accounts/early-access";
@@ -50,7 +50,6 @@ export function buildBuckets(entries: AccountEntry[]) {
       b.excludedJoint += entry.balance;
     }
   }
-
   let householdTotal = 0;
   let householdAccessible = 0;
   let householdLocked = 0;
@@ -95,7 +94,8 @@ export const BUCKET_META: Record<
 
 function bucketKeyFor(entry: AccountEntry): BucketKey {
   if (tracksCostBasis(entry.category)) return "brokerage";
-  if (isHsaCategory(entry.category)) return "hsa";
+  if (isTripleTaxAdvantaged(entry.category)) return "hsa";
   if (!isTaxFreeBucket(entry.taxType)) return "traditional";
-  return isIraCategory(entry.category) ? "rothIra" : "rothEmployer";
+  const ordering = getAccountTypeConfig(entry.category).rothOrderingRules;
+  return ordering === "basis_first" ? "rothIra" : "rothEmployer";
 }

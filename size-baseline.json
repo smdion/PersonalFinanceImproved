@@ -31,7 +31,7 @@
     "src/app/(dashboard)/portfolio/use-portfolio-sync.ts": 101,
     "src/app/(dashboard)/savings/savings-content.tsx": 870,
     "src/app/(dashboard)/tax-buckets/tax-buckets-account-badges.tsx": 42,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": 289,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": 285,
     "src/app/(dashboard)/tax-buckets/tax-buckets-bulk-basis.tsx": 123,
     "src/app/(dashboard)/tax-buckets/tax-buckets-bulk-groups.tsx": 94,
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 136,
