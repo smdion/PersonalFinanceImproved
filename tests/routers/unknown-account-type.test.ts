@@ -2,7 +2,8 @@
  * A stored account type this version doesn't know (saved by a newer Ledgr,
  * say): the projection and Tax Buckets leave that money out and say so,
  * naming the row and its amount. A saved setting naming one (the withdrawal
- * order or splits, a "Changes by year" row) drops it and says so.
+ * order or splits, a "Changes by year" row) drops it and says so; the
+ * editors' saves keep it (owner Q-unknown-category-erase (b)).
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -460,5 +461,154 @@ describe("a saved savings order naming only an account type this version doesn't
     expect(withRow.warnings).toContain(
       `Account type "future_type", which this version doesn't know, is left out of Changes by year for 2030. Update Ledgr or change that setting.`,
     );
+  });
+});
+
+describe("the saved sets the editors save, naming an account type this version doesn't know", () => {
+  let ctx: Ctx;
+  // A newer Ledgr's row (the save path refuses it): an order entry, a split
+  // and a lump sum for a type this version doesn't know, beside known ones.
+  const newerRow = {
+    year: 2030,
+    accountOrder: ["future_type", "401k"],
+    accountSplits: { future_type: 0.5, "401k": 0.5 },
+    lumpSums: [
+      { amount: 5000, targetAccount: "future_type" },
+      { amount: 3000, targetAccount: "401k" },
+    ],
+  };
+  const event = (id: string, targetAccount: string) => ({
+    id,
+    year: "2031",
+    amount: "2500",
+    targetAccount,
+    targetAccountName: "",
+    targetOwnerName: "",
+    taxType: "",
+    label: "",
+  });
+  const unknownEvent = event("a", "future_type");
+  const known2035 = { year: 2035, contributionRate: 0.1 };
+
+  /** One kind's set as stored. */
+  const stored = (overrideType: string) =>
+    ctx.db
+      .select()
+      .from(schema.projectionOverrides)
+      .all()
+      .find((r) => r.overrideType === overrideType)?.overrides;
+  const store = (overrideType: string, overrides: Record<string, unknown>[]) =>
+    ctx.db
+      .insert(schema.projectionOverrides)
+      .values({ overrideType, overrides })
+      .onConflictDoUpdate({
+        target: schema.projectionOverrides.overrideType,
+        set: { overrides },
+      })
+      .run();
+
+  beforeAll(async () => {
+    ctx = await createTestCaller();
+    seedHousehold(ctx.db);
+  });
+  afterAll(() => ctx.cleanup());
+
+  it("an edit to another year keeps the stored entries for it", async () => {
+    store("accumulation", [newerRow, known2035]);
+    // The set as this version can send it: without the unknown type.
+    const edited = [
+      {
+        year: 2030,
+        accountOrder: ["401k"],
+        accountSplits: { "401k": 0.5 },
+        lumpSums: [{ amount: 3000, targetAccount: "401k" }],
+      },
+      { year: 2035, contributionRate: 0.2 },
+    ];
+    const saved = await ctx.caller.retirement.projectionOverrides.save({
+      overrideType: "accumulation",
+      overrides: edited,
+    });
+    // The stored row, as before, with the notes beside it.
+    expect(saved).toMatchObject({
+      overrideType: "accumulation",
+      overrides: stored("accumulation"),
+      unknownTypeNotes: [],
+    });
+    expect(stored("accumulation")).toEqual([
+      {
+        ...newerRow,
+        // The lump sum to the unknown type goes back after the row's own.
+        lumpSums: [
+          { amount: 3000, targetAccount: "401k" },
+          { amount: 5000, targetAccount: "future_type" },
+        ],
+      },
+      { year: 2035, contributionRate: 0.2 },
+    ]);
+  });
+
+  it("deleting their row drops them, and the save names what went", async () => {
+    store("accumulation", [newerRow, known2035]);
+    const saved = await ctx.caller.retirement.projectionOverrides.save({
+      overrideType: "accumulation",
+      overrides: [known2035],
+    });
+    expect(saved).toMatchObject({
+      overrideType: "accumulation",
+      overrides: [known2035],
+      unknownTypeNotes: [
+        'Deleting Changes by year for 2030 also deleted what it set for account type "future_type", which this version doesn\'t know.',
+        'Deleting Changes by year for 2030 also deleted its lump sum of $5,000 to account type "future_type", which this version doesn\'t know.',
+      ],
+    });
+    expect(stored("accumulation")).toEqual([known2035]);
+  });
+
+  it("the Brokerage page's save and clear keep an event to such a type", async () => {
+    store("brokerage", [unknownEvent, event("b", "brokerage")]);
+    const { save, clear } = ctx.caller.retirement.projectionOverrides;
+    await save({
+      overrideType: "brokerage",
+      overrides: [event("c", "brokerage")],
+    });
+    expect(stored("brokerage")).toEqual([
+      event("c", "brokerage"),
+      unknownEvent,
+    ]);
+    expect(await clear({ overrideType: "brokerage" })).toEqual({
+      unknownTypeNotes: [],
+    });
+    expect(stored("brokerage")).toEqual([unknownEvent]);
+  });
+
+  it("clearing a Changes by year set with such entries names what went", async () => {
+    store("decumulation", [
+      { year: 2060, withdrawalOrder: ["future_type", "401k"] },
+    ]);
+    const cleared = await ctx.caller.retirement.projectionOverrides.clear({
+      overrideType: "decumulation",
+    });
+    expect(cleared.unknownTypeNotes).toEqual([
+      'Deleting Changes by year for 2060 also deleted what it set for account type "future_type", which this version doesn\'t know.',
+    ]);
+    expect(stored("decumulation")).toBeUndefined();
+  });
+
+  it("saving an empty set stores it, as before, with the entries kept", async () => {
+    store("decumulation", [
+      { year: 2060, withdrawalOrder: ["future_type", "401k"] },
+      { year: 2061, withdrawalOrder: ["401k"] },
+    ]);
+    const saved = await ctx.caller.retirement.projectionOverrides.save({
+      overrideType: "decumulation",
+      overrides: [],
+    });
+    expect(saved).toMatchObject({
+      overrideType: "decumulation",
+      overrides: [],
+    });
+    expect(saved.unknownTypeNotes).toHaveLength(1);
+    expect(stored("decumulation")).toEqual([]);
   });
 });

@@ -13,6 +13,10 @@ import { firstRow } from "@/lib/utils/first-row";
 import { accountCategoryEnum } from "@/lib/config/account-types";
 import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
 import { accumulationOverrideArraySchema } from "@/server/services/projection/projection-run";
+import { withStoredUnknownTypes } from "@/server/services/projection/saved-override-rows";
+import type { Db, DbOrTx } from "@/lib/db";
+import { lockForTransaction } from "@/server/data/lock-row";
+import type { Session } from "next-auth";
 
 /** What each kind's saved set reads as: the projection's override shapes
  *  (resolveProjectionOverrides) and the Brokerage page's planned events
@@ -34,6 +38,54 @@ function savedSetShape(kind: "accumulation" | "decumulation" | "brokerage") {
       label: z.string(),
     }),
   );
+}
+
+type SavedSetKind = "accumulation" | "decumulation" | "brokerage";
+
+/** One kind's saved set as stored; [] when none. */
+function storedSet(db: DbOrTx, kind: SavedSetKind) {
+  return db
+    .select({ overrides: schema.projectionOverrides.overrides })
+    .from(schema.projectionOverrides)
+    .where(eq(schema.projectionOverrides.overrideType, kind))
+    .then((r) => r[0]?.overrides ?? []);
+}
+
+/** Stores an editor's set with the stored entries for account types this
+ *  version doesn't know merged back (`withStoredUnknownTypes`), one kind at a
+ *  time: the stored row (none when a clear leaves nothing) and the notes. */
+function storeSet(
+  ctx: { db: Db; session: Session },
+  kind: SavedSetKind,
+  saved: Record<string, unknown>[],
+  clearing = false,
+) {
+  const user = getSessionUserLabel(ctx.session);
+  return ctx.db.transaction(async (tx) => {
+    // The row may not exist yet: a named lock, not the row's.
+    await lockForTransaction(tx, `projection-overrides:${kind}`);
+    const { rows, unknownTypeNotes } = withStoredUnknownTypes(
+      kind,
+      saved,
+      await storedSet(tx, kind),
+    );
+    if (clearing && rows.length === 0) {
+      await tx
+        .delete(schema.projectionOverrides)
+        .where(eq(schema.projectionOverrides.overrideType, kind));
+      return { row: undefined, unknownTypeNotes };
+    }
+    const row = await tx
+      .insert(schema.projectionOverrides)
+      .values({ overrideType: kind, overrides: rows, createdBy: user })
+      .onConflictDoUpdate({
+        target: schema.projectionOverrides.overrideType,
+        set: { overrides: rows, updatedBy: user },
+      })
+      .returning()
+      .then(firstRow);
+    return { row, unknownTypeNotes };
+  });
 }
 
 export const overrideProcedures = {
@@ -157,18 +209,11 @@ export const overrideProcedures = {
           overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
         }),
       )
-      .query(({ ctx, input }) =>
-        ctx.db
-          .select()
-          .from(schema.projectionOverrides)
-          .where(
-            eq(schema.projectionOverrides.overrideType, input.overrideType),
-          )
-          .then((r) => r[0]?.overrides ?? []),
-      ),
+      .query(({ ctx, input }) => storedSet(ctx.db, input.overrideType)),
     /**
      * Replace one kind's saved changes by year, at the brokerage permission for every kind;
-     * a set its kind's shape refuses is refused, and a set is stored as sent.
+     * a set its kind's shape refuses is refused. Stored entries for unknown account types are
+     * kept (`storeSet`); the notes name any a deleted row took.
      */
     save: brokerageProcedure
       .input(
@@ -187,26 +232,17 @@ export const overrideProcedures = {
               });
           }),
       )
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .insert(schema.projectionOverrides)
-          .values({
-            overrideType: input.overrideType,
-            overrides: input.overrides,
-            createdBy: getSessionUserLabel(ctx.session),
-          })
-          .onConflictDoUpdate({
-            target: schema.projectionOverrides.overrideType,
-            set: {
-              overrides: input.overrides,
-              updatedBy: getSessionUserLabel(ctx.session),
-            },
-          })
-          .returning()
-          .then(firstRow),
-      ),
+      .mutation(async ({ ctx, input }) => {
+        const { row, unknownTypeNotes } = await storeSet(
+          ctx,
+          input.overrideType,
+          input.overrides,
+        );
+        return { ...row, unknownTypeNotes };
+      }),
     /**
-     * Delete one kind's saved changes by year, at the brokerage permission for every kind.
+     * Delete one kind's saved changes by year, at the brokerage permission for every kind; the
+     * Brokerage page's events to an account type this version doesn't know stay (`storeSet`).
      */
     clear: brokerageProcedure
       .input(
@@ -214,12 +250,14 @@ export const overrideProcedures = {
           overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
         }),
       )
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.projectionOverrides)
-          .where(
-            eq(schema.projectionOverrides.overrideType, input.overrideType),
-          ),
-      ),
+      .mutation(async ({ ctx, input }) => {
+        const { unknownTypeNotes } = await storeSet(
+          ctx,
+          input.overrideType,
+          [],
+          true,
+        );
+        return { unknownTypeNotes };
+      }),
   }),
 };

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { TaxBucketSnapshotAccount } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import {
   contributionsByType,
+  deletedRowUnknownTypeNotes,
   knownCategoryList,
   knownCategoryRecord,
   unknownCategoryNote,
@@ -200,6 +201,42 @@ describe("unknownLumpSumTargetNotes", () => {
       'A lump sum in Changes by year for 2040 goes to account type "future_type", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
       '2 lump sums in Changes by year for 2041 go to account type "future_type", which this version doesn\'t know, so the projection leaves them out. Update Ledgr or change those lump sums.',
       'A lump sum of $0 in Changes by year for 2042 goes to account type "future_type", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+    ]);
+  });
+});
+
+describe("deletedRowUnknownTypeNotes", () => {
+  it("names each account type once, then the lump sums counted and summed", () => {
+    expect(
+      deletedRowUnknownTypeNotes(
+        "2040",
+        ["future_type", "future_type", "other_type"],
+        [
+          {
+            year: "2040",
+            target: "accountType",
+            category: "future_type",
+            amount: 5000,
+          },
+          {
+            year: "2040",
+            target: "accountType",
+            category: "future_type",
+            amount: 5000,
+          },
+          {
+            year: "2040",
+            target: "parentCategory",
+            category: "Future",
+            amount: "?",
+          },
+        ],
+      ),
+    ).toEqual([
+      'Deleting Changes by year for 2040 also deleted what it set for account type "future_type", which this version doesn\'t know.',
+      'Deleting Changes by year for 2040 also deleted what it set for account type "other_type", which this version doesn\'t know.',
+      'Deleting Changes by year for 2040 also deleted its 2 lump sums totalling $10,000 to account type "future_type", which this version doesn\'t know.',
+      'Deleting Changes by year for 2040 also deleted its lump sum to parent category "Future", which this version doesn\'t know.',
     ]);
   });
 });

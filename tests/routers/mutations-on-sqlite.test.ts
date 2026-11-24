@@ -34,7 +34,6 @@ const NOT_YET_CALLED: Record<string, string> = {
   "savings.extraPaycheckRouting.saveGrowth": "no test yet (found by TS3)",
   "savings.extraPaycheckRouting.setEnabled": "no test yet (found by TS3)",
   "savings.extraPaycheckRouting.saveOverride": "no test yet (found by TS3)",
-  "retirement.projectionOverrides.clear": "no test yet (found by TS3)",
   "performance.updateCostBasis": "no test yet (found by TS3)",
   "investments.deleteHoldingPeriod": "no test yet (found by TS3)",
 };

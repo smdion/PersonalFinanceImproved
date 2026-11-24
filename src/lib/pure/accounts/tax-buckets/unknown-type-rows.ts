@@ -143,12 +143,10 @@ export type UnknownTargetLumpSum = {
   amount: unknown;
 };
 
-/** One note per year and target for the lump sums left out, in first-seen
- *  order, with their amount (summed, with the count, for more than one); no
- *  amount when one of them stores no number. */
-export function unknownLumpSumTargetNotes(
-  lumpSums: readonly UnknownTargetLumpSum[],
-): string[] {
+/** Lump sums grouped by year and target, in first-seen order: the target
+ *  worded, how many, and their total in whole dollars (null when one of them
+ *  stores no number). */
+function lumpSumGroups(lumpSums: readonly UnknownTargetLumpSum[]) {
   const groups = new Map<
     string,
     Omit<UnknownTargetLumpSum, "amount"> & { amounts: unknown[] }
@@ -159,17 +157,54 @@ export function unknownLumpSumTargetNotes(
     if (group) group.amounts.push(amount);
     else groups.set(key, { year, target, category, amounts: [amount] });
   }
-  return [...groups.values()].map((group) => {
-    const { year, category, amounts } = group;
-    const total = amounts.every(
+  return [...groups.values()].map(({ year, target, category, amounts }) => {
+    const sum = amounts.every(
       (a): a is number => typeof a === "number" && Number.isFinite(a),
     )
-      ? dollars(amounts.reduce((sum, a) => sum + a, 0))
+      ? amounts.reduce((total, a) => total + a, 0)
       : null;
-    const where = `in ${changesByYear(year)}`;
-    const target = `${TARGET_NAMES[group.target]} "${category}", which this version doesn't know`;
-    if (amounts.length === 1)
-      return `A lump sum ${total ? `of ${total} ` : ""}${where} goes to ${target}, so the projection leaves it out. Update Ledgr or change that lump sum.`;
-    return `${amounts.length} lump sums ${total ? `totalling ${total} ` : ""}${where} go to ${target}, so the projection leaves them out. Update Ledgr or change those lump sums.`;
+    return {
+      year,
+      target: `${TARGET_NAMES[target]} "${category}", which this version doesn't know`,
+      count: amounts.length,
+      total:
+        sum === null ? null : `${sum < 0 ? "-" : ""}${dollars(Math.abs(sum))}`,
+    };
   });
+}
+
+/** One note per year and target for the lump sums left out, in first-seen
+ *  order, with their amount (summed, with the count, for more than one); no
+ *  amount when one of them stores no number. */
+export function unknownLumpSumTargetNotes(
+  lumpSums: readonly UnknownTargetLumpSum[],
+): string[] {
+  return lumpSumGroups(lumpSums).map(({ year, target, count, total }) => {
+    const where = `in ${changesByYear(year)}`;
+    if (count === 1)
+      return `A lump sum ${total ? `of ${total} ` : ""}${where} goes to ${target}, so the projection leaves it out. Update Ledgr or change that lump sum.`;
+    return `${count} lump sums ${total ? `totalling ${total} ` : ""}${where} go to ${target}, so the projection leaves them out. Update Ledgr or change those lump sums.`;
+  });
+}
+
+/** The notes for a deleted Changes by year row's entries for types this
+ *  version doesn't know: each account type its fields named, then its lump
+ *  sums (`unknownLumpSumTargetNotes`' groups). */
+export function deletedRowUnknownTypeNotes(
+  year: string,
+  categories: readonly StoredAccountType[],
+  lumpSums: readonly UnknownTargetLumpSum[],
+): string[] {
+  const deleting = `Deleting ${changesByYear(year)} also deleted`;
+  return [
+    ...[...new Set(categories)].map(
+      (category) =>
+        `${deleting} what it set for account type "${category}", which this version doesn't know.`,
+    ),
+    ...lumpSumGroups(lumpSums).map(({ target, count, total }) =>
+      count === 1
+        ? `${deleting} its lump sum ${total ? `of ${total} ` : ""}to ${target}.`
+        : `${deleting} its ${count} lump sums ${total ? `totalling ${total} ` : ""}to ${target}.`,
+    ),
+  ];
 }
