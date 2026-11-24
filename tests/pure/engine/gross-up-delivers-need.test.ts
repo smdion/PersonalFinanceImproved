@@ -14,6 +14,13 @@
  *   - Never over: no need-sized year spends more than its budget. A solver
  *     that over-withdraws (the whole-balance failure) shows here, RMD years
  *     included, since RMD money beyond the need is reinvested, not spent.
+ *     It holds for these households, which never pay a penalty in an RMD
+ *     year (everyone is 60 or older; the whole-balance household is single
+ *     and has no RMD before 59½), not for every household: a per-owner RMD
+ *     reshape that moves a draw off a penalized account onto the RMD
+ *     owner's spends the penalty the draw was sized for and never pays,
+ *     until v0.11.1 EN2 D1 (answer key `engine/RX1-R`, an expected
+ *     failure).
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
