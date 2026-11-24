@@ -9,8 +9,7 @@ import type {
   TaxBuckets,
   EnginePart,
 } from "../accounts/account-balances.types";
-import { computeNiit } from "../tax/niit";
-import { yearMagi } from "@/lib/pure/tax/year-income";
+import { drawNiit } from "../tax/niit";
 import { roundToCents } from "../../utils/math";
 import { cloneAccountBalances } from "./balance-utils";
 import {
@@ -227,20 +226,7 @@ function evaluateCost(
     taxResult = price(taxableSS);
   }
   // NIIT as the year handler charges it; conversions (later) stay out of MAGI.
-  const niitMagi = yearMagi(
-    {
-      wages: 0,
-      traditionalDraws: taxResult.totalTraditionalWithdrawal,
-      rothTaxableGrowth: taxResult.rothTaxableGrowth,
-      rothConversions: 0,
-      realizedGains: taxResult.brokerageGainsPortion,
-      socialSecurity: { taxable: taxableSS },
-    },
-    "niit",
-  );
-  const niit = filingStatus
-    ? computeNiit(niitMagi, taxResult.brokerageGainsPortion, filingStatus)
-    : 0;
+  const niit = drawNiit(taxResult, taxableSS, filingStatus);
   const taxCost = roundToCents(taxResult.taxCost + niit);
   const totalCost = roundToCents(taxCost + taxResult.penaltyCost);
   // What the withdrawal itself must cover (Social Security's surplus pays

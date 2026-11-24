@@ -4306,9 +4306,6 @@
     }
   },
   "src/lib/pure/engine/withdrawal-solver.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 19
     },
