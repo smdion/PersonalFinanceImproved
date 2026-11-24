@@ -132,7 +132,9 @@ describe(`conversion variant: ${KEY}`, () => {
 
   it("converts, paying the tax from its Retirement brokerage", () => {
     expect(converting().length).toBeGreaterThan(0);
-    expect(converting().every((y) => (y.rothConversionTaxCost ?? 0) > 0)).toBe(
+    // Some years convert only the room that costs no tax (an empty
+    // brokerage pays none, and a short one shrinks the conversion).
+    expect(converting().some((y) => (y.rothConversionTaxCost ?? 0) > 0)).toBe(
       true,
     );
     const brokerage = (y: YearRow) =>

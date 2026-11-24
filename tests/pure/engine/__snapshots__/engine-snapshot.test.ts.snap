@@ -1671,20 +1671,20 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
     },
     {
       "category": "brokerage",
-      "depletionAge": 79,
-      "depletionYear": 2032,
+      "depletionAge": 78,
+      "depletionYear": 2031,
       "subType": undefined,
     },
     {
       "category": "401k",
-      "depletionAge": 89,
-      "depletionYear": 2042,
+      "depletionAge": 85,
+      "depletionYear": 2038,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 94,
-    "allAccountsBalance": 4132183.51,
+    "allAccountsBalance": 4127863.37,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2208,7 +2208,7 @@ exports[`engine snapshot parity > fixture 41: rothConversionTarget override via 
   ],
   "finalYear": {
     "age": 89,
-    "allAccountsBalance": 2199785.17,
+    "allAccountsBalance": 2209626.3,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2897,7 +2897,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
   ],
   "finalYear": {
     "age": 89,
-    "allAccountsBalance": 2508447.35,
+    "allAccountsBalance": 2506846.75,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2952,7 +2952,7 @@ exports[`engine snapshot parity > fixture 55: IRMAA awareness disabled, income n
   ],
   "finalYear": {
     "age": 89,
-    "allAccountsBalance": 2502570.37,
+    "allAccountsBalance": 2501207.25,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3298,7 +3298,7 @@ exports[`engine snapshot parity > fixture 61: Two-person household with age gap 
   ],
   "finalYear": {
     "age": 94,
-    "allAccountsBalance": 3976345.15,
+    "allAccountsBalance": 3969573.19,
   },
   "firstOverflowAge": 64,
   "firstOverflowAmount": 11464,

@@ -1681,7 +1681,9 @@ describe("engine snapshot parity", () => {
     // v0.9.2: the shipped 2026 IRMAA table was corrected to CMS's (it held
     // 2024 thresholds and estimated surcharges) — cliffs moved up, surcharges
     // too.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(4132183.51);
+    // v0.11.1 CV1: a brokerage short of the conversion tax shrinks the
+    // conversion instead of skipping it.
+    expect(metrics.finalYear?.allAccountsBalance).toBe(4127863.37);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -2312,7 +2314,8 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(60000);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2199785.17);
+    // v0.11.1 CV1, as fixture 31.
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2209626.3);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2922,7 +2925,8 @@ describe("engine snapshot parity", () => {
     // No `taxDataYear`, so IRMAA stays flat like every other table (it
     // alone used to grow from a built-in 2026; v0.9.0). v0.9.2: the
     // corrected 2026 IRMAA table, as fixture 31.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2508447.35);
+    // v0.11.1 CV1, as fixture 31.
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2506846.75);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -3005,7 +3009,8 @@ describe("engine snapshot parity", () => {
     expect(result.sustainableWithdrawal).toBe(46428.57);
     // Same rmd-enforcement.ts residual fix
     // as fixture 31.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2502570.37);
+    // v0.11.1 CV1, as fixture 31.
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2501207.25);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
@@ -3374,7 +3379,8 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(75645);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(3976345.15);
+    // v0.11.1 CV1, as fixture 31.
+    expect(metrics.finalYear?.allAccountsBalance).toBe(3969573.19);
     expect(metrics).toMatchSnapshot();
   });
 

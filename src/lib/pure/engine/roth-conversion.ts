@@ -25,7 +25,7 @@ import {
 } from "./individual-accounts/conversion";
 import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
-import { conversionTaxCost } from "./conversion-tax";
+import { conversionTaxPaid } from "./conversion-tax";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
@@ -234,22 +234,21 @@ export function performRothConversion(
     return zero();
   }
 
-  const taxCostOfConversion = conversionTaxCost(yearTaxableIncome, conversion, {
-    taxBrackets,
-    taxMultiplier,
-    standardDeduction,
-  });
-
-  // Pay tax from brokerage, else skip: with exclusion data, only
-  // Retirement-parented money counts (a hard gate).
+  // The tax is paid from brokerage, never Traditional or Roth; with exclusion data only
+  // Retirement-parented money counts. A short brokerage shrinks the conversion.
   const retirementOnlyAfterTax =
     nonRetirement && overflowCat
       ? roundToCents(balances.afterTax - nonRetirement.total[overflowCat])
       : balances.afterTax;
-  if (retirementOnlyAfterTax < taxCostOfConversion) {
-    // If brokerage can't cover tax, skip conversion (don't sell Traditional to pay tax on itself)
-    return zero();
-  }
+  const paid = conversionTaxPaid(
+    yearTaxableIncome,
+    conversion,
+    retirementOnlyAfterTax,
+    { taxBrackets, taxMultiplier, standardDeduction },
+  );
+  if (paid.conversion <= 0) return zero();
+  conversion = paid.conversion;
+  const taxCostOfConversion = paid.tax;
 
   // Move balance: Traditional → Roth
   balances.preTax = roundToCents(balances.preTax - conversion);

@@ -103,6 +103,53 @@ describe("answer key: the conversion amount and its tax", () => {
     cents(r.rothConversionAmount, 30_000);
   });
 
+  it("ret/RET10-5 [RET-10] a short brokerage converts what its tax can pay, solved across the band edge", () => {
+    // Decision D4 (UD-08): the conversion's tax comes from the brokerage,
+    // and a short brokerage shrinks the conversion to what it can pay.
+    // RET10-1's year (tax without 1,780.00) with 4,300 of brokerage, short
+    // of 83,000's 9,820. The year's tax may reach 1,780 + 4,300 = 6,080:
+    // the 10% band ends at taxable 24,800 (tax 2,480), so 6,080 − 2,480
+    // = 3,600 at 12% = 30,000 more, taxable 54,800, gross 87,000: 37,000
+    // (7,000 at 10% + 30,000 at 12% = 4,300.00). The tax is charged to the
+    // cent, so each further cent adds 0.0012 and four still round to
+    // 4,300.00 (0.0048); a fifth would be 4,300.01. Converted 37,000.04,
+    // all the brokerage paid.
+    const r = convert({
+      traditional: 50_000,
+      preTax: 500_000,
+      afterTax: 4_300,
+    });
+    cents(
+      {
+        amount: r.rothConversionAmount,
+        tax: r.rothConversionTaxCost,
+        brokerage: r.balances.afterTax,
+      },
+      { amount: 37_000.04, tax: 4_300, brokerage: 0 },
+    );
+  });
+
+  it("ret/RET10-6 [RET-10] the shrunk conversion is the largest cent whose tax rounds within the brokerage", () => {
+    // RET10-5 with 5,000 of brokerage: 5,000 − 700 (the 10% part) =
+    // 4,300 at 12% = 35,833.333…, so 42,833.33 costs 700 + 4,299.9996 =
+    // 4,999.9996. The tax is charged to the cent: 42,833.37 costs
+    // 5,000.0044 → 5,000.00, 42,833.38 costs 5,000.0056 → 5,000.01.
+    // Converted 42,833.37; the brokerage is left at 0.
+    const r = convert({
+      traditional: 50_000,
+      preTax: 500_000,
+      afterTax: 5_000,
+    });
+    cents(
+      {
+        amount: r.rothConversionAmount,
+        tax: r.rothConversionTaxCost,
+        brokerage: r.balances.afterTax,
+      },
+      { amount: 42_833.37, tax: 5_000, brokerage: 0 },
+    );
+  });
+
   it("ret/RET11-1 [RET-11] the tax is the year's tax with it less without it", () => {
     // RET10-1's year. Without: TI 50,000 − 32,200 = 17,800, 10% = 1,780.
     // With 83,000: TI 133,000 − 32,200 = 100,800: 2,480 + 12% × 76,000 =

@@ -236,14 +236,18 @@ function makeMainHousehold(
 }
 
 /**
- * A separate, smaller household deliberately tuned so a low
- * `rothBracketTarget` (0.10) survives to end of plan while every higher
- * candidate (0.12+) genuinely depletes at age 94 (one year before
- * `projectionEndAge`) — found empirically by sweeping starting balance
- * against this same shape. Exists purely to exercise the hard-exclusion
- * path; its absolute dollar figures aren't pinned to anything external.
+ * A separate, smaller household tuned so the low targets (0.10, 0.12)
+ * survive to end of plan while the higher candidates (0.22+, the current
+ * one among them) genuinely deplete — found by sweeping the Traditional
+ * balance, brokerage and spending of this shape. Exists to exercise the
+ * hard-exclusion path; its dollar figures aren't pinned to anything
+ * external. `shape` overrides the three swept inputs.
  */
-function makeDepletionHousehold(currentTarget: number): ProjectionInput {
+function makeDepletionHousehold(
+  currentTarget: number,
+  shape = { preTax: 1_700_000, brokerage: 50_000, expenses: 70_000 },
+): ProjectionInput {
+  const { preTax, brokerage, expenses } = shape;
   return engineInput(
     withCapsAge({
       budgetContributionLines: 0,
@@ -319,25 +323,29 @@ function makeDepletionHousehold(currentTarget: number): ProjectionInput {
         brokerage: 0,
       },
       startingBalances: {
-        preTax: 1500000,
+        preTax,
         taxFree: 0,
-        afterTax: 0,
-        afterTaxBasis: 0,
+        afterTax: brokerage,
+        afterTaxBasis: brokerage,
         hsa: 0,
       },
       startingAccountBalances: {
         "401k": {
           structure: "roth_traditional",
-          traditional: 1500000,
+          traditional: preTax,
           roth: 0,
         },
         "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
         hsa: { structure: "single_bucket", balance: 0 },
         ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
-        brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: brokerage,
+          basis: brokerage,
+        },
       },
-      annualExpenses: 60000,
-      decumulationAnnualExpenses: 60000,
+      annualExpenses: expenses,
+      decumulationAnnualExpenses: expenses,
       inflationRate: 0.025,
       returnRates: [{ label: "4%", rate: 0.04 }],
       socialSecurityAnnual: 0,
@@ -358,8 +366,10 @@ describe("optimizeRothBracketTarget", () => {
     const at22 = result.candidates.find((c) => c.target === 0.22)!;
     expect(at12.netCost).toBeCloseTo(261565, -1);
     // The 22% path's IRMAA ($13,860.25 over the plan) counts whether or
-    // not IRMAA awareness is on.
-    expect(at22.netCost).toBeCloseTo(310541, -1);
+    // not IRMAA awareness is on. CV1 (v0.11.1): its years whose brokerage
+    // can't pay the whole conversion tax now convert what it can pay
+    // instead of skipping, $310,541 → $304,582.
+    expect(at22.netCost).toBeCloseTo(304582, -1);
     expect(result.recommendedTarget).toBe(0.12);
   });
 
@@ -467,16 +477,40 @@ describe("optimizeRothBracketTarget", () => {
 
   it("hard-excludes a candidate that genuinely depletes, regardless of its netCost", () => {
     const result = optimizeRothBracketTarget(makeDepletionHousehold(0.22));
-    const at10 = result.candidates.find((c) => c.target === 0.1)!;
-    const others = result.candidates.filter((c) => c.target !== 0.1);
-    expect(at10.depleted).toBe(false);
-    for (const c of others) {
-      expect(c.depleted).toBe(true);
-    }
-    // The only non-depleted candidate wins even though it isn't
-    // artificially the cheapest by construction -- depletion is a hard
-    // exclusion, not a ranking input averaged against netCost.
-    expect(result.recommendedTarget).toBe(0.1);
+    const survivors = result.candidates.filter((c) => !c.depleted);
+    expect(survivors.map((c) => c.target).sort()).toEqual([0.1, 0.12]);
+    // The current 0.22 and every higher target deplete, and rank after
+    // every survivor -- depletion is a hard exclusion, not a ranking
+    // input averaged against netCost.
+    const order = result.candidates.map((c) => c.depleted);
+    expect(order).toEqual([false, false, true, true, true]);
+    expect(result.recommendedTarget).toBe(result.candidates[0]!.target);
+    expect([0.1, 0.12]).toContain(result.recommendedTarget);
+  });
+
+  it("an empty brokerage still converts the tax-free room, so no candidate depletes (CV1)", () => {
+    // A conversion's tax comes only from the brokerage, and a short
+    // brokerage shrinks the conversion to what it can pay: with none, to
+    // the room that costs no tax. The earlier depletion shape (empty
+    // brokerage, 1,500,000 Traditional, 60,000 of spending) skipped every
+    // conversion; now each candidate survives and 0.12 is the cheapest.
+    const shape = { preTax: 1_500_000, brokerage: 0, expenses: 60_000 };
+    const years = calculateProjection(
+      makeDepletionHousehold(0.1, shape),
+    ).projectionByYear;
+    expect(
+      years.some(
+        (y) =>
+          y.phase === "decumulation" &&
+          (y.rothConversionAmount ?? 0) > 0 &&
+          (y.rothConversionTaxCost ?? 0) === 0,
+      ),
+    ).toBe(true);
+    const result = optimizeRothBracketTarget(
+      makeDepletionHousehold(0.22, shape),
+    );
+    expect(result.candidates.every((c) => !c.depleted)).toBe(true);
+    expect(result.recommendedTarget).toBe(0.12);
   });
 
   it("with enableRothConversions off, searches rothBracketTarget alone (no joint conversion-target movement)", () => {

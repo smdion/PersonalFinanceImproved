@@ -180,8 +180,10 @@ describe("performRothConversion", () => {
     expect(result.rothConversionAmount).toBe(0);
   });
 
-  it("skips conversion when brokerage can't cover tax cost", () => {
-    // Very small brokerage balance can't cover tax
+  it("shrinks the conversion to what the brokerage can pay the tax of (CV1)", () => {
+    // $1 of brokerage can't pay the ~46,175 conversion's tax; income
+    // 50,000 sits in the 12% band, so $1 pays the largest cent whose tax
+    // rounds to ≤ $1.00: 8.37 (1.0044 → $1.00; 8.38 costs 1.0056 → $1.01).
     const balances = makeTaxBuckets({ afterTax: 1, afterTaxBasis: 0 });
     const accountBalance = makeAccountBalances({
       afterTax: 1,
@@ -190,8 +192,9 @@ describe("performRothConversion", () => {
     const result = performRothConversion(
       makeRothInput({ balances, accountBalance }),
     );
-    // Conversion of ~46175 would have tax > $1
-    expect(result.rothConversionAmount).toBe(0);
+    expect(result.rothConversionAmount).toBe(8.37);
+    expect(result.rothConversionTaxCost).toBe(1);
+    expect(balances.afterTax).toBe(0);
   });
 
   it("prefers rothConversionTarget over rothBracketTarget", () => {
@@ -755,7 +758,7 @@ describe("performRothConversion (nonRetirement scope)", () => {
     expect(result.rothConversionAmount).toBeGreaterThan(0);
   });
 
-  it("skips the conversion entirely when Retirement-only brokerage can't cover the tax cost, even though blended brokerage could", () => {
+  it("shrinks the conversion to what the Retirement-only brokerage can pay, even though blended brokerage could pay it all", () => {
     const ia = declareOpeningParts(
       [
         makeIndividualAccount({
@@ -802,8 +805,12 @@ describe("performRothConversion (nonRetirement scope)", () => {
         nonRetirement,
       }),
     );
-    expect(result.rothConversionAmount).toBe(0);
-    expect(result.rothConversionTaxCost).toBe(0);
+    // Income 50,000 in the 12% band: the $500 Retirement brokerage pays
+    // the largest cent whose tax rounds to ≤ $500.00: 4,166.70 (500.004 →
+    // $500.00; 4,166.71 costs 500.0052 → $500.01); the Portfolio brokerage
+    // pays none of it.
+    expect(result.rothConversionAmount).toBe(4_166.7);
+    expect(result.rothConversionTaxCost).toBe(500);
   });
 
   it("byte-identical to the prior behavior when nonRetirement (and ind* data) are omitted entirely -- the real call site's actual fallback shape", () => {

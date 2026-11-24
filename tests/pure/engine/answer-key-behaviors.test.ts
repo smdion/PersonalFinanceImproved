@@ -22,8 +22,8 @@
  * The D4, D12.x and D12.18 cases below read year 1 (2027), clear of year
  * 0's share (D2), unless a case says otherwise.
  */
-import { describe } from "vitest";
-import { xfail } from "../../fixtures/answer-key";
+import { describe, it } from "vitest";
+import { cents, xfail } from "../../fixtures/answer-key";
 import { calculateProjection } from "@/lib/pure/engine";
 import type {
   EngineYearProjection,
@@ -34,7 +34,6 @@ import { acct, household } from "../fixtures/two-person-household";
 const D2 = `v0.11.1 EN2 D2 "Prorate year-0 spending and contributions alike" (decision D2, UD-01)`;
 const EN3 = `v0.11.1 EN3 "Retirement year = this year with no earner runs year 0 as accumulation"`;
 const D6 = `v0.11.1 EN2 D6 "Income above spending is reinvested in a taxable brokerage" (decision D6, UD-03)`;
-const D4 = `v0.11.1 EN2 D4 "Conversion tax from brokerage first, never Roth; a short brokerage shrinks the conversion" (decision D4, UD-08)`;
 const D12_2 = `v0.11.1 EN2 D12.2 "Contribution limits grow by IRS indexing, rounded down by each limit's rule" (decision D12.2, UD-12)`;
 const D12_3 = `v0.11.1 EN2 D12.3 "Social Security starts in the claim month" (decision D12.3, UD-13)`;
 const D12_8 = `v0.11.1 EN2 D12.8 "A goal draw is grossed up for its tax from the same brokerage" (decision D12.8, UD-20)`;
@@ -185,40 +184,36 @@ describe("answer key: a brokerage too small for the conversion's tax (decision D
   // than the brokerage's 5,000 can pay 10% on. D4: the tax comes from the
   // brokerage, never the Roth, and a short brokerage shrinks the
   // conversion to what it can pay: 5,000 ÷ 10% = 50,000 converted, all
-  // 5,000 of brokerage spent. Today the whole conversion is skipped when
-  // the brokerage can't pay all of its tax (`roth-conversion.ts`, "skip
-  // conversion").
-  xfail({
-    id: "engine/D4 [RET-11]",
-    todo: D4,
-    run: () => {
-      const y0 = retiredRow(
-        years(
-          {},
-          [
-            acct("Bo IRA", "ira", 400_000, 2),
-            acct("Bo Roth IRA", "ira", 100_000, 2, "taxFree"),
-            acct("Bo brokerage", "brokerage", 5_000, 2, "afterTax"),
+  // 5,000 of brokerage spent. (Until v0.11.1's CV1 the whole conversion
+  // was skipped when the brokerage couldn't pay all of its tax.)
+  it("engine/D4 [RET-11] a short brokerage shrinks the conversion to the tax it can pay", () => {
+    const y0 = retiredRow(
+      years(
+        {},
+        [
+          acct("Bo IRA", "ira", 400_000, 2),
+          acct("Bo Roth IRA", "ira", 100_000, 2, "taxFree"),
+          acct("Bo brokerage", "brokerage", 5_000, 2, "afterTax"),
+        ],
+        taxRates({
+          taxBrackets: [
+            { threshold: 0, baseWithholding: 0, rate: 0.1 },
+            { threshold: 500_000, baseWithholding: 50_000, rate: 0.37 },
           ],
-          taxRates({
-            taxBrackets: [
-              { threshold: 0, baseWithholding: 0, rate: 0.1 },
-              { threshold: 500_000, baseWithholding: 50_000, rate: 0.37 },
-            ],
-            enableRothConversions: true,
-            rothConversionTarget: 0.1,
-          }),
-        ),
-        2026,
-      );
-      return {
+          enableRothConversions: true,
+          rothConversionTarget: 0.1,
+        }),
+      ),
+      2026,
+    );
+    cents(
+      {
         converted: y0.rothConversionAmount,
         conversionTax: y0.rothConversionTaxCost,
         brokerage: y0.balanceByTaxType.afterTax,
-      };
-    },
-    expected: { converted: 50_000, conversionTax: 5_000, brokerage: 0 },
-    today: { converted: 0, conversionTax: 0, brokerage: 5_000 },
+      },
+      { converted: 50_000, conversionTax: 5_000, brokerage: 0 },
+    );
   });
 });
 
