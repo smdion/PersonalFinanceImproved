@@ -1,13 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { storedProfileFilingStatus } from "@/lib/pure/tax/filing-status";
+import { readProfileFilingStatus } from "@/lib/pure/tax/filing-status";
 
-describe("storedProfileFilingStatus", () => {
-  it("reads null as Auto and a known status as itself", () => {
-    expect(storedProfileFilingStatus(null)).toBeNull();
-    expect(storedProfileFilingStatus("HOH")).toBe("HOH");
+describe("readProfileFilingStatus", () => {
+  it("reads null as Auto and a known status as itself, with no note", () => {
+    expect(readProfileFilingStatus(null)).toEqual({ value: null, notes: [] });
+    expect(readProfileFilingStatus("HOH")).toEqual({
+      value: "HOH",
+      notes: [],
+    });
   });
 
-  it("stops on a stored value outside the three", () => {
-    expect(() => storedProfileFilingStatus("MFS")).toThrow(/"MFS"/);
+  it("reads a stored value outside the four as Auto, with a note naming it", () => {
+    expect(readProfileFilingStatus("MFS")).toEqual({
+      value: null,
+      notes: [
+        "The Retirement Profile's saved filing status \"MFS\" isn't one this version knows, so the projection uses Auto (this year's status). Update Ledgr or pick a filing status.",
+      ],
+    });
   });
 });

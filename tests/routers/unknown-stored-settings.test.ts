@@ -90,3 +90,44 @@ describe("a stored withdrawal strategy this version doesn't know", () => {
     expect(storedRow(ctx, personId)?.withdrawalStrategy).toBe("bucket");
   });
 });
+
+describe("a stored Retirement Profile filing status this version doesn't know", () => {
+  let ctx: Ctx;
+  let personId: number;
+  const NOTE =
+    "The Retirement Profile's saved filing status \"MFS\" isn't one this version knows, so the projection uses Auto (this year's status). Update Ledgr or pick a filing status.";
+
+  beforeAll(async () => {
+    // A hand edit: the column's type admits only the four statuses.
+    ({ ctx, personId } = await householdWith({
+      filingStatus: "MFS" as never,
+    }));
+  });
+  afterAll(() => ctx.cleanup());
+
+  it("the projection runs on Auto and says so, once", async () => {
+    const response = await ctx.caller.projection.computeProjection({});
+    expect(response.result!.warnings.filter((w) => w === NOTE)).toHaveLength(1);
+  });
+
+  it("this year's status reads it as Auto too (the high-income line)", async () => {
+    const line = await ctx.caller.contribution.computeHighIncomeLine();
+    expect(line.basis).not.toBe("MFS");
+    expect(Number.isFinite(line.threshold)).toBe(true);
+  });
+
+  it("the stored status is kept, also by a save of another field", async () => {
+    await ctx.caller.retirement.retirementSettings.upsert({
+      personId,
+      retirementAge: 66,
+      endAge: 90,
+      returnAfterRetirement: "0.05",
+      annualInflation: "0.03",
+      salaryAnnualIncrease: "0.02",
+    });
+    expect(storedRow(ctx, personId)).toMatchObject({
+      retirementAge: 66,
+      filingStatus: "MFS",
+    });
+  });
+});

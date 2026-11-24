@@ -7,6 +7,7 @@ import type {
   W4FilingStatus,
 } from "@/lib/config/filing-status";
 import {
+  readProfileFilingStatus,
   taxFilingStatusSetting,
   type FilingStatusSource,
 } from "@/lib/pure/tax/filing-status";
@@ -34,8 +35,9 @@ export async function thisYearFilingStatus(
   db: DbOrTx,
   args: {
     appSettings: readonly { key: string; value: unknown }[];
-    /** The active Retirement Profile's (null = Auto / none). */
-    profileStatus: ReturnFilingStatus | null | undefined;
+    /** The active Retirement Profile's as stored (null = Auto / none; a
+     *  value this version doesn't know reads as Auto: readProfileFilingStatus). */
+    profileStatus: string | null | undefined;
     people: readonly { id: number; isPrimaryUser: boolean }[];
     /** The request's date: the jobs held this year. */
     asOf: Date;
@@ -48,8 +50,8 @@ export async function thisYearFilingStatus(
 }> {
   const household = taxFilingStatusSetting(args.appSettings);
   if (household) return { status: household, source: "household" };
-  if (args.profileStatus)
-    return { status: args.profileStatus, source: "retirementProfile" };
+  const profile = readProfileFilingStatus(args.profileStatus ?? null).value;
+  if (profile) return { status: profile, source: "retirementProfile" };
   const w4 = await w4FilingStatusOf(
     db,
     primaryFirst(args.people),

@@ -6,7 +6,6 @@
 import {
   filingRules,
   parseReturnFilingStatus,
-  RETURN_FILING_STATUS_VALUES,
   type ReturnFilingStatus,
   type W4FilingStatus,
 } from "@/lib/config/filing-status";
@@ -49,16 +48,18 @@ export function retirementFilingStatus(
 }
 
 /** A Retirement Profile's stored status, null meaning Auto. The column has
- *  no CHECK and a restore copies rows as they are, so any other value stops
- *  the projection rather than leaving it without withholding brackets. */
-export function storedProfileFilingStatus(
-  stored: string | null,
-): ReturnFilingStatus | null {
-  if (stored === null) return null;
-  const status = parseReturnFilingStatus(stored);
-  if (!status)
-    throw new Error(
-      `The Retirement Profile's filing status "${stored}" isn't one Ledgr knows (${RETURN_FILING_STATUS_VALUES.join(", ")}).`,
-    );
-  return status;
+ *  no CHECK and a restore copies rows as they are, so any other value reads
+ *  as Auto too, with the note that names it (it stays stored). */
+export function readProfileFilingStatus(stored: string | null): {
+  value: ReturnFilingStatus | null;
+  notes: string[];
+} {
+  const value = parseReturnFilingStatus(stored);
+  if (value || stored === null) return { value, notes: [] };
+  return {
+    value: null,
+    notes: [
+      `The Retirement Profile's saved filing status "${stored}" isn't one this version knows, so the projection uses Auto (this year's status). Update Ledgr or pick a filing status.`,
+    ],
+  };
 }

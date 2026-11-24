@@ -1,6 +1,7 @@
 /** The engine payload's starting accounts. */
 import type * as schema from "@/lib/db/schema";
 import { retirementProfileIsFallback } from "@/lib/pure/household/retirement-profile";
+import { readProfileFilingStatus } from "@/lib/pure/tax/filing-status";
 import { resolveRmdExcessTarget } from "@/lib/pure/retirement/rmd-excess-target";
 import {
   findMissingCostBasis,
@@ -102,6 +103,7 @@ export function startingAccounts(
     activeProfileId !== opts.retirementProfileId &&
     retirementProfileIsFallback(allAppSettings, retProfiles);
   const inputWarnings = [
+    ...readProfileFilingStatus(settings.filingStatus).notes,
     ...(viewingFallbackProfile
       ? [
           `No active retirement profile is set, so this uses ${retProfiles.find((p) => p.id === activeProfileId)?.name}. Choose one in the Retirement profiles.`,

@@ -17,8 +17,8 @@ import {
   stockShareByAge,
 } from "@/lib/pure/simulation/stock-share";
 import {
+  readProfileFilingStatus,
   retirementFilingStatus,
-  storedProfileFilingStatus,
 } from "@/lib/pure/tax/filing-status";
 import { thisYearFilingStatus } from "@/server/services/tax/filing-status";
 import {
@@ -151,7 +151,7 @@ export async function buildEnginePayload(
   // This year's return, and retirement years' (the profile's, or "Auto" =
   // this year's) — lib/pure/tax/filing-status.ts. Nothing known: the cautious
   // fallback, and the household is asked (a recommendation).
-  const profileStatus = storedProfileFilingStatus(settings.filingStatus);
+  const profileStatus = readProfileFilingStatus(settings.filingStatus).value;
   const thisYearFiling = await thisYearFilingStatus(db, {
     appSettings: allAppSettings,
     profileStatus,
