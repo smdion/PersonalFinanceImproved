@@ -65,7 +65,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 | `individual-accounts/contributions.ts`  | Contributions, match, overflow and ramp spread to each account.                                                                                                     |
 | `individual-accounts/other-tax-part.ts` | Slot money of a tax type no spec in its category carries, onto the spec account's part of that tax type.                                                            |
 | `individual-accounts/withdrawals.ts`    | Withdrawals and brokerage goal draws spread to each account.                                                                                                        |
-| `individual-accounts/reconcile.ts`      | Year end per account: each account's row, clamps, and `reconcileIndividualToAggregate`.                                                                             |
+| `individual-accounts/reconcile.ts`      | Year end per account: each account's row, clamps, and `reconcileIndividualToAggregate`; one group's reconciling is `reconcile-group.ts`.                            |
 
 **Withdrawals and tax**
 
