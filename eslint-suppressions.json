@@ -2395,12 +2395,17 @@
       "count": 3
     }
   },
+  "src/components/retirement-projection/withdrawal-comparison-chart.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 2
+    }
+  },
   "src/components/retirement-projection/withdrawal-comparison.tsx": {
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 9
+      "count": 7
     }
   },
   "src/components/retirement/assumptions-band.tsx": {

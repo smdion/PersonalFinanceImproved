@@ -194,7 +194,8 @@
     "src/components/retirement-projection/tooltip-renderer.tsx": 407,
     "src/components/retirement-projection/use-projection-derived.ts": 614,
     "src/components/retirement-projection/use-projection-queries.ts": 814,
-    "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
+    "src/components/retirement-projection/withdrawal-comparison-chart.tsx": 114,
+    "src/components/retirement-projection/withdrawal-comparison.tsx": 463,
     "src/components/retirement/assumptions-band.tsx": 404,
     "src/components/retirement/sections/taxes.tsx": 534,
     "src/components/savings/api-sync-section.tsx": 588,
@@ -772,7 +773,7 @@
       "useProjectionQueries": 776
     },
     "src/components/retirement-projection/withdrawal-comparison.tsx": {
-      "WithdrawalComparisonCard": 477
+      "WithdrawalComparisonCard": 406
     },
     "src/components/retirement/assumptions-band.tsx": {
       "AssumptionsBand": 325
