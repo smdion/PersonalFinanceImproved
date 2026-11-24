@@ -12,8 +12,16 @@ import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
 import {
   accountCategoryEnum,
   getDefaultDecumulationOrder,
+  isKnownCategory,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
+import {
+  knownCategoryList,
+  knownCategoryRecord,
+  unknownCategoryNote,
+  unknownLumpSumTargetNotes,
+  type UnknownTargetLumpSum,
+} from "@/lib/pure/accounts/tax-buckets/unknown-type-rows";
 import type {
   AccumulationOverride,
   DecumulationDefaults,
@@ -87,45 +95,133 @@ export const accumulationOverrideArraySchema = z.array(
   }),
 );
 
-/** The household's saved set of one kind, parsed: a set its schema refuses
- *  (the save path stores any records) is dropped, logged once (FALLBACKS). */
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** Each kind's per-category fields: lists and records of account categories. */
+const CATEGORY_FIELDS = {
+  accumulation: ["accountOrder", "accountSplits", "taxSplits", "accountCaps"],
+  decumulation: [
+    "withdrawalOrder",
+    "withdrawalSplits",
+    "withdrawalAccountCaps",
+    "withdrawalTaxPreference",
+  ],
+} as const;
+
+/** What `withKnownCategories` drops: a note per category left out of a
+ *  row's fields, and each lump sum left out (`unknownLumpSumTargetNotes`). */
+type CategoryDrops = { notes: string[]; lumpSums: UnknownTargetLumpSum[] };
+
+/** A saved row with each unknown account type dropped from its fields (a list
+ *  emptied is removed: the row sets none) and each lump sum to one left out,
+ *  into `drops`; anything else as stored, for its shape's check (FALLBACKS). */
+function withKnownCategories(
+  row: unknown,
+  fields: readonly string[],
+  drops: CategoryDrops,
+): unknown {
+  if (!isRecord(row)) return row;
+  const year = String(row.year);
+  const kept: Record<string, unknown> = { ...row };
+  for (const field of fields) {
+    const value = row[field];
+    const read = Array.isArray(value)
+      ? knownCategoryList(value)
+      : isRecord(value)
+        ? knownCategoryRecord(value)
+        : null;
+    if (read === null || read.unknown.length === 0) continue;
+    if (Array.isArray(read.known) && read.known.length === 0)
+      delete kept[field];
+    else kept[field] = read.known;
+    for (const category of read.unknown)
+      drops.notes.push(
+        unknownCategoryNote(category, `Changes by year for ${year}`),
+      );
+  }
+  if (Array.isArray(row.lumpSums))
+    kept.lumpSums = row.lumpSums.filter((lumpSum: unknown) => {
+      if (!isRecord(lumpSum)) return true;
+      const { targetAccount: category, amount } = lumpSum;
+      if (typeof category !== "string" || isKnownCategory(category))
+        return true;
+      drops.lumpSums.push({ year, category, amount });
+      return false;
+    });
+  return kept;
+}
+
+/** The household's saved set of one kind, parsed after `withKnownCategories`
+ *  (its drops in `drops`); a set its schema still refuses (the save path
+ *  stores any records) is dropped, logged once (FALLBACKS). */
 async function savedOverrides<S extends z.ZodType>(
   db: Db,
   overrideType: "accumulation" | "decumulation",
   shape: S,
+  drops: CategoryDrops,
 ): Promise<z.output<S> | []> {
   const rows = await db
     .select({ overrides: schema.projectionOverrides.overrides })
     .from(schema.projectionOverrides)
     .where(eq(schema.projectionOverrides.overrideType, overrideType));
+  const stored: unknown = rows[0]?.overrides ?? [];
+  const dropped: CategoryDrops = { notes: [], lumpSums: [] };
   const read = readStoredShape(
-    rows[0]?.overrides ?? [],
+    Array.isArray(stored)
+      ? stored.map((row: unknown) =>
+          withKnownCategories(row, CATEGORY_FIELDS[overrideType], dropped),
+        )
+      : stored,
     shape,
     storedValueLog(`projection_overrides.${overrideType}`),
   );
+  if (!read.fits) return [];
+  drops.notes.push(...dropped.notes);
+  drops.lumpSums.push(...dropped.lumpSums);
   // The parsed copy (unnamed keys stripped), as the engine has always had.
-  return read.fits ? shape.parse(read.value) : [];
+  return shape.parse(read.value);
 }
 
 /** The "Changes by year" every projection runs with (relocation and the
  *  strategy comparison too), as engine types: what the caller sent, else
- *  the household's saved sets (`savedOverrides`). */
+ *  the household's saved sets (`savedOverrides`, its notes in `notes`). */
 export async function resolveProjectionOverrides(
   db: Db,
   input: {
     accumulationOverrides?: z.infer<typeof accumulationOverrideArraySchema>;
     decumulationOverrides?: z.infer<typeof decumulationOverrideArraySchema>;
   },
+  notes: string[] = [],
 ): Promise<{
   accumulationOverrides: AccumulationOverride[];
   decumulationOverrides: DecumulationOverride[];
 }> {
+  // Each kind's drops apart, then in this order whichever read ends first.
+  const kinds: [CategoryDrops, CategoryDrops] = [
+    { notes: [], lumpSums: [] },
+    { notes: [], lumpSums: [] },
+  ];
   const [accumulationOverrides, decumulationOverrides] = await Promise.all([
     input.accumulationOverrides ??
-      savedOverrides(db, "accumulation", accumulationOverrideArraySchema),
+      savedOverrides(
+        db,
+        "accumulation",
+        accumulationOverrideArraySchema,
+        kinds[0],
+      ),
     input.decumulationOverrides ??
-      savedOverrides(db, "decumulation", decumulationOverrideArraySchema),
+      savedOverrides(
+        db,
+        "decumulation",
+        decumulationOverrideArraySchema,
+        kinds[1],
+      ),
   ]);
+  notes.push(
+    ...kinds.flatMap((k) => k.notes),
+    ...unknownLumpSumTargetNotes(kinds.flatMap((k) => k.lumpSums)),
+  );
   return { accumulationOverrides, decumulationOverrides };
 }
 
@@ -136,9 +232,31 @@ const storedRouting = z.looseObject({
   withdrawalSplits: storedWithdrawalSplitsSchema.nullish(),
 });
 
+/** retirement_settings' saved withdrawal order and splits as the projection
+ *  and the Retirement page read them: each account type this version doesn't
+ *  know dropped and named (FALLBACKS); another shape as stored. */
+export function knownSavedRouting(settings: {
+  withdrawalOrder?: string[] | null;
+  withdrawalSplits?: Record<string, number> | null;
+}) {
+  const order = Array.isArray(settings.withdrawalOrder)
+    ? knownCategoryList(settings.withdrawalOrder)
+    : null;
+  const splits = isRecord(settings.withdrawalSplits)
+    ? knownCategoryRecord(settings.withdrawalSplits)
+    : null;
+  return {
+    withdrawalOrder: order ? order.known : settings.withdrawalOrder,
+    withdrawalSplits: splits ? splits.known : settings.withdrawalSplits,
+    unknownInOrder: order?.unknown ?? [],
+    unknownInSplits: splits?.unknown ?? [],
+  };
+}
+
 /**
  * Build decumulation defaults from DB settings + client-supplied routing overrides.
- * Shared by computeProjection and computeSimulation.
+ * Shared by computeProjection and computeSimulation. A saved order or splits
+ * the run reads (the client sent none) notes each category it drops in `notes`.
  */
 export function buildDecumulationDefaults(
   settings: Parameters<typeof buildStrategyParams>[0] & {
@@ -155,8 +273,24 @@ export function buildDecumulationDefaults(
   },
   clientDefaults: z.output<typeof decumulationDefaultsInputSchema>,
   distributionTaxRates: DecumulationDefaults["distributionTaxRates"],
+  notes: string[] = [],
 ): DecumulationDefaults {
-  const saved = readStoredValue("retirement_settings", settings, storedRouting);
+  const known = knownSavedRouting(settings);
+  const saved = readStoredValue(
+    "retirement_settings",
+    {
+      ...settings,
+      withdrawalOrder: known.withdrawalOrder,
+      withdrawalSplits: known.withdrawalSplits,
+    },
+    storedRouting,
+  );
+  if (clientDefaults.withdrawalOrder === undefined)
+    for (const category of known.unknownInOrder)
+      notes.push(unknownCategoryNote(category, "the saved withdrawal order"));
+  if (clientDefaults.withdrawalSplits === undefined)
+    for (const category of known.unknownInSplits)
+      notes.push(unknownCategoryNote(category, "the saved withdrawal splits"));
   return {
     withdrawalRate: toNumber(settings.withdrawalRate),
     // The ONE place the routing is resolved, for every caller: a client
@@ -189,9 +323,21 @@ export function buildDecumulationDefaults(
   };
 }
 
+/** The base's input warnings with `notes` after them (each once); nothing
+ *  when there are no notes, so the base's keys stay as built. */
+function inputWarningsWith(base: object, notes: readonly string[]) {
+  if (notes.length === 0) return {};
+  const before: unknown = "inputWarnings" in base ? base.inputWarnings : [];
+  const kept = Array.isArray(before)
+    ? before.filter((w): w is string => typeof w === "string")
+    : [];
+  return { inputWarnings: [...kept, ...new Set(notes)] };
+}
+
 /**
  * The payload's base input with the resolved decumulation defaults and the
- * "Changes by year" (omitted = the household's saved rows), in that order.
+ * "Changes by year" (omitted = the household's saved rows), in that order;
+ * the input warnings name each saved account type they drop.
  */
 export async function prepareEngineInput<Base extends object>(
   db: Db,
@@ -204,13 +350,18 @@ export async function prepareEngineInput<Base extends object>(
     decumulationDefaults: Parameters<typeof buildDecumulationDefaults>[1];
   },
 ) {
+  const notes: string[] = [];
+  const decumulationDefaults = buildDecumulationDefaults(
+    payload.settings,
+    input.decumulationDefaults,
+    payload.distributionTaxRates,
+    notes,
+  );
+  const overrides = await resolveProjectionOverrides(db, input, notes);
   return {
     ...payload.baseEngineInput,
-    decumulationDefaults: buildDecumulationDefaults(
-      payload.settings,
-      input.decumulationDefaults,
-      payload.distributionTaxRates,
-    ),
-    ...(await resolveProjectionOverrides(db, input)),
+    ...inputWarningsWith(payload.baseEngineInput, notes),
+    decumulationDefaults,
+    ...overrides,
   };
 }

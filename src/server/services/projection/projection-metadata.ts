@@ -18,7 +18,10 @@ import {
 } from "@/lib/config/withdrawal-strategies";
 import { buildContributionDisplaySpecs } from "@/lib/pure/contributions/display-specs";
 import { portfolioAccountLabel } from "@/lib/pure/accounts/portfolio-labels";
-import type { prepareProjectionRun } from "@/server/services/projection/projection-run";
+import {
+  knownSavedRouting,
+  type prepareProjectionRun,
+} from "@/server/services/projection/projection-run";
 
 type Run = Awaited<ReturnType<typeof prepareProjectionRun>>;
 /** A built payload (not null), notConfigured or ready. */
@@ -118,6 +121,7 @@ export function projectionSettings(payload: Payload) {
     filingStatus,
     distributionTaxRates,
   } = payload;
+  const savedRouting = knownSavedRouting(settings);
   return {
     // The plan's ages, on the same scale as each row's age. Not anyone's
     // setting: a save sends back ownRetirementAge / ownEndAge.
@@ -147,8 +151,10 @@ export function projectionSettings(payload: Payload) {
     withdrawalStrategy: settings.withdrawalStrategy,
     discretionaryWithdrawalOrder: settings.discretionaryWithdrawalOrder,
     withdrawalRoutingMode: settings.withdrawalRoutingMode,
-    withdrawalOrder: settings.withdrawalOrder,
-    withdrawalSplits: settings.withdrawalSplits,
+    // As the projection reads them: an account type this version doesn't
+    // know left out (the page labels each category it shows).
+    withdrawalOrder: savedRouting.withdrawalOrder,
+    withdrawalSplits: savedRouting.withdrawalSplits,
     ...pickStrategyParamColumns(settings),
     rmdExcessHandling: settings.rmdExcessHandling,
     rmdExcessTargetPerformanceAccountId:

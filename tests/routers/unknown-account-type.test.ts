@@ -1,7 +1,8 @@
 /**
  * A stored account type this version doesn't know (saved by a newer Ledgr,
  * say): the projection and Tax Buckets leave that money out and say so,
- * naming the row and its amount.
+ * naming the row and its amount. A saved setting naming one (the withdrawal
+ * order or splits, a "Changes by year" row) drops it and says so.
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -17,7 +18,7 @@ import * as schema from "@/lib/db/schema-sqlite";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { openingTotals } from "@/lib/pure/engine/opening-state";
-
+import { prepareEngineInput } from "@/server/services/projection/projection-run";
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
   cacheGet: vi.fn().mockResolvedValue(null),
@@ -155,6 +156,186 @@ describe("a contribution account of an account type this version doesn't know", 
     });
     expect(response.result!.warnings).toContain(
       'Future Plan is saved as account type "future_type", which this version doesn\'t know, so the projection leaves out its contributions. Update Ledgr or change its account type.',
+    );
+  });
+});
+
+describe("saved settings naming an account type this version doesn't know", () => {
+  let ctx: Ctx;
+  const left = (setting: string) =>
+    `Account type "future_type", which this version doesn't know, is left out of ${setting}. Update Ledgr or change that setting.`;
+
+  beforeAll(async () => {
+    ctx = await createTestCaller();
+    seedHousehold(ctx.db);
+    ctx.db
+      .update(schema.retirementSettings)
+      .set({
+        // Waterfall in the household's own order (the overlay would draw
+        // in the default order).
+        withdrawalRoutingMode: "waterfall",
+        rothBracketOverlay: false,
+        withdrawalOrder: ["future_type", "401k", "brokerage"],
+        withdrawalSplits: { future_type: 0.3, "401k": 0.7 },
+      })
+      .run();
+    // Written outside the app (the save path refuses these sets).
+    ctx.db
+      .insert(schema.projectionOverrides)
+      .values([
+        {
+          overrideType: "accumulation",
+          overrides: [
+            {
+              year: 2040,
+              accountOrder: ["future_type", "401k"],
+              accountSplits: { future_type: 0.5, "401k": 0.5 },
+              // Two equal lump sums to it: both are counted in the note.
+              lumpSums: [
+                { amount: 5000, targetAccount: "future_type" },
+                { amount: 3000, targetAccount: "401k" },
+                { amount: 5000, targetAccount: "future_type" },
+              ],
+            },
+          ],
+        },
+        {
+          overrideType: "decumulation",
+          overrides: [
+            {
+              year: 2060,
+              // Emptied by the drop: the row sets no order.
+              withdrawalOrder: ["future_type"],
+              withdrawalSplits: { future_type: 0.5, "401k": 0.5 },
+              withdrawalAccountCaps: { future_type: 1000 },
+              withdrawalTaxPreference: { future_type: "roth", "401k": "roth" },
+              lumpSums: [{ amount: 1234.56, targetAccount: "future_type" }],
+            },
+          ],
+        },
+      ])
+      .run();
+  });
+  afterAll(() => ctx.cleanup());
+
+  it("the engine input drops it and keeps the rest", async () => {
+    const data = await fetchRetirementData(ctx.rawDb);
+    const payload = await buildEnginePayload(ctx.rawDb, data, {
+      asOf: new Date(),
+    });
+    const input = await prepareEngineInput(ctx.rawDb, payload!, {
+      decumulationDefaults: { withdrawalTaxPreference: {} },
+    });
+    expect(input.decumulationDefaults.withdrawalOrder).toEqual([
+      "401k",
+      "brokerage",
+    ]);
+    // Read as stored, as before; the router scales the 70% left to the
+    // year's need (splitShares).
+    expect(input.decumulationDefaults.withdrawalSplits).toEqual({
+      "401k": 0.7,
+    });
+    expect(input.accumulationOverrides).toEqual([
+      {
+        year: 2040,
+        accountOrder: ["401k"],
+        accountSplits: { "401k": 0.5 },
+        lumpSums: [{ amount: 3000, targetAccount: "401k" }],
+      },
+    ]);
+    expect(input.decumulationOverrides).toEqual([
+      {
+        year: 2060,
+        withdrawalSplits: { "401k": 0.5 },
+        withdrawalAccountCaps: {},
+        withdrawalTaxPreference: { "401k": "roth" },
+        lumpSums: [],
+      },
+    ]);
+  });
+
+  it("the projection runs and names each one", async () => {
+    const response = await ctx.caller.projection.computeProjection({});
+    expect(response.result!.warnings).toEqual(
+      expect.arrayContaining([
+        left("the saved withdrawal order"),
+        left("the saved withdrawal splits"),
+        left("Changes by year for 2040"),
+        '2 lump sums totalling $10,000 in Changes by year for 2040 go to account type "future_type", which this version doesn\'t know, so the projection leaves them out. Update Ledgr or change those lump sums.',
+        left("Changes by year for 2060"),
+        'A lump sum of $1,235 in Changes by year for 2060 goes to account type "future_type", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+      ]),
+    );
+    // The Retirement page shows the saved routing as the projection reads it.
+    if (!("settings" in response)) throw new Error("no settings");
+    expect(response.settings.withdrawalOrder).toEqual(["401k", "brokerage"]);
+    expect(response.settings.withdrawalSplits).toEqual({ "401k": 0.7 });
+  });
+
+  it("percentage routing draws the year's need from the splits left", async () => {
+    const response = await ctx.caller.projection.computeProjection({
+      decumulationDefaults: {
+        withdrawalRoutingMode: "percentage",
+        withdrawalTaxPreference: {},
+      },
+    });
+    expect(response.result!.warnings).toContain(
+      left("the saved withdrawal splits"),
+    );
+    // Before the 2060 row's own splits, each retired year says so.
+    const retiredYears = response.result!.projectionByYear.filter(
+      (y) => y.phase === "decumulation" && y.year < 2060,
+    );
+    expect(retiredYears.length).toBeGreaterThan(0);
+    for (const y of retiredYears)
+      expect(y.warnings).toContainEqual(
+        expect.stringContaining("Withdrawal splits sum to 70%, not 100%"),
+      );
+  });
+
+  it("a withdrawal order the page sends wins, so the saved one goes unnamed", async () => {
+    const response = await ctx.caller.projection.computeProjection({
+      decumulationDefaults: {
+        withdrawalOrder: ["401k", "brokerage"],
+        withdrawalTaxPreference: {},
+      },
+    });
+    expect(response.result!.warnings).not.toContain(
+      left("the saved withdrawal order"),
+    );
+    expect(response.result!.warnings).toContain(
+      left("the saved withdrawal splits"),
+    );
+  });
+});
+
+describe("a saved savings order naming only an account type this version doesn't know", () => {
+  /** The household's projection by year, with `overrides` saved first. */
+  async function projectionByYear(overrides?: Record<string, unknown>[]) {
+    const ctx = await createTestCaller();
+    try {
+      seedHousehold(ctx.db);
+      if (overrides)
+        ctx.db
+          .insert(schema.projectionOverrides)
+          .values({ overrideType: "accumulation", overrides })
+          .run();
+      const { result } = await ctx.caller.projection.computeProjection({});
+      return result!;
+    } finally {
+      ctx.cleanup();
+    }
+  }
+
+  it("routes contributions as with no row, and says so", async () => {
+    // No contribution accounts: the savings order routes each year's saving.
+    const without = await projectionByYear();
+    const withRow = await projectionByYear([
+      { year: 2030, accountOrder: ["future_type"] },
+    ]);
+    expect(withRow.projectionByYear).toEqual(without.projectionByYear);
+    expect(withRow.warnings).toContain(
+      `Account type "future_type", which this version doesn't know, is left out of Changes by year for 2030. Update Ledgr or change that setting.`,
     );
   });
 });

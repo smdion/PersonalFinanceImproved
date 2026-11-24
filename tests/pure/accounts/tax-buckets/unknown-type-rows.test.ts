@@ -2,6 +2,10 @@ import { describe, it, expect } from "vitest";
 import type { TaxBucketSnapshotAccount } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import {
   contributionsByType,
+  knownCategoryList,
+  knownCategoryRecord,
+  unknownCategoryNote,
+  unknownLumpSumTargetNotes,
   unknownTypeContributionNote,
   unknownTypeNote,
   unknownTypeRows,
@@ -100,5 +104,80 @@ describe("contributionsByType", () => {
     expect(unknownTypeContributionNote("Plan", "future_type")).toBe(
       'Plan is saved as account type "future_type", which this version doesn\'t know, so the projection leaves out its contributions. Update Ledgr or change its account type.',
     );
+  });
+});
+
+describe("knownCategoryList", () => {
+  it("keeps the known categories in order and names the rest as stored", () => {
+    expect(knownCategoryList(["future_type", "401k", 7, "ira"])).toEqual({
+      known: ["401k", "ira"],
+      unknown: ["future_type", "7"],
+    });
+  });
+
+  it("names none when every category is known", () => {
+    expect(knownCategoryList(["hsa"])).toEqual({ known: ["hsa"], unknown: [] });
+  });
+});
+
+describe("knownCategoryRecord", () => {
+  it("keeps each known key's value and names the other keys", () => {
+    expect(
+      knownCategoryRecord({ future_type: 0.3, "401k": 0.7, ira: 0 }),
+    ).toEqual({ known: { "401k": 0.7, ira: 0 }, unknown: ["future_type"] });
+  });
+});
+
+describe("unknown category notes", () => {
+  it("names the category and the setting it is left out of", () => {
+    expect(
+      unknownCategoryNote("future_type", "the saved withdrawal order"),
+    ).toBe(
+      'Account type "future_type", which this version doesn\'t know, is left out of the saved withdrawal order. Update Ledgr or change that setting.',
+    );
+  });
+});
+
+describe("unknownLumpSumTargetNotes", () => {
+  const lump = (year: string, amount: unknown, category = "future_type") => ({
+    year,
+    category,
+    amount,
+  });
+
+  it("names a left-out lump sum's amount, year and target", () => {
+    expect(unknownLumpSumTargetNotes([lump("2040", 5000.4)])).toEqual([
+      'A lump sum of $5,000 in Changes by year for 2040 goes to account type "future_type", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+    ]);
+  });
+
+  it("counts and sums equal lump sums to one target in one year", () => {
+    expect(
+      unknownLumpSumTargetNotes([
+        lump("2040", 5000),
+        lump("2041", 5000),
+        lump("2040", 5000),
+        lump("2040", 7, "other_type"),
+      ]),
+    ).toEqual([
+      '2 lump sums totalling $10,000 in Changes by year for 2040 go to account type "future_type", which this version doesn\'t know, so the projection leaves them out. Update Ledgr or change those lump sums.',
+      'A lump sum of $5,000 in Changes by year for 2041 goes to account type "future_type", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+      'A lump sum of $7 in Changes by year for 2040 goes to account type "other_type", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+    ]);
+  });
+
+  it("states no amount when one isn't stored as a number, and $0 when it is 0", () => {
+    expect(
+      unknownLumpSumTargetNotes([
+        lump("2040", undefined),
+        lump("2041", "5000"),
+        lump("2041", 10),
+        lump("2042", 0),
+      ]),
+    ).toEqual([
+      'A lump sum in Changes by year for 2040 goes to account type "future_type", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+      '2 lump sums in Changes by year for 2041 go to account type "future_type", which this version doesn\'t know, so the projection leaves them out. Update Ledgr or change those lump sums.',
+      'A lump sum of $0 in Changes by year for 2042 goes to account type "future_type", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+    ]);
   });
 });
