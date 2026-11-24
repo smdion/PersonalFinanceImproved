@@ -58,9 +58,9 @@ type Slice = Pick<
   "category" | "taxType" | "parentCategory"
 >;
 
-/** The held parts and each spec's own part (none real: left as given); the
- *  projected Retirement brokerage when none is held, a projected part for each
- *  slice no part takes; then each Roth-capable part's other tax parts at $0. */
+/** Held and spec parts (none real: held, as given), projected parts for a
+ *  missing Retirement brokerage and each untaken slice, then $0 sibling tax
+ *  parts. Throws on a mixed run (`refuseMixedRun`) or a shared key. */
 export function declareOpeningParts(
   held: readonly IndividualAccountInput[],
   flows: OpeningFlows,
