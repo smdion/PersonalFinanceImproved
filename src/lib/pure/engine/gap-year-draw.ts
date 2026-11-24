@@ -109,7 +109,7 @@ export function runGapYearDraw(
   const retirementBasisRatio = holdsAccounts
     ? retirementBrokerageBasisRatio(indAccounts, indKey, indBalance, brokBasis)
     : undefined;
-  const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
+  const rankingInputs = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: retirementBasisRatio,
     indBasis: holdsAccounts ? indBasis : undefined,
@@ -131,10 +131,10 @@ export function runGapYearDraw(
         conversionTarget: taxRates.rothConversionTarget,
         // Income already in the year, under the draw.
         taxableSS: incomeAlone,
+        ssIncome: { gross: figures.ssIncome, otherIncome: wages },
         filingStatus,
         ltcgBrackets,
-        rothBasisAvailable,
-        brokerageBasisRatio,
+        ...rankingInputs,
         conversionsEnabled: false,
         standardDeduction,
         discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,

@@ -41,7 +41,7 @@ export function routeYearDraw(
   // routeForMode is the one dispatch the solver's estimate shares, so a
   // mode's rule can't differ between them; its basis-ranking inputs come from
   // deriveBasisRankingInputs (bracket filling only), as in the estimate.
-  const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
+  const rankingInputs = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: retirementBasisRatio,
     indBasis: holdsAccounts ? indBasis : undefined,
@@ -70,10 +70,10 @@ export function routeYearDraw(
       // conversions on).
       conversionTarget: resolvedConversionTarget,
       taxableSS: taxEstimate.taxableSS,
+      ssIncome: { gross: thisYear.ssIncome, otherIncome: 0 },
       filingStatus,
       ltcgBrackets: grownLtcgBrackets,
-      rothBasisAvailable,
-      brokerageBasisRatio,
+      ...rankingInputs,
       conversionsEnabled: taxRates.enableRothConversions,
       standardDeduction: grownStandardDeduction,
       discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,

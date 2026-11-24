@@ -16,28 +16,28 @@ export interface RouteBracketInfo {
    *  Roth→brokerage→HSA order; no filingStatus skips LTCG/NIIT lookups. */
   filingStatus?: ReturnFilingStatus | null;
   ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
-  /** Roth basis left in the accounts routing draws from (individual tracking).
-   *  Omitted ⇒ the whole Roth balance counts as basis; 0 means tracking
-   *  confirms none remains. */
+  /** Roth basis left in the accounts routing draws from (tracked per account).
+   *  Omitted ⇒ the whole Roth balance counts as basis; 0 ⇒ none remains. */
   rothBasisAvailable?: number;
+  /** The `pro_rata` Roth (a designated Roth 401(k)/403(b)) routing draws from:
+   *  balance, unqualified owners' basis, qualified owners' balance. */
+  rothProRata?: { balance: number; basis: number; qualifiedBalance: number };
+  /** This year's gross Social Security, and the provisional income beside it
+   *  that routing doesn't draw (a gap year's wages; 0 otherwise). */
+  ssIncome?: { gross: number; otherIncome: number };
   /** `afterTaxBasis / afterTax` for brokerage, 0..1. Omitted/0 ⇒ every
    *  brokerage dollar is treated as a taxable gain (conservative). */
   brokerageBasisRatio?: number;
-  /** MAGI before this year's gains/growth, for the NIIT headroom check.
-   *  Omitted ⇒ NIIT check uses the ordinary-income floor as a MAGI proxy
-   *  (slightly conservative when other MAGI add-ins exist). */
+  /** MAGI before this year's gains/growth, for the NIIT. Omitted ⇒ the
+   *  ordinary-income floor stands in (high when other MAGI add-ins exist). */
   magiBeforeThisDraw?: number;
-  /** Whether this year's Roth conversion runs. If so, bracket-filling reserves
-   *  the Traditional room Phase 1 left unused, since the conversion will claim it,
-   *  so the 0%-LTCG estimate doesn't count that headroom. */
+  /** Whether this year's Roth conversion runs: bracket filling then reserves
+   *  the Traditional room Phase 1 left unused, which the conversion claims. */
   conversionsEnabled?: boolean;
-  /** Household's annual standard deduction: converts the gross ordinary-income
-   *  floor to taxable income for LTCG lookups (`ltcgStackBase`);
-   *  omitted subtracts nothing. */
+  /** Household's annual standard deduction: gross ordinary income to taxable
+   *  income for LTCG lookups (`ltcgStackBase`); omitted subtracts nothing. */
   standardDeduction?: number;
-  /** See `RankWithdrawalTiersInput`'s field of the same
-   *  name (`withdrawal-cost-ranking.ts`) for the full explanation.
-   *  Undefined ⇒ "roth_first". */
+  /** Which free source goes first. Undefined ⇒ "roth_first". */
   discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
 }
 

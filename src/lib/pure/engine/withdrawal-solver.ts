@@ -133,7 +133,7 @@ function evaluateCost(
   const clonedAccountBalance = cloneAccountBalances(accountBalance);
   // Same basis-derived ranking inputs as the real year; no magiBeforeThisDraw,
   // so routeForMode uses its own ordinary-income floor.
-  const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
+  const rankingInputs = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: input.brokerageBasisRatio,
     indBasis: hasIndTracking ? indBasis : undefined,
@@ -159,10 +159,10 @@ function evaluateCost(
         config.rothBracketTarget ??
         taxRates.rothBracketTarget,
       taxableSS: laggedTaxableSS,
+      ssIncome: { gross: input.ssIncome, otherIncome: 0 },
       filingStatus,
       ltcgBrackets: taxRates.ltcgBrackets,
-      rothBasisAvailable,
-      brokerageBasisRatio,
+      ...rankingInputs,
       conversionsEnabled: taxRates.enableRothConversions,
       // Passed as the real router passes it (same rule as above).
       standardDeduction: taxRates.standardDeduction,
@@ -211,7 +211,7 @@ function evaluateCost(
       slots: routeResult.slots,
       taxableSS: ss,
       balances,
-      brokerageBasisRatio,
+      brokerageBasisRatio: rankingInputs.brokerageBasisRatio,
       taxRates,
       filingStatus,
       rothTaxableGrowth,
