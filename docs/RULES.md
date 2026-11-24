@@ -91,6 +91,7 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **A lump sum saved to a Roth part before v0.11.1 is put in the account's Traditional part:** it was saved with no tax side, and both tax parts share one performance account id, so the side can't be recovered. Re-save the lump sum (delete it and add it again) to put it in the Roth part.
 - **There are two kinds of calendar day,** the household's local day and SimpleFIN's UTC day (DESIGN § Time Resolution), until one day rules both (v0.11.3: merging them moves dates). Never compare one with the other.
 - **A lump sum shared by balance because it picks no single part** (its saved account is gone, or its name matches no part or several) **isn't named on the Retirement page yet:** the engine's resolver reports it (`resolveLumpSums`' `unresolved`), until a page shows it (LS1, v0.11.1).
+- **A finalized year keeps the tax-type split recorded when it was finalized** (`net_worth_annual.portfolio_by_tax_location`), written under the old rule that booked a row by its stored tax type. On an install with a mismatched row (a 401(k) row saved as after-tax), comparing a past year with the current one shows an after-tax → pre-tax jump, and re-finalizing a past year rewrites its split, until a migration re-derives each finalized year's split from its snapshot (v0.11.2).
 
 ## Data-Driven Architecture
 
