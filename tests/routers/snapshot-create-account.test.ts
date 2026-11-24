@@ -157,6 +157,35 @@ describe("a tax type the row's account type doesn't hold", () => {
     }
   });
 
+  it("updateAccount saves a legacy row that already holds it when the edit re-sends it unchanged", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const perfId = seedPerformanceAccount(db, {});
+      seedSnapshot(db, "2025-06-01", [
+        { performanceAccountId: perfId, amount: "100", taxType: "afterTax" },
+      ]);
+      const [stored] = db.select().from(schema.portfolioAccounts).all();
+      await expect(
+        caller.netWorth.portfolioSnapshots.updateAccount({
+          id: stored!.id,
+          taxType: "afterTax",
+          amount: "250",
+        }),
+      ).resolves.toMatchObject({ amountEdited: true });
+      const [after] = db.select().from(schema.portfolioAccounts).all();
+      expect(Number(after!.amount)).toBe(250);
+      expect(after!.taxType).toBe("afterTax");
+      await expect(
+        caller.netWorth.portfolioSnapshots.updateAccount({
+          id: stored!.id,
+          taxType: "hsa",
+        }),
+      ).rejects.toThrow(/can't be saved as HSA/);
+    } finally {
+      cleanup();
+    }
+  });
+
   const mistypedBrokerage = {
     ...row,
     accountType: "brokerage" as const,

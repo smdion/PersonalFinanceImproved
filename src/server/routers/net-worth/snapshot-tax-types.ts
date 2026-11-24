@@ -47,7 +47,8 @@ export function refuseUnheldTaxType(
 }
 
 /** Refuses giving row `rowId` the tax type `taxType`. A missing row is the
- *  update's own concern. */
+ *  update's own concern; the row's own stored tax type, re-sent unchanged,
+ *  is no new data and is never refused. */
 export async function refuseTaxTypeEdit(
   db: Db,
   rowId: number,
@@ -60,7 +61,7 @@ export async function refuseTaxTypeEdit(
   if (!stored) return;
   const rows = (await getLatestSnapshot(db, stored.snapshotId))?.accounts;
   const edited = rows?.find((r) => r.portfolioAccountId === rowId);
-  if (!rows || !edited) return;
+  if (!rows || !edited || edited.taxType === taxType) return;
   refuseUnheldTaxType(
     { ...edited, taxType },
     rows.filter((r) => r !== edited),
