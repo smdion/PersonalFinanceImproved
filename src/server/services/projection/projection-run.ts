@@ -348,6 +348,17 @@ function inputWarningsWith(base: object, notes: readonly string[]) {
   return { inputWarnings: [...kept, ...new Set(notes)] };
 }
 
+/** The notes from building these runs' inputs (each base's input warnings,
+ *  then `notes`), each once: what a response shows beside its figures. */
+export function setupNotes(
+  bases: readonly { inputWarnings?: string[] }[],
+  notes: readonly string[],
+): string[] {
+  return [
+    ...new Set([...bases.flatMap((b) => b.inputWarnings ?? []), ...notes]),
+  ];
+}
+
 /**
  * The payload's base input with the resolved decumulation defaults and the
  * "Changes by year" (omitted = the household's saved rows), in that order;

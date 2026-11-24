@@ -254,6 +254,7 @@ export function RetirementContent() {
             onDollarModeChange={setDollarMode}
             inflationRate={parseFloat(settings.annualInflation)}
             analyzerInput={comparisonInput}
+            notes={comparisonData.notes}
           />
         ) : (
           <div className="text-muted p-4 text-center text-xs">

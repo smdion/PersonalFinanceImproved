@@ -52,6 +52,7 @@ const engineResult: NonNullable<Props["engineResult"]> = {
   blendedBalanceAtRetirement: null,
   inflationRate: 0.03,
   baseYear: 2026,
+  notes: [],
 };
 
 describe("RelocationMetricsAndBanner", () => {
@@ -81,5 +82,17 @@ describe("RelocationMetricsAndBanner", () => {
       />,
     );
     expect(screen.getByText("A calculator warning")).toBeInTheDocument();
+  });
+
+  it("adds what the engine runs left out to the warnings", () => {
+    render(
+      <RelocationMetricsAndBanner
+        result={result}
+        engineResult={{ ...engineResult, notes: ["An engine note"] }}
+        moveYear={null}
+      />,
+    );
+    expect(screen.getByText("A calculator warning")).toBeInTheDocument();
+    expect(screen.getByText("An engine note")).toBeInTheDocument();
   });
 });

@@ -23,6 +23,7 @@ import {
   buildDecumulationDefaults,
   prepareProjectionRun,
   resolveProjectionOverrides,
+  setupNotes,
 } from "@/server/services/projection/projection-run";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import {
@@ -65,7 +66,8 @@ export async function computeStrategyComparison(
 ) {
   // The household's saved "Changes by year" apply to every strategy
   // (D6) — a comparison without them describes a different plan.
-  const saved = await resolveProjectionOverrides(ctx.db, {});
+  const settingNotes: string[] = [];
+  const saved = await resolveProjectionOverrides(ctx.db, {}, settingNotes);
   const [
     { payload },
     {
@@ -114,7 +116,11 @@ export async function computeStrategyComparison(
     settings,
     { withdrawalTaxPreference: {} },
     distributionTaxRates,
+    settingNotes,
   );
+  // Every drop named (owner Q-unknown-type): outside the cached result,
+  // whose key can't see a saved setting's dropped name.
+  const notes = setupNotes([baseEngineInput], settingNotes);
 
   // Every strategy's lightweight Simulation uses a fixed `COMPARISON_SEED` (common
   // random numbers for a fair comparison), so no seed needs persisting.
@@ -148,9 +154,7 @@ export async function computeStrategyComparison(
   const cached = input?.forceRefresh
     ? null
     : await readProjectionCache<StrategyComparisonResult>(ctx.db, inputHash);
-  if (cached) {
-    return cached.result;
-  }
+  if (cached) return { ...cached.result, notes };
 
   function buildStrategyResults() {
     return Promise.all(
@@ -266,7 +270,7 @@ export async function computeStrategyComparison(
     retirementAge: planRetirementAge,
   };
   await writeProjectionCache(ctx.db, inputHash, result, null);
-  return result;
+  return { ...result, notes };
 }
 
 export async function analyzeStrategy(

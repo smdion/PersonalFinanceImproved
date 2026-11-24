@@ -19,6 +19,7 @@ import {
   type ChartMetric,
 } from "./withdrawal-comparison.model";
 import { StrategyComparisonChart } from "./withdrawal-comparison-chart";
+import { EngineWarnings } from "./engine-warnings";
 
 const RATE_TONE_CLASS = {
   green: "text-green-400",
@@ -53,6 +54,8 @@ type Props = {
   onDollarModeChange: (mode: DollarBasis) => void;
   inflationRate: number;
   analyzerInput?: AnalyzerInput;
+  /** What building the runs' inputs left out (the engine's input warnings). */
+  notes: readonly string[];
 };
 
 export function WithdrawalComparisonCard({
@@ -64,6 +67,7 @@ export function WithdrawalComparisonCard({
   onDollarModeChange,
   inflationRate,
   analyzerInput,
+  notes,
 }: Props) {
   const [chartMetric, setChartMetric] =
     useState<ChartMetric>("retirementBalance");
@@ -126,6 +130,7 @@ export function WithdrawalComparisonCard({
           volatility and glide path — the preset chosen for the Simulation.
         </p>
       )}
+      <EngineWarnings warnings={notes} />
       {/* Table */}
       {
         <div className="overflow-x-auto">

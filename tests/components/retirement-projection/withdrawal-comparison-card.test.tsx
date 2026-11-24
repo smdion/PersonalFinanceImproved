@@ -114,6 +114,7 @@ function baseProps(
     dollarMode: "nominal" as const,
     onDollarModeChange: vi.fn(),
     inflationRate: 0.03,
+    notes: [],
     ...overrides,
   };
 }
@@ -144,6 +145,15 @@ describe("WithdrawalComparisonCard", () => {
     render(<WithdrawalComparisonCard {...baseProps()} />);
     expect(screen.getByText("Never")).toBeInTheDocument();
     expect(screen.getByText("2068")).toBeInTheDocument();
+  });
+
+  it("shows what the runs left out in an amber box, as the Simulation shows its warnings", () => {
+    const note =
+      'Future Plan is saved as account type "future_type", which this version doesn\'t know, so the projection and Tax Buckets leave out its $40,000. Update Ledgr or change its account type.';
+    render(<WithdrawalComparisonCard {...baseProps({ notes: [note] })} />);
+    expect(screen.getByText(note).parentElement!.className).toContain(
+      "bg-amber-50",
+    );
   });
 
   it("renders an em dash for null stability rates", () => {

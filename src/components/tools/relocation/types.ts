@@ -120,4 +120,6 @@ export type RelocationEngineResult = {
   inflationRate: number;
   /** Calendar year of the projection start — deflation base year. */
   baseYear: number;
+  /** What building the scenarios' inputs left out (the engine's input warnings). */
+  notes: string[];
 };

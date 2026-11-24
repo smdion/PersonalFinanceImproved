@@ -12,6 +12,7 @@ import { fetchRetirementData } from "@/server/services/projection/engine-payload
 import {
   buildDecumulationDefaults,
   resolveProjectionOverrides,
+  setupNotes,
 } from "@/server/services/projection/projection-run";
 import { safeDivide } from "@/lib/utils/math";
 import {
@@ -72,10 +73,11 @@ export async function computeRelocationFiProjection(
 
   // The Retirement page's saved accumulation overrides, so the current scenario's
   // balances match that page's projection.
+  const settingNotes: string[] = [];
   const {
     accumulationOverrides: dbAccumulationOverrides,
     decumulationOverrides: dbDecumulationOverrides,
-  } = await resolveProjectionOverrides(ctx.db, {});
+  } = await resolveProjectionOverrides(ctx.db, {}, settingNotes);
 
   const currentProfile = data.allBudgetProfiles.find(
     (p) => p.id === input.currentProfileId,
@@ -166,11 +168,13 @@ export async function computeRelocationFiProjection(
     currentPayload.settings,
     clientDecumulationDefaults,
     currentPayload.distributionTaxRates,
+    settingNotes,
   );
   const relocDecumulationDefaults = buildDecumulationDefaults(
     relocPayload.settings,
     clientDecumulationDefaults,
     relocPayload.distributionTaxRates,
+    settingNotes,
   );
 
   // --- Build relocation budget overrides ---
@@ -455,5 +459,7 @@ export async function computeRelocationFiProjection(
     // The year "today's dollars" deflate to: the calendar year, as on
     // the Retirement page (use-projection-state), so the two agree.
     baseYear: ctx.scope.asOf.getFullYear(),
+    // What building the two scenarios' inputs left out, each named once.
+    notes: setupNotes([currentBase, relocBase], settingNotes),
   };
 }

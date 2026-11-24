@@ -8,6 +8,8 @@ import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   createTestCaller,
+  seedBudgetItem,
+  seedBudgetProfile,
   seedContributionAccount,
   seedContributionProfile,
   seedPerformanceAccount,
@@ -23,6 +25,18 @@ vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
   cacheGet: vi.fn().mockResolvedValue(null),
 }));
+// The strategy comparison's Simulations run in this thread, 5 trials each:
+// these tests read its notes, never a rate (projection-coverage's pattern).
+vi.mock("@/server/services/simulation/monte-carlo-worker-client", async () => {
+  const { calculateMonteCarlo } =
+    await import("@/lib/pure/simulation/monte-carlo");
+  return {
+    runMonteCarloOffThread: async (
+      input: Parameters<typeof calculateMonteCarlo>[0],
+    ) => calculateMonteCarlo({ ...input, numTrials: 5 }),
+    getMonteCarloProgress: () => null,
+  };
+});
 
 type Ctx = Awaited<ReturnType<typeof createTestCaller>>;
 
@@ -62,6 +76,31 @@ function seedUnknownAccount(
   });
 }
 
+/** The notes beside the Retirement page's strategy comparison. */
+async function comparisonNotes(ctx: Ctx) {
+  const comparison = await ctx.caller.projection.computeStrategyComparison();
+  const notes = "notes" in comparison ? comparison.notes : undefined;
+  if (!notes) throw new Error("no notes in the comparison");
+  return notes;
+}
+
+/** The notes beside the Relocation tool's projection, between two budgets. */
+async function relocationNotes(ctx: Ctx) {
+  const currentProfileId = await seedBudgetProfile(ctx.db, "Current City");
+  seedBudgetItem(ctx.db, currentProfileId, { amounts: [2000] });
+  const relocationProfileId = await seedBudgetProfile(ctx.db, "New City");
+  seedBudgetItem(ctx.db, relocationProfileId, { amounts: [1500] });
+  const result = await ctx.caller.projection.computeRelocationFiProjection({
+    currentProfileId,
+    currentBudgetColumn: 0,
+    relocationProfileId,
+    relocationBudgetColumn: 0,
+  });
+  const notes = result && "notes" in result ? result.notes : undefined;
+  if (!notes) throw new Error("no notes in the relocation projection");
+  return notes;
+}
+
 const ROW_NOTE =
   'Future Plan is saved as account type "future_type", which this version doesn\'t know, so the projection and Tax Buckets leave out its $40,000. Update Ledgr or change its account type.';
 
@@ -99,6 +138,14 @@ describe("a snapshot row of an account type this version doesn't know", () => {
     expect(balances.preTax).toBe(100000);
     const response = await ctx.caller.projection.computeProjection({});
     expect(response.result!.warnings).toContain(ROW_NOTE);
+  });
+
+  it("the strategy comparison names it too", async () => {
+    expect(await comparisonNotes(ctx)).toEqual([ROW_NOTE]);
+  });
+
+  it("the Relocation tool names it too", async () => {
+    expect(await relocationNotes(ctx)).toEqual([ROW_NOTE]);
   });
 
   it("Tax Buckets leaves it out and names it", async () => {
@@ -270,6 +317,27 @@ describe("saved settings naming an account type this version doesn't know", () =
     if (!("settings" in response)) throw new Error("no settings");
     expect(response.settings.withdrawalOrder).toEqual(["401k", "brokerage"]);
     expect(response.settings.withdrawalSplits).toEqual({ "401k": 0.7 });
+  });
+
+  /** Each saved setting's note is there, and no note twice. */
+  function expectEachNamedOnce(notes: string[]) {
+    expect(notes).toEqual(
+      expect.arrayContaining([
+        left("the saved withdrawal order"),
+        left("the saved withdrawal splits"),
+        left("Changes by year for 2040"),
+        left("Changes by year for 2060"),
+      ]),
+    );
+    expect(new Set(notes).size).toBe(notes.length);
+  }
+
+  it("the strategy comparison names each one, once", async () => {
+    expectEachNamedOnce(await comparisonNotes(ctx));
+  });
+
+  it("the Relocation tool names each one, once", async () => {
+    expectEachNamedOnce(await relocationNotes(ctx));
   });
 
   it("percentage routing draws the year's need from the splits left", async () => {

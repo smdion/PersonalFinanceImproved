@@ -34,6 +34,7 @@ export function RelocationMetricsAndBanner({
   const additionalNestEggNeeded = relocFiTarget - currentFiTargetForDelta;
 
   const hasBlended = moveYear !== null && engineResult?.blendedRows != null;
+  const warnings = [...r.warnings, ...(engineResult?.notes ?? [])];
 
   return (
     <>
@@ -161,10 +162,9 @@ export function RelocationMetricsAndBanner({
       {/* Secondary hint — earliest viable year when moveYear is set */}
       {hasBlended && <EarliestViableHint engineResult={engineResult} />}
 
-      {/* Warnings from calculator */}
-      {r.warnings.length > 0 && (
+      {warnings.length > 0 && (
         <div className="space-y-1">
-          {r.warnings.map((w) => (
+          {warnings.map((w) => (
             <div
               key={w}
               className="rounded bg-amber-50 p-2 text-xs text-amber-600"
