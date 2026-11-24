@@ -237,7 +237,7 @@ export function yearRothConversion(
   const { config, year, taxRates } = thisYear;
   const { nonRetirement } = thisYear.setup;
   const { grownTaxBrackets, grownIrmaaBracketsForCap } = thisYear.tables;
-  const { totalTraditionalWithdrawal, totalWithdrawal } = flow.rmd;
+  const { totalTraditionalWithdrawal } = flow.rmd;
   const { targetWithdrawal } = flow.need;
   const { resolvedConversionTarget } = flow.route;
   const { taxableSS, taxFromSlots } = flow.priced;
@@ -276,8 +276,8 @@ export function yearRothConversion(
       ),
       householdTraditionalBalance: balances.preTax,
       returnRateMap: ctx.returnRateMap,
-      totalTraditionalWithdrawal,
-      totalWithdrawal,
+      // Retirement money's Traditional share, never this year's draw mix.
+      traditionalShare: thisYear.estTraditionalPortion,
       // What leaves the portfolio this year, not spending (Social Security partly covers
       // it, and a portfolio-sized strategy with Social Security on top doesn't size it).
       currentProjectedAnnualSpendingNeed: targetWithdrawal,

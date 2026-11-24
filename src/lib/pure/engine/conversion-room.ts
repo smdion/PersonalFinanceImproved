@@ -4,6 +4,8 @@ import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
 
 interface ConversionRoomInput {
+  /** Conversions on: the household's own target's room is the floor under smoothing's. */
+  enableRothConversions: boolean | undefined;
   /** The household's `rothConversionTarget` (never 0 here: 0 opts out before). */
   configTarget: number | undefined;
   rothBracketTarget: number | undefined;
@@ -15,8 +17,8 @@ interface ConversionRoomInput {
   rmdSmoothingMaxBracketTarget?: number;
 }
 
-/** The target's room, rounded to cents (≥ 0); null when the household has no target and
- *  smoothing supplies none. */
+/** The target's room, rounded to cents (≥ 0); with smoothing, the smoothing target within that
+ *  room, or the household's own room when larger. Null when there is no target at all. */
 export function conversionRoomFor(input: ConversionRoomInput): number | null {
   const {
     yearTaxableIncome,
@@ -25,7 +27,8 @@ export function conversionRoomFor(input: ConversionRoomInput): number | null {
     rmdSmoothingTarget,
     rmdSmoothingMaxBracketTarget,
   } = input;
-  let conversionTarget = input.configTarget ?? input.rothBracketTarget;
+  const ownTarget = input.configTarget ?? input.rothBracketTarget;
+  let conversionTarget = ownTarget;
   if (rmdSmoothingTarget !== undefined && rmdSmoothingTarget > 0) {
     // The lowest marginal rate whose cap fits this year's income plus the
     // smoothing target (incomeCapForMarginalRate over each bracket, in
@@ -57,10 +60,20 @@ export function conversionRoomFor(input: ConversionRoomInput): number | null {
   }
   if (conversionTarget == null) return null;
 
-  const bracketCap = incomeCapForMarginalRate(
-    conversionTarget,
-    taxBrackets,
-    standardDeduction,
-  );
-  return roundToCents(Math.max(0, bracketCap - yearTaxableIncome));
+  const roomUnder = (target: number) =>
+    roundToCents(
+      Math.max(
+        0,
+        incomeCapForMarginalRate(target, taxBrackets, standardDeduction) -
+          yearTaxableIncome,
+      ),
+    );
+  const room = roomUnder(conversionTarget);
+  if (rmdSmoothingTarget === undefined || rmdSmoothingTarget <= 0) return room;
+  // Smoothing converts its own target, up to income + target in a raised
+  // bracket (never that bracket's top); a household converting on its own
+  // keeps its own room as the floor.
+  const ownRoom =
+    input.enableRothConversions && ownTarget != null ? roomUnder(ownTarget) : 0;
+  return Math.max(ownRoom, Math.min(rmdSmoothingTarget, room));
 }

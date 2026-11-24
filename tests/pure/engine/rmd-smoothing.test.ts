@@ -26,8 +26,7 @@ function baseInput(
     spouses: new Map(),
     householdTraditionalBalance: 500000,
     returnRateMap: new Map([[0, 0.05]]), // flat 5% for every age (fallback)
-    totalTraditionalWithdrawal: 40000,
-    totalWithdrawal: 80000, // 50% Traditional
+    traditionalShare: 0.5, // half the Retirement money is Traditional
     currentProjectedAnnualSpendingNeed: 80000,
     postRetirementInflationRate: 0.02,
     ...overrides,
@@ -145,8 +144,7 @@ describe("computeRmdSmoothingTargets", () => {
           }),
         ],
         householdTraditionalBalance: 50000,
-        totalTraditionalWithdrawal: 100000,
-        totalWithdrawal: 100000, // 100% Traditional -- aggressive drawdown
+        traditionalShare: 1, // all Traditional -- aggressive drawdown
         currentProjectedAnnualSpendingNeed: 100000,
       }),
     );
@@ -190,17 +188,36 @@ describe("computeRmdSmoothingTargets", () => {
     expect(result.householdSmoothingTarget).toBeCloseTo(sum, 2);
   });
 
-  it("returns zero when this year's realized Traditional withdrawal fraction is zero", () => {
-    const result = computeRmdSmoothingTargets(
-      baseInput({ totalTraditionalWithdrawal: 0 }),
-    );
-    expect(result.householdSmoothingTarget).toBe(0);
+  it("follows the structural Traditional share with no cliff at 0 (Q-smoothing (1))", () => {
+    // Owner Q-smoothing (1), 2026-11-24: the share is the household's
+    // structural Traditional share of its Retirement money, not this
+    // year's draw mix, so a $0.00 vs $0.01 Traditional draw can't switch
+    // the target between 0 and about balance ÷ years left. At share 0
+    // nothing is drawn or tolerated: 5,000,000 × 1.05² = 5,512,500 at RMD
+    // age, ÷ 3 years = 1,837,500.00. A share near 0 lands on the same
+    // cent; it was a cliff when the share came from the draw.
+    const at = (traditionalShare: number) =>
+      computeRmdSmoothingTargets(
+        baseInput({
+          people: [
+            person({
+              currentAge: 70,
+              rmdStartAge: 73,
+              personTraditionalBalance: 5_000_000,
+            }),
+          ],
+          householdTraditionalBalance: 5_000_000,
+          traditionalShare,
+        }),
+      ).householdSmoothingTarget;
+    expect(at(0)).toBe(1_837_500);
+    expect(at(1e-9)).toBe(1_837_500);
   });
 
   // Hand-computed dollar assertion -- every
   // other test in this file only checks direction (>0, not-equal), which
   // is exactly why two real math bugs (targetBalanceAtRmdAge missing the
-  // traditionalFractionOfSpending/personShare scale factors, and the
+  // traditionalShare/personShare scale factors, and the
   // forward loop running one year past the prior-year-end balance the
   // RMD formula actually uses) shipped past a fully green suite. This
   // test hand-computes the exact expected value against the documented
@@ -209,7 +226,7 @@ describe("computeRmdSmoothingTargets", () => {
     // currentAge=70, rmdStartAge=73 -> loop runs ages 71,72 ONLY (stops
     // one year short of rmdStartAge -- prior-year-end balance).
     // personShare = 1 (household balance == person balance).
-    // traditionalFractionOfSpending = 40000/80000 = 0.5.
+    // traditionalShare = 0.5.
     // personAvgAnnualTraditionalWithdrawal = 80000 * 0.5 * 1 = 40000.
     //
     // balance: 5,000,000

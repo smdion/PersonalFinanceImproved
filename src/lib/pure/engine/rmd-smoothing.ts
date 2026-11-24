@@ -29,10 +29,10 @@ export interface RmdSmoothingInput {
   /** This year's age → return-rate map, read through `resolveReturnRateForAge` so the forward
    *  loop matches real growth. */
   returnRateMap: Map<number, number>;
-  /** This year's Traditional and total withdrawal; their ratio approximates future spending's
-   *  Traditional share (biased toward under-converting, recomputed every year). */
-  totalTraditionalWithdrawal: number;
-  totalWithdrawal: number;
+  /** The household's structural Traditional share of its Retirement money (Traditional ÷ the
+   *  Retirement balance at the year's start): future spending's Traditional share. Not this
+   *  year's draw mix, so a cent of Traditional drawn can't switch the target on or off. */
+  traditionalShare: number;
   /** This year's portfolio withdrawal (`targetWithdrawal`), projected forward by simple
    *  compounding inflation. */
   currentProjectedAnnualSpendingNeed: number;
@@ -68,12 +68,7 @@ export function computeRmdSmoothingTargets(
 ): RmdSmoothingResult {
   if (!input.enabled || input.people.length === 0) return EMPTY_RESULT;
 
-  const traditionalFractionOfSpending = safeDivide(
-    input.totalTraditionalWithdrawal,
-    input.totalWithdrawal,
-    0,
-  );
-  if (traditionalFractionOfSpending <= 0) return EMPTY_RESULT;
+  const traditionalFractionOfSpending = input.traditionalShare;
 
   const byPerson: RmdSmoothingPersonResult[] = [];
   let householdSmoothingTarget = 0;

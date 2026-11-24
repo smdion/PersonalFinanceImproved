@@ -961,13 +961,51 @@ describe("performRothConversion (RMD-smoothing elevated ceiling)", () => {
       }),
     );
     // 10% bracket cap is 16550; 20000 needed pushes into the 12% bracket
-    // (cap 33725) -- conversionRoom at 12% = 33725-10000 = 23725. Existing
-    // bracket-fill behavior converts the FULL room once a target is
-    // active (no "stop exactly at the smoothing target" logic), so the
-    // actual conversion (23725) is >= the 20000 target -- fully achieved,
-    // with room to spare from the same bracket.
-    expect(result.rothConversionAmount).toBeGreaterThanOrEqual(20000);
+    // (cap 33725, room 23725). Owner Q-smoothing (2), 2026-11-24:
+    // smoothing converts its own target, stopping at income + target when
+    // it raised the bracket, not the raised bracket's top: 20000 exactly.
+    expect(result.rothConversionAmount).toBe(20000);
     expect(result.rmdSmoothingShortfall).toBe(0);
+  });
+
+  it("stops at income + target when a cent over the household's own bracket raises it (Q-smoothing (2))", () => {
+    // Income 50,000, own target 12% (top 96,175: room 46,175). A target
+    // of 46,175.01 raises the bracket to 22% (top 201,550), and before
+    // Q-smoothing filled to that top (151,550); now it converts the
+    // target, 46,175.01. A target of exactly 46,175 fits the household's
+    // own bracket and converts its own room, as before.
+    const at = (rmdSmoothingTarget: number) =>
+      performRothConversion(
+        makeRothInput({
+          balances: makeTaxBuckets(),
+          accountBalance: makeAccountBalances(),
+          rothBracketTarget: 0.12,
+          rmdSmoothingTarget,
+          rmdSmoothingMaxBracketTarget: 0.24,
+        }),
+      ).rothConversionAmount;
+    expect(at(46_175.01)).toBe(46_175.01);
+    expect(at(46_175)).toBe(46_175);
+  });
+
+  it("converts only the smoothing target when conversions are off, even under the household's own bracket (Q-smoothing (2))", () => {
+    // Conversions off, a 22% bracket target set for routing (top 201,550,
+    // room 151,550): before Q-smoothing a $1,000 smoothing target filled
+    // the whole room; now it converts $1,000. With conversions on, the
+    // household's own room (151,550) stays the floor.
+    const at = (enableRothConversions: boolean) =>
+      performRothConversion(
+        makeRothInput({
+          balances: makeTaxBuckets(),
+          accountBalance: makeAccountBalances(),
+          enableRothConversions,
+          rothBracketTarget: 0.22,
+          rmdSmoothingTarget: 1_000,
+          rmdSmoothingMaxBracketTarget: 0.24,
+        }),
+      ).rothConversionAmount;
+    expect(at(false)).toBe(1_000);
+    expect(at(true)).toBe(151_550);
   });
 
   it("reports a real, non-zero rmdSmoothingShortfall when even the elevated ceiling isn't enough", () => {
@@ -985,6 +1023,31 @@ describe("performRothConversion (RMD-smoothing elevated ceiling)", () => {
     expect(result.rmdSmoothingShortfall).toBeGreaterThan(0);
     // 12% bracket cap is 33725; conversionRoom = 33725-10000 = 23725 max.
     expect(result.rothConversionAmount).toBeLessThan(1_000_000);
+  });
+
+  it("reports the whole target as the shortfall when every Traditional dollar is Portfolio-parented (known gap)", () => {
+    // Smoothing's target counts Portfolio-parented Traditional money (the
+    // RMD does), but a conversion draws Retirement money only: with all
+    // 500,000 Portfolio-parented, nothing converts and the whole 50,000
+    // target is reported as the shortfall. Pinned as today's behavior.
+    const result = performRothConversion(
+      makeRothInput({
+        balances: makeTaxBuckets(),
+        accountBalance: makeAccountBalances(),
+        enableRothConversions: false,
+        rothBracketTarget: undefined,
+        rmdSmoothingTarget: 50_000,
+        rmdSmoothingMaxBracketTarget: 0.24,
+        nonRetirement: {
+          total: { "401k": 500000, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+          trad: { "401k": 500000, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+          roth: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+          grandTotal: 500000,
+        },
+      }),
+    );
+    expect(result.rothConversionAmount).toBe(0);
+    expect(result.rmdSmoothingShortfall).toBe(50_000);
   });
 
   it("still respects the Retirement-only capacity cap even when smoothing elevates the target rate", () => {

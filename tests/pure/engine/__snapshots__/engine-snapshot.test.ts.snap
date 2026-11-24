@@ -3694,10 +3694,16 @@ exports[`engine snapshot parity > fixture 68: rmdSmoothingEnabled converts pre-R
       "depletionYear": 2026,
       "subType": undefined,
     },
+    {
+      "category": "brokerage",
+      "depletionAge": 75,
+      "depletionYear": 2035,
+      "subType": undefined,
+    },
   ],
   "finalYear": {
     "age": 79,
-    "allAccountsBalance": 4929689.09,
+    "allAccountsBalance": 4493041.81,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3706,7 +3712,7 @@ exports[`engine snapshot parity > fixture 68: rmdSmoothingEnabled converts pre-R
   "retirementDepletionYear": null,
   "retirementYear": {
     "age": 66,
-    "allAccountsBalance": 3034325.84,
+    "allAccountsBalance": 3041879.3,
     "projectedExpenses": 92250,
     "totalWithdrawal": 105584.62,
   },

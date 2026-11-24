@@ -147,8 +147,8 @@ export function performRothConversion(
   const yearTaxableIncome =
     totalTraditionalWithdrawal + taxableSS + rothTaxableGrowth;
 
-  // The target's room (smoothing may raise the target); none: no conversion.
   const conversionRoom = conversionRoomFor({
+    enableRothConversions,
     configTarget,
     rothBracketTarget: input.rothBracketTarget,
     yearTaxableIncome,
