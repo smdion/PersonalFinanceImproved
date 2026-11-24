@@ -20,6 +20,7 @@ import {
   steadyStateMonthly,
   type RelocationPurchaseInput,
 } from "@/lib/pure/retirement/relocation";
+import { earliestSafeMove } from "./relocation-earliest-move";
 
 /** Converts the router's nullable large-purchase input to `RelocationPurchaseInput` once,
  *  so every call site shares lib/pure/retirement/relocation.ts's precomputed data. */
@@ -365,45 +366,19 @@ export async function computeRelocationFiProjection(
     .filter((r): r is NonNullable<typeof r> => r !== null);
 
   // --- Binary search for earliest safe relocation year ---
-  const probeViable = (rowIndex: number): boolean => {
-    const probeResult = runMovingIn(currentAccRows[rowIndex]!.year);
-    return assessPlan(probeResult).succeeded;
-  };
-
-  let earliestRelocateYear: number | null = null;
-  let earliestRelocateAge: number | null = null;
-  let recommendedPortfolioToRelocate = relocationFiTarget;
-
-  // "Now" is the projection's year 0 — the snapshot's year — like
-  // every row the search below can return.
-  if (isViableNow) {
-    earliestRelocateYear = engineBaseYear;
-    earliestRelocateAge = Math.floor(currentAge);
-    recommendedPortfolioToRelocate = currentPayload.portfolioTotal;
-  } else if (
-    currentAccRows.length > 0 &&
-    probeViable(currentAccRows.length - 1)
-  ) {
-    let lo = 0;
-    let hi = currentAccRows.length - 1;
-    while (lo < hi) {
-      const mid = Math.floor((lo + hi) / 2);
-      if (probeViable(mid)) {
-        hi = mid;
-      } else {
-        lo = mid + 1;
-      }
-    }
-    const foundRow = currentAccRows[lo]!;
-    earliestRelocateYear = foundRow.year;
-    earliestRelocateAge = Math.floor(foundRow.age);
-    // The move happens at the START of foundRow.year, so what's needed
-    // is the balance going into it: the prior year's end (or today's).
-    recommendedPortfolioToRelocate =
-      lo > 0
-        ? currentAccRows[lo - 1]!.retirementBalance
-        : currentPayload.portfolioTotal;
-  }
+  const {
+    earliestRelocateYear,
+    earliestRelocateAge,
+    recommendedPortfolioToRelocate,
+  } = earliestSafeMove(
+    runMovingIn,
+    currentAccRows,
+    relocationFiTarget,
+    isViableNow,
+    engineBaseYear,
+    currentAge,
+    currentPayload,
+  );
 
   // --- Blended projection (when moveYear is provided) ---
   // Current scenario until moveYear, relocation from moveYear on, in one

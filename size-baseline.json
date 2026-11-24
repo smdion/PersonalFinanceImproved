@@ -423,7 +423,8 @@
     "src/server/services/projection/engine-payload/profile-switches.ts": 443,
     "src/server/services/projection/projection-cache.ts": 183,
     "src/server/services/projection/relocation-analysis.ts": 452,
-    "src/server/services/projection/relocation-projection.ts": 484,
+    "src/server/services/projection/relocation-earliest-move.ts": 66,
+    "src/server/services/projection/relocation-projection.ts": 459,
     "src/server/services/projection/strategy-analysis.ts": 682,
     "src/server/services/savings/summary.ts": 329,
     "src/server/services/simulation/mc-inputs.ts": 113,
@@ -1065,7 +1066,7 @@
       "computeRelocationAnalysis": 355
     },
     "src/server/services/projection/relocation-projection.ts": {
-      "computeRelocationFiProjection": 437
+      "computeRelocationFiProjection": 411
     },
     "src/server/services/projection/strategy-analysis.ts": {
       "analyzeStrategy": 385,
