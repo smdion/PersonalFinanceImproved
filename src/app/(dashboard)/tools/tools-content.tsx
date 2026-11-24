@@ -83,7 +83,7 @@ export function ToolsContent() {
     saleProceeds: "",
   });
 
-  // Contribution profile selectors (default to the live/default profile)
+  // Contribution profile selectors (null until picked: the first profile is pre-selected below)
   const [
     relocCurrentContributionProfileId,
     setRelocCurrentContributionProfileId,

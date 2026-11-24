@@ -444,7 +444,7 @@ export async function buildEnginePayload(
   // Performance account lookup for contribution display names (keyed by id)
   const perfAccountMap = new Map(perfAccounts.map((p) => [p.id, p]));
 
-  // Shared context for spec building (used by both default profile and profile switches)
+  // Shared context for spec building (used by both the active profile and profile switches)
   const perfRetirementBehaviorMap = new Map(
     perfAccounts.map((p) => [p.id, p.retirementBehavior]),
   );
