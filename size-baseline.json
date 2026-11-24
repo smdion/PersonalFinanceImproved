@@ -178,7 +178,7 @@
     "src/components/retirement-projection/simulation/mc-scenario-section.tsx": 94,
     "src/components/retirement-projection/simulation/mc-simulation-assumptions.tsx": 157,
     "src/components/retirement-projection/simulation/mc-simulation-types.ts": 30,
-    "src/components/retirement-projection/simulation/projection-mc-results.tsx": 108,
+    "src/components/retirement-projection/simulation/projection-mc-results.tsx": 101,
     "src/components/retirement-projection/simulation/use-simulation-assumption-drafts.ts": 133,
     "src/components/retirement-projection/spending-stability-chart.tsx": 525,
     "src/components/retirement-projection/table/account-notes.ts": 223,

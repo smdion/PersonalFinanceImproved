@@ -3,7 +3,7 @@
 /** Monte Carlo results — loading spinner, errors, warnings and compact summary bar. */
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
-import { maskAmountsInText } from "@/lib/utils/format";
+import { EngineWarnings } from "../engine-warnings";
 import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/pure/simulation/monte-carlo";
 import type { ProjectionState } from "../projection-table-types";
 import { SimulationBar } from "./mc-simulation-bar";
@@ -74,14 +74,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
       )}
       {mcQuery.data?.result && !simulationLoading && (
         <>
-          {/* MC warnings */}
-          {mcQuery.data.result.warnings.length > 0 && (
-            <div className="rounded bg-amber-50 px-3 py-2 text-xs text-amber-600">
-              {mcQuery.data.result.warnings.map((w) => (
-                <div key={w}>{maskAmountsInText(w)}</div>
-              ))}
-            </div>
-          )}
+          <EngineWarnings warnings={mcQuery.data.result.warnings} />
           {/* MC compact summary bar */}
           <SimulationBar
             si={mcQuery.data.simulationInputs}
