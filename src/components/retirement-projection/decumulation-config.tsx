@@ -6,6 +6,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { accountTextColor } from "@/lib/utils/colors";
 import { taxTypeLabel } from "@/lib/config/display-labels";
+import { BROKERAGE_FIRST_MAGI_NOTE } from "@/lib/config/withdrawal-order-labels";
 import { formatPercent } from "@/lib/utils/format";
 import {
   getAccountTypeConfig,
@@ -94,8 +95,6 @@ type DecumulationConfigProps = {
    *  `withdrawalRoutingModeTouched`, so an untouched session shows the real plan default.
    *  Display only: what's sent is gated in use-projection-queries.ts. */
   persistedWithdrawalRoutingMode?: string | null;
-  enableAcaAwareness?: boolean;
-  enableIrmaaAwareness?: boolean;
 };
 
 /**
@@ -122,8 +121,6 @@ export function DecumulationConfig({
   activeSpendingStrategy,
   discretionaryWithdrawalOrder,
   persistedWithdrawalRoutingMode,
-  enableAcaAwareness,
-  enableIrmaaAwareness,
 }: DecumulationConfigProps) {
   const strategyKey = (activeSpendingStrategy ??
     "fixed") as WithdrawalStrategyType;
@@ -324,14 +321,11 @@ export function DecumulationConfig({
                     — edit in Retirement Settings &rarr; Taxes in Retirement.
                   </span>
                 </div>
-                {discretionaryWithdrawalOrder === "brokerage_first" &&
-                  (enableAcaAwareness || enableIrmaaAwareness) && (
-                    <p className="text-caption mt-1 text-amber-700">
-                      ACA/IRMAA awareness is on — this will realize MAGI-counted
-                      gains sooner each year, which can reduce ACA subsidy or
-                      bring you closer to an IRMAA surcharge tier.
-                    </p>
-                  )}
+                {discretionaryWithdrawalOrder === "brokerage_first" && (
+                  <p className="text-caption mt-1 text-amber-700">
+                    {BROKERAGE_FIRST_MAGI_NOTE}
+                  </p>
+                )}
               </div>
             </div>
           )}

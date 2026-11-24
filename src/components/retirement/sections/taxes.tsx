@@ -10,6 +10,7 @@ import {
   PROJECTION_FILING_STATUSES,
 } from "@/lib/config/filing-status";
 import { filingStatusLabel } from "@/lib/config/display-labels";
+import { BROKERAGE_FIRST_MAGI_NOTE } from "@/lib/config/withdrawal-order-labels";
 import { useId, useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { HSA_DRAW_TREATMENT } from "@/lib/pure/accounts/early-access";
@@ -362,16 +363,11 @@ export function TaxesSection({
               <option value="roth_first">Roth basis first (default)</option>
               <option value="brokerage_first">Brokerage 0% room first</option>
             </select>
-            {settings.discretionaryWithdrawalOrder === "brokerage_first" &&
-              (settings.enableAcaAwareness ||
-                settings.enableIrmaaAwareness) && (
-                <div className="text-caption mt-1.5 text-amber-700">
-                  ACA/IRMAA awareness is on — brokerage-first will realize
-                  MAGI-counted gains sooner each year, which can reduce ACA
-                  subsidy or bring you closer to an IRMAA surcharge tier even
-                  though those gains are taxed at 0% federally.
-                </div>
-              )}
+            {settings.discretionaryWithdrawalOrder === "brokerage_first" && (
+              <div className="text-caption mt-1.5 text-amber-700">
+                {BROKERAGE_FIRST_MAGI_NOTE}
+              </div>
+            )}
           </div>
         </div>
         <div>

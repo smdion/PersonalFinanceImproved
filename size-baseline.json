@@ -129,7 +129,7 @@
     "src/components/profiles/what-if/what-if-step.tsx": 59,
     "src/components/profiles/what-if/what-if-tab.tsx": 570,
     "src/components/retirement-projection/coast-fire-card.tsx": 397,
-    "src/components/retirement-projection/decumulation-config.tsx": 441,
+    "src/components/retirement-projection/decumulation-config.tsx": 435,
     "src/components/retirement-projection/index.tsx": 159,
     "src/components/retirement-projection/overrides/override-field-parts.tsx": 117,
     "src/components/retirement-projection/overrides/override-forms.tsx": 375,
@@ -143,7 +143,7 @@
     "src/components/retirement-projection/projection-card/coast-fire-custom-age.tsx": 84,
     "src/components/retirement-projection/projection-card/compute-controls.tsx": 61,
     "src/components/retirement-projection/projection-card/compute-zone.tsx": 84,
-    "src/components/retirement-projection/projection-card/decumulation-panel.tsx": 53,
+    "src/components/retirement-projection/projection-card/decumulation-panel.tsx": 51,
     "src/components/retirement-projection/projection-card/display-controls.tsx": 59,
     "src/components/retirement-projection/projection-card/display-secondary-row.tsx": 151,
     "src/components/retirement-projection/projection-card/dollars-pills.tsx": 127,
@@ -196,7 +196,7 @@
     "src/components/retirement-projection/use-projection-queries.ts": 814,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 549,
     "src/components/retirement/assumptions-band.tsx": 404,
-    "src/components/retirement/sections/taxes.tsx": 538,
+    "src/components/retirement/sections/taxes.tsx": 534,
     "src/components/savings/api-sync-section.tsx": 588,
     "src/components/savings/contribution-grid.tsx": 473,
     "src/components/savings/extra-paycheck-growth.tsx": 231,
@@ -723,7 +723,7 @@
       "WhatIfTab": 529
     },
     "src/components/retirement-projection/decumulation-config.tsx": {
-      "DecumulationConfig": 338
+      "DecumulationConfig": 333
     },
     "src/components/retirement-projection/lump-sum-form.tsx": {
       "LumpSumForm": 155
@@ -793,7 +793,7 @@
       "StrategyParamsSection.renderField": 173
     },
     "src/components/retirement/sections/taxes.tsx": {
-      "TaxesSection": 472
+      "TaxesSection": 467
     },
     "src/components/savings/api-sync-section.tsx": {
       "ApiSyncSection": 166,

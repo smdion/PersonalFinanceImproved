@@ -16,6 +16,7 @@ vi.mock("@/components/ui/help-tip", () => ({
 }));
 
 import { DecumulationConfig } from "@/components/retirement-projection/decumulation-config";
+import { BROKERAGE_FIRST_MAGI_NOTE } from "@/lib/config/withdrawal-order-labels";
 import {
   getAllCategories,
   getDefaultDecumulationOrder,
@@ -356,6 +357,32 @@ describe("DecumulationConfig", () => {
       />,
     );
     expect(screen.queryByText(/FROM WHICH accounts/)).not.toBeInTheDocument();
+  });
+
+  it("shows the brokerage-first MAGI note with no awareness setting passed", () => {
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          showDecumConfig: true,
+          discretionaryWithdrawalOrder: "brokerage_first",
+        })}
+      />,
+    );
+    expect(screen.getByText(BROKERAGE_FIRST_MAGI_NOTE)).toBeInTheDocument();
+  });
+
+  it("shows no brokerage-first note for Roth-first", () => {
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          showDecumConfig: true,
+          discretionaryWithdrawalOrder: "roth_first",
+        })}
+      />,
+    );
+    expect(
+      screen.queryByText(BROKERAGE_FIRST_MAGI_NOTE),
+    ).not.toBeInTheDocument();
   });
 });
 

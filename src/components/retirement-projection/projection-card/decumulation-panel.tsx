@@ -45,8 +45,6 @@ export function DecumulationPanel({ state }: { state: ProjectionState }) {
           engineSettings?.discretionaryWithdrawalOrder
         }
         persistedWithdrawalRoutingMode={engineSettings?.withdrawalRoutingMode}
-        enableAcaAwareness={engineSettings?.enableAcaAwareness}
-        enableIrmaaAwareness={engineSettings?.enableIrmaaAwareness}
       />
     </div>
   );

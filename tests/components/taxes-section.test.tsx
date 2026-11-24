@@ -16,6 +16,7 @@ import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-br
 import type { Settings } from "@/components/retirement/sections/types";
 import { makeSettings } from "./fixtures/retirement-settings";
 import { expectLabelReachesControl } from "./label-click";
+import { BROKERAGE_FIRST_MAGI_NOTE } from "@/lib/config/withdrawal-order-labels";
 
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: ({ text }: { text?: string }) => (
@@ -246,5 +247,27 @@ describe("TaxesSection — labels", () => {
     renderTaxesSection();
     expectLabelReachesControl("Bracket Ceiling");
     expectLabelReachesControl("Withdrawal Routing");
+  });
+});
+
+describe("TaxesSection — brokerage-first note", () => {
+  it("shows the MAGI note for brokerage-first with ACA and IRMAA awareness off", () => {
+    renderTaxesSection({
+      discretionaryWithdrawalOrder: "brokerage_first",
+      enableAcaAwareness: false,
+      enableIrmaaAwareness: false,
+    });
+    expect(screen.getByText(BROKERAGE_FIRST_MAGI_NOTE)).toBeInTheDocument();
+  });
+
+  it("shows no note for Roth-first", () => {
+    renderTaxesSection({
+      discretionaryWithdrawalOrder: "roth_first",
+      enableAcaAwareness: true,
+      enableIrmaaAwareness: true,
+    });
+    expect(
+      screen.queryByText(BROKERAGE_FIRST_MAGI_NOTE),
+    ).not.toBeInTheDocument();
   });
 });
