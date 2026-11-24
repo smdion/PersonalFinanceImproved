@@ -62,6 +62,7 @@ These stop the failure this codebase is most prone to: maintenance by addition, 
 Rules below state the target. These parts aren't true yet; don't build on them.
 
 - **"One config entry" for an account type,** until v0.11.3: some lists and router schemas are still built at module load (the `it.fails` cases in `tests/lint/violations.test.ts`).
+- **The engine supports one overflow-target (basis) category** (`isOverflowTarget`; brokerage today): a second config entry marked as one mis-charges cost basis between the two, until the per-account ledger is the engine's only balance record (v0.11.1's merge of the balance tracks).
 - **Early access has two behaviors,** until v0.11.1: the engine reads each type's `earlyAccessRule`; Tax Buckets still branches on IRA and HSA by name.
 - **A Salary Profile entry's salary divisor has no editor,** until v0.11.2: an employer that divides a 27-payday year's salary by 27 is set through the API or a backup; every other entry divides by the pay schedule's periods.
 - **A person's age has copies in the engine input** (`currentAge`, `perPersonBirthYears`, checked against `people`; `birthYear` and each Social Security entry's birth year, not checked), until they are derived from `people` (BY2).
