@@ -130,10 +130,14 @@ describe("knownCategoryRecord", () => {
 
 describe("unknown category notes", () => {
   it("names the category and the setting it is left out of", () => {
-    expect(
-      unknownCategoryNote("future_type", "the saved withdrawal order"),
-    ).toBe(
+    expect(unknownCategoryNote("future_type", "withdrawalOrder")).toBe(
       'Account type "future_type", which this version doesn\'t know, is left out of the saved withdrawal order. Update Ledgr or change that setting.',
+    );
+    expect(unknownCategoryNote("future_type", "withdrawalSplits")).toBe(
+      'Account type "future_type", which this version doesn\'t know, is left out of the saved withdrawal splits. Update Ledgr or change that setting.',
+    );
+    expect(unknownCategoryNote("future_type", { changesByYear: "2040" })).toBe(
+      'Account type "future_type", which this version doesn\'t know, is left out of Changes by year for 2040. Update Ledgr or change that setting.',
     );
   });
 });

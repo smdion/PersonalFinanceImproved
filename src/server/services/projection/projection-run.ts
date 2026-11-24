@@ -136,9 +136,7 @@ function withKnownCategories(
       delete kept[field];
     else kept[field] = read.known;
     for (const category of read.unknown)
-      drops.notes.push(
-        unknownCategoryNote(category, `Changes by year for ${year}`),
-      );
+      drops.notes.push(unknownCategoryNote(category, { changesByYear: year }));
   }
   if (Array.isArray(row.lumpSums))
     kept.lumpSums = row.lumpSums.filter((lumpSum: unknown) => {
@@ -287,10 +285,10 @@ export function buildDecumulationDefaults(
   );
   if (clientDefaults.withdrawalOrder === undefined)
     for (const category of known.unknownInOrder)
-      notes.push(unknownCategoryNote(category, "the saved withdrawal order"));
+      notes.push(unknownCategoryNote(category, "withdrawalOrder"));
   if (clientDefaults.withdrawalSplits === undefined)
     for (const category of known.unknownInSplits)
-      notes.push(unknownCategoryNote(category, "the saved withdrawal splits"));
+      notes.push(unknownCategoryNote(category, "withdrawalSplits"));
   return {
     withdrawalRate: toNumber(settings.withdrawalRate),
     // The ONE place the routing is resolved, for every caller: a client

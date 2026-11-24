@@ -101,10 +101,30 @@ export function knownCategoryRecord<V>(stored: Readonly<Record<string, V>>): {
   return { known, unknown };
 }
 
+/** A saved setting a category can be left out of: retirement_settings'
+ *  withdrawal order or splits, or a year's Changes by year row. */
+export type SavedCategorySetting =
+  "withdrawalOrder" | "withdrawalSplits" | { changesByYear: string };
+
+/** A year's Changes by year row, as the notes name it. */
+const changesByYear = (year: string) => `Changes by year for ${year}`;
+
+const SAVED_ROUTING_NAMES = {
+  withdrawalOrder: "the saved withdrawal order",
+  withdrawalSplits: "the saved withdrawal splits",
+} as const;
+
 /** The note for a category `knownCategoryList` or `knownCategoryRecord`
- *  leaves out of a saved setting ("the saved withdrawal order"). */
-export function unknownCategoryNote(category: string, setting: string): string {
-  return `Account type "${category}", which this version doesn't know, is left out of ${setting}. Update Ledgr or change that setting.`;
+ *  leaves out of a saved setting. */
+export function unknownCategoryNote(
+  category: string,
+  setting: SavedCategorySetting,
+): string {
+  const name =
+    typeof setting === "string"
+      ? SAVED_ROUTING_NAMES[setting]
+      : changesByYear(setting.changesByYear);
+  return `Account type "${category}", which this version doesn't know, is left out of ${name}. Update Ledgr or change that setting.`;
 }
 
 /** A saved lump sum the projection leaves out: its row's year, its target
@@ -137,7 +157,7 @@ export function unknownLumpSumTargetNotes(
     )
       ? dollars(amounts.reduce((sum, a) => sum + a, 0))
       : null;
-    const where = `in Changes by year for ${year}`;
+    const where = `in ${changesByYear(year)}`;
     const target = `account type "${category}", which this version doesn't know`;
     if (amounts.length === 1)
       return `A lump sum ${total ? `of ${total} ` : ""}${where} goes to ${target}, so the projection leaves it out. Update Ledgr or change that lump sum.`;
