@@ -138,6 +138,12 @@ describe("answer key: IRMAA tiers, Single, 2026 (CMS26)", () => {
     // 171,000 is the second tier.
     cents(irmaa(150_000, "HOH"), 2884.8);
   });
+
+  it("ret/I14 [RET-14] qualifying surviving spouse, 150,000: the individual table, 2,884.80", () => {
+    // 418.1120(b): QSS uses the individual table, not the joint one (which
+    // would charge 0 at 150,000); the second tier, as I15.
+    cents(irmaa(150_000, "QSS"), 2884.8);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -471,9 +477,4 @@ describe("answer key: IRMAA cases blocked on a feature", () => {
   it.todo(`ret/I33: blocked on ${PREMIUM_INPUT}`);
   it.todo(`ret/I34: blocked on ${PREMIUM_INPUT}`);
   it.todo(`ret/P26: blocked on ${PREMIUM_INPUT}`);
-  // I14: QSS 150,000, the individual table: 2,884.80 (no QSS status yet;
-  // decision B2 adds QSS rows with QSS).
-  it.todo(
-    'ret/I14: blocked on v0.11 Retirement rules "Add: survivor benefit and first death" (QSS IRMAA, with the filing status rework)',
-  );
 });
