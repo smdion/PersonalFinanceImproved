@@ -1,14 +1,10 @@
 import type { Db } from "@/lib/db";
-import * as schema from "@/lib/db/schema";
 import { planEndAge as planEndAgeOf } from "@/lib/pure/household/household-timeline";
-import {
-  classifyAssetClasses,
-  stockShareByAge,
-} from "@/lib/pure/simulation/stock-share";
 import {
   interpolateAllocations,
   weightedGeometricRate,
 } from "@/lib/pure/simulation/random";
+import { simulationStockShareByAge } from "./simulation-stock-share";
 
 /** A base input run on the Simulation's returns: each age's geometric rate
  *  on the glide path, and the glide path's stock share by age (VPW). */
@@ -30,16 +26,13 @@ export async function simulationEngineInput<
     const blended = weightedGeometricRate(assetClasses, allocations);
     simulationReturnRates.push({ label: `Age ${a}`, rate: blended });
   }
-  const classBuckets = await db.select().from(schema.assetClassBuckets);
   return {
     ...baseEngineInput,
     returnRates: simulationReturnRates,
-    stockShareByAge:
-      stockShareByAge(
-        glidePath,
-        classifyAssetClasses(classBuckets),
-        baseEngineInput.currentAge,
-        planEndAgeOf(baseEngineInput),
-      ) ?? undefined,
+    stockShareByAge: await simulationStockShareByAge(
+      db,
+      baseEngineInput,
+      glidePath,
+    ),
   };
 }
