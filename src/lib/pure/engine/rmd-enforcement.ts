@@ -45,7 +45,9 @@ export interface RmdEnforcementInput {
 
 interface RmdEnforcementResult {
   rmdAmount: number;
-  rmdOverrodeRouting: boolean;
+  /** Traditional dollars the RMD added to the draw (the most that can be RMD
+   *  money past the need); the row's `rmdOverrodeRouting` is `rmdAdded > 0`. */
+  rmdAdded: number;
   totalTraditionalWithdrawal: number;
   totalWithdrawal: number;
   warnings: string[];
@@ -84,7 +86,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
 
   const warnings: string[] = [];
   let rmdAmount = 0;
-  let rmdOverrodeRouting = false;
+  let distributed = 0;
   let rmdShortfallAmount = 0;
 
   if (
@@ -101,7 +103,6 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
       const routedTraditional = routedTraditionalDraw(slots);
       if (routedTraditional < toDraw) {
         const rmdShortfall = roundToCents(toDraw - routedTraditional);
-        rmdOverrodeRouting = true;
         // Spread the shortfall over Traditional balances, by balance.
         const tradCategories = categoriesWithTaxPreference();
         // Compute available capacity per category: balance minus what routing already took
@@ -119,7 +120,6 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
           };
         });
         const totalTradBal = tradBalByCategory.reduce((s, x) => s + x.bal, 0);
-        let distributed = 0;
         if (totalTradBal > 0) {
           // Multi-pass distribution: proportional allocation with cap redistribution.
           const allocated = new Map<AccountCategory, number>();
@@ -219,7 +219,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
 
   return {
     rmdAmount,
-    rmdOverrodeRouting,
+    rmdAdded: roundToCents(distributed),
     totalTraditionalWithdrawal,
     totalWithdrawal,
     warnings,
@@ -256,15 +256,10 @@ interface OwnerRmdInput {
   nonRetirement?: NonRetirementExclusion;
 }
 
-interface OwnerRmdResult {
+interface OwnerRmdResult extends Omit<RmdEnforcementResult, "rmdAmount"> {
   /** Account key → the Traditional draw that account must make for its
    *  owner's RMD (`distributeWithdrawals` applies these first). */
   pins: Map<string, number>;
-  rmdOverrodeRouting: boolean;
-  totalTraditionalWithdrawal: number;
-  totalWithdrawal: number;
-  warnings: string[];
-  rmdShortfallAmount: number;
   /** Each owner's part of the RMD their accounts couldn't pay. */
   shortfallByPerson: Map<number, number>;
   /** Traditional dollars moved between categories to fall on the right
@@ -415,7 +410,7 @@ export function enforceOwnerRmds(input: OwnerRmdInput): OwnerRmdResult {
   const shortfalls = [...shortfallByPerson.values()];
   return {
     pins,
-    rmdOverrodeRouting: deficit > 0,
+    rmdAdded: deficit,
     totalTraditionalWithdrawal: roundToCents(
       input.totalTraditionalWithdrawal + deficit,
     ),

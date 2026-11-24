@@ -15,7 +15,7 @@ import { performRothConversion } from "../roth-conversion";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
-import { drawNiit } from "../../tax/niit";
+import { drawCost, surplusCreditFor } from "../draw-cost";
 import { applyLumpSums } from "./lump-sum";
 import { perOwnerRmds } from "./helpers";
 import { irmaaOutsideNeed } from "./irmaa-charge";
@@ -56,7 +56,7 @@ export function priceYearTax(
   const { slots } = flow.route;
   const { totalTraditionalWithdrawal, totalRothWithdrawal } = flow.rmd;
   const { rothTaxSplit, earlyWithdrawalPenalty } = flow.drawn;
-  const { taxEstimate } = flow.need;
+  const { taxEstimate, ssSurplus } = flow.need;
   // One pricing call, shared with withdrawal-solver.ts's estimate and used
   // again after the conversion (never a hand copy of its formula).
   const priceTax = (ss: number, brokerageTaxCostOverride?: number) =>
@@ -89,10 +89,9 @@ export function priceYearTax(
     taxableSS = taxableSSFor(ssIncome, taxFromSlots, filingStatus);
     taxFromSlots = priceTax(taxableSS);
   }
-  // The tax the draw was sized to pay, NIIT included (withdrawal-solver.ts).
-  const niit = drawNiit(taxFromSlots, taxableSS, filingStatus);
-  const drawTax = roundToCents(taxFromSlots.taxCost + niit);
-  return { priceTax, taxableSS, taxFromSlots, standardDeduction, drawTax };
+  // What the draw was sized to pay (draw-cost.ts, as withdrawal-solver.ts).
+  const cost = drawCost(taxFromSlots, taxableSS, filingStatus, ssSurplus);
+  return { priceTax, taxableSS, taxFromSlots, standardDeduction, cost };
 }
 
 /** The priced year's parts the settlement reads (the brokerage slot's basis
@@ -124,9 +123,7 @@ export function pricedYearParts(
 
   const penaltyCost = taxFromSlots.penaltyCost;
   const ssTaxCost = taxFromSlots.ssTaxCost;
-  // Never more than the tax: the surplus isn't banked.
-  const surplusCredit = (tax: number) =>
-    roundToCents(Math.min(ssSurplus, Math.max(0, tax)));
+  const surplusCredit = (tax: number) => surplusCreditFor(ssSurplus, tax);
 
   let { grossUpFactor } = taxEstimate;
   // grossUpFactor after the RMD (diagnostics): an RMD can add Traditional
@@ -156,7 +153,7 @@ export function pricedYearParts(
 }
 
 /** The year's draws settled: deducted, lump sums in, the RMD excess reinvested
- *  or spent (UD-04, pending D1: the RMD adds to the draw), depletions tracked. */
+ *  or spent (UD-04: at most what the RMD added), depletions tracked. */
 export function settleYearDraws(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
@@ -172,9 +169,8 @@ export function settleYearDraws(
   const { depletionTracked, accountDepletions } = state;
   const { config, year, age } = thisYear;
   const { slots } = flow.route;
-  const { surplusCredit } = flow.parts;
-  const { taxFromSlots, drawTax } = flow.priced;
-  const { rmdOverrodeRouting, totalWithdrawal } = flow.rmd;
+  const { taxFromSlots, cost } = flow.priced;
+  const { rmdAdded, totalWithdrawal } = flow.rmd;
   const { afterTaxNeed, irmaa } = flow.need;
   const basisOut = taxFromSlots.brokerageBasisOut;
   deductWithdrawals({ slots, balances, accountBalance, basisOut });
@@ -185,9 +181,9 @@ export function settleYearDraws(
     applyLumpSums(config.lumpSums, ctx, state),
   );
 
-  // RMD money past the need and the year-start charge, reinvested or spent; the
-  // draw pays its tax and sized NIIT (row NIIT: the re-price), less SS surplus.
-  const withdrawalTax = roundToCents(drawTax - surplusCredit(drawTax));
+  // RMD money past the need and the year-start charge, reinvested or spent,
+  // after the draw's whole cost: tax, NIIT and penalty, less the SS surplus
+  // (the row's NIIT is charged in the re-price).
   const rmdExcessAmount = followInflows(
     indAccounts,
     indKey,
@@ -196,10 +192,10 @@ export function settleYearDraws(
     () =>
       reinvestRmdExcess(
         config.rmdExcessHandling,
-        rmdOverrodeRouting,
+        rmdAdded,
         totalWithdrawal,
         afterTaxNeed + irmaaOutsideNeed(irmaa, state),
-        withdrawalTax,
+        cost.netCost,
         balances,
         accountBalance,
         holdsAccounts ? indAccounts : undefined,

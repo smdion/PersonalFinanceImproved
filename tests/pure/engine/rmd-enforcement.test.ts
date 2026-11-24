@@ -103,11 +103,28 @@ describe("enforceRmd", () => {
         totalWithdrawal: 8000,
       }),
     );
-    expect(result.rmdOverrodeRouting).toBe(true);
+    expect(result.rmdAdded).toBe(5000);
     expect(result.totalWithdrawal).toBe(13000);
     expect(
       slots.find((s) => s.category === "401k")?.traditionalWithdrawal,
     ).toBe(5000);
+  });
+
+  it("D1: an RMD with no Traditional money in reach adds nothing to the draw", () => {
+    // 45,454.55 required, no Traditional balance: nothing is distributed.
+    // The shortfall is reported, but the draw is routing's own (D1: only
+    // dollars the RMD adds can be RMD money past the need).
+    const accountBalance = makeAccountBalances({ preTax: 0, afterTax: 0 });
+    const result = enforceRmd(
+      baseInput({
+        overrideRmdRequired: 45454.55,
+        totalWithdrawal: 60000,
+        accountBalance,
+      }),
+    );
+    expect(result.rmdAdded).toBe(0);
+    expect(result.totalWithdrawal).toBe(60000);
+    expect(result.rmdShortfallAmount).toBe(45454.55);
   });
 
   it("rmdShortfallAmount is 0 when nothing is owed (no override, age under RMD start)", () => {

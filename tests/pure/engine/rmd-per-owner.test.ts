@@ -305,7 +305,7 @@ describe("enforceOwnerRmds", () => {
     expect(slots.map((s) => s.withdrawal)).toEqual([20000, 10000]);
     expect(result.totalWithdrawal).toBe(30000);
     expect(result.totalTraditionalWithdrawal).toBe(30000);
-    expect(result.rmdOverrodeRouting).toBe(false);
+    expect(result.rmdAdded).toBe(0);
   });
 
   it("two owners in one category: the pin stays on the owner's account", () => {
@@ -354,7 +354,7 @@ describe("enforceOwnerRmds", () => {
       balances(500000, 500000),
     );
     expect(result.totalTraditionalWithdrawal).toBe(40000);
-    expect(result.rmdOverrodeRouting).toBe(false);
+    expect(result.rmdAdded).toBe(0);
     expect(result.rmdReassignedAmount).toBe(22727.27);
     expect(slots.find((s) => s.category === "ira")?.traditionalWithdrawal).toBe(
       22727.27,
@@ -372,7 +372,7 @@ describe("enforceOwnerRmds", () => {
       [{ personId: 1, personName: "Ann", required: 20000 }],
       balances(0, 500000),
     );
-    expect(result.rmdOverrodeRouting).toBe(true);
+    expect(result.rmdAdded).toBe(15000);
     expect(result.totalTraditionalWithdrawal).toBe(20000);
     expect(result.totalWithdrawal).toBe(20000);
   });

@@ -65,7 +65,15 @@ import {
   getRmdFactor,
   getRmdStartAge,
 } from "@/lib/config/rmd-tables";
-import { enforceOwnerRmds } from "@/lib/pure/engine/rmd-enforcement";
+import {
+  enforceOwnerRmds,
+  enforceRmd,
+} from "@/lib/pure/engine/rmd-enforcement";
+import { reinvestRmdExcess } from "@/lib/pure/engine/balance-deduction";
+import {
+  makeAccountBalances,
+  makeTaxBuckets,
+} from "../fixtures/engine-fixtures";
 import { computeQcdAmounts, totalQcdAmount } from "@/lib/pure/engine/qcd";
 import type {
   AccountBalances,
@@ -362,7 +370,7 @@ describe("answer key: the RMD amount", () => {
       [acct("IRA A", "ira", 60_000, 1), acct("IRA B", "ira", 40_000, 1)],
       4_065.04,
     );
-    expect(r.rmdOverrodeRouting).toBe(false);
+    cents(r.rmdAdded, 0);
     cents(r.totalTraditionalWithdrawal, 4_065.04);
     cents(r.rmdShortfallAmount, 0);
   });
@@ -675,6 +683,53 @@ describe("answer key: the QCD limit", () => {
     // has no status test): 50,000 under 111,000, all excluded.
     // `computeQcdAmounts` takes no status.
     cents(qcdOf(50_000, 2026), 50_000);
+  });
+});
+
+// ── RMD money past the need (D1) ────────────────────────────────────────
+
+describe("answer key: the RMD excess is what the RMD added (D1)", () => {
+  // D1 (owner 2026-11-02; spec UD-04): RMD dollars count toward the year's
+  // need first and any excess is reinvested, so the excess is RMD dollars
+  // beyond the need, never more than the RMD added to the draw (E0 ruling
+  // 2026-11-23, RX1). Invented year: routing drew 63,588.65 against a need
+  // of 50,000 and a tax of 10,000 (3,588.65 over, from a draw the RMD didn't
+  // make); the RMD of 4,065.04 (100,000 ÷ 24.6 at 75, Table III) finds
+  // only 0.01 of Traditional money left in reach. It adds 0.01, so the draw
+  // is 63,588.66 and the excess is min(0.01, 63,588.66 − 50,000 − 10,000)
+  // = 0.01 reinvested, not 3,588.66.
+  it("ret/RX1 [RET-06] an RMD that adds 0.01 to a draw 3,588.65 over the need reinvests 0.01", () => {
+    const accountBalance = makeAccountBalances({ preTax: 0, afterTax: 0 });
+    accountBalance.ira = {
+      structure: "roth_traditional",
+      traditional: 0.01,
+      roth: 0,
+    };
+    const rmd = enforceRmd({
+      age: 75,
+      rmdStartAge: 73,
+      priorYearEndTradBalance: 100_000,
+      slots: [],
+      totalTraditionalWithdrawal: 0,
+      totalWithdrawal: 63_588.65,
+      accountBalance,
+      qcdCredit: 0,
+    });
+    cents(rmd.rmdAmount, 4_065.04);
+    cents(rmd.rmdAdded, 0.01);
+    cents(rmd.totalWithdrawal, 63_588.66);
+    const buckets = makeTaxBuckets({ afterTax: 0, afterTaxBasis: 0 });
+    const excess = reinvestRmdExcess(
+      "reinvest",
+      rmd.rmdAdded,
+      rmd.totalWithdrawal,
+      50_000,
+      10_000,
+      buckets,
+      makeAccountBalances({ afterTax: 0, afterTaxBasis: 0 }),
+    );
+    cents(excess, 0.01);
+    cents(buckets.afterTax, 0.01);
   });
 });
 

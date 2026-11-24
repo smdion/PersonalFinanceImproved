@@ -4111,9 +4111,6 @@
     "ratchet/no-abbreviation": {
       "count": 6
     },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-unregistered-fallback": {
       "count": 2
     }
@@ -4128,7 +4125,7 @@
       "count": 8
     },
     "ratchet/no-history-comment": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/pure/engine/projection-year-handlers/types.ts": {

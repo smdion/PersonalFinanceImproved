@@ -546,6 +546,59 @@ describe("a gap year in year 0, drawn from a 401k with no owner", () => {
   it("pins the year", () => pin("gap-year-0-unowned", [y]));
 });
 
+describe("household path: an RMD with no Traditional money in reach adds nothing (RX1)", () => {
+  // No Social Security entries means no per-person RMD start ages, so the
+  // held parts take the household RMD path. Ann's IRA is Portfolio money:
+  // its balance sets the RMD, but none of it can be drawn, so the RMD adds
+  // $0. The year's draw is brokerage money with gains (basis 1,000,000 of
+  // 5,000,000) large enough to owe NIIT, so a post-RMD gross-up recomputed
+  // without the NIIT would differ from the estimate's.
+  const base = household(
+    [
+      { ...acct("Ann IRA", "ira", 500000, 1), parentCategory: "Portfolio" },
+      retirementBrokerage("Ann brokerage", 5000000, 1),
+    ],
+    {
+      annualExpenses: 400000,
+      decumulationAnnualExpenses: 400000,
+      socialSecurityEntries: undefined,
+      perPersonBirthYears: [1948],
+    },
+    {
+      rmdExcessHandling: "reinvest",
+      withdrawalOrder: ["brokerage", "401k", "403b", "ira", "hsa"],
+    },
+  );
+  const input: ProjectionInput = {
+    ...base,
+    individualAccounts: base.individualAccounts.map((p) =>
+      p.category === "brokerage" ? { ...p, startingBasis: 1000000 } : p,
+    ),
+  };
+  const y = decum(input)[0]!;
+
+  it("takes the path: an RMD is due, none of it is distributed, the shortfall warns", () => {
+    expect(y.rmdByPerson).toBeUndefined();
+    expect(y.rmdAmount).toBeGreaterThan(0);
+    expect(y.rmdShortfallAmount).toBe(y.rmdAmount);
+    expect(y.totalTraditionalWithdrawal).toBe(0);
+    expect(y.niitAmount).toBeGreaterThan(0);
+    expect(y.warnings.some((w) => w.startsWith("RMD SHORTFALL"))).toBe(true);
+  });
+
+  it("D1: nothing was added, so routing wasn't overridden and nothing is RMD excess", () => {
+    expect(y.rmdOverrodeRouting).toBe(false);
+    expect(y.rmdExcessAmount).toBe(0);
+    // The estimate's gross-up (need and the draw's whole cost, NIIT
+    // included), not a post-RMD recompute.
+    const cost = y.taxCost + (y.penaltyCost ?? 0);
+    expect(y.grossUpFactor).toBeCloseTo(
+      1 / (1 - cost / (y.afterTaxNeed + cost)),
+      6,
+    );
+  });
+});
+
 describe("a run whose parts are all synthetic takes the household path", () => {
   // Unreached until such a run keeps its own ledger: per-owner RMDs, QCDs,
   // penalty eligibility and RMD smoothing, and a synthetic part's hidden row.

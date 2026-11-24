@@ -9,7 +9,7 @@ import type {
   TaxBuckets,
   EnginePart,
 } from "../accounts/account-balances.types";
-import { drawNiit } from "../tax/niit";
+import { drawCost } from "./draw-cost";
 import { roundToCents } from "../../utils/math";
 import { cloneAccountBalances } from "./balance-utils";
 import {
@@ -225,19 +225,14 @@ function evaluateCost(
     taxableSS = taxableSSFor(input.ssIncome, taxResult, filingStatus);
     taxResult = price(taxableSS);
   }
-  // NIIT as the year handler charges it; conversions (later) stay out of MAGI.
-  const niit = drawNiit(taxResult, taxableSS, filingStatus);
-  const taxCost = roundToCents(taxResult.taxCost + niit);
-  const totalCost = roundToCents(taxCost + taxResult.penaltyCost);
-  // What the withdrawal itself must cover (Social Security's surplus pays
-  // the tax first, decumulation-year.ts credits the same amount).
-  const surplusCredit = Math.min(input.ssSurplus, taxCost);
+  // The draw's cost as the year's settlement prices it (draw-cost.ts).
+  const cost = drawCost(taxResult, taxableSS, filingStatus, input.ssSurplus);
   return {
-    taxCost,
+    taxCost: cost.taxCost,
     taxableSS,
-    penaltyCost: taxResult.penaltyCost,
-    totalCost,
-    netCost: roundToCents(totalCost - surplusCredit),
+    penaltyCost: cost.penaltyCost,
+    totalCost: cost.totalCost,
+    netCost: cost.netCost,
     // What the router couldn't deliver of this trial amount (account caps,
     // exclusion, or genuine balance exhaustion). The loop below grosses up
     // what IS delivered and stops once a larger trial delivers no more.

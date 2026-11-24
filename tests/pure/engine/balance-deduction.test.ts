@@ -175,6 +175,9 @@ describe("clampBalances (pins current behavior)", () => {
 });
 
 describe("reinvestRmdExcess (pins current behavior)", () => {
+  // An RMD addition larger than any over-draw below, so the excess is the
+  // whole over-draw (D1's bound doesn't bind).
+  const RMD_ADDED_ALL = 1_000_000;
   const indKey = makeIndKey();
   const accounts = (): IndividualAccountInput[] => [
     makeIndividualAccount({
@@ -202,11 +205,11 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
   const indBalOf = (accts: IndividualAccountInput[]) =>
     new Map(accts.map((ia) => [indKey(ia), ia.startingBalance]));
 
-  it("returns 0 and changes nothing when the RMD didn't override routing", () => {
+  it("returns 0 and changes nothing when the RMD added nothing to the draw", () => {
     const { balances, accountBalance } = start();
     const excess = reinvestRmdExcess(
       "reinvest",
-      false,
+      0,
       90000,
       50000,
       10000,
@@ -222,7 +225,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     expect(
       reinvestRmdExcess(
         "reinvest",
-        true,
+        RMD_ADDED_ALL,
         60000,
         50000,
         10000,
@@ -239,7 +242,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     // 90,000 drawn - 50,000 need - 10,000 tax = 30,000 excess.
     const excess = reinvestRmdExcess(
       "reinvest",
-      true,
+      RMD_ADDED_ALL,
       90000,
       50000,
       10000,
@@ -269,7 +272,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     expect(() =>
       reinvestRmdExcess(
         "reinvest",
-        true,
+        RMD_ADDED_ALL,
         90000,
         50000,
         10000,
@@ -289,7 +292,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     const indBal = indBalOf(accts);
     reinvestRmdExcess(
       "reinvest",
-      true,
+      RMD_ADDED_ALL,
       60100,
       50000,
       0,
@@ -317,7 +320,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     const indBal = indBalOf(accts);
     reinvestRmdExcess(
       "reinvest",
-      true,
+      RMD_ADDED_ALL,
       100,
       0,
       0,
@@ -340,7 +343,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     const indBal = indBalOf(accts);
     reinvestRmdExcess(
       "reinvest",
-      true,
+      RMD_ADDED_ALL,
       1000,
       0,
       0,
@@ -358,7 +361,7 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     const { balances, accountBalance } = start();
     const excess = reinvestRmdExcess(
       "spend",
-      true,
+      RMD_ADDED_ALL,
       90000,
       50000,
       10000,
@@ -368,6 +371,44 @@ describe("reinvestRmdExcess (pins current behavior)", () => {
     expect(excess).toBe(30000);
     expect(balances).toEqual(start().balances);
     expect(accountBalance).toEqual(start().accountBalance);
+  });
+
+  // D1 (owner 2026-11-02; E0 RX1 ruling 2026-11-23): the excess is RMD
+  // dollars beyond the need, so it is never more than what the RMD added.
+  // The rest of an over-draw (a strategy-fixed draw, a tax term the test
+  // doesn't see) isn't RMD money. Worked: the RMD added 0.01 of a year that
+  // drew 3,588.66 past need + tax: min(0.01, 3,588.66) = 0.01 reinvested.
+  it("D1: an RMD that added $0.01 reinvests $0.01, not the year's $3,588.66 over-draw", () => {
+    const { balances, accountBalance } = start();
+    const excess = reinvestRmdExcess(
+      "reinvest",
+      0.01,
+      63588.66,
+      50000,
+      10000,
+      balances,
+      accountBalance,
+    );
+    expect(excess).toBe(0.01);
+    expect(balances.afterTax).toBe(120000.01);
+    expect(balances.afterTaxBasis).toBe(80000.01);
+  });
+
+  it("D1: an RMD larger than the over-draw reinvests only the over-draw", () => {
+    // Added 20,000; drawn 90,000 − need 50,000 − tax 10,000 = 30,000 over:
+    // min(20,000, 30,000) = 20,000.
+    const { balances, accountBalance } = start();
+    expect(
+      reinvestRmdExcess(
+        "spend",
+        20000,
+        90000,
+        50000,
+        10000,
+        balances,
+        accountBalance,
+      ),
+    ).toBe(20000);
   });
 });
 

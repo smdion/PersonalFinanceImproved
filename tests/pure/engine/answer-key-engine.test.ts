@@ -368,6 +368,77 @@ describe("answer key: NIIT funded before RMD money is reinvested (verdict E6)", 
   });
 });
 
+describe("answer key: the early-withdrawal penalty is paid before RMD money is reinvested (D1)", () => {
+  // MFJ: A born 1950 (76) holds a Traditional IRA of 1,000,000; B born 1975
+  // (51) holds an HSA of 1,000,000, first in the waterfall, penalized draws
+  // allowed; spending 60,000; no Social Security; 0% return and inflation.
+  // 2026: routing draws B's HSA, grossed up for its tax and the 20%
+  // additional tax on a non-medical draw before 65 (IRC 223(f)(4)). A's RMD
+  // isn't in that draw (Table II, B is over 10 years younger: 1,000,000 /
+  // 35.7 = 28,011.20, Reg. 1.401(a)(9)-9(d)), so it is added on top. D1:
+  // the need is met first, and only what is left after the draw's whole
+  // cost (tax and penalty) is RMD money past the need. Decided: spend the
+  // full 60,000, unmet 0. Before the fix the penalty wasn't in the excess
+  // test, so part of it was reinvested as RMD money and spending fell short
+  // (56,638.65, with no unmet need shown: the same shape as E6's NIIT).
+  const penaltyYear = (routing: "waterfall" | "bracket_filling") =>
+    retired(
+      household({
+        status: "MFJ",
+        people: [
+          { id: "A", birthYear: 1950 },
+          { id: "B", birthYear: 1975 },
+        ],
+        accounts: [
+          {
+            id: "B-hsa",
+            owner: "B",
+            category: "hsa",
+            tax: "hsa",
+            parent: "Retirement",
+            balance: 1_000_000,
+          },
+          ira("A", 1_000_000),
+        ],
+        spending: 60_000,
+        endYear: 2028,
+        routing,
+      }),
+      2026,
+      { allowPenalizedWithdrawals: true },
+      (input) => {
+        input.decumulationDefaults.avoidPenalizedWithdrawals = false;
+      },
+    );
+
+  it("engine/RX1-P [RET-06] an RMD year that pays an early-draw penalty spends the whole budget", () => {
+    const out: Record<string, number> = {};
+    for (const mode of ["waterfall", "bracket_filling"] as const) {
+      const r = penaltyYear(mode);
+      // The path: a penalty paid, and an RMD added on top of the draw.
+      if (!(
+        (r.penaltyCost ?? 0) > 0 &&
+        r.rmdOverrodeRouting &&
+        r.rmdAmount > 0
+      ))
+        throw new Error(`${mode}: not a penalty year with an RMD added`);
+      cents(r.rmdAmount, 28_011.2);
+      out[`${mode}.spending`] = r.spending;
+      out[`${mode}.unmet`] = r.unmetNeed ?? 0;
+    }
+    cents(
+      out,
+      {
+        "waterfall.spending": 60_000,
+        "waterfall.unmet": 0,
+        "bracket_filling.spending": 60_000,
+        "bracket_filling.unmet": 0,
+      },
+      GROSS_UP,
+    );
+  });
+});
+
 describe("answer key: the plan's last year (verdict E7)", () => {
   // A plan "to 95" runs to the year its last person turns 95
   // (engine/ARCHITECTURE.md: "runs to the last person's end age"). Single,

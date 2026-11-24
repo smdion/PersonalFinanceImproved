@@ -137,13 +137,12 @@ export function clampBalances(
 // ---------------------------------------------------------------------------
 
 /**
- * Returns the RMD excess over spending need + tax. "reinvest" credits it to brokerage as basis
- * (and to Retirement-parented overflow accounts in `indBalance`); "spend" credits nothing.
- * Mutates `balances`/`accountBalance` only under "reinvest".
- */
+ * Returns the RMD excess over need + tax, at most what the RMD added: only RMD dollars beyond
+ * the need. "reinvest" credits it to brokerage as basis (and to Retirement-parented overflow
+ * accounts in `indBalance`), mutating `balances`/`accountBalance`; "spend" credits nothing. */
 export function reinvestRmdExcess(
   mode: "reinvest" | "spend",
-  rmdOverrodeRouting: boolean,
+  rmdAdded: number,
   totalWithdrawal: number,
   afterTaxNeed: number,
   taxCost: number,
@@ -153,10 +152,9 @@ export function reinvestRmdExcess(
   indBalance?: Map<string, number>,
   indKey?: IndKeyFn,
 ): number {
-  if (!rmdOverrodeRouting || totalWithdrawal <= afterTaxNeed + taxCost) {
-    return 0;
-  }
-  const excess = roundToCents(totalWithdrawal - afterTaxNeed - taxCost);
+  const overDraw = totalWithdrawal - afterTaxNeed - taxCost;
+  const excess = roundToCents(Math.min(rmdAdded, Math.max(0, overDraw)));
+  if (excess <= 0) return 0;
   if (mode === "reinvest") {
     balances.afterTax = roundToCents(balances.afterTax + excess);
     balances.afterTaxBasis = roundToCents(balances.afterTaxBasis + excess);

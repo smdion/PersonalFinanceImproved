@@ -113,9 +113,8 @@ export function qcdStep(
   return { totalQcd, qcdByPerson };
 }
 
-/** The routed draw's totals with each RMD enforced on them. UD-04 (pending
- *  D1), today's behaviour: a short RMD adds Traditional on top of the routed
- *  draw; excess past the need is reinvested or spent (`rmdExcessHandling`). */
+/** The routed draw's totals with each RMD enforced (UD-04): a short RMD adds
+ *  Traditional on top (`rmdAdded`), and only that can be excess past the need. */
 export function enforceYearRmd(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
@@ -193,7 +192,7 @@ export function enforceYearRmd(
       nonRetirement,
       qcdCredit: totalQcd,
     });
-  const { rmdOverrodeRouting, rmdShortfallAmount } = rmdResult;
+  const { rmdAdded, rmdShortfallAmount } = rmdResult;
   totalTraditionalWithdrawal = rmdResult.totalTraditionalWithdrawal;
   totalWithdrawal = rmdResult.totalWithdrawal;
   routeWarnings.push(...rmdResult.warnings);
@@ -229,7 +228,8 @@ export function enforceYearRmd(
     totalTraditionalWithdrawal,
     rmdDivisor,
     ownerRmd,
-    rmdOverrodeRouting,
+    rmdAdded,
+    rmdOverrodeRouting: rmdAdded > 0,
     rmdShortfallAmount,
     rmdAmount,
   };
