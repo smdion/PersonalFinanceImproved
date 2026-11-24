@@ -1,6 +1,5 @@
 import { followReconciliation, syncAggregateBasis } from "../brokerage-basis";
 import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
-import { getAllCategories } from "../../../config/account-types";
 import {
   buildIndividualYearBalances,
   reconcileIndividualToAggregate,
@@ -10,7 +9,7 @@ import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { yearGapDraw } from "./goal-draws";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
-/** The year's per-account rows, then the accounts reconciled and checked. */
+/** The year's per-account rows, then the accounts reconciled. */
 export function closeYearAccounts(
   holdsAccounts: boolean,
   indAccounts: ProjectionContext["indAccounts"],
@@ -29,9 +28,6 @@ export function closeYearAccounts(
   routeWarnings: string[],
   balances: ProjectionLoopState["balances"],
   accountBalance: ProjectionLoopState["accountBalance"],
-  year: number,
-  retirementYear: number,
-  age: number,
 ) {
   const indYearBalances: IndividualAccountYearBalance[] = holdsAccounts
     ? buildIndividualYearBalances(
@@ -62,7 +58,7 @@ export function closeYearAccounts(
 
   // Reconcile indBalance to accountBalance once per year, as decumulation-year.ts does:
   // after the output row is built (output shows pre-cleanup figures, the
-  // carried state post-cleanup) and before the divergence check below.
+  // carried state post-cleanup).
   if (holdsAccounts) {
     routeWarnings.push(
       ...followReconciliation(
@@ -98,19 +94,6 @@ export function closeYearAccounts(
       ? computeNonRetirementExclusion(indAccounts, indBalance, indKey)
       : undefined,
   );
-
-  // Divergence check: last accumulation year
-  if (year === retirementYear - 1) {
-    const rothTotal = getAllCategories().reduce((s, cat) => {
-      const b = accountBalance[cat];
-      return s + (b.structure === "roth_traditional" ? b.roth : 0);
-    }, 0);
-    if (Math.abs(rothTotal - balances.taxFree) > 1) {
-      routeWarnings.push(
-        `[DIAG] Roth divergence at end of accumulation (age ${age}): acctBal.roth=${rothTotal.toFixed(0)}, balances.taxFree=${balances.taxFree.toFixed(0)}, delta=${(balances.taxFree - rothTotal).toFixed(0)}`,
-      );
-    }
-  }
 
   return { indYearBalances, allAccountsBalance, retirementBalance };
 }

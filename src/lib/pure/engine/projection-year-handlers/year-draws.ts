@@ -23,7 +23,6 @@ export function routeYearDraw(
   state: ProjectionLoopState,
   thisYear: DecumulationYear,
   need: ReturnType<typeof yearNeed>,
-  rothDivergence: string | null,
 ) {
   const { holdsAccounts, indAccounts, indKey } = ctx;
   const { filingStatus } = ctx.input;
@@ -90,7 +89,6 @@ export function routeYearDraw(
     penaltyAvoidedShortfall,
     nonRetirementShortfall,
   } = routeResult;
-  if (rothDivergence) routeWarnings.push(rothDivergence);
 
   return {
     preWithdrawalAcctBal,

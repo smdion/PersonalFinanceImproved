@@ -4069,7 +4069,7 @@
   },
   "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": {
     "ratchet/no-abbreviation": {
-      "count": 6
+      "count": 5
     },
     "ratchet/no-guarded-division": {
       "count": 1
@@ -4145,7 +4145,7 @@
   },
   "src/lib/pure/engine/projection-year-handlers/year-end-accounts.ts": {
     "ratchet/no-abbreviation": {
-      "count": 14
+      "count": 13
     }
   },
   "src/lib/pure/engine/projection-year-handlers/year-end.ts": {

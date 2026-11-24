@@ -47,7 +47,7 @@ export function runAccumulationYear(
   const { balances, accountBalance, accumulationDefaults } = state;
   const { indBalance, indBasis, brokBasis } = state;
 
-  const { limitGrowthRate, retirementYear } = input;
+  const { limitGrowthRate } = input;
 
   const config = resolveAccumulationConfig(
     year,
@@ -89,9 +89,6 @@ export function runAccumulationYear(
       routeWarnings,
       balances,
       accountBalance,
-      year,
-      retirementYear,
-      age,
     );
 
   const yearProjection: EngineAccumulationYear = {

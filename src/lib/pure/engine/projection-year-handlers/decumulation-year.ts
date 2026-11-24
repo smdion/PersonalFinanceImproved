@@ -2,7 +2,6 @@
 import { socialSecurityForYear } from "../social-security-income";
 import { retirementBrokerageBasisRatio } from "../brokerage-basis";
 import { sumBy } from "../../../utils/math";
-import { getAllCategories } from "../../../config/account-types";
 import { countPeople, countReachingAgeRule } from "@/lib/pure/household/age";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { computeWithdrawalEligibility } from "@/lib/pure/accounts/eligibility";
@@ -42,7 +41,7 @@ export function runDecumulationYear(
     indAccounts,
     indKey,
   } = ctx;
-  const { balances, accountBalance, indBalance, indBasis, brokBasis } = state;
+  const { balances, indBalance, indBasis, brokBasis } = state;
 
   const { decumulationDefaults, perPersonBirthYears } = input;
 
@@ -67,16 +66,6 @@ export function runDecumulationYear(
   // Portfolio-parented money never funds retirement spending: one exclusion
   // a year, read by every step that decides what's available.
   const { nonRetirement } = setup;
-
-  // Reconciliation check: accountBalance Roth total should match balances.taxFree
-  const accountBalanceRothTotal = getAllCategories().reduce((s, cat) => {
-    const b = accountBalance[cat];
-    return s + (b.structure === "roth_traditional" ? b.roth : 0);
-  }, 0);
-  const rothDivergence =
-    Math.abs(accountBalanceRothTotal - balances.taxFree) > 1
-      ? `[DIAG] Roth divergence: acctBal.roth=${accountBalanceRothTotal.toFixed(0)}, balances.taxFree=${balances.taxFree.toFixed(0)}, delta=${(balances.taxFree - accountBalanceRothTotal).toFixed(0)}`
-      : null;
 
   // Social Security reduces the need (each person's from their start age).
   const { ssIncome, ssIncomeByPerson } = socialSecurityForYear(
@@ -131,7 +120,7 @@ export function runDecumulationYear(
   };
   const irmaa = yearStartIrmaaCharge(ctx, state, thisYear);
   const need = yearNeed(ctx, state, thisYear, irmaa);
-  const route = routeYearDraw(ctx, state, thisYear, need, rothDivergence);
+  const route = routeYearDraw(ctx, state, thisYear, need);
   const rmd = enforceYearRmd(ctx, state, thisYear, route, owed, qcd);
   const drawn = distributeYearDraws(ctx, state, thisYear, { route, rmd });
   const drawnFlow = { need, route, rmd, drawn };

@@ -875,11 +875,7 @@ describe("engine invariants", () => {
       // fires for generated fixtures — if it does, that's real drift worth
       // investigating, not a test to relax.
       //
-      // Scoped to this specific prefix, not every "[DIAG]"-tagged warning:
-      // the pre-existing "[DIAG] Roth divergence" check (unrelated,
-      // out of scope for this fix) can legitimately fire for a degenerate
-      // fixture with a nonzero taxFree starting balance but zero individual
-      // accounts to reconcile against at all.
+      // Scoped to this specific prefix, not every "[DIAG]"-tagged warning.
       fc.assert(
         fc.property(arbitraryInput(), (input) => {
           const result = calculateProjection(input);
