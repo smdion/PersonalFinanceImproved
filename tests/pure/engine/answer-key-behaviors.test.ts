@@ -15,7 +15,9 @@
  *
  * Elsewhere: D1's case is strategies/N3 in `answer-key-routing.test.ts`;
  * LM3Y's (year 0 by checks left for a job held all year) is in
- * `tests/server/services/contributions/cap-pass.test.ts`.
+ * `tests/server/services/contributions/cap-pass.test.ts`; D3's (the month
+ * comes from a job's end date, which only the payload reads) is engine/D3
+ * in `tests/server/services/projection/engine-payload/answer-key-payload.test.ts`.
  *
  * The D4, D12.x and D12.18 cases below read year 1 (2027), clear of year
  * 0's share (D2), unless a case says otherwise.

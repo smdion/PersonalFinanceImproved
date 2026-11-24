@@ -8,7 +8,8 @@
  * (T4, T6), as collected in the draft answer key
  * (`.scratch/docs/drafts/answer-key.md` § Engine, and § "Re-run on
  * `24bae33b`": E8 fails in the server cap pass, so the engine alone, fed
- * 36,000, passes).
+ * 36,000, passes), and the owner's decision D3 with J26 (engine/D3: the
+ * retirement month comes from a job's end date, which the payload reads).
  *
  * Households are invented and seeded here. The clock and the snapshot
  * (the payload's as-of date) are 2026-01-01, so 2026 is a whole year and
@@ -429,3 +430,78 @@ describe("answer key: Retirement money when one person funds the other's Portfol
     });
   });
 });
+
+describe("answer key: a retirement year split by month (decision D3, J26)", () => {
+  // Alex, born 1962-08-15, retires at 65: 2027. His 120,000 job ends
+  // 2027-06-30, inside the retirement year (no raises, no inflation).
+  // Budget 5,000 a month, a 401(k) of 1,000,000. D3 with J26 (a): the
+  // retirement month is the last earner's job end date when it falls in
+  // the retirement year, so 2027 runs January–June as work months (pay
+  // 120,000 × 6/12 = 60,000) and July–December as retired months. Only
+  // the work months' pay is pinned: how the split year's row reports its
+  // retired half is the fix's design. Today 2027 is a whole retirement
+  // year with no pay.
+  xfail({
+    id: "engine/D3 [ENG-05]",
+    todo: `v0.11.1 EN2 D3 "Split a mid-year retirement by month" (decision D3, UD-02; J26 (a))`,
+    run: async () => {
+      const { db, appDb, cleanup } = await freshDb();
+      try {
+        return { pay2027: await midYearRetirementPay(db, appDb) };
+      } finally {
+        cleanup();
+      }
+    },
+    expected: { pay2027: 60_000 },
+    today: { pay2027: 0 },
+  });
+});
+
+/** engine/D3's household, run through the payload: 2027's pay. */
+async function midYearRetirementPay(db: SqliteDb, appDb: Db) {
+  const id = person(db, "Alex", "1962-08-15", true);
+  db.update(sqliteSchema.retirementSettings)
+    .set({ salaryAnnualIncrease: "0", annualInflation: "0" })
+    .where(eq(sqliteSchema.retirementSettings.personId, id))
+    .run();
+  seedJob(db, id, {
+    annualSalary: "120000",
+    startDate: "2010-01-01",
+    endDate: "2027-06-30",
+  });
+  holding(db, {
+    ownerPersonId: id,
+    accountType: "401k",
+    parentCategory: "Retirement",
+    taxType: "preTax",
+    amount: 1_000_000,
+    label: "Alex 401k",
+  });
+  const budget = await seedBudgetProfile(db, "D3 budget");
+  for (const p of db.select().from(sqliteSchema.budgetProfiles).all())
+    if (p.id !== budget)
+      db.update(sqliteSchema.budgetProfiles)
+        .set({ isActive: false })
+        .where(eq(sqliteSchema.budgetProfiles.id, p.id))
+        .run();
+  seedBudgetItem(db, budget, {
+    category: "Essentials",
+    subcategory: "Everything",
+    amounts: [5_000],
+  });
+  const data = await fetchRetirementData(appDb, {});
+  const payload = (await buildEnginePayload(appDb, data, {
+    asOf: new Date(),
+  }))!;
+  const y = calculateProjection({
+    ...payload.baseEngineInput,
+    decumulationDefaults: buildDecumulationDefaults(
+      payload.settings,
+      { withdrawalTaxPreference: {} },
+      payload.distributionTaxRates,
+    ),
+    accumulationOverrides: [],
+    decumulationOverrides: [],
+  }).projectionByYear.find((r) => r.year === 2027)!;
+  return "projectedSalary" in y ? y.projectedSalary : 0;
+}
