@@ -23,8 +23,8 @@ import {
   payConversionTaxFromParts,
   type ConversionParts,
 } from "./individual-accounts/conversion";
-import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
+import { conversionRoomFor } from "./conversion-room";
 import { conversionTaxPaid } from "./conversion-tax";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
@@ -147,52 +147,17 @@ export function performRothConversion(
   const yearTaxableIncome =
     totalTraditionalWithdrawal + taxableSS + rothTaxableGrowth;
 
-  let conversionTarget = configTarget ?? input.rothBracketTarget;
-  if (smoothingActive) {
-    // The lowest marginal rate whose cap fits this year's income plus the
-    // smoothing target (incomeCapForMarginalRate over each bracket, in
-    // order). The top bracket's cap is Infinity, so some rate always fits.
-    const neededIncome = yearTaxableIncome + rmdSmoothingTarget!;
-    let minimumRateNeeded: number | undefined;
-    for (const b of taxBrackets) {
-      if (
-        incomeCapForMarginalRate(b.rate, taxBrackets, standardDeduction) >=
-        neededIncome
-      ) {
-        minimumRateNeeded = b.rate;
-        break;
-      }
-    }
-    if (minimumRateNeeded != null) {
-      // Can only RAISE the effective ceiling above whatever the household
-      // already configured, never lower it -- a household already above
-      // rmdSmoothingMaxBracketTarget keeps their own higher target.
-      const effectiveCeiling = Math.max(
-        conversionTarget ?? -Infinity,
-        rmdSmoothingMaxBracketTarget ?? -Infinity,
-      );
-      conversionTarget = Math.min(
-        Math.max(conversionTarget ?? -Infinity, minimumRateNeeded),
-        effectiveCeiling,
-      );
-    }
-  }
-  if (conversionTarget == null) {
-    return zero();
-  }
-
-  const bracketCap = incomeCapForMarginalRate(
-    conversionTarget,
+  // The target's room (smoothing may raise the target); none: no conversion.
+  const conversionRoom = conversionRoomFor({
+    configTarget,
+    rothBracketTarget: input.rothBracketTarget,
+    yearTaxableIncome,
     taxBrackets,
     standardDeduction,
-  );
-  const conversionRoom = roundToCents(
-    Math.max(0, bracketCap - yearTaxableIncome),
-  );
-
-  if (conversionRoom <= 0) {
-    return zero();
-  }
+    rmdSmoothingTarget,
+    rmdSmoothingMaxBracketTarget,
+  });
+  if (conversionRoom == null || conversionRoom <= 0) return zero();
 
   // Cap at available Traditional balance -- Retirement-only when
   // exclusion data is available (a Portfolio-parented pretax account isn't
