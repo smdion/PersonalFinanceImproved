@@ -93,8 +93,8 @@ export function DecumulationMethodologyContent() {
           </li>
           <li>
             <strong>IRMAA/ACA cliff checks</strong> — IRMAA warns only when a
-            Roth conversion crossed a tier (and notes SSA-44 for a working
-            year); ACA warns past its cliff before 65 if ACA awareness is on.
+            Roth conversion crossed a tier (SSA-44 noted for a working year);
+            ACA warns past its cliff while anyone is under 65 (awareness on).
           </li>
           <li>
             <strong>Balance deduction</strong> — withdrawals are subtracted from
@@ -820,11 +820,11 @@ export function DecumulationMethodologyContent() {
         <p>
           <strong>ACA</strong> (Affordable Care Act) subsidy cliffs apply before
           age 65 if you purchase marketplace insurance. Income above 400% of the
-          Federal Poverty Level eliminates premium tax credits entirely. The
-          engine warns when early-retiree income approaches this cliff, but —
-          unlike IRMAA — never caps a conversion or withdrawal to avoid it;
-          it&apos;s reporting-only. Use the warning to adjust by hand with a
-          change by year.
+          Federal Poverty Level eliminates premium tax credits entirely. With
+          ACA awareness on, the engine warns when income crosses this cliff
+          while anyone in the household is under 65, but — unlike IRMAA — never
+          caps a conversion or withdrawal to avoid it; it&apos;s reporting-only.
+          Use the warning to adjust by hand with a change by year.
         </p>
         <p className="text-faint mt-1 text-xs">
           IRMAA&apos;s cliff is looked up two years ahead of the income that
