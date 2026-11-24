@@ -3,6 +3,7 @@
  * early access (Rule of 55 / Roth ordering).
  */
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { StoredAccountType } from "@/lib/config/account-types.types";
 import {
   isTaxFreeBucket,
   isHsaCategory,
@@ -33,7 +34,7 @@ export type PersonInfo = { id: number; name: string; birthYear: number };
 
 type PerformanceAccountInfo = {
   id: number;
-  accountType: AccountCategory;
+  accountType: StoredAccountType;
   ownerPersonId: number | null;
   isActive: boolean;
   separationDate: Date | null;

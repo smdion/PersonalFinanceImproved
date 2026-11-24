@@ -15,7 +15,7 @@ import {
   type CurrentGroup,
 } from "@/lib/pure/accounts/current-balance-groups";
 import { getDisplayConfig } from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/config/account-types";
+import type { StoredAccountType } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { previousTradingDay } from "@/lib/pure/investments/market-calendar";
 import {
@@ -50,7 +50,7 @@ export type SimplefinAccountListItem = {
   linkedPerformanceAccountId: number | null;
   change: number | null;
   taxType: PortfolioTaxType | "mixed" | null;
-  accountType: AccountCategory | null;
+  accountType: StoredAccountType | null;
   subType: string | null;
   snapshotDate: string | null;
 };

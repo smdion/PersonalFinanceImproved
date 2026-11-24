@@ -2,7 +2,6 @@
 
 import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { AccountCategory } from "@/lib/config/account-types";
 import { toNumber } from "@/lib/utils/numbers";
 import type { Db } from "@/lib/db";
 import type { TaxBucketSnapshotAccount } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
@@ -73,7 +72,7 @@ export async function getLatestSnapshot(
     portfolioAccountId: a.portfolioAccountId,
     institution: a.institution,
     taxType: a.taxType,
-    accountType: a.accountType as AccountCategory,
+    accountType: a.accountType,
     subType: a.subType,
     label: a.label,
     // The performance account's parentCategory is authoritative; the snapshot row's

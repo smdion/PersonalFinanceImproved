@@ -4814,9 +4814,6 @@
     }
   },
   "src/server/data/snapshots.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     }
@@ -5711,9 +5708,6 @@
     }
   },
   "src/server/services/tax/early-access-inputs.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 1
     }

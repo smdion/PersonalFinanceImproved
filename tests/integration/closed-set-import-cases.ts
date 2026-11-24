@@ -300,11 +300,13 @@ export function unknownAccountTypeCases(fresh: () => Promise<FenceDb>) {
         computeTaxBucketBreakdown({ accounts: rows }, [], []).portfolioByTaxType
           .preTax,
       ).toBe(1000);
-      // What the refusal keeps away: the read throws on the unknown type.
+      // What the refusal keeps away: the read leaves a row of an unknown
+      // type out of the buckets.
       const unknown = await snapshotRows(db, "solo401k");
-      expect(() =>
-        computeTaxBucketBreakdown({ accounts: unknown }, [], []),
-      ).toThrow(TypeError);
+      expect(
+        computeTaxBucketBreakdown({ accounts: unknown }, [], [])
+          .portfolioByTaxType.preTax,
+      ).toBe(0);
     } finally {
       await done();
     }

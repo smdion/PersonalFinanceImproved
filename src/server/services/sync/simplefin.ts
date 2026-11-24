@@ -15,10 +15,8 @@ import {
   isRetirementParent,
   isPortfolioParent,
 } from "@/lib/config/account-types";
-import type {
-  ParentCategory,
-  AccountCategory,
-} from "@/lib/config/account-types";
+import type { ParentCategory } from "@/lib/config/account-types";
+import type { StoredAccountType } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 
 type LinkSuggestionView = {
@@ -168,7 +166,8 @@ export async function listSimplefinAccounts(ctx: { db: Db }) {
   const parentCategoryByPerfId = new Map<number, ParentCategory>();
   // accountType/subType live on the performance_accounts master row, so every snapshot
   // row for a performanceAccountId carries the same value: overwriting is safe.
-  const accountTypeByPerfId = new Map<number, AccountCategory>();
+  // As stored: a type this version doesn't know shows as itself.
+  const accountTypeByPerfId = new Map<number, StoredAccountType>();
   const subTypeByPerfId = new Map<number, string | null>();
   if (latest) {
     for (const a of latest.accounts) {

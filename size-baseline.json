@@ -357,7 +357,7 @@
     "src/server/data/jobs.ts": 17,
     "src/server/data/retirement-profiles.ts": 19,
     "src/server/data/salaries.ts": 22,
-    "src/server/data/snapshots.ts": 104,
+    "src/server/data/snapshots.ts": 103,
     "src/server/routers/assets.ts": 264,
     "src/server/routers/budget/index.ts": 21,
     "src/server/routers/contribution-profiles.ts": 533,
@@ -431,7 +431,7 @@
     "src/server/services/sync/budget-api-push.ts": 405,
     "src/server/services/sync/preview.ts": 426,
     "src/server/services/sync/savings-goal-push.ts": 213,
-    "src/server/services/sync/simplefin.ts": 296,
+    "src/server/services/sync/simplefin.ts": 295,
     "src/server/services/sync/simplefin/ingest.ts": 522,
     "src/server/services/sync/simplefin/sync.ts": 550,
     "src/server/services/sync/sync-all.ts": 249,
@@ -943,7 +943,7 @@
       "computeTaxBucketProjection.entries.map()": 176
     },
     "src/lib/pure/accounts/tax-buckets/tax-buckets.ts": {
-      "computeTaxBucketBreakdown": 171
+      "computeTaxBucketBreakdown": 166
     },
     "src/lib/pure/advice/milestones/input.ts": {
       "buildMilestoneInput": 216

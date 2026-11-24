@@ -1,7 +1,6 @@
 /** The account rows the early-access analysis reads (Rule of 55, Roth basis). */
 
 import type * as schema from "@/lib/db/schema";
-import type { AccountCategory } from "@/lib/config/account-types";
 import type { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
 import { buildCurrentRothBasisMap } from "@/lib/pure/accounts/roth-basis-rollover";
 import { toNumber } from "@/lib/utils/numbers";
@@ -83,7 +82,7 @@ export function earlyAccessInputs(rows: {
   return {
     performanceAccounts: rows.perfAccounts.map((p) => ({
       id: p.id,
-      accountType: p.accountType as AccountCategory,
+      accountType: p.accountType,
       ownerPersonId: p.ownerPersonId,
       isActive: p.isActive,
       separationDate: p.separationDate ? new Date(p.separationDate) : null,

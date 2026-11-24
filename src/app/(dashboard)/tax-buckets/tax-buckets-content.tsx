@@ -13,10 +13,10 @@ import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import { BulkRothBasisForm } from "./tax-buckets-bulk-basis";
-import { TaxBucketSummary } from "./tax-buckets-sections";
-import { TaxBucketKpis } from "./tax-buckets-sections";
+import { TaxBucketKpis, TaxBucketSummary } from "./tax-buckets-sections";
 import { TaxBucketsRetirementNotes } from "./tax-buckets-sections";
 import { TaxBucketsHeader } from "./tax-buckets-sections";
+import { TaxBucketsUnknownTypes } from "./tax-buckets-unknown-types";
 import { buildBuckets } from "./tax-buckets-grouping";
 import { useTaxBucketsProjection } from "./use-tax-buckets-projection";
 
@@ -80,9 +80,8 @@ export function TaxBucketsContent() {
     );
   }
 
-  // Never merge the two views' entries — "At Retirement" only renders once
-  // its own projection has actually resolved, so a stale "now" number can
-  // never masquerade as a projected one.
+  // Never merge the two views' entries: "At Retirement" renders only once its
+  // own projection resolves, so a stale "now" number never passes as projected.
   const activeEntries =
     view === "now" ? data.accounts : (projection?.entries ?? null);
   const { buckets, householdTotal, householdAccessible, householdLocked } =
@@ -105,6 +104,7 @@ export function TaxBucketsContent() {
         projectionQuery={projectionQuery}
         view={view}
       />
+      <TaxBucketsUnknownTypes notes={data.unknownTypeNotes} />
 
       <TaxBucketKpis
         activeEntries={activeEntries}

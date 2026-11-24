@@ -373,6 +373,25 @@ describe("computeTaxBucketBreakdown", () => {
     expect(result.portfolioByTaxType.preTax).toBe(0);
   });
 
+  it("leaves out the rows of an account type this version doesn't know", () => {
+    const accounts: TaxBucketSnapshotAccount[] = [
+      account({ amount: 1000 }),
+      // Its own type is unknown, but it counts as its primary row's 401k.
+      account({ amount: 200, subType: "Rollover", accountType: "future_type" }),
+      account({
+        amount: 500,
+        accountType: "future_type",
+        performanceAccountId: 9,
+      }),
+      account({ amount: 70, subType: "Rollover", performanceAccountId: 9 }),
+    ];
+    const result = computeTaxBucketBreakdown({ accounts }, people, []);
+    expect(result.portfolioByTaxType.preTax).toBe(1200);
+    expect(result.portfolioTotal).toBe(1200);
+    expect(Object.keys(result.accountBreakdownByCategory)).toEqual(["401k"]);
+    expect(result.accountRollup.map((e) => e.amount)).toEqual([1200]);
+  });
+
   it("returns all-zero buckets for a null snapshot", () => {
     const result = computeTaxBucketBreakdown(null, people, []);
     expect(result.portfolioByTaxType).toEqual({

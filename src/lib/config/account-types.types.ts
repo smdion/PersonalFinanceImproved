@@ -182,3 +182,7 @@ export type AccountSegment<C extends string> = {
   label: string;
   subKey: string | null; // 'trad', 'roth', null
 };
+
+/** An `account_type` as stored: a category this version may not know (a
+ *  newer Ledgr's), so it is read through `isKnownCategory`, never cast. */
+export type StoredAccountType = string;

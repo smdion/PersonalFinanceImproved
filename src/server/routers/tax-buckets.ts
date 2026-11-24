@@ -17,6 +17,10 @@ import { zDecimal, zYear } from "@/lib/utils/zod-fields";
 import { recordFill, zFillRecord } from "@/server/services/sync/fill-ledger";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
+import {
+  unknownTypeNote,
+  unknownTypeRows,
+} from "@/lib/pure/accounts/tax-buckets/unknown-type-rows";
 import { selectCurrentRothBasisRow } from "@/lib/pure/accounts/roth-basis-rollover";
 import { earlyAccessInputs } from "@/server/services/tax/early-access-inputs";
 import type { DbOrTx } from "@/lib/db";
@@ -86,6 +90,11 @@ export const taxBucketsRouter = createTRPCRouter({
     return {
       portfolioByTaxType: breakdown.portfolioByTaxType,
       accounts: analysis,
+      // Left out of both views, each noted as the projection notes it.
+      unknownTypeNotes: unknownTypeRows(
+        snapshotData?.accounts ?? [],
+        people,
+      ).map(unknownTypeNote),
       people: people.map((p) => ({
         id: p.id,
         name: p.name,

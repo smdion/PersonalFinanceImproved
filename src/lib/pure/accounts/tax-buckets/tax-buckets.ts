@@ -7,12 +7,14 @@ import type {
   AccountBalances,
 } from "@/lib/pure/accounts/account-balances.types";
 import type { AccountCategory } from "@/lib/config/account-types";
+import type { StoredAccountType } from "@/lib/config/account-types.types";
 import {
   getAllCategories,
   zeroBalance,
   isTaxFreeBucket,
   tracksCostBasis,
   isRetirementParent,
+  isKnownCategory,
   PARENT_CATEGORY_VALUES,
 } from "@/lib/config/account-types";
 import {
@@ -40,13 +42,29 @@ export function isProjectedRow(row: { parentCategory: string | null }) {
   return !row.parentCategory || ENGINE_CATEGORIES.has(row.parentCategory);
 }
 
+/** The projected rows (`isProjectedRow`) with their categories, split by
+ *  whether this version knows the category: the projection and Tax Buckets
+ *  leave the `unknown` ones out (`unknownTypeRows` names them). */
+export function projectedRowsByType<R extends TaxBucketSnapshotAccount>(
+  rows: readonly R[],
+) {
+  const known: { row: R; category: AccountCategory }[] = [];
+  const unknown: { row: R; category: StoredAccountType }[] = [];
+  for (const { row, category } of withRowCategories(rows)) {
+    if (!isProjectedRow(row)) continue;
+    if (isKnownCategory(category)) known.push({ row, category });
+    else unknown.push({ row, category });
+  }
+  return { known, unknown };
+}
+
 /** One portfolio snapshot row, as the loader reads it. */
 export type TaxBucketSnapshotAccount = {
   /** The row's own id (`portfolio_accounts.id`), unique within a snapshot. */
   portfolioAccountId: number;
   institution: string;
   taxType: string;
-  accountType: AccountCategory;
+  accountType: StoredAccountType;
   subType: string | null;
   label: string | null;
   parentCategory: string | null;
@@ -138,9 +156,9 @@ export function computeTaxBucketBreakdown(
     // snapshot rows (sub-type rows share the account) gets its share by
     // amount. An account with no row in the snapshot contributes nothing.
     const perfById = new Map(perfAccounts.map((p) => [p.id, p]));
+    const { known } = projectedRowsByType(snapshotData.accounts);
     const rowsTotalByPerf = new Map<number, number>();
-    for (const a of snapshotData.accounts) {
-      if (!isProjectedRow(a)) continue;
+    for (const { row: a } of known) {
       if (a.performanceAccountId == null) continue;
       rowsTotalByPerf.set(
         a.performanceAccountId,
@@ -160,14 +178,9 @@ export function computeTaxBucketBreakdown(
         : 0;
     };
 
-    for (const { row, category: cat } of withRowCategories(
-      snapshotData.accounts,
-    )) {
+    for (const { row, category: cat } of known) {
       const key = bookedTaxType(cat, row.taxType);
       const a = { ...row, taxType: key };
-      // Only engine-relevant categories (Retirement + Portfolio) — pages
-      // filter engine output by parentCategory for the correct subset.
-      if (!isProjectedRow(a)) continue;
       const knownBasis = rowBasis(a);
       const basis = knownBasis ?? 0;
       const ownerName = a.ownerPersonId

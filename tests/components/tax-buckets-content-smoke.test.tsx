@@ -111,6 +111,7 @@ function breakdownAnswer() {
   return {
     portfolioByTaxType: breakdown.portfolioByTaxType,
     accounts,
+    unknownTypeNotes: [],
     people,
   };
 }
