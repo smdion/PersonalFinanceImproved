@@ -8,6 +8,7 @@ import { optimizeRothBracketTarget } from "@/lib/pure/retirement/withdrawal-brac
 import {
   prepareEngineInput,
   prepareProjectionRun,
+  setupNotes,
 } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
@@ -38,12 +39,23 @@ export const withdrawalBracketOptimizerRouter = createTRPCRouter({
         selection: input.selection,
         snapshotId: input.snapshotId,
       });
-      if (!payload) return { result: null };
+      // `notes` on every branch: the Profiles page's Retirement tab
+      // (TaxesSection) reads them off the response it is passed.
+      if (!payload) return { result: null, notes: [] };
       if (payload.notConfigured)
-        return { result: null, notConfigured: payload.notConfigured };
+        return {
+          result: null,
+          notConfigured: payload.notConfigured,
+          notes: [],
+        };
 
       const engineInput = await prepareEngineInput(ctx.db, payload, input);
 
-      return { result: optimizeRothBracketTarget(engineInput) };
+      return {
+        result: optimizeRothBracketTarget(engineInput),
+        // The input's setup notes (inputWarnings), each once: the same
+        // notes the projection shows.
+        notes: setupNotes([engineInput], []),
+      };
     }),
 });

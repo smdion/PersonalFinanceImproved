@@ -1,6 +1,6 @@
 /**
  * Taxes in Retirement panel, a presentational leaf (props in, JSX out): the parent owns every
- * query, including `bracketOptimizerResult`. `selectedScenario` supplies the brokerage LTCG rate.
+ * query, including the bracket `optimizer`. `selectedScenario` supplies the brokerage LTCG rate.
  */
 "use client";
 
@@ -26,7 +26,8 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { WithdrawalOrderEditor } from "@/components/retirement/withdrawal-order-editor";
-import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
+import type { RouterOutputs } from "@/lib/trpc";
+import { EngineWarnings } from "@/components/retirement-projection/engine-warnings";
 import type {
   Settings,
   SelectedScenario,
@@ -47,10 +48,10 @@ type Props = {
   selectedScenario: SelectedScenario;
   upsertSettings: UpsertSettingsMutation;
   isEditable: IsEditable;
-  /** Multi-year withdrawal-policy optimizer result, or undefined while the
-   *  parent's query hasn't resolved yet — either way, no recommendation is
-   *  shown until a real, non-null `recommendedTarget` arrives. */
-  bracketOptimizerResult?: BracketOptimizerResult | null;
+  /** Multi-year withdrawal-policy optimizer's response (its setup notes shown),
+   *  undefined until it resolves: no recommendation is shown until a real,
+   *  non-null `recommendedTarget` arrives. */
+  optimizer?: RouterOutputs["projection"]["computeWithdrawalBracketOptimizer"];
 };
 
 export function TaxesSection({
@@ -58,7 +59,7 @@ export function TaxesSection({
   selectedScenario,
   upsertSettings,
   isEditable,
-  bracketOptimizerResult,
+  optimizer,
 }: Props) {
   const id = useId();
   const filingStatus = settings.filingStatus;
@@ -85,7 +86,7 @@ export function TaxesSection({
   // The withdrawal-policy optimizer's recommendation beside the Bracket
   // Ceiling, whatever the toggles: rothBracketTarget also sets RMD
   // smoothing's ceiling and, under bracket filling, distribution routing.
-  const recommendedTarget = bracketOptimizerResult?.recommendedTarget ?? null;
+  const recommendedTarget = optimizer?.result?.recommendedTarget ?? null;
   const willChangeSmoothingCeiling =
     recommendedTarget != null && settings.rmdSmoothingEnabled;
 
@@ -265,6 +266,7 @@ export function TaxesSection({
               <option value="0.24">24% (~$414k MFJ)</option>
               <option value="0.32">32% (~$526k MFJ)</option>
             </select>
+            <EngineWarnings warnings={optimizer?.notes ?? []} />
             {recommendedTarget != null && (
               <div className="text-caption mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
                 <span className="text-faint">

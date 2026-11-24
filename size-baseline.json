@@ -198,7 +198,7 @@
     "src/components/retirement-projection/withdrawal-comparison-chart.tsx": 110,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 457,
     "src/components/retirement/assumptions-band.tsx": 404,
-    "src/components/retirement/sections/taxes.tsx": 534,
+    "src/components/retirement/sections/taxes.tsx": 536,
     "src/components/savings/api-sync-section.tsx": 588,
     "src/components/savings/contribution-grid.tsx": 473,
     "src/components/savings/extra-paycheck-growth.tsx": 231,
@@ -380,7 +380,7 @@
     "src/server/routers/projection/relocation.ts": 120,
     "src/server/routers/projection/scenarios.ts": 128,
     "src/server/routers/projection/strategy.ts": 85,
-    "src/server/routers/projection/tax-optimization.ts": 430,
+    "src/server/routers/projection/tax-optimization.ts": 432,
     "src/server/routers/retirement/index.ts": 15,
     "src/server/routers/salary-profiles.ts": 364,
     "src/server/routers/savings/api-sync.ts": 14,
@@ -798,7 +798,7 @@
       "StrategyParamsSection.renderField": 173
     },
     "src/components/retirement/sections/taxes.tsx": {
-      "TaxesSection": 467
+      "TaxesSection": 468
     },
     "src/components/savings/api-sync-section.tsx": {
       "ApiSyncSection": 166,

@@ -17,6 +17,7 @@ import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
 import {
   prepareEngineInput,
   prepareProjectionRun,
+  setupNotes,
 } from "@/server/services/projection/projection-run";
 import {
   accumulationOverrideSchema,
@@ -236,6 +237,7 @@ export const taxOptimizationRouter = createTRPCRouter({
 
       return {
         rows,
+        notes: setupNotes([run.engineInput], []),
         meta: {
           bracketsThroughYear: run.taxBracketsYear,
           taxParamsVersion: run.taxParamsVersion,

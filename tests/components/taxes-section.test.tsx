@@ -5,7 +5,7 @@
  *
  * `TaxesSection` is a documented pure-presentational leaf
  * (retirement-sections-smoke.test.tsx) — the optimizer result is passed
- * in as a plain `bracketOptimizerResult` prop (owned/queried by the
+ * in as a plain `optimizer` prop (owned/queried by the
  * parent, retirement-profile-tab.tsx), not fetched by this component
  * itself, so no tRPC mocking is needed here.
  */
@@ -38,6 +38,7 @@ function renderTaxesSection(
   settingsOverrides: Partial<Settings> = {},
   bracketOptimizerResult?: BracketOptimizerResult,
   mutate = vi.fn(),
+  notes: string[] = [],
 ) {
   const settings = baseSettings(settingsOverrides);
   render(
@@ -46,7 +47,9 @@ function renderTaxesSection(
       selectedScenario={null}
       upsertSettings={{ mutate }}
       isEditable={true}
-      bracketOptimizerResult={bracketOptimizerResult}
+      optimizer={
+        bracketOptimizerResult && { result: bracketOptimizerResult, notes }
+      }
     />,
   );
   return { settings, mutate };
@@ -84,15 +87,28 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
         selectedScenario={null}
         upsertSettings={{ mutate: vi.fn() }}
         isEditable={false}
-        bracketOptimizerResult={{
-          recommendedTarget: 0.22,
-          currentTarget: 0.12,
-          candidates: [],
+        optimizer={{
+          result: {
+            recommendedTarget: 0.22,
+            currentTarget: 0.12,
+            candidates: [],
+          },
+          notes: [],
         }}
       />,
     );
     expect(screen.getByText(/Currently recommended/)).toBeInTheDocument();
     expect(screen.queryByText("Apply")).not.toBeInTheDocument();
+  });
+
+  it("shows what the optimizer's projection left out", () => {
+    renderTaxesSection(
+      {},
+      { recommendedTarget: 0.22, currentTarget: 0.12, candidates: [] },
+      vi.fn(),
+      ["An optimizer note"],
+    );
+    expect(screen.getByText("An optimizer note")).toBeInTheDocument();
   });
 
   it("Apply sets only rothBracketTarget when conversions and smoothing are both off", () => {

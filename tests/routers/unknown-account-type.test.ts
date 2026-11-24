@@ -106,7 +106,7 @@ async function relocationNotes(ctx: Ctx) {
   return notes;
 }
 
-/** The notes beside the Social Security claiming sweep (the Budget page's
+/** The notes beside the Social Security claiming sweep (the Profiles page's
  *  Retirement tab), for this person. */
 async function sweepNotes(ctx: Ctx, personId: number) {
   const sweep = await ctx.caller.projection.computeSocialSecurityClaimingSweep({
@@ -123,6 +123,24 @@ async function stressNotes(ctx: Ctx) {
   const stress = await ctx.caller.projection.computeStressTest();
   const notes = "notes" in stress ? stress.notes : undefined;
   if (!notes) throw new Error("no notes in the stress test");
+  return notes;
+}
+
+/** The notes beside the withdrawal bracket optimizer (the Profiles page's
+ *  Retirement tab, TaxesSection, shows them under its recommendation). */
+async function optimizerNotes(ctx: Ctx) {
+  const optimizer =
+    await ctx.caller.projection.computeWithdrawalBracketOptimizer({});
+  const notes = "notes" in optimizer ? optimizer.notes : undefined;
+  if (!notes) throw new Error("no notes in the bracket optimizer");
+  return notes;
+}
+
+/** The notes beside the Tax Optimization page's tax projection. */
+async function taxProjectionNotes(ctx: Ctx) {
+  const taxes = await ctx.caller.projection.computeTaxProjection({});
+  const notes = "notes" in taxes ? taxes.notes : undefined;
+  if (!notes) throw new Error("no notes in the tax projection");
   return notes;
 }
 
@@ -182,6 +200,14 @@ describe("a snapshot row of an account type this version doesn't know", () => {
 
   it("the stress test names it too", async () => {
     expect(await stressNotes(ctx)).toEqual([ROW_NOTE]);
+  });
+
+  it("the bracket optimizer names it too", async () => {
+    expect(await optimizerNotes(ctx)).toEqual([ROW_NOTE]);
+  });
+
+  it("the Tax Optimization page's tax projection names it too", async () => {
+    expect(await taxProjectionNotes(ctx)).toEqual([ROW_NOTE]);
   });
 
   it("Tax Buckets leaves it out and names it", async () => {
@@ -383,6 +409,14 @@ describe("saved settings naming an account type this version doesn't know", () =
 
   it("the stress test names each one, once", async () => {
     expectEachNamedOnce(await stressNotes(ctx));
+  });
+
+  it("the bracket optimizer names each one, once", async () => {
+    expectEachNamedOnce(await optimizerNotes(ctx));
+  });
+
+  it("the Tax Optimization page's tax projection names each one, once", async () => {
+    expectEachNamedOnce(await taxProjectionNotes(ctx));
   });
 
   it("percentage routing draws the year's need from the splits left", async () => {

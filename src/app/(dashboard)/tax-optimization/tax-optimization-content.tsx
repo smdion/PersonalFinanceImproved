@@ -20,6 +20,7 @@ import { Tabs, tabPanelProps } from "@/components/ui/tabs";
 import { RothExplorer } from "@/components/tax-optimization/roth-explorer";
 import { WithdrawalComparison } from "@/components/tax-optimization/withdrawal-comparison";
 import { IrmaaCliffAlert } from "@/components/tax-optimization/irmaa-cliff-alert";
+import { EngineWarnings } from "@/components/retirement-projection/engine-warnings";
 
 type Tab = "roth" | "strategies";
 
@@ -65,6 +66,10 @@ export function TaxOptimizationContent() {
 
   const bracketYear = taxQuery.data?.meta?.bracketsThroughYear ?? null;
   const rows = taxQuery.data?.rows ?? [];
+  // The projection's setup notes, once for the page: its tools run the
+  // same selection, so they'd repeat them.
+  const notes =
+    taxQuery.data && "notes" in taxQuery.data ? taxQuery.data.notes : [];
 
   if (queryPending([metaQuery, taxQuery])) {
     return (
@@ -132,6 +137,7 @@ export function TaxOptimizationContent() {
         admin={admin}
       />
 
+      <EngineWarnings warnings={notes} />
       <IrmaaCliffAlert rows={rows} />
 
       <div className="rounded-lg border">

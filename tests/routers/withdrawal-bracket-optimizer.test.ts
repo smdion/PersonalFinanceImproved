@@ -91,7 +91,7 @@ describe("projection router — computeWithdrawalBracketOptimizer", () => {
       db.delete(schema.returnRateTable).run();
       expect(
         await caller.projection.computeWithdrawalBracketOptimizer({}),
-      ).toEqual({ result: null, notConfigured: "no_return_rate" });
+      ).toEqual({ result: null, notConfigured: "no_return_rate", notes: [] });
     } finally {
       cleanup();
     }
@@ -102,7 +102,7 @@ describe("projection router — computeWithdrawalBracketOptimizer", () => {
     try {
       const response =
         await caller.projection.computeWithdrawalBracketOptimizer({});
-      expect(response).toEqual({ result: null });
+      expect(response).toEqual({ result: null, notes: [] });
     } finally {
       cleanup();
     }

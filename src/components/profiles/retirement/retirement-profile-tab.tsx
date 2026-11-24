@@ -479,7 +479,7 @@ export function RetirementProfileTab({
               selectedScenario={selectedScenario}
               upsertSettings={upsertSettingsMutation}
               isEditable={admin}
-              bracketOptimizerResult={bracketOptimizerQuery.data?.result}
+              optimizer={bracketOptimizerQuery.data}
             />
 
             <HealthcareSection
