@@ -23,9 +23,9 @@ const AS_OF = new Date("2025-03-07");
 const MFJ_BRACKETS = [
   { threshold: 0, baseWithholding: 0, rate: 0 },
   { threshold: 23850, baseWithholding: 0, rate: 0.1 },
-  { threshold: 96950, baseWithholding: 2385, rate: 0.12 },
-  { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
-  { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
+  { threshold: 96950, baseWithholding: 7310, rate: 0.12 },
+  { threshold: 206700, baseWithholding: 20480, rate: 0.22 },
+  { threshold: 394600, baseWithholding: 61818, rate: 0.24 },
 ];
 
 const BASE_SD = 32200;

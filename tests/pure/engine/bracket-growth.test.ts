@@ -260,9 +260,9 @@ const AS_OF = new Date("2025-03-07");
 const MFJ_BRACKETS = [
   { threshold: 0, baseWithholding: 0, rate: 0 },
   { threshold: 23850, baseWithholding: 0, rate: 0.1 },
-  { threshold: 96950, baseWithholding: 2385, rate: 0.12 },
-  { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
-  { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
+  { threshold: 96950, baseWithholding: 7310, rate: 0.12 },
+  { threshold: 206700, baseWithholding: 20480, rate: 0.22 },
+  { threshold: 394600, baseWithholding: 61818, rate: 0.24 },
 ];
 
 function makeInput(
@@ -843,8 +843,8 @@ describe("growIrmaaBrackets", () => {
 // every rothConversionAmount byte-identical to the fixed run (this
 // mutation is fully isolated to the check side). Omitting
 // `irmaaBrackets: grownIrmaaBracketsForCap` from the performRothConversion
-// call site instead leaves year 2026's rothConversionAmount at $42,767.46
-// (vs. $3,312.86 fixed) -- and this one is NOT isolated: the much larger
+// call site instead leaves year 2026's rothConversionAmount at $42,821.79
+// (vs. $3,367.19 fixed) -- and this one is NOT isolated: the much larger
 // conversion raises MAGI, which (via the module's own documented
 // Roth-conversions-affect-MAGI-affects-IRMAA feedback chain) ALSO flips
 // year 2028's irmaaCost away from its correctly-grown trajectory, so a
@@ -857,9 +857,9 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
   const MFJ_BRACKETS = [
     { threshold: 0, baseWithholding: 0, rate: 0 },
     { threshold: 23850, baseWithholding: 0, rate: 0.1 },
-    { threshold: 96950, baseWithholding: 2385, rate: 0.12 },
-    { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
-    { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
+    { threshold: 96950, baseWithholding: 7310, rate: 0.12 },
+    { threshold: 206700, baseWithholding: 20480, rate: 0.22 },
+    { threshold: 394600, baseWithholding: 61818, rate: 0.24 },
   ];
   return engineInput(
     withCapsAge<FixtureInput>({
@@ -965,8 +965,8 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
           basis: 300000,
         },
       },
-      annualExpenses: 195000,
-      decumulationAnnualExpenses: 195000,
+      annualExpenses: 189000,
+      decumulationAnnualExpenses: 189000,
       inflationRate: 0.03,
       returnRates: [{ label: "6%", rate: 0.06 }],
       birthYear: 1960,
@@ -1000,10 +1000,10 @@ describe("end-to-end: IRMAA brackets grow through both the check and Roth-conver
         y.phase === "decumulation" && y.year === 2026,
     )!;
     // Verified by mutation: with grownIrmaaBracketsForCap correctly wired,
-    // the cap allows $3,312.86 of conversion this year. Omitting the
+    // the cap allows $3,367.19 of conversion this year. Omitting the
     // wiring (capping against the ungrown, year-2026-vintage cliff instead
     // of the year-2028 one that actually governs this year's MAGI) instead
-    // allows $42,767.46 -- more than 10x as much. The mechanism is a TIER
+    // allows $42,821.79 -- more than 10x as much. The mechanism is a TIER
     // CHANGE, not a proportional gap: this household's pre-conversion MAGI
     // sits between the raw $206,000 first-tier threshold and its grown
     // ~$218,545 (year+2) value, so the ungrown cap sees MAGI already past
@@ -1038,9 +1038,9 @@ function makeAcaHouseholdInput(): ProjectionInput {
   const MFJ_BRACKETS = [
     { threshold: 0, baseWithholding: 0, rate: 0 },
     { threshold: 23850, baseWithholding: 0, rate: 0.1 },
-    { threshold: 96950, baseWithholding: 2385, rate: 0.12 },
-    { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
-    { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
+    { threshold: 96950, baseWithholding: 7310, rate: 0.12 },
+    { threshold: 206700, baseWithholding: 20480, rate: 0.22 },
+    { threshold: 394600, baseWithholding: 61818, rate: 0.24 },
   ];
   return engineInput(
     withCapsAge<FixtureInput>({
