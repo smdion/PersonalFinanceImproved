@@ -11,6 +11,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Disclaimer } from "@/components/ui/disclaimer";
 import { formatCurrency } from "@/lib/utils/format";
+import { EngineWarnings } from "@/components/retirement-projection/engine-warnings";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
 type Props = {
@@ -53,6 +54,7 @@ export function ClaimingAgeExplorer({
     { enabled: expanded, placeholderData: (prev) => prev },
   );
   const result = query.data?.result ?? null;
+  const notes = query.data && "notes" in query.data ? query.data.notes : [];
   const candidatesByAge = [...(result?.candidates ?? [])].sort(
     (a, b) => a.claimingAge - b.claimingAge,
   );
@@ -71,6 +73,7 @@ export function ClaimingAgeExplorer({
 
       {expanded && (
         <div className="bg-surface-elevated mt-2 overflow-x-auto rounded border p-2">
+          <EngineWarnings warnings={notes} />
           {query.isLoading ? (
             <Skeleton className="h-24 w-full" />
           ) : query.data && "notConfigured" in query.data ? (

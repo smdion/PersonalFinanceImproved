@@ -35,6 +35,7 @@ afterEach(() => {
 import { StrategyParamsSection } from "@/components/retirement/sections/strategy-params";
 import { TaxesSection } from "@/components/retirement/sections/taxes";
 import { SocialSecuritySection } from "@/components/retirement/sections/social-security";
+import { ClaimingAgeExplorer } from "@/components/retirement/sections/claiming-age-explorer";
 import { PerPhaseBudgetSection } from "@/components/retirement/sections/per-phase-budget";
 import { IncomeSection } from "@/components/retirement/sections/income";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -410,6 +411,17 @@ describe("SocialSecuritySection smoke", () => {
       },
       expect.objectContaining({ enabled: false }),
     ]);
+  });
+
+  it("the expanded comparison shows what the sweep's projection left out", () => {
+    setQuery(SWEEP, {
+      result: { recommendedAge: null, candidates: [] },
+      notes: ["A sweep note"],
+    });
+    render(<ClaimingAgeExplorer personId={1} pia={38400} personName={null} />);
+    expect(screen.queryByText("A sweep note")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText(/Compare claiming ages ▼/));
+    expect(screen.getByText("A sweep note")).toBeInTheDocument();
   });
 });
 

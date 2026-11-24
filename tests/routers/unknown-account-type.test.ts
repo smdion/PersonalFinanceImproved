@@ -106,15 +106,38 @@ async function relocationNotes(ctx: Ctx) {
   return notes;
 }
 
+/** The notes beside the Social Security claiming sweep (the Budget page's
+ *  Retirement tab), for this person. */
+async function sweepNotes(ctx: Ctx, personId: number) {
+  const sweep = await ctx.caller.projection.computeSocialSecurityClaimingSweep({
+    personId,
+    pia: 30000,
+  });
+  const notes = "notes" in sweep ? sweep.notes : undefined;
+  if (!notes) throw new Error("no notes in the claiming sweep");
+  return notes;
+}
+
+/** The notes beside the Retirement page's stress test. */
+async function stressNotes(ctx: Ctx) {
+  const stress = await ctx.caller.projection.computeStressTest();
+  const notes = "notes" in stress ? stress.notes : undefined;
+  if (!notes) throw new Error("no notes in the stress test");
+  return notes;
+}
+
 const ROW_NOTE =
   'Future Plan is saved as account type "future_type", which this version doesn\'t know, so the projection and Tax Buckets leave out its $40,000. Update Ledgr or change its account type.';
 
 describe("a snapshot row of an account type this version doesn't know", () => {
   let ctx: Ctx;
+  let personId: number;
 
   beforeAll(async () => {
     ctx = await createTestCaller();
-    const { personId, snapId } = seedHousehold(ctx.db);
+    const ids = seedHousehold(ctx.db);
+    personId = ids.personId;
+    const snapId = ids.snapId;
     ctx.db
       .insert(schema.portfolioAccounts)
       .values({
@@ -151,6 +174,14 @@ describe("a snapshot row of an account type this version doesn't know", () => {
 
   it("the Relocation tool names it too", async () => {
     expect(await relocationNotes(ctx)).toEqual([ROW_NOTE]);
+  });
+
+  it("the Social Security claiming sweep names it too", async () => {
+    expect(await sweepNotes(ctx, personId)).toEqual([ROW_NOTE]);
+  });
+
+  it("the stress test names it too", async () => {
+    expect(await stressNotes(ctx)).toEqual([ROW_NOTE]);
   });
 
   it("Tax Buckets leaves it out and names it", async () => {
@@ -214,12 +245,13 @@ describe("a contribution account of an account type this version doesn't know", 
 
 describe("saved settings naming an account type this version doesn't know", () => {
   let ctx: Ctx;
+  let personId: number;
   const left = (setting: string) =>
     `Account type "future_type", which this version doesn't know, is left out of ${setting}. Update Ledgr or change that setting.`;
 
   beforeAll(async () => {
     ctx = await createTestCaller();
-    seedHousehold(ctx.db);
+    personId = seedHousehold(ctx.db).personId;
     ctx.db
       .update(schema.retirementSettings)
       .set({
@@ -343,6 +375,14 @@ describe("saved settings naming an account type this version doesn't know", () =
 
   it("the Relocation tool names each one, once", async () => {
     expectEachNamedOnce(await relocationNotes(ctx));
+  });
+
+  it("the Social Security claiming sweep names each one, once", async () => {
+    expectEachNamedOnce(await sweepNotes(ctx, personId));
+  });
+
+  it("the stress test names each one, once", async () => {
+    expectEachNamedOnce(await stressNotes(ctx));
   });
 
   it("percentage routing draws the year's need from the splits left", async () => {

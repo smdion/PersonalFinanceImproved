@@ -26,6 +26,7 @@ import {
   maskAmountsInText,
 } from "@/lib/utils/format";
 import { STATUS_COLORS } from "@/lib/utils/colors";
+import { EngineWarnings } from "@/components/retirement-projection/engine-warnings";
 
 interface PlanHealthCardProps {
   /** Accumulation account order. If absent, the account-order callout is hidden. */
@@ -175,9 +176,11 @@ function StressTestPanel({
   const resultByLabel = new Map(
     (stressData?.scenarios ?? []).map((s) => [s.label, s]),
   );
+  const notes = stressData && "notes" in stressData ? stressData.notes : [];
 
   return (
     <div className="mt-4 border-t pt-3">
+      <EngineWarnings warnings={notes} />
       <div className="mt-3 overflow-x-auto">
         <table
           className="w-full text-xs"

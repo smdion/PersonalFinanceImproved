@@ -7,6 +7,7 @@ import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import {
   prepareEngineInput,
   prepareProjectionRun,
+  setupNotes,
 } from "@/server/services/projection/projection-run";
 import { runStressTestScenarios } from "@/lib/pure/simulation/stress-test-run";
 import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
@@ -36,24 +37,24 @@ export const stressTestRouter = createTRPCRouter({
 
       // The shared builder resolves the household's real routing, RMD/QCD and
       // strategy settings; each stress scenario overrides only `withdrawalRate`.
-      const {
-        decumulationDefaults,
-        accumulationOverrides,
-        decumulationOverrides,
-      } = await prepareEngineInput(ctx.db, payload, {
+      const resolved = await prepareEngineInput(ctx.db, payload, {
         decumulationDefaults: { withdrawalTaxPreference: {} },
       });
       const scenarios = runStressTestScenarios({
         baseEngineInput,
-        decumulationDefaults,
+        decumulationDefaults: resolved.decumulationDefaults,
         // The household's saved "Changes by year" (D6).
-        accumulationOverrides,
-        decumulationOverrides,
+        accumulationOverrides: resolved.accumulationOverrides,
+        decumulationOverrides: resolved.decumulationOverrides,
       });
 
       return {
         scenarios,
         retirementAge: planRetirementAge,
+        // The input's setup notes (inputWarnings), each once: it runs the
+        // saved withdrawal settings and Changes by year, never the page's
+        // edits.
+        notes: setupNotes([resolved], []),
       };
     }),
 });

@@ -12,6 +12,7 @@ import type { ProjectionInput } from "@/lib/pure/engine/types";
 import {
   prepareEngineInput,
   prepareProjectionRun,
+  setupNotes,
 } from "@/server/services/projection/projection-run";
 import {
   buildSocialSecurityEntries,
@@ -95,6 +96,9 @@ export const socialSecurityRouter = createTRPCRouter({
           ages: input.ages,
           buildCandidateInput,
         }),
+        // The input's setup notes (inputWarnings), each once: the same
+        // notes the projection shows.
+        notes: setupNotes([engineInput], []),
       };
     }),
 });
