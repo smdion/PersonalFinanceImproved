@@ -168,9 +168,9 @@ export async function computeMonteCarloProjection(
 
   const { returnClampMin, returnClampMax } = preset;
 
-  // Deterministic return rates use GEOMETRIC means (the median compounding rate),
-  // so compounding doesn't overstate growth; the stochastic trials compound
-  // geometrically on their own. Simple tax mode keeps the ages.
+  // Deterministic rates use GEOMETRIC means (the median compounding rate), so
+  // compounding doesn't overstate growth; the trials compound on their own.
+  // simInput's ages are the household's in either tax mode.
   const mcEngineInput = await simulationEngineInput(
     ctx.db,
     simInput,
