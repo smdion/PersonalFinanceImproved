@@ -428,7 +428,12 @@
       "count": 1
     },
     "ratchet/no-raw-button": {
-      "count": 4
+      "count": 1
+    }
+  },
+  "src/app/(dashboard)/retirement/retirement-page-tabs.tsx": {
+    "ratchet/no-raw-button": {
+      "count": 3
     }
   },
   "src/app/(dashboard)/savings/pool-growth-line.tsx": {

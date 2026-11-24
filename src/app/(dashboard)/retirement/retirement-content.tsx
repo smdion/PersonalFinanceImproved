@@ -25,6 +25,7 @@ import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { ProjectionCard } from "@/components/retirement-projection";
 import { AssumptionsBand } from "@/components/retirement/assumptions-band";
+import { RetirementPageTabs } from "./retirement-page-tabs";
 
 // Code-split the recharts-heavy withdrawal comparison card. Loads on
 // retirement page mount; ssr:false because
@@ -170,50 +171,11 @@ export function RetirementContent() {
       </div>
 
       {/* Page-level tabs */}
-      <div className="bg-surface-primary/60 mb-4 flex w-fit max-w-full flex-wrap rounded-md border p-0.5 print:hidden">
-        <button
-          type="button"
-          onClick={() => setPageTab("projection")}
-          className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
-            pageTab === "projection"
-              ? "bg-surface-primary text-primary border shadow-sm"
-              : "text-muted hover:text-secondary"
-          }`}
-        >
-          Projection
-        </button>
-        <button
-          type="button"
-          aria-label="Strategy Comparison"
-          onClick={() => {
-            setPageTab("comparison");
-            setComparisonExpanded(true);
-          }}
-          className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
-            pageTab === "comparison"
-              ? "bg-surface-primary text-primary border shadow-sm"
-              : "text-muted hover:text-secondary"
-          }`}
-        >
-          <span aria-hidden="true" className="sm:hidden">
-            Comparison
-          </span>
-          <span aria-hidden="true" className="hidden sm:inline">
-            Strategy Comparison
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setPageTab("planHealth")}
-          className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
-            pageTab === "planHealth"
-              ? "bg-surface-primary text-primary border shadow-sm"
-              : "text-muted hover:text-secondary"
-          }`}
-        >
-          Projection Health
-        </button>
-      </div>
+      <RetirementPageTabs
+        pageTab={pageTab}
+        setPageTab={setPageTab}
+        setComparisonExpanded={setComparisonExpanded}
+      />
 
       {/* Snapshot selector */}
       {snapshotOptions.length > 1 && (

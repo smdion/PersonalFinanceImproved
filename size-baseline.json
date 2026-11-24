@@ -29,6 +29,7 @@
     "src/app/(dashboard)/portfolio/snapshot-rows.tsx": 154,
     "src/app/(dashboard)/portfolio/use-portfolio-page.ts": 143,
     "src/app/(dashboard)/portfolio/use-portfolio-sync.ts": 101,
+    "src/app/(dashboard)/retirement/retirement-page-tabs.tsx": 60,
     "src/app/(dashboard)/savings/savings-content.tsx": 870,
     "src/app/(dashboard)/tax-buckets/tax-buckets-account-badges.tsx": 42,
     "src/app/(dashboard)/tax-buckets/tax-buckets-account-row.tsx": 285,
@@ -498,7 +499,7 @@
       "RecommendationsContent": 185
     },
     "src/app/(dashboard)/retirement/retirement-content.tsx": {
-      "RetirementContent": 296
+      "RetirementContent": 257
     },
     "src/app/(dashboard)/savings/savings-content.tsx": {
       "SavingsContent": 782
