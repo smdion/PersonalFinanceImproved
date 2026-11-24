@@ -145,8 +145,26 @@ describe("unknown category notes", () => {
 describe("unknownLumpSumTargetNotes", () => {
   const lump = (year: string, amount: unknown, category = "future_type") => ({
     year,
+    target: "accountType" as const,
     category,
     amount,
+  });
+
+  it("names a parent category apart from an account type of the same name", () => {
+    expect(
+      unknownLumpSumTargetNotes([
+        {
+          year: "2040",
+          target: "parentCategory",
+          category: "Future",
+          amount: 40,
+        },
+        lump("2040", 5, "Future"),
+      ]),
+    ).toEqual([
+      'A lump sum of $40 in Changes by year for 2040 goes to parent category "Future", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+      'A lump sum of $5 in Changes by year for 2040 goes to account type "Future", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+    ]);
   });
 
   it("names a left-out lump sum's amount, year and target", () => {

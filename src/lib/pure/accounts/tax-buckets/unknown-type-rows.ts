@@ -127,15 +127,23 @@ export function unknownCategoryNote(
   return `Account type "${category}", which this version doesn't know, is left out of ${name}. Update Ledgr or change that setting.`;
 }
 
+/** What a left-out lump sum's unknown target is, as its note names it. */
+const TARGET_NAMES = {
+  accountType: "account type",
+  parentCategory: "parent category",
+} as const;
+
 /** A saved lump sum the projection leaves out: its row's year, its target
- *  category this version doesn't know, and its amount as stored. */
+ *  this version doesn't know (an account type or a parent category), and
+ *  its amount as stored. */
 export type UnknownTargetLumpSum = {
   year: string;
+  target: keyof typeof TARGET_NAMES;
   category: StoredAccountType;
   amount: unknown;
 };
 
-/** One note per year and category for the lump sums left out, in first-seen
+/** One note per year and target for the lump sums left out, in first-seen
  *  order, with their amount (summed, with the count, for more than one); no
  *  amount when one of them stores no number. */
 export function unknownLumpSumTargetNotes(
@@ -143,22 +151,23 @@ export function unknownLumpSumTargetNotes(
 ): string[] {
   const groups = new Map<
     string,
-    { year: string; category: StoredAccountType; amounts: unknown[] }
+    Omit<UnknownTargetLumpSum, "amount"> & { amounts: unknown[] }
   >();
-  for (const { year, category, amount } of lumpSums) {
-    const key = JSON.stringify([year, category]);
+  for (const { year, target, category, amount } of lumpSums) {
+    const key = JSON.stringify([year, target, category]);
     const group = groups.get(key);
     if (group) group.amounts.push(amount);
-    else groups.set(key, { year, category, amounts: [amount] });
+    else groups.set(key, { year, target, category, amounts: [amount] });
   }
-  return [...groups.values()].map(({ year, category, amounts }) => {
+  return [...groups.values()].map((group) => {
+    const { year, category, amounts } = group;
     const total = amounts.every(
       (a): a is number => typeof a === "number" && Number.isFinite(a),
     )
       ? dollars(amounts.reduce((sum, a) => sum + a, 0))
       : null;
     const where = `in ${changesByYear(year)}`;
-    const target = `account type "${category}", which this version doesn't know`;
+    const target = `${TARGET_NAMES[group.target]} "${category}", which this version doesn't know`;
     if (amounts.length === 1)
       return `A lump sum ${total ? `of ${total} ` : ""}${where} goes to ${target}, so the projection leaves it out. Update Ledgr or change that lump sum.`;
     return `${amounts.length} lump sums ${total ? `totalling ${total} ` : ""}${where} go to ${target}, so the projection leaves them out. Update Ledgr or change those lump sums.`;

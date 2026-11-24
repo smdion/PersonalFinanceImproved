@@ -309,6 +309,61 @@ describe("saved settings naming an account type this version doesn't know", () =
   });
 });
 
+describe("a saved lump sum to a parent category this version doesn't know", () => {
+  let ctx: Ctx;
+
+  beforeAll(async () => {
+    ctx = await createTestCaller();
+    seedHousehold(ctx.db);
+    // Written outside the app (the save path refuses this set).
+    ctx.db
+      .insert(schema.projectionOverrides)
+      .values({
+        overrideType: "accumulation",
+        overrides: [
+          {
+            year: 2040,
+            accountOrder: ["401k"],
+            lumpSums: [
+              {
+                amount: 4000,
+                targetAccount: "401k",
+                targetParentCategory: "Future Money",
+              },
+              { amount: 3000, targetAccount: "401k" },
+            ],
+          },
+        ],
+      })
+      .run();
+  });
+  afterAll(() => ctx.cleanup());
+
+  it("the engine input leaves that lump sum out and keeps the rest of the set", async () => {
+    const data = await fetchRetirementData(ctx.rawDb);
+    const payload = await buildEnginePayload(ctx.rawDb, data, {
+      asOf: new Date(),
+    });
+    const input = await prepareEngineInput(ctx.rawDb, payload!, {
+      decumulationDefaults: { withdrawalTaxPreference: {} },
+    });
+    expect(input.accumulationOverrides).toEqual([
+      {
+        year: 2040,
+        accountOrder: ["401k"],
+        lumpSums: [{ amount: 3000, targetAccount: "401k" }],
+      },
+    ]);
+  });
+
+  it("the projection names the year, the parent category and the amount", async () => {
+    const response = await ctx.caller.projection.computeProjection({});
+    expect(response.result!.warnings).toContain(
+      'A lump sum of $4,000 in Changes by year for 2040 goes to parent category "Future Money", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+    );
+  });
+});
+
 describe("a saved savings order naming only an account type this version doesn't know", () => {
   /** The household's projection by year, with `overrides` saved first. */
   async function projectionByYear(overrides?: Record<string, unknown>[]) {

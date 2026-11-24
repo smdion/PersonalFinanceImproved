@@ -13,6 +13,7 @@ import {
   accountCategoryEnum,
   getDefaultDecumulationOrder,
   isKnownCategory,
+  PARENT_CATEGORY_VALUES,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
 import {
@@ -114,8 +115,8 @@ const CATEGORY_FIELDS = {
 type CategoryDrops = { notes: string[]; lumpSums: UnknownTargetLumpSum[] };
 
 /** A saved row with each unknown account type dropped from its fields (a list
- *  emptied is removed: the row sets none) and each lump sum to one left out,
- *  into `drops`; anything else as stored, for its shape's check (FALLBACKS). */
+ *  emptied is removed: the row sets none) and each lump sum to one (or to a
+ *  parent category it doesn't know) left out, into `drops` (FALLBACKS). */
 function withKnownCategories(
   row: unknown,
   fields: readonly string[],
@@ -141,10 +142,25 @@ function withKnownCategories(
   if (Array.isArray(row.lumpSums))
     kept.lumpSums = row.lumpSums.filter((lumpSum: unknown) => {
       if (!isRecord(lumpSum)) return true;
-      const { targetAccount: category, amount } = lumpSum;
-      if (typeof category !== "string" || isKnownCategory(category))
-        return true;
-      drops.lumpSums.push({ year, category, amount });
+      const { targetAccount, targetParentCategory: parent, amount } = lumpSum;
+      if (typeof targetAccount === "string" && !isKnownCategory(targetAccount))
+        drops.lumpSums.push({
+          year,
+          target: "accountType",
+          category: targetAccount,
+          amount,
+        });
+      else if (
+        typeof parent === "string" &&
+        !PARENT_CATEGORY_VALUES.some((known) => known === parent)
+      )
+        drops.lumpSums.push({
+          year,
+          target: "parentCategory",
+          category: parent,
+          amount,
+        });
+      else return true;
       return false;
     });
   return kept;
