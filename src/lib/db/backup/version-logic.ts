@@ -244,10 +244,10 @@ export async function restoreVersion(
   const tableDataMap = new Map<string, { data: unknown }>(
     tableDatas.map((t) => [t.tableName, { data: t.data }]),
   );
-  const fenced = checkRestoredValues(
+  const { tables: fencedTables, ...notes } = checkRestoredValues(
     await withInstallationRows(database, transformedMap, by),
   );
-  for (const [tableName, data] of Object.entries(fenced.tables))
+  for (const [tableName, data] of Object.entries(fencedTables))
     tableDataMap.set(tableName, { data });
 
   // Wrap in a transaction so truncate + inserts are atomic.
@@ -296,7 +296,7 @@ export async function restoreVersion(
 
   const versioned = Object.fromEntries(tableDatas.map((t) => [t.tableName, 1]));
   const restoredTables = tablesTakenCount(versioned, by);
-  return { restoredTables, restoredRows, valueNotes: fenced.valueNotes };
+  return { restoredTables, restoredRows, ...notes };
 }
 
 export type BackupData = {
@@ -345,7 +345,7 @@ export async function importBackup(
     });
   }
 
-  const checked = checkImportedValues(
+  const { tables: checkedTables, ...notes } = checkImportedValues(
     await withInstallationRows(database, transformedTables, {
       asAdmin: by.asAdmin,
       householdOnly: backup.householdOnly === true,
@@ -355,7 +355,7 @@ export async function importBackup(
   const transformedBackup: BackupData = {
     ...backup,
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    tables: checked.tables,
+    tables: checkedTables,
   };
 
   // Validate structure — tables present in backup must be arrays
@@ -375,7 +375,7 @@ export async function importBackup(
   await reconcileReferenceData(database);
   const taken = { asAdmin: by.asAdmin && backup.householdOnly !== true };
   const restoredTables = tablesTakenCount(transformedTables, taken);
-  return { ...result, restoredTables, valueNotes: checked.valueNotes };
+  return { ...result, restoredTables, ...notes };
 }
 
 async function importBackupPg(

@@ -14,7 +14,7 @@ import { RestoreDialog } from "@/components/versions/restore-dialog";
 import { ImportDialog } from "@/components/versions/import-dialog";
 import {
   ValueNotes,
-  type ValueNote,
+  useRestoreNotes,
 } from "@/components/versions/restore-notices";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { formatDate } from "@/lib/utils/format";
@@ -71,7 +71,7 @@ export function VersionsContent() {
   });
   const restoreMutation = trpc.version.restore.useMutation({
     onSuccess: (restored) => {
-      setValueNotes(restored.valueNotes);
+      restoreNotes.take(restored);
       utils.version.list.invalidate();
       setRestoreTarget(null);
       setRestoreConfirmText("");
@@ -122,7 +122,7 @@ export function VersionsContent() {
   const [cronExpression, setCronExpression] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [valueNotes, setValueNotes] = useState<ValueNote[]>([]);
+  const restoreNotes = useRestoreNotes();
 
   // Reset state
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -203,7 +203,7 @@ export function VersionsContent() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Import failed");
-      setValueNotes(json.valueNotes);
+      restoreNotes.take(json);
       utils.version.list.invalidate();
       setShowImportConfirm(false);
       setImportFile(null);
@@ -226,7 +226,7 @@ export function VersionsContent() {
         </Button>
       </PageHeader>
 
-      <ValueNotes notes={valueNotes} onDismiss={() => setValueNotes([])} />
+      <ValueNotes notes={restoreNotes.shown} onDismiss={restoreNotes.dismiss} />
 
       {/* Upgrade banner */}
       {upgradeBanner && (

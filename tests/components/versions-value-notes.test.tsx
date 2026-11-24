@@ -9,8 +9,8 @@ import {
 import { resetTrpcMock, setMutationResult, setQuery } from "./trpc-mock";
 
 // The Versions page lists the values a restore or import set to their
-// column's default, until dismissed; a restore or import that changed none
-// lists nothing.
+// column's default and the links it cleared, until dismissed; a restore or
+// import that changed none lists nothing.
 
 vi.mock("@/lib/context/user-context", () => ({
   useUser: () => ({ role: "admin", name: "Test", permissions: [] }),
@@ -29,6 +29,8 @@ const note = {
 };
 const NOTE_LINE =
   'retirement settings, withdrawal strategy: "retired_strategy" became fixed (1 row)';
+const linkNote = { table: "people", column: "spouse_person_id", rows: 2 };
+const LINK_LINE = "people, spouse person id (2 rows)";
 
 async function renderPage() {
   const { VersionsContent } =
@@ -77,24 +79,44 @@ describe("Versions page: values a restore or import set to their default", () =>
       restoredTables: 80,
       restoredRows: 100,
       valueNotes: [note],
+      linkNotes: [],
     });
     await renderPage();
     await restore();
     const item = await screen.findByText(/withdrawal strategy/);
     expect(item.textContent).toBe(NOTE_LINE);
+    expect(screen.queryByText(/links were cleared/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(screen.queryByText(/withdrawal strategy/)).toBeNull();
   });
 
-  it("lists nothing after a restore that changed no value", async () => {
+  it("lists the links a restore cleared, and Dismiss clears them", async () => {
     setMutationResult("version.restore", {
       restoredTables: 80,
       restoredRows: 100,
       valueNotes: [],
+      linkNotes: [linkNote],
+    });
+    await renderPage();
+    await restore();
+    expect(await screen.findByText(/links were cleared/)).toBeTruthy();
+    expect(screen.getByText(/spouse person id/).textContent).toBe(LINK_LINE);
+    expect(screen.queryByText(/set to their defaults/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByText(/spouse person id/)).toBeNull();
+  });
+
+  it("lists nothing after a restore that changed no value or link", async () => {
+    setMutationResult("version.restore", {
+      restoredTables: 80,
+      restoredRows: 100,
+      valueNotes: [],
+      linkNotes: [],
     });
     await renderPage();
     await restore();
     expect(screen.queryByText(/set to their defaults/)).toBeNull();
+    expect(screen.queryByText(/links were cleared/)).toBeNull();
   });
 
   it("lists an import's notes", async () => {
@@ -107,6 +129,7 @@ describe("Versions page: values a restore or import set to their default", () =>
           restoredTables: 80,
           restoredRows: 100,
           valueNotes: [note],
+          linkNotes: [linkNote],
         }),
       }),
     );
@@ -127,5 +150,6 @@ describe("Versions page: values a restore or import set to their default", () =>
         NOTE_LINE,
       ),
     );
+    expect(screen.getByText(/spouse person id/).textContent).toBe(LINK_LINE);
   });
 });

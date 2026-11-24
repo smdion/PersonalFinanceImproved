@@ -7,6 +7,7 @@ import { getTableColumns, getTableName, type Table } from "drizzle-orm";
 import * as schema from "../schema-pg";
 import { TAX_DATA_ORIGIN_VALUES } from "../migrate/reference-reconcile-core";
 import { log } from "@/lib/logger";
+import { nullDanglingLinks } from "./restore-dangling-links";
 import {
   getAllCategories,
   PARENT_CATEGORY_VALUES,
@@ -288,10 +289,21 @@ function checkClosedSetValues(
   return { tables: out, valueNotes };
 }
 
+/** A backup's rows with its dangling SET NULL links set to null
+ *  (restore-dangling-links), then its closed-set values checked; the notes
+ *  of both. */
+function checkBackupRows(
+  tables: Record<string, unknown[]>,
+  from: BackupSource,
+) {
+  const { tables: linked, linkNotes } = nullDanglingLinks(tables, from);
+  return { ...checkClosedSetValues(linked, from), linkNotes };
+}
+
 /** The check on a stored version's rows (a refusal says to restore another). */
 export const checkRestoredValues = (tables: Record<string, unknown[]>) =>
-  checkClosedSetValues(tables, "restore");
+  checkBackupRows(tables, "restore");
 
 /** The check on an uploaded backup file's rows. */
 export const checkImportedValues = (tables: Record<string, unknown[]>) =>
-  checkClosedSetValues(tables, "import");
+  checkBackupRows(tables, "import");

@@ -1055,6 +1055,15 @@ restore or import result that the Versions page lists. In any other column it re
 import, naming each table, column and value, and today's data stays. A row
 without the column is left to the insert.
 
+Before that check, a link whose foreign key is `ON DELETE SET NULL` and
+whose parent row the backup lacks (a spouse, an RMD target account, a
+Plan's profile) is set to null, as deleting that row would have
+(`nullDanglingLinks`, `src/lib/db/backup/restore-dangling-links.ts`). The
+result names each cleared table and column with its row count, the Versions
+page and `pnpm backup:import` list them, and the log names the rows by id.
+A link whose parent table the backup doesn't hold is left to the insert;
+any other dangling reference refuses the whole restore or import.
+
 ### Account Categories
 
 Two `parentCategory` values classify all investment accounts by their goal:

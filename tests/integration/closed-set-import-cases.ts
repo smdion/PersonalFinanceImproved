@@ -7,6 +7,7 @@
  * Imports only types from the app (see ./backup-fence-cases).
  */
 import { it, expect } from "vitest";
+import { and, eq } from "drizzle-orm";
 import type { FenceDb } from "./backup-fence-cases";
 
 type Db = FenceDb["db"];
@@ -312,7 +313,8 @@ export function unknownAccountTypeCases(fresh: () => Promise<FenceDb>) {
 
 /** A backup whose rows point at a row it doesn't have: refused whole on
  *  both dialects (PostgreSQL inserts with triggers off, then checks every
- *  reference), and nothing is written. */
+ *  reference), and nothing is written. A link whose key sets it to null on
+ *  delete is cleared instead, and the result names it. */
 export function danglingReferenceCases(fresh: () => Promise<FenceDb>) {
   it("an import whose rows point at a missing person is refused, and nothing changes", async () => {
     const { db, done } = await fresh();
@@ -328,6 +330,77 @@ export function danglingReferenceCases(fresh: () => Promise<FenceDb>) {
       expect(await stored(db)).toEqual(before);
     } finally {
       done();
+    }
+  });
+
+  it("an import whose spouse link points at a missing person takes it as no spouse", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { schema, exportBackup, importBackup } = await app();
+      await household(db);
+      const backup = JSON.parse(
+        JSON.stringify(await exportBackup(db, { asAdmin: true })),
+      ) as Backup;
+      setAll(backup, "people", "spouse_person_id", 999999);
+      const result = await importBackup(db, backup as never, admin);
+      expect(result.linkNotes).toEqual([
+        { table: "people", column: "spouse_person_id", rows: 1 },
+      ]);
+      const people = await db.select().from(schema.people);
+      expect(people.map((p) => [p.name, p.spousePersonId])).toEqual([
+        ["Robin", null],
+      ]);
+      expect(await stored(db)).toEqual({
+        settings: ["guyton_klinger"],
+        goals: [["Roof", "ongoing"]],
+        accounts: ["401k"],
+      });
+    } finally {
+      await done();
+    }
+  });
+
+  it("a restore whose RMD target points at a missing account takes it as none", async () => {
+    const { db, done } = await fresh();
+    try {
+      const { schema, createVersion, restoreVersion } = await app();
+      await household(db);
+      const version = await createVersion(db, {
+        name: "dangling",
+        type: "manual",
+        createdBy: "test",
+      });
+      const [settings] = await db
+        .select()
+        .from(schema.stateVersionTables)
+        .where(
+          and(
+            eq(schema.stateVersionTables.versionId, version.id),
+            eq(schema.stateVersionTables.tableName, "retirement_settings"),
+          ),
+        );
+      const rows = (settings!.data as Record<string, unknown>[]).map((r) => ({
+        ...r,
+        rmd_excess_target_performance_account_id: 999999,
+      }));
+      await db
+        .update(schema.stateVersionTables)
+        .set({ data: rows })
+        .where(eq(schema.stateVersionTables.id, settings!.id));
+      const result = await restoreVersion(db, version.id, admin);
+      expect(result.linkNotes).toEqual([
+        {
+          table: "retirement_settings",
+          column: "rmd_excess_target_performance_account_id",
+          rows: 1,
+        },
+      ]);
+      const restored = await db.select().from(schema.retirementSettings);
+      expect(
+        restored.map((r) => r.rmdExcessTargetPerformanceAccountId),
+      ).toEqual([null]);
+    } finally {
+      await done();
     }
   });
 }

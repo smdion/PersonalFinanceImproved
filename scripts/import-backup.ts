@@ -58,6 +58,34 @@ function describeTarget(): string {
   }
 }
 
+/** The import's counts, and what it changed in the backup's rows: values
+ *  set to their column's default and links to rows the backup lacks
+ *  cleared (the Versions page lists the same). */
+function reportImport(result: {
+  restoredTables: number;
+  restoredRows: number;
+  valueNotes: {
+    table: string;
+    column: string;
+    value: unknown;
+    defaultedTo: string;
+    rows: number;
+  }[];
+  linkNotes: { table: string; column: string; rows: number }[];
+}) {
+  console.error(
+    `Import complete: ${result.restoredTables} tables, ${result.restoredRows} rows`,
+  );
+  for (const n of result.valueNotes)
+    console.error(
+      `  Set to default: ${n.table}.${n.column} ${JSON.stringify(n.value)} became ${n.defaultedTo} (${n.rows} rows)`,
+    );
+  for (const n of result.linkNotes)
+    console.error(
+      `  Link cleared (row it points at not in the backup): ${n.table}.${n.column} (${n.rows} rows)`,
+    );
+}
+
 async function run() {
   loadEnvFile();
   const args = process.argv.slice(2);
@@ -160,9 +188,7 @@ async function run() {
         // Run by the server's operator: the whole backup, as an admin's.
         { asAdmin: true, user: "import-backup script" },
       );
-      console.error(
-        `Import complete: ${result.restoredTables} tables, ${result.restoredRows} rows`,
-      );
+      reportImport(result);
     } finally {
       await pool.end();
     }
@@ -203,9 +229,7 @@ async function run() {
         // Run by the server's operator: the whole backup, as an admin's.
         { asAdmin: true, user: "import-backup script" },
       );
-      console.error(
-        `Import complete: ${result.restoredTables} tables, ${result.restoredRows} rows`,
-      );
+      reportImport(result);
     } finally {
       sqlite.close();
     }

@@ -8,22 +8,27 @@ import { log } from "@/lib/logger";
 import { convertBackupInOrder } from "../migrate/migration-converters";
 import type { Reference } from "../migrate/converter-writes";
 
+/** A schema foreign key, with what deleting its parent row does. */
+type SchemaReference = Reference & {
+  readonly onDelete: string | undefined;
+};
+
 /** Every single-column foreign key in the schema. */
-export const SCHEMA_REFERENCES: readonly Reference[] = Object.values<unknown>(
-  schema,
-)
-  .filter((t) => is(t, PgTable))
-  .flatMap((t) => {
-    const table = getTableConfig(t);
-    return table.foreignKeys.map((fk) => {
-      const r = fk.reference();
-      return {
-        child: table.name,
-        column: r.columns[0]!.name,
-        parent: getTableConfig(r.foreignTable).name,
-      };
+export const SCHEMA_REFERENCES: readonly SchemaReference[] =
+  Object.values<unknown>(schema)
+    .filter((t) => is(t, PgTable))
+    .flatMap((t) => {
+      const table = getTableConfig(t);
+      return table.foreignKeys.map((fk) => {
+        const r = fk.reference();
+        return {
+          child: table.name,
+          column: r.columns[0]!.name,
+          parent: getTableConfig(r.foreignTable).name,
+          onDelete: fk.onDelete,
+        };
+      });
     });
-  });
 
 /** Every registered converter over a restored backup, in registry order. */
 export function convertRestoredBackup(tables: Record<string, unknown[]>) {

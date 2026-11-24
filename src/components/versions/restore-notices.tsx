@@ -1,8 +1,10 @@
 "use client";
 
 /** What a restore or import does to the household's data: the tables it
- *  empties, and the values it set to their column's default. */
+ *  empties, the values it set to their column's default and the links it
+ *  cleared. */
 
+import { useState } from "react";
 import type { RouterOutputs } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 
@@ -34,40 +36,77 @@ export function DataLossWarning({
   );
 }
 
-/** A backup value set to its column's default by a restore or import. */
-export type ValueNote =
-  RouterOutputs["version"]["restore"]["valueNotes"][number];
+/** What a restore or import changed in the backup's rows: values set to
+ *  their column's default, and links to rows the backup lacks cleared. */
+export type RestoreNotes = Pick<
+  RouterOutputs["version"]["restore"],
+  "valueNotes" | "linkNotes"
+>;
+const NO_RESTORE_NOTES: RestoreNotes = { valueNotes: [], linkNotes: [] };
 
-/** Lists the values the last restore or import set to their defaults. */
+/** The notes the Versions page shows: `take` keeps a restore's or an
+ *  import's, `dismiss` clears them. */
+export function useRestoreNotes() {
+  const [shown, setShown] = useState<RestoreNotes>(NO_RESTORE_NOTES);
+  return {
+    shown,
+    take: ({ valueNotes, linkNotes }: RestoreNotes) =>
+      setShown({ valueNotes, linkNotes }),
+    dismiss: () => setShown(NO_RESTORE_NOTES),
+  };
+}
+
+const rowCount = (rows: number) => `${rows} ${rows === 1 ? "row" : "rows"}`;
+
+/** Lists what the last restore or import changed in the backup's rows. */
 export function ValueNotes({
-  notes,
+  notes: { valueNotes, linkNotes },
   onDismiss,
 }: {
-  notes: ValueNote[];
+  notes: RestoreNotes;
   onDismiss: () => void;
 }) {
-  if (notes.length === 0) return null;
+  if (valueNotes.length === 0 && linkNotes.length === 0) return null;
   return (
     <div className="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
-      <div className="mb-1 flex items-start justify-between gap-3">
-        <p className="font-medium">
-          The backup held values this version of Ledgr doesn&rsquo;t have. These
-          were set to their defaults:
-        </p>
+      <div className="flex justify-end">
         <Button variant="ghost" size="xs" onClick={onDismiss}>
           Dismiss
         </Button>
       </div>
-      <ul className="list-disc pl-4">
-        {notes.map((n) => (
-          <li key={`${n.table}.${n.column}.${JSON.stringify(n.value)}`}>
-            {n.table.replace(/_/g, " ")}, {n.column.replace(/_/g, " ")}:{" "}
-            <code>{JSON.stringify(n.value)}</code> became{" "}
-            <code>{n.defaultedTo}</code> ({n.rows}{" "}
-            {n.rows === 1 ? "row" : "rows"})
-          </li>
-        ))}
-      </ul>
+      {valueNotes.length > 0 && (
+        <>
+          <p className="mb-1 font-medium">
+            The backup held values this version of Ledgr doesn&rsquo;t have.
+            These were set to their defaults:
+          </p>
+          <ul className="list-disc pl-4">
+            {valueNotes.map((n) => (
+              <li key={`${n.table}.${n.column}.${JSON.stringify(n.value)}`}>
+                {n.table.replace(/_/g, " ")}, {n.column.replace(/_/g, " ")}:{" "}
+                <code>{JSON.stringify(n.value)}</code> became{" "}
+                <code>{n.defaultedTo}</code> ({rowCount(n.rows)})
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {linkNotes.length > 0 && (
+        <>
+          <p className="mt-2 mb-1 font-medium">
+            The backup linked to rows it doesn&rsquo;t hold. These links were
+            cleared, as deleting those rows would have:
+          </p>
+          <ul className="list-disc pl-4">
+            {linkNotes.map((n) => (
+              <li key={`${n.table}.${n.column}`}>
+                {n.table.replace(/_/g, " ")}, {n.column.replace(/_/g, " ")} (
+                {rowCount(n.rows)})
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
