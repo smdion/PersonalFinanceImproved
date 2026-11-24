@@ -2,6 +2,7 @@
 import { roundToCents } from "../../utils/math";
 import { drawNiit } from "../tax/niit";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
+import type { ComputeTaxFromSlotsResult } from "./tax-estimation";
 
 /** Social Security's surplus credited against a tax: never more than the tax
  *  (the surplus isn't banked). */
@@ -15,13 +16,7 @@ export function surplusCreditFor(ssSurplus: number, tax: number): number {
  * pay, Social Security's surplus credited against the tax.
  */
 export function drawCost(
-  priced: {
-    taxCost: number;
-    penaltyCost: number;
-    totalTraditionalWithdrawal: number;
-    rothTaxableGrowth: number;
-    brokerageGainsPortion: number;
-  },
+  priced: ComputeTaxFromSlotsResult,
   taxableSS: number,
   filingStatus: ReturnFilingStatus | null | undefined,
   ssSurplus: number,

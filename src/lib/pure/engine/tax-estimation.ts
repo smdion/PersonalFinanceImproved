@@ -256,7 +256,7 @@ interface ComputeTaxFromSlotsInput {
   filingStatus: ReturnFilingStatus | null | undefined;
 }
 
-interface ComputeTaxFromSlotsResult {
+export interface ComputeTaxFromSlotsResult {
   taxCost: number;
   actualTraditionalRate: number;
   /** `totalTraditionalWithdrawal + rothTaxableGrowth + taxableSS`: this year's ordinary income
