@@ -5,7 +5,7 @@
     "src/app/(dashboard)/brokerage/brokerage-figures.ts": 86,
     "src/app/(dashboard)/brokerage/brokerage-funding.tsx": 291,
     "src/app/(dashboard)/brokerage/brokerage-goal-status.tsx": 64,
-    "src/app/(dashboard)/brokerage/brokerage-sections.tsx": 288,
+    "src/app/(dashboard)/brokerage/brokerage-sections.tsx": 246,
     "src/app/(dashboard)/brokerage/brokerage-year-table-head.tsx": 36,
     "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 283,
     "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 137,

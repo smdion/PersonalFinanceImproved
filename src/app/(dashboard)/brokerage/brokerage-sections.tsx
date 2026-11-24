@@ -4,16 +4,12 @@ import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { maskAmountsInText } from "@/lib/utils/format";
 import { YearByYearTable } from "./brokerage-year-table";
-import { investedAtStartOf } from "@/lib/pure/advice/goldilocks";
 import { BrokerageGoalsSection } from "@/app/(dashboard)/brokerage/brokerage-goals";
-import {
-  LumpSumForm,
-  LumpSumBadge,
-} from "@/components/retirement-projection/lump-sum-form";
-import { accountOption } from "@/components/retirement-projection/lump-sum-target";
-import { isPortfolioParent } from "@/lib/config/account-types";
 import { GoalStatusTable } from "./brokerage-goal-status";
-import type { LumpSumEvent } from "@/components/retirement-projection/types";
+import {
+  PlannedEventsCard,
+  type PlannedEventsCardProps,
+} from "./brokerage-planned-events";
 import type { trpc, RouterOutputs } from "@/lib/trpc";
 import type { calculateBrokerageGoals } from "@/lib/pure/savings/brokerage-goals";
 import {
@@ -83,19 +79,10 @@ export function BrokerageYearSection({
   );
 }
 
-export type BrokerageGoalsPanelProps = {
-  brokerageLumpSums: LumpSumEvent[];
+export type BrokerageGoalsPanelProps = PlannedEventsCardProps & {
   brokerageResult: ReturnType<typeof calculateBrokerageGoals>;
   canEdit: boolean;
-  data: NonNullable<RouterOutputs["projection"]["computeProjection"]> & {
-    result: NonNullable<
-      NonNullable<RouterOutputs["projection"]["computeProjection"]>["result"]
-    >;
-  };
   isGoalsOpen: boolean;
-  setBrokerageLumpSums: (
-    updater: LumpSumEvent[] | ((prev: LumpSumEvent[]) => LumpSumEvent[]),
-  ) => void;
   setIsGoalsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
@@ -155,40 +142,11 @@ export function BrokerageGoalsPanel({
 
       {/* Planned Events */}
       {canEdit && (
-        <Card title="Planned Events" className="mt-6">
-          <p className="text-muted mb-2 text-xs">
-            One-time injections or withdrawals that modify the projection
-            (bonus, inheritance, down payment).
-            <HelpTip text="Unlike goals (which set a target and let the engine decide if it's funded), planned events directly add or remove dollars in a specific year." />
-          </p>
-          {brokerageLumpSums.length > 0 && (
-            <div className="mb-3 space-y-1">
-              {brokerageLumpSums.map((ls) => (
-                <LumpSumBadge
-                  key={ls.id}
-                  event={ls}
-                  onDelete={() =>
-                    setBrokerageLumpSums((prev) =>
-                      prev.filter((x) => x.id !== ls.id),
-                    )
-                  }
-                />
-              ))}
-            </div>
-          )}
-          <LumpSumForm
-            accounts={
-              data.result.projectionByYear[0]?.individualAccountBalances
-                .filter((ia) => isPortfolioParent(ia.parentCategory))
-                .map((ia) => accountOption(ia, false)) ?? []
-            }
-            onAdd={(ls) => setBrokerageLumpSums((prev) => [...prev, ls])}
-            allowWithdrawals
-            investedAtStartOf={(year) =>
-              investedAtStartOf(data.result.projectionByYear, year)
-            }
-          />
-        </Card>
+        <PlannedEventsCard
+          brokerageLumpSums={brokerageLumpSums}
+          data={data}
+          setBrokerageLumpSums={setBrokerageLumpSums}
+        />
       )}
     </>
   );
