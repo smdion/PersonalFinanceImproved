@@ -381,7 +381,13 @@ describe("answer key: the early-withdrawal penalty is paid before RMD money is r
   // full 60,000, unmet 0. Before the fix the penalty wasn't in the excess
   // test, so part of it was reinvested as RMD money and spending fell short
   // (56,638.65, with no unmet need shown: the same shape as E6's NIIT).
-  const penaltyYear = (routing: "waterfall" | "bracket_filling") =>
+  const penaltyYear = (
+    routing: "waterfall" | "bracket_filling",
+    penalized: Pick<LedgerAccount, "category" | "tax"> = {
+      category: "hsa",
+      tax: "hsa",
+    },
+  ) =>
     retired(
       household({
         status: "MFJ",
@@ -391,10 +397,9 @@ describe("answer key: the early-withdrawal penalty is paid before RMD money is r
         ],
         accounts: [
           {
-            id: "B-hsa",
+            id: `B-${penalized.category}`,
             owner: "B",
-            category: "hsa",
-            tax: "hsa",
+            ...penalized,
             parent: "Retirement",
             balance: 1_000_000,
           },
@@ -436,6 +441,53 @@ describe("answer key: the early-withdrawal penalty is paid before RMD money is r
       },
       GROSS_UP,
     );
+  });
+
+  describe("engine/RX1-R", () => {
+    // The same household with B's 1,000,000 in a Traditional 401(k)
+    // instead of the HSA: routing draws it grossed up for its tax and the
+    // 10% additional tax before 59½ (IRC 72(t)). A's RMD (28,011.20, as
+    // above) is then pinned on A's IRA, and the per-owner reshape
+    // (`enforceOwnerRmds`, `rmdReassignedAmount`) moves that much of the
+    // routed Traditional draw off B's 401(k): the same income, so the same
+    // tax, but 10% × 28,011.20 = 2,801.12 of the penalty the draw was sized
+    // for is never charged (penalty 4,306.83 on the 43,068.29 left on the
+    // 401(k) of a 71,079.49 draw), and today the year spends it: 62,801.12,
+    // both routing modes. D1 (DECISIONS § November review decisions;
+    // UD-04): RMD dollars count toward the need first, other sources cover
+    // only what's left, and spending is the need (D6: anything past it
+    // isn't spent). Decided: spending 60,000, unmet 0, the overshoot gone.
+    xfail({
+      id: "engine/RX1-R [WDR-06]",
+      todo: `v0.11.1 EN2 D1 "RMD dollars count toward the year's need first" (decision D1, UD-04)`,
+      run: () => {
+        const out: Record<string, number> = {};
+        for (const mode of ["waterfall", "bracket_filling"] as const) {
+          const r = penaltyYear(mode, { category: "401k", tax: "traditional" });
+          // The path: a penalized draw moved onto the RMD owner's IRA.
+          if (!((r.penaltyCost ?? 0) > 0 && (r.rmdReassignedAmount ?? 0) > 0))
+            throw new Error(
+              `${mode}: no penalized draw moved to the RMD owner`,
+            );
+          out[`${mode}.spending`] = r.spending;
+          out[`${mode}.unmet`] = r.unmetNeed ?? 0;
+        }
+        return out;
+      },
+      expected: {
+        "waterfall.spending": 60_000,
+        "waterfall.unmet": 0,
+        "bracket_filling.spending": 60_000,
+        "bracket_filling.unmet": 0,
+      },
+      today: {
+        "waterfall.spending": 62_801.12,
+        "waterfall.unmet": 0,
+        "bracket_filling.spending": 62_801.12,
+        "bracket_filling.unmet": 0,
+      },
+      tolerance: GROSS_UP,
+    });
   });
 });
 
