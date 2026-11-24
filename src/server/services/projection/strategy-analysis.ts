@@ -7,25 +7,17 @@ import {
   planRetirementAge as planRetirementAgeOf,
 } from "@/lib/pure/household/household-timeline";
 import {
-  classifyAssetClasses,
-  stockShareByAge,
-} from "@/lib/pure/simulation/stock-share";
-import {
   COMPARISON_SEED,
   DEFAULT_SIMULATION,
   SIMULATION_CONFIDENCE_THRESHOLD,
 } from "@/lib/constants";
 import { strategySpending } from "@/lib/pure/retirement/strategy-spending";
 import { assessPlan } from "@/lib/pure/retirement/plan-outcome";
-import * as schema from "@/lib/db/schema";
 import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
 import { calculateProjection } from "@/lib/pure/engine";
 import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
 import type { SimulationNotConfigured } from "@/lib/pure/simulation/monte-carlo";
-import {
-  interpolateAllocations,
-  weightedGeometricRate,
-} from "@/lib/pure/simulation/random";
+import { simulationEngineInput } from "@/server/services/simulation/simulation-engine-input";
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 import {
   buildDecumulationDefaults,
@@ -102,30 +94,12 @@ export async function computeStrategyComparison(
   const { settings, distributionTaxRates, baseEngineInput, planRetirementAge } =
     payload;
 
-  // Build MC-aligned deterministic return rates using geometric means
-  const simulationReturnRates: { label: string; rate: number }[] = [];
-  for (
-    let a = baseEngineInput.currentAge;
-    a <= planEndAgeOf(baseEngineInput);
-    a++
-  ) {
-    const allocations = interpolateAllocations(mcGlidePath, a);
-    const blended = weightedGeometricRate(mcAssetClasses, allocations);
-    simulationReturnRates.push({ label: `Age ${a}`, rate: blended });
-  }
-  const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
-  const mcBaseEngineInput = {
-    ...baseEngineInput,
-    returnRates: simulationReturnRates,
-    // VPW sizes by the stock share of the glide path this run uses.
-    stockShareByAge:
-      stockShareByAge(
-        mcGlidePath,
-        classifyAssetClasses(classBuckets),
-        baseEngineInput.currentAge,
-        planEndAgeOf(baseEngineInput),
-      ) ?? undefined,
-  };
+  const mcBaseEngineInput = await simulationEngineInput(
+    ctx.db,
+    baseEngineInput,
+    mcGlidePath,
+    mcAssetClasses,
+  );
   // Without a runnable Simulation the comparison still shows each
   // strategy, with no Success or Stability, and says why.
   const hasMcData = notConfigured === null;
@@ -346,35 +320,18 @@ export async function analyzeStrategy(
       notConfigured,
     };
 
-  // Build MC return rates
-  const simulationReturnRates: { label: string; rate: number }[] = [];
-  for (
-    let a = baseEngineInput.currentAge;
-    a <= planEndAgeOf(baseEngineInput);
-    a++
-  ) {
-    const allocations = interpolateAllocations(mcGlidePath, a);
-    const blended = weightedGeometricRate(mcAssetClasses, allocations);
-    simulationReturnRates.push({ label: `Age ${a}`, rate: blended });
-  }
-
   const activeStrategy = readStoredStrategy(settings.withdrawalStrategy);
   const strategyMeta = getStrategyMeta(activeStrategy);
   const userStrategyParams = buildStrategyParams(settings);
   const activeParams = userStrategyParams[activeStrategy] ?? {};
 
-  const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
   const simulationBaseEngineInput = {
-    ...baseEngineInput,
-    returnRates: simulationReturnRates,
-    // VPW sizes by the stock share of the glide path this run uses.
-    stockShareByAge:
-      stockShareByAge(
-        mcGlidePath,
-        classifyAssetClasses(classBuckets),
-        baseEngineInput.currentAge,
-        planEndAgeOf(baseEngineInput),
-      ) ?? undefined,
+    ...(await simulationEngineInput(
+      ctx.db,
+      baseEngineInput,
+      mcGlidePath,
+      mcAssetClasses,
+    )),
     ...saved,
     // buildDecumulationDefaults already resolves the active strategy and its
     // params, so no override is needed (unlike computeStrategyComparison).

@@ -427,10 +427,11 @@
     "src/server/services/projection/relocation-analysis.ts": 452,
     "src/server/services/projection/relocation-earliest-move.ts": 66,
     "src/server/services/projection/relocation-projection.ts": 459,
-    "src/server/services/projection/strategy-analysis.ts": 682,
+    "src/server/services/projection/strategy-analysis.ts": 639,
     "src/server/services/savings/summary.ts": 329,
     "src/server/services/simulation/mc-inputs.ts": 113,
-    "src/server/services/simulation/monte-carlo-projection.ts": 338,
+    "src/server/services/simulation/monte-carlo-projection.ts": 319,
+    "src/server/services/simulation/simulation-engine-input.ts": 45,
     "src/server/services/sync/budget-api-push.ts": 405,
     "src/server/services/sync/preview.ts": 426,
     "src/server/services/sync/savings-goal-push.ts": 213,
@@ -1071,14 +1072,14 @@
       "computeRelocationFiProjection": 411
     },
     "src/server/services/projection/strategy-analysis.ts": {
-      "analyzeStrategy": 385,
-      "computeStrategyComparison": 234
+      "analyzeStrategy": 368,
+      "computeStrategyComparison": 216
     },
     "src/server/services/savings/summary.ts": {
       "computeSavingsSummary": 309
     },
     "src/server/services/simulation/monte-carlo-projection.ts": {
-      "computeMonteCarloProjection": 289
+      "computeMonteCarloProjection": 276
     },
     "src/server/services/sync/budget-api-push.ts": {
       "pushSnapshotToBudgetApi": 234

@@ -8,28 +8,22 @@ import type {
   decumulationOverrideArraySchema,
 } from "@/lib/pure/engine/types";
 import type { accumulationOverrideArraySchema } from "@/server/services/projection/projection-run";
-import { planEndAge as planEndAgeOf } from "@/lib/pure/household/household-timeline";
 import {
   loadSimulationPreset,
   presetAssetClasses,
   loadSavedAssetOverrides,
 } from "@/server/services/simulation/simulation-preset";
-import {
-  classifyAssetClasses,
-  stockShareByAge,
-} from "@/lib/pure/simulation/stock-share";
 import { TRPCError } from "@trpc/server";
-import * as schema from "@/lib/db/schema";
 import {
   calculateMonteCarlo,
   simulationNotConfigured,
 } from "@/lib/pure/simulation/monte-carlo";
 import { runMonteCarloOffThread } from "@/server/services/simulation/monte-carlo-worker-client";
 import {
-  interpolateAllocations,
   weightedGeometricRate,
   classWeightedVolatility,
 } from "@/lib/pure/simulation/random";
+import { simulationEngineInput } from "./simulation-engine-input";
 import { toNumber } from "@/lib/utils/numbers";
 import { sumBy } from "@/lib/utils/math";
 import { toSimpleTaxMode } from "@/lib/pure/tax/simple-tax-mode";
@@ -176,26 +170,13 @@ export async function computeMonteCarloProjection(
 
   // Deterministic return rates use GEOMETRIC means (the median compounding rate),
   // so compounding doesn't overstate growth; the stochastic trials compound
-  // geometrically on their own.
-  const simulationDeterministicRates: { label: string; rate: number }[] = [];
-  for (let a = engineInput.currentAge; a <= planEndAgeOf(engineInput); a++) {
-    const allocations = interpolateAllocations(mcGlidePath, a);
-    const blended = weightedGeometricRate(mcAssetClasses, allocations);
-    simulationDeterministicRates.push({ label: `Age ${a}`, rate: blended });
-  }
-  // VPW sizes by the stock share of the glide path this run simulates.
-  const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
-  const mcEngineInput = {
-    ...simInput,
-    returnRates: simulationDeterministicRates,
-    stockShareByAge:
-      stockShareByAge(
-        mcGlidePath,
-        classifyAssetClasses(classBuckets),
-        simInput.currentAge,
-        planEndAgeOf(simInput),
-      ) ?? undefined,
-  };
+  // geometrically on their own. Simple tax mode keeps the ages.
+  const mcEngineInput = await simulationEngineInput(
+    ctx.db,
+    simInput,
+    mcGlidePath,
+    mcAssetClasses,
+  );
 
   // Cache key covers every trial input plus an explicit client seed's value, so
   // identical explicit-seed requests hit cache and an unseeded request reuses the
