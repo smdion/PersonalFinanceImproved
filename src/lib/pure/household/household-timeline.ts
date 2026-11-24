@@ -63,7 +63,7 @@ export function householdTimeline(input: {
   };
 }
 
-type PlanYears = {
+export type PlanYears = {
   asOfDate: Date;
   currentAge: number;
   retirementYear: number;

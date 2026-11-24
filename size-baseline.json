@@ -431,7 +431,7 @@
     "src/server/services/savings/summary.ts": 329,
     "src/server/services/simulation/mc-inputs.ts": 113,
     "src/server/services/simulation/monte-carlo-projection.ts": 319,
-    "src/server/services/simulation/simulation-engine-input.ts": 38,
+    "src/server/services/simulation/simulation-engine-input.ts": 33,
     "src/server/services/simulation/simulation-stock-share.ts": 25,
     "src/server/services/sync/budget-api-push.ts": 405,
     "src/server/services/sync/preview.ts": 426,

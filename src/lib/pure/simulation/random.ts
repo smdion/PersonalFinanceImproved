@@ -83,7 +83,11 @@ export function geometricMean(meanReturn: number, stdDev: number): number {
 }
 
 /** The figures a class needs for the two weighted blends below. */
-type WeightedAssetClass = { id: number; meanReturn: number; stdDev: number };
+export type WeightedAssetClass = {
+  id: number;
+  meanReturn: number;
+  stdDev: number;
+};
 
 /** Σ w·G over classes above 0%: the fixed-return line and shown mix return.
  *  Not the portfolio's median rate (RULES § Known Gaps). */
