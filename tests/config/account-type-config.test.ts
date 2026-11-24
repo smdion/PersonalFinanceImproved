@@ -28,9 +28,7 @@ import {
   tracksRothBasis,
   type AccountCategory,
   isPreTaxTreatment,
-  isHsaCategory,
-  isIraCategory,
-  isRuleOf55EligibleCategory,
+  hasEarlyAccessRule,
 } from "@/lib/config/account-types";
 import { type AccountBalance } from "@/lib/config/account-types.types";
 import {
@@ -530,38 +528,39 @@ describe("early-access behavior fields reproduce the identity branches", () => {
   // category → employer-plan rules, HSA → 20% non-medical penalty before 65.
   it.each(getAllCategories())("%s", (cat) => {
     const cfg = ACCOUNT_TYPE_CONFIG[cat];
-    const expected = isIraCategory(cat)
-      ? "ira_59_half"
-      : cat === "401k" || cat === "403b"
-        ? "employer_plan"
-        : isHsaCategory(cat)
-          ? "hsa_non_medical"
-          : "none";
+    const expected =
+      cat === "ira"
+        ? "ira_59_half"
+        : cat === "401k" || cat === "403b"
+          ? "employer_plan"
+          : cat === "hsa"
+            ? "hsa_non_medical"
+            : "none";
     expect(cfg.earlyAccessRule).toBe(expected);
-    expect(cfg.qcdEligible).toBe(isIraCategory(cat));
-    expect(cfg.nonMedicalPenaltyRate).toBe(isHsaCategory(cat) ? 0.2 : null);
+    expect(cfg.qcdEligible).toBe(cat === "ira");
+    expect(cfg.nonMedicalPenaltyRate).toBe(cat === "hsa" ? 0.2 : null);
   });
 });
 
 describe("Roth ordering rules / Rule of 55 config (Tax Buckets tool)", () => {
   it("401k and 403b use pro-rata ordering and are Rule-of-55 eligible", () => {
     expect(ACCOUNT_TYPE_CONFIG["401k"].rothOrderingRules).toBe("pro_rata");
-    expect(isRuleOf55EligibleCategory("401k")).toBe(true);
+    expect(hasEarlyAccessRule("401k", "employer_plan")).toBe(true);
     expect(ACCOUNT_TYPE_CONFIG["403b"].rothOrderingRules).toBe("pro_rata");
-    expect(isRuleOf55EligibleCategory("403b")).toBe(true);
+    expect(hasEarlyAccessRule("403b", "employer_plan")).toBe(true);
   });
 
   it("ira uses basis-first ordering and has no Rule-of-55 equivalent", () => {
     expect(ACCOUNT_TYPE_CONFIG.ira.rothOrderingRules).toBe("basis_first");
-    expect(isRuleOf55EligibleCategory("ira")).toBe(false);
+    expect(hasEarlyAccessRule("ira", "employer_plan")).toBe(false);
   });
 
   it("hsa and brokerage have no Roth ordering concept and no Rule of 55", () => {
     expect(ACCOUNT_TYPE_CONFIG.hsa.rothOrderingRules).toBeNull();
-    expect(isRuleOf55EligibleCategory("hsa")).toBe(false);
+    expect(hasEarlyAccessRule("hsa", "employer_plan")).toBe(false);
     expect(ACCOUNT_TYPE_CONFIG.brokerage.rothOrderingRules).toBeNull();
-    expect(isRuleOf55EligibleCategory("brokerage")).toBe(false);
-    expect(isRuleOf55EligibleCategory("not-a-category")).toBe(false);
+    expect(hasEarlyAccessRule("brokerage", "employer_plan")).toBe(false);
+    expect(hasEarlyAccessRule("not-a-category", "employer_plan")).toBe(false);
   });
 
   it("tracksRothBasis mirrors tracksCostBasis for the roth_traditional structure", () => {

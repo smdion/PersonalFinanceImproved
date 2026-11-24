@@ -1,7 +1,7 @@
 /**
- * Migration proof: each site's field equals its isHsaCategory/isIraCategory
- * check for every category and unknown text. Delete with them in v0.11; a new
- * type failing here is expected, never bend its flags to pass.
+ * Migration proof: each site's field equals the "hsa"/"ira" name check it
+ * replaced, for every category and unknown text. A new type failing here is
+ * expected; never bend its flags to pass.
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -9,8 +9,6 @@ import {
   getAllCategories,
   hasEarlyAccessRule,
   hasOpenFundChoice,
-  isHsaCategory,
-  isIraCategory,
   isQcdEligible,
   nonMedicalPenaltyRate,
   isRothIncomeLimited,
@@ -38,6 +36,10 @@ const UNKNOWN = [
   "constructor",
 ];
 const EVERY = [...getAllCategories(), ...UNKNOWN];
+
+/** The name checks the fields replaced. */
+const isHsaCategory = (c: string) => c === "hsa";
+const isIraCategory = (c: string) => c === "ira";
 
 function sameAt(
   site: string,

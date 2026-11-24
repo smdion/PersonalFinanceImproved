@@ -523,23 +523,6 @@ export function tracksRothBasis(category: string): boolean {
   return CONFIG_BY_TEXT[category]?.balanceStructure === "roth_traditional";
 }
 
-/** Identity checks, kept only as the reference the behavior-field tests check
- *  against; code reads a field (RULES.md § Data-Driven Architecture, rule 10). */
-export function isHsaCategory(category: string): boolean {
-  return category === "hsa";
-}
-
-/** See isHsaCategory. */
-export function isIraCategory(category: string): boolean {
-  return category === "ira";
-}
-
-/** Rule of 55 can apply (IRC §72(t)(2)(A)(v)): the employer-plan
- *  early-access rule. False for a category not in the config. */
-export function isRuleOf55EligibleCategory(category: string): boolean {
-  return hasEarlyAccessRule(category, "employer_plan");
-}
-
 /** The early-access rule a category's withdrawals follow (`earlyAccessRule`). */
 export function earlyAccessRuleOf(category: AccountCategory): EarlyAccessRule {
   return ACCOUNT_TYPE_CONFIG[category].earlyAccessRule;
