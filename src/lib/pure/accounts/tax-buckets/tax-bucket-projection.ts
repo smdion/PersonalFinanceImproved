@@ -10,25 +10,18 @@ import type {
 import {
   isTaxFreeBucket,
   isAfterTaxType,
-  isHsaCategory,
-  isIraCategory,
-  isRuleOf55EligibleCategory,
+  earlyAccessRuleOf,
   tracksCostBasis,
 } from "@/lib/config/account-types";
-import { PENALTY_FREE_AGE, HSA_NON_MEDICAL_PENALTY_AGE } from "@/lib/constants";
 import {
   isRuleOf55Eligible,
   computeBrokerageAccess,
-  computeTraditionalIraAccess,
-  computeEmployerPlanPreTaxAccess,
-  computeEmployerPlanRothAccess,
-  computeRothIraAccess,
-  computeHsaAccess,
+  accountAccessSlices,
+  ageThresholdStatusOf,
   type EarlyAccessSlice,
 } from "@/lib/pure/accounts/early-access";
 import type {
   AccountAnalysisEntry,
-  AgeThresholdStatus,
   PersonInfo,
 } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
 import type {
@@ -297,49 +290,21 @@ export function computeTaxBucketProjection(input: {
     }
 
     const ageAtTransition = ageInYear(person!.birthYear, transitionYear);
-    let ageThresholdStatus: AgeThresholdStatus | null = null;
-    if (isIraCategory(now.category)) {
-      ageThresholdStatus = {
-        thresholdAge: PENALTY_FREE_AGE,
-        eligible: ageAtTransition >= PENALTY_FREE_AGE,
-      };
-    } else if (isHsaCategory(now.category)) {
-      ageThresholdStatus = {
-        thresholdAge: HSA_NON_MEDICAL_PENALTY_AGE,
-        eligible: ageAtTransition >= HSA_NON_MEDICAL_PENALTY_AGE,
-      };
+    const rule = earlyAccessRuleOf(now.category);
+    const isRoth = isTaxFreeBucket(now.taxType);
+    let basis = { contributionBasis: 0, conversionBasis: 0 };
+    if (isRoth && (rule === "ira_59_half" || rule === "employer_plan")) {
+      basis = transitionRothBasis(
+        now.rothBasisMeta,
+        projected.roth,
+        contributionsByKey.get(key),
+        transitionYear,
+      );
+      rothBasisMeta = now.rothBasisMeta
+        ? { ...now.rothBasisMeta, ...basis }
+        : null;
     }
-
-    if (isIraCategory(now.category)) {
-      if (isTaxFreeBucket(now.taxType)) {
-        const {
-          contributionBasis: projectedContributionBasis,
-          conversionBasis: projectedConversionBasis,
-        } = transitionRothBasis(
-          now.rothBasisMeta,
-          projected.roth,
-          contributionsByKey.get(key),
-          transitionYear,
-        );
-        rothBasisMeta = now.rothBasisMeta
-          ? {
-              ...now.rothBasisMeta,
-              contributionBasis: projectedContributionBasis,
-              conversionBasis: projectedConversionBasis,
-            }
-          : null;
-        slices = computeRothIraAccess({
-          balance,
-          currentAge: ageAtTransition,
-          currentYear: transitionYear,
-          contributionBasis: projectedContributionBasis,
-          conversionBasis: projectedConversionBasis,
-          latestConversionYear: now.rothBasisMeta?.latestConversionYear ?? null,
-        });
-      } else {
-        slices = computeTraditionalIraAccess(balance, ageAtTransition);
-      }
-    } else if (isRuleOf55EligibleCategory(now.category)) {
+    if (rule === "employer_plan") {
       ruleOf55 = projectRuleOf55(
         now.ruleOf55,
         transitionYear,
@@ -350,39 +315,6 @@ export function computeTaxBucketProjection(input: {
           ownerRetirementYear: retirementYearByPersonId?.get(now.ownerPersonId),
         },
       );
-      const eligible = ruleOf55?.eligible ?? false;
-      if (isTaxFreeBucket(now.taxType)) {
-        const {
-          contributionBasis: projectedContributionBasis,
-          conversionBasis: projectedConversionBasis,
-        } = transitionRothBasis(
-          now.rothBasisMeta,
-          projected.roth,
-          contributionsByKey.get(key),
-          transitionYear,
-        );
-        rothBasisMeta = now.rothBasisMeta
-          ? {
-              ...now.rothBasisMeta,
-              contributionBasis: projectedContributionBasis,
-              conversionBasis: projectedConversionBasis,
-            }
-          : null;
-        const enteredBasis =
-          projectedContributionBasis + projectedConversionBasis;
-        slices = computeEmployerPlanRothAccess(
-          balance,
-          ageAtTransition,
-          eligible,
-          enteredBasis,
-        );
-      } else {
-        slices = computeEmployerPlanPreTaxAccess(
-          balance,
-          ageAtTransition,
-          eligible,
-        );
-      }
     }
 
     let costBasis = now.costBasis;
@@ -396,10 +328,21 @@ export function computeTaxBucketProjection(input: {
         currentYear,
         transitionYear,
       );
-      slices = computeBrokerageAccess(balance, costBasis);
-    } else if (isHsaCategory(now.category)) {
-      slices = computeHsaAccess(balance, ageAtTransition);
     }
+    slices = accountAccessSlices(
+      rule,
+      {
+        balance,
+        currentAge: ageAtTransition,
+        currentYear: transitionYear,
+        isRoth,
+        ruleOf55Met: ruleOf55?.eligible ?? false,
+        ...basis,
+        latestConversionYear: now.rothBasisMeta?.latestConversionYear ?? null,
+      },
+      costBasis,
+    );
+    const ageThresholdStatus = ageThresholdStatusOf(rule, ageAtTransition);
 
     return {
       ...now,

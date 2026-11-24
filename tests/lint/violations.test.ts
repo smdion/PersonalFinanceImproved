@@ -83,6 +83,7 @@ import {
   DEFAULT_WITHDRAWAL_SPLITS,
   accountCategoryEnum,
   buildCategoryRecord,
+  earlyAccessRuleOf,
   getAllCategories,
   getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
@@ -90,6 +91,11 @@ import { calculateProjection } from "@/lib/pure/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
+import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
+import { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-buckets/tax-bucket-projection";
+import { earlyAccessSlices } from "@/lib/pure/accounts/early-access";
+import { accountIdKeyOf } from "@/lib/pure/accounts/account-part";
+import { buildBuckets } from "@/app/(dashboard)/tax-buckets/tax-buckets-grouping";
 import { categoryChartHex } from "@/lib/utils/colors";
 import { accountDisplayName } from "@/lib/utils/format";
 import { engineHouseholdFixture } from "../fixtures/answer-key-household";
@@ -2035,6 +2041,122 @@ describe("one config entry adds an account type", () => {
       ).toMatchObject({
         balance: 1000,
       });
+    });
+  });
+
+  /** Tax Buckets' "now" entry ($1,000, owner 50 in 2030) and "At
+   *  Retirement" entry ($2,000 in 2031) of one synthetic-category account. */
+  function syntheticTaxBucketEntries(like: "hsa" | "ira" | "401k") {
+    const taxType = like === "hsa" ? ("hsa" as const) : ("preTax" as const);
+    const row = {
+      portfolioAccountId: 1,
+      institution: "Bank",
+      taxType,
+      accountType: like,
+      subType: null,
+      label: null,
+      parentCategory: "Retirement",
+      amount: 1000,
+      ownerPersonId: 1,
+      performanceAccountId: 1,
+      displayName: null,
+      accountLabel: null,
+    };
+    Reflect.set(row, "accountType", SYNTHETIC_CATEGORY);
+    const people = [{ id: 1, name: "Pat", birthYear: 1980 }];
+    const [now] = computeTaxBucketAnalysis({
+      breakdown: computeTaxBucketBreakdown({ accounts: [row] }, people, []),
+      performanceAccounts: [
+        {
+          id: 1,
+          accountType: like,
+          ownerPersonId: 1,
+          isActive: true,
+          separationDate: null,
+          costBasis: 0,
+          accountLabel: "Synthetic",
+          displayName: null,
+          institution: "Bank",
+        },
+      ],
+      jobLinks: [],
+      rothBasisRows: [],
+      people,
+      currentDate: new Date("2030-06-01T12:00:00Z"),
+    });
+    // At retirement: the engine's per-account row, a year on.
+    const balance = {
+      accountKey: accountIdKeyOf({
+        performanceAccountId: 1,
+        category: SYNTHETIC_CATEGORY as never,
+        taxType,
+        ownerPersonId: 1,
+      }),
+      name: "Synthetic",
+      category: SYNTHETIC_CATEGORY as never,
+      taxType,
+      ownerPersonId: 1,
+      balance: 2000,
+      contribution: 0,
+    };
+    const { entries } = computeTaxBucketProjection({
+      nowEntries: [now!],
+      projectionByYear: [2030, 2031].map(
+        (year) =>
+          ({
+            phase: "accumulation",
+            year,
+            individualAccountBalances: [balance],
+          }) as never,
+      ),
+      people,
+    });
+    return { now: now!, atRetirement: entries[0]! };
+  }
+
+  /** The synthetic category given `like`'s config entry, plus `fields`. */
+  function setSyntheticEntry(like: "hsa" | "ira" | "401k", fields = {}) {
+    Reflect.set(ACCOUNT_TYPE_CONFIG, SYNTHETIC_CATEGORY, {
+      ...ACCOUNT_TYPE_CONFIG[like],
+      ...fields,
+    });
+  }
+
+  it("Tax Buckets' early access follows the entry's earlyAccessRule, as the engine's does", () => {
+    for (const like of ["hsa", "ira", "401k"] as const) {
+      withSyntheticCategory(() => {
+        setSyntheticEntry(like);
+        const engineSlices = (balance: number, currentAge: number) =>
+          earlyAccessSlices(earlyAccessRuleOf(like), {
+            balance,
+            currentAge,
+            currentYear: 2030,
+            isRoth: false,
+            ruleOf55Met: false,
+            contributionBasis: 0,
+            conversionBasis: 0,
+            latestConversionYear: null,
+          });
+        const { now, atRetirement } = syntheticTaxBucketEntries(like);
+        expect(now.slices, like).toEqual(engineSlices(1000, 50));
+        expect(atRetirement.slices, like).toEqual(engineSlices(2000, 51));
+      });
+    }
+  });
+
+  it("Tax Buckets counts a type with no early-access rule as accessible, as the engine does", () => {
+    withSyntheticCategory(() => {
+      // A 457(b)-like entry: a 401k's fields, no early-access gate.
+      setSyntheticEntry("401k", { earlyAccessRule: "none" });
+      const { now, atRetirement } = syntheticTaxBucketEntries("401k");
+      for (const [view, entry] of [
+        ["now", now],
+        ["at retirement", atRetirement],
+      ] as const) {
+        const { householdAccessible, householdLocked } = buildBuckets([entry]);
+        expect(householdAccessible, view).toBe(entry.balance);
+        expect(householdLocked, view).toBe(0);
+      }
     });
   });
 

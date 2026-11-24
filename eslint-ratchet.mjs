@@ -705,7 +705,7 @@ export const ratchetPlugin = {
     "no-identity-predicate-import": selectorRule(
       "Code branches on an account type's behavior fields, not its identity.",
       "ImportSpecifier[imported.name=/^is(Hsa|Ira)Category$/]",
-      "isHsaCategory/isIraCategory outside Tax Buckets. Read the account type's behavior field in lib/config/account-types.ts (RULES § Data-Driven Architecture rule 10).",
+      "isHsaCategory/isIraCategory imported. Read the account type's behavior field in lib/config/account-types.ts (RULES § Data-Driven Architecture rule 10).",
     ),
     "no-unregistered-fallback": {
       meta: {
@@ -833,14 +833,6 @@ export const ratchetConfig = [
   {
     files: ["src/components/**/*.{ts,tsx}", "src/app/**/*.{ts,tsx}"],
     rules: { "ratchet/no-retired-ui-word": "error" },
-  },
-  {
-    // Tax Buckets still branches on the predicates until v0.11.
-    files: [
-      "src/lib/pure/accounts/tax-buckets/tax-bucket-analysis.ts",
-      "src/lib/pure/accounts/tax-buckets/tax-bucket-projection.ts",
-    ],
-    rules: { "ratchet/no-identity-predicate-import": "off" },
   },
   {
     // The request scope's own clock is server/trpc.ts, write stamps read

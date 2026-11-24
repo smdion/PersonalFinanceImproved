@@ -418,7 +418,7 @@ describe("ratchet/no-identity-predicate-import", () => {
     ).toEqual([1, 1]);
   });
 
-  it("leaves Tax Buckets' two early-access files to them until v0.11.1", async () => {
+  it("counts them in Tax Buckets too", async () => {
     const eslint = new ESLint({ cwd: path.resolve(__dirname, "../..") });
     const code =
       "import { isHsaCategory } from '@/lib/config/account-types';\nexport const f = isHsaCategory;\n";
@@ -435,7 +435,7 @@ describe("ratchet/no-identity-predicate-import", () => {
     ).toBe(true);
     expect(
       await counted("src/lib/pure/accounts/tax-buckets/tax-bucket-analysis.ts"),
-    ).toBe(false);
+    ).toBe(true);
   }, 30_000);
 });
 

@@ -300,3 +300,38 @@ export function earlyAccessSlices(
       return assertNever(rule);
   }
 }
+
+/** Tax Buckets' slices for one account: `earlyAccessSlices` under the type's
+ *  rule; a type with no rule shows its cost-basis split, if it has one. */
+export function accountAccessSlices(
+  rule: EarlyAccessRule,
+  account: Parameters<typeof earlyAccessSlices>[1],
+  costBasis: number | null,
+): EarlyAccessSlice[] {
+  const slices = earlyAccessSlices(rule, account);
+  if (slices) return slices;
+  return costBasis != null
+    ? computeBrokerageAccess(account.balance, costBasis)
+    : [];
+}
+
+/** A plain age gate (no separation concept); an employer plan shows its
+ *  Rule of 55 status instead. */
+export type AgeThresholdStatus = { thresholdAge: number; eligible: boolean };
+
+/** The plain age gate of a type's early-access rule at `age`; null for an
+ *  employer plan and a type with no rule. */
+export function ageThresholdStatusOf(
+  rule: EarlyAccessRule,
+  age: number,
+): AgeThresholdStatus | null {
+  const thresholdAge =
+    rule === "ira_59_half"
+      ? PENALTY_FREE_AGE
+      : rule === "hsa_non_medical"
+        ? HSA_NON_MEDICAL_PENALTY_AGE
+        : null;
+  return thresholdAge == null
+    ? null
+    : { thresholdAge, eligible: age >= thresholdAge };
+}

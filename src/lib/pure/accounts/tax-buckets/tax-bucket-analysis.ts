@@ -6,23 +6,18 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import type { StoredAccountType } from "@/lib/config/account-types.types";
 import {
   isTaxFreeBucket,
-  isHsaCategory,
-  isIraCategory,
-  isRuleOf55EligibleCategory,
+  earlyAccessRuleOf,
   tracksCostBasis,
 } from "@/lib/config/account-types";
-import { PENALTY_FREE_AGE, HSA_NON_MEDICAL_PENALTY_AGE } from "@/lib/constants";
 import { ageInYear } from "@/lib/utils/date";
 import type { TaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import {
   resolveSeparationYear,
   isRuleOf55Eligible,
   computeBrokerageAccess,
-  computeTraditionalIraAccess,
-  computeEmployerPlanPreTaxAccess,
-  computeEmployerPlanRothAccess,
-  computeRothIraAccess,
-  computeHsaAccess,
+  accountAccessSlices,
+  ageThresholdStatusOf,
+  type AgeThresholdStatus,
   type EarlyAccessSlice,
 } from "@/lib/pure/accounts/early-access";
 import type {
@@ -65,13 +60,6 @@ type RothBasisRow = {
    *  reviewed/confirmed by the user for its own year. */
   isSeeded: boolean;
   updatedAt: Date;
-};
-
-/** Plain age-threshold status (no separation concept): IRA at 59½, HSA at 65.
- *  401k/403b use RuleOf55Status instead. */
-export type AgeThresholdStatus = {
-  thresholdAge: number;
-  eligible: boolean;
 };
 
 export type AccountAnalysisEntry = {
@@ -239,23 +227,8 @@ export function computeTaxBucketAnalysis(input: {
 
     let slices: EarlyAccessSlice[] = [];
     let ruleOf55: RuleOf55Status | null = null;
-    // 59½ (IRA) / 65 (HSA) age-gate — independent of the slices branch
-    // below, since it applies even to HSA (which computes no slices at
-    // all in v1) and doesn't change based on taxType the way slices do.
     let ageThresholdStatus: AgeThresholdStatus | null = null;
-    if (entry.ownerPersonId != null) {
-      if (isIraCategory(category)) {
-        ageThresholdStatus = {
-          thresholdAge: PENALTY_FREE_AGE,
-          eligible: currentAge >= PENALTY_FREE_AGE,
-        };
-      } else if (isHsaCategory(category)) {
-        ageThresholdStatus = {
-          thresholdAge: HSA_NON_MEDICAL_PENALTY_AGE,
-          eligible: currentAge >= HSA_NON_MEDICAL_PENALTY_AGE,
-        };
-      }
-    }
+    const rule = earlyAccessRuleOf(category);
 
     if (entry.ownerPersonId == null) {
       // Joint account, no single owner: age-gated rules (Roth, 401k, IRA, HSA)
@@ -263,53 +236,26 @@ export function computeTaxBucketAnalysis(input: {
       if (costBasis != null) {
         slices = computeBrokerageAccess(entry.amount, costBasis);
       }
-    } else if (isIraCategory(category)) {
-      // Roth IRA
-      if (isTaxFreeBucket(entry.taxType)) {
-        slices = computeRothIraAccess({
+    } else {
+      ageThresholdStatus = ageThresholdStatusOf(rule, currentAge);
+      // An employer plan's preTax and taxFree parts share one resolution.
+      if (rule === "employer_plan") {
+        ruleOf55 = resolveRuleOf55(perfAccount.id, entry.ownerPersonId);
+      }
+      slices = accountAccessSlices(
+        rule,
+        {
           balance: entry.amount,
           currentAge,
           currentYear,
+          isRoth: isTaxFreeBucket(entry.taxType),
+          ruleOf55Met: ruleOf55?.eligible ?? false,
           contributionBasis: rothBasis?.contributionBasis ?? 0,
           conversionBasis: rothBasis?.conversionBasis ?? 0,
           latestConversionYear: rothBasis?.latestConversionYear ?? null,
-        });
-      } else {
-        // Traditional IRA
-        slices = computeTraditionalIraAccess(entry.amount, currentAge);
-      }
-    } else if (
-      isRuleOf55EligibleCategory(category) &&
-      entry.performanceAccountId != null
-    ) {
-      // 401k/403b — preTax and taxFree slices share one Rule-of-55 resolution.
-      ruleOf55 = resolveRuleOf55(
-        entry.performanceAccountId,
-        entry.ownerPersonId,
+        },
+        costBasis,
       );
-      const eligible = ruleOf55.eligible ?? false;
-      if (isTaxFreeBucket(entry.taxType)) {
-        const enteredBasis =
-          (rothBasis?.contributionBasis ?? 0) +
-          (rothBasis?.conversionBasis ?? 0);
-        slices = computeEmployerPlanRothAccess(
-          entry.amount,
-          currentAge,
-          eligible,
-          enteredBasis,
-        );
-      } else {
-        slices = computeEmployerPlanPreTaxAccess(
-          entry.amount,
-          currentAge,
-          eligible,
-        );
-      }
-    } else if (costBasis != null) {
-      // Brokerage — the only other category with a basis concept.
-      slices = computeBrokerageAccess(entry.amount, costBasis);
-    } else if (isHsaCategory(category)) {
-      slices = computeHsaAccess(entry.amount, currentAge);
     }
 
     return {

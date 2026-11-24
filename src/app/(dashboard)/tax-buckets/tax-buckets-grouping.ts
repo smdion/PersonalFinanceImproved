@@ -2,14 +2,15 @@ import {
   isTaxFreeBucket,
   isTripleTaxAdvantaged,
   getAccountTypeConfig,
+  hasEarlyAccessRule,
   tracksCostBasis,
 } from "@/lib/config/account-types";
 import { penaltyFreePrefixAmount } from "@/lib/pure/accounts/early-access";
 import { AccountEntry } from "./tax-buckets-account-row";
 
-/** Groups every entry into the 5 buckets, summed across both people (used by
- *  "Now" and "At Retirement"). Joint brokerage counts as fully accessible; other
- *  joint entries are left out of the accessible/locked split and called out. */
+/** Groups every entry into the 5 buckets across both people ("Now" and "At
+ *  Retirement"). A type with no early-access rule counts as accessible, joint or
+ *  not; other joint entries are left out of the split and called out. */
 export function buildBuckets(entries: AccountEntry[]) {
   const buckets = new Map<
     BucketKey,
@@ -42,9 +43,8 @@ export function buildBuckets(entries: AccountEntry[]) {
       const accessibleNow = penaltyFreePrefixAmount(entry.slices);
       b.accessibleNow += accessibleNow;
       b.locked += entry.balance - accessibleNow;
-      // lint-violation-ok: `key` is this page's own BucketKey union, not an
-      // AccountCategory — no account-types.ts predicate applies here.
-    } else if (key === "brokerage") {
+    } else if (hasEarlyAccessRule(entry.category, "none")) {
+      // No early-access gate: all of it is penalty-free, as the engine has it.
       b.accessibleNow += entry.balance;
     } else if (entry.ownerPersonId == null) {
       b.excludedJoint += entry.balance;

@@ -523,8 +523,8 @@ export function tracksRothBasis(category: string): boolean {
   return CONFIG_BY_TEXT[category]?.balanceStructure === "roth_traditional";
 }
 
-/** Identity checks, kept for the callers not yet on behavior fields
- *  (RULES.md § Data-Driven Architecture, rule 10); new code reads a field. */
+/** Identity checks, kept only as the reference the behavior-field tests check
+ *  against; code reads a field (RULES.md § Data-Driven Architecture, rule 10). */
 export function isHsaCategory(category: string): boolean {
   return category === "hsa";
 }
