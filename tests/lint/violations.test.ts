@@ -1308,7 +1308,7 @@ describe("RULES.md violations sweep", () => {
     }
   });
 
-  it("no hand-rolled Modified-Dietz denominators (use computeReturn()/sumAccounts() from src/lib/pure/investments/returns.ts)", () => {
+  it("no hand-rolled Simple Dietz denominators (use computeReturn()/sumAccounts() from src/lib/pure/investments/returns.ts)", () => {
     const violations = findHandRolledDietzDenominatorViolations();
     if (violations.length > 0) {
       expect.fail(

@@ -309,7 +309,7 @@ describe("buildYearEndHistory", () => {
 
     const rows = await buildYearEndHistory(ctx.rawDb, AS_OF);
     const row2021 = rows.find((r) => r.year === 2021)!;
-    // Modified Dietz: denom = beginBal + (contribs + rollovers - distributions - fees) / 2
+    // Simple Dietz: denom = beginBal + (contribs + rollovers - distributions - fees) / 2
     //                       = 10000 + (3000 + (-4000) - 0 - 0) / 2 = 9500
     // returnPct = gainLoss / denom = -2000 / 9500
     expect(row2021.perfReturnPct).toBeCloseTo(-2000 / 9500, 4);
