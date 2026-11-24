@@ -2,7 +2,6 @@
  * Roth conversions fill remaining bracket room, tax paid from brokerage. Runs after routing and
  * RMD enforcement, before growth; the conversion feeds the MAGI the IRMAA and ACA checks read.
  */
-import type { AccountCategory } from "../../config/account-types";
 import type {
   TaxBuckets,
   AccountBalances,
@@ -12,11 +11,10 @@ import { getAllCategories, isOverflowTarget } from "../../config/account-types";
 import {
   getTotalBalance,
   getBasis,
-  setTraditional,
-  setRoth,
   setBalance,
   setBasis,
 } from "../accounts/account-balance";
+import { convertAcrossCategories } from "./conversion-categories";
 import type { IrmaaBracket } from "../../config/irmaa-tables";
 import { irmaaConversionHeadroom } from "./conversion-irmaa-cap";
 import { basisOut } from "./brokerage-basis";
@@ -268,56 +266,12 @@ export function performRothConversion(
       Math.max(0, balances.afterTaxBasis - sold),
     );
 
-  // Spread across Traditional accounts weighted by Retirement-only balance
-  // (`balance.traditional - nonRetirement.trad[cat]`), so each category's
-  // share fits what its Retirement-parented accounts can be debited.
-  const tradAccounts: { cat: AccountCategory; balance: number }[] = [];
-  for (const cat of getAllCategories()) {
-    const balance = accountBalance[cat];
-    if (balance.structure !== "roth_traditional") continue;
-    const weight = nonRetirement
-      ? Math.max(0, balance.traditional - nonRetirement.trad[cat])
-      : balance.traditional;
-    if (weight > 0) tradAccounts.push({ cat, balance: weight });
-  }
-  const totalTradBalance = tradAccounts.reduce((s, a) => s + a.balance, 0);
-  const categoryShare = new Map<AccountCategory, number>();
-  if (totalTradBalance > 0) {
-    let distributed = 0;
-    for (const account of tradAccounts) {
-      const balance = accountBalance[account.cat];
-      if (balance.structure !== "roth_traditional") continue;
-      const share = roundToCents(
-        conversion * (account.balance / totalTradBalance),
-      );
-      const capped = Math.min(share, balance.traditional);
-      setTraditional(balance, roundToCents(balance.traditional - capped));
-      setRoth(balance, roundToCents(balance.roth + capped));
-      categoryShare.set(
-        account.cat,
-        (categoryShare.get(account.cat) ?? 0) + capped,
-      );
-      distributed += capped;
-    }
-    // Handle rounding remainder
-    if (distributed < conversion - 0.01 && tradAccounts.length > 0) {
-      const remainder = roundToCents(conversion - distributed);
-      const firstAccount = tradAccounts[0]!;
-      const firstBalance = accountBalance[firstAccount.cat];
-      if (firstBalance.structure === "roth_traditional") {
-        const extra = Math.min(remainder, firstBalance.traditional);
-        setTraditional(
-          firstBalance,
-          roundToCents(firstBalance.traditional - extra),
-        );
-        setRoth(firstBalance, roundToCents(firstBalance.roth + extra));
-        categoryShare.set(
-          firstAccount.cat,
-          (categoryShare.get(firstAccount.cat) ?? 0) + extra,
-        );
-      }
-    }
-  }
+  // Traditional → Roth across the categories, by Retirement-only balance.
+  const categoryShare = convertAcrossCategories(
+    accountBalance,
+    conversion,
+    nonRetirement,
+  );
 
   if (hasIndTracking) debitConvertedParts(parts, categoryShare);
 
