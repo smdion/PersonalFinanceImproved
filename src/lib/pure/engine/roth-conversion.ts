@@ -25,11 +25,9 @@ import {
   payConversionTaxFromParts,
   type ConversionParts,
 } from "./individual-accounts/conversion";
-import {
-  estimateEffectiveTaxRate,
-  incomeCapForMarginalRate,
-} from "./tax-estimation";
+import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
+import { conversionTaxCost } from "./conversion-tax";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
@@ -238,31 +236,11 @@ export function performRothConversion(
     return zero();
   }
 
-  // Compute incremental tax cost of the conversion:
-  // tax(income + conversion) - tax(income), not effective_rate × conversion.
-  const taxWithConversion = roundToCents(
-    (yearTaxableIncome + conversion) *
-      estimateEffectiveTaxRate(
-        yearTaxableIncome + conversion,
-        taxBrackets,
-        taxMultiplier,
-        standardDeduction,
-      ),
-  );
-  const taxWithout = roundToCents(
-    yearTaxableIncome > 0
-      ? yearTaxableIncome *
-          estimateEffectiveTaxRate(
-            yearTaxableIncome,
-            taxBrackets,
-            taxMultiplier,
-            standardDeduction,
-          )
-      : 0,
-  );
-  const taxCostOfConversion = roundToCents(
-    Math.max(0, taxWithConversion - taxWithout),
-  );
+  const taxCostOfConversion = conversionTaxCost(yearTaxableIncome, conversion, {
+    taxBrackets,
+    taxMultiplier,
+    standardDeduction,
+  });
 
   // Pay tax from brokerage, else skip: with exclusion data, only
   // Retirement-parented money counts (a hard gate).
