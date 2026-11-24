@@ -30,6 +30,7 @@ import {
   addBasis,
 } from "../accounts/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import { inflowShares } from "./individual-accounts/part-weights";
 
 // ---------------------------------------------------------------------------
 // Withdrawal Deduction
@@ -173,16 +174,20 @@ export function reinvestRmdExcess(
           const [first] = target;
           if (!first)
             throw new Error("reinvestRmdExcess: no Retirement brokerage part");
-          const targetTotal = target.reduce(
-            (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
-            0,
+          const balanceOf = (ia: IndividualAccountInput) =>
+            Math.max(0, indBalance.get(indKey(ia)) ?? 0);
+          // inflowShares decides any group holding money; its fallback, the
+          // first part taking it all, is the $0 branch below.
+          const targetTotal = target.reduce((s, ia) => s + balanceOf(ia), 0);
+          const shares = inflowShares(target.map(balanceOf), () =>
+            target.map((_, i) => (i === 0 ? 1 : 0)),
           );
           if (targetTotal > 0) {
             let credited = 0;
-            for (const ia of target) {
+            for (const [i, ia] of target.entries()) {
               const k = indKey(ia);
-              const balance = Math.max(0, indBalance.get(k) ?? 0);
-              const share = roundToCents(excess * (balance / targetTotal));
+              const balance = balanceOf(ia);
+              const share = roundToCents(excess * shares[i]!);
               indBalance.set(k, roundToCents(balance + share));
               credited += share;
             }
@@ -195,9 +200,8 @@ export function reinvestRmdExcess(
               );
             }
           } else {
-            // No weight to distribute by (every target account is at
-            // $0) -- credit the first one entirely rather than inventing
-            // a different allocation policy.
+            // $0: the fallback above, written on the first part's own
+            // balance (a part can sit below $0 until clampIndividualBalances).
             const k = indKey(first);
             indBalance.set(k, roundToCents((indBalance.get(k) ?? 0) + excess));
           }

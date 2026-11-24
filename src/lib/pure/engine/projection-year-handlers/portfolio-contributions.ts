@@ -4,6 +4,7 @@ import { isRetirementMoney } from "../../../config/account-types";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { rampBrokerages } from "../../accounts/brokerage-ramp";
 import { specKeyOf } from "../individual-accounts/ledger";
+import { equalShares, inflowShares } from "../individual-accounts/part-weights";
 import { creditSpecParts } from "../individual-accounts/spec-accounts";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
@@ -53,17 +54,13 @@ export function decumulationPortfolioContributions(
     // The ramp spread over brokerages by balance (Portfolio ones first; the
     // projection-only one only with no real brokerage), as accumulation does.
     const rampAccounts = rampBrokerages(indAccounts);
-    const rampTotal = rampAccounts.reduce(
-      (s, ia) => s + (indBalance.get(indKey(ia)) ?? 0),
-      0,
+    const shares = inflowShares(
+      rampAccounts.map((ia) => indBalance.get(indKey(ia)) ?? 0),
+      equalShares(rampAccounts.length),
     );
-    for (const ia of rampAccounts) {
+    for (const [i, ia] of rampAccounts.entries()) {
       const k = indKey(ia);
-      const weight =
-        rampTotal > 0
-          ? (indBalance.get(k) ?? 0) / rampTotal
-          : 1 / rampAccounts.length;
-      const portion = roundToCents(decumRampAmount * weight);
+      const portion = roundToCents(decumRampAmount * shares[i]!);
       decumContributionByAccount.set(
         k,
         (decumContributionByAccount.get(k) ?? 0) + portion,

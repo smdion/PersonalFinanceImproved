@@ -23,6 +23,7 @@ import {
 } from "../../accounts/account-balance";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import { accountIdKeyOf, isHeldPart } from "@/lib/pure/accounts/account-part";
+import { equalShares, inflowShares } from "./part-weights";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {
   clampBasisToBalance,
@@ -233,9 +234,8 @@ export function reconcileIndividualToAggregate(
   return diagnostics;
 }
 
-/** One (category, tax-slice) group's reconciliation. Retirement money absorbs the drift; a
- *  shortfall takes from Portfolio accounts only after retirement money is empty. With no
- *  weight the group is left alone. */
+/** One (category, tax-slice) group's reconciliation: retirement money absorbs the drift, and a
+ *  shortfall takes from Portfolio only once it is empty. With no weight, left alone. */
 function reconcileGroup(
   groupAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
@@ -266,29 +266,29 @@ function reconcileGroup(
     (ia) => !isRetirementMoney(ia.parentCategory),
   );
 
-  // Spread `amount` over `accounts` by balance (equally when they hold
-  // nothing and `equalWhenEmpty`); returns what couldn't be placed.
+  // `amount` by balance, else equally if `equalWhenEmpty`; returns the unplaced.
   const spread = (
     accounts: IndividualAccountInput[],
     amount: number,
     equalWhenEmpty: boolean,
   ): number => {
     if (accounts.length === 0 || amount === 0) return amount;
-    const total = sumOf(accounts);
-    if (total <= 0 && !equalWhenEmpty) return amount;
+    if (sumOf(accounts) <= 0 && !equalWhenEmpty) return amount;
+    const shares = inflowShares(
+      accounts.map(balance),
+      equalShares(accounts.length),
+    );
     let distributed = 0;
     let largestKey: string | null = null;
     let largestBalance = -Infinity;
-    for (const ia of accounts) {
+    for (const [i, ia] of accounts.entries()) {
       const k = indKey(ia);
       const b = balance(ia);
       if (b > largestBalance) {
         largestBalance = b;
         largestKey = k;
       }
-      const share = roundToCents(
-        amount * (total > 0 ? b / total : 1 / accounts.length),
-      );
+      const share = roundToCents(amount * shares[i]!);
       const newBalance = Math.max(0, roundToCents(b + share));
       indBalance.set(k, newBalance);
       distributed += roundToCents(newBalance - b);

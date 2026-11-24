@@ -17,6 +17,7 @@ import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { rampBrokerages } from "@/lib/pure/accounts/brokerage-ramp";
 import { credit, retirementFirst, specKeyOf } from "./ledger";
 import { otherParts } from "./other-tax-part";
+import { equalShares, inflowShares } from "./part-weights";
 import { creditSpecParts, onSpecParts, type SpecParts } from "./spec-accounts";
 import { unclaimedSlot } from "./own-part-credits";
 
@@ -211,16 +212,16 @@ export function distributeContributions(
       accountsWithSpecs.has(indKey(ia)),
     );
     const accounts = withSpecs.length > 0 ? withSpecs : candidates;
-    const total = accounts.reduce(
-      (s, ia) => s + (indBalance.get(indKey(ia)) ?? 0),
-      0,
+    const shares = inflowShares(
+      accounts.map((ia) => indBalance.get(indKey(ia)) ?? 0),
+      equalShares(accounts.length),
     );
-    for (const ia of accounts) {
-      const k = indKey(ia);
-      const weight =
-        total > 0 ? (indBalance.get(k) ?? 0) / total : 1 / accounts.length;
-      credit(k, roundToCents(amount * weight), [indMatch, indBalance]);
-    }
+    accounts.forEach((ia, i) =>
+      credit(indKey(ia), roundToCents(amount * shares[i]!), [
+        indMatch,
+        indBalance,
+      ]),
+    );
   };
   for (const cat of getAllCategories()) {
     const catMatch = slots.find((s) => s.category === cat)?.employerMatch ?? 0;
@@ -354,17 +355,13 @@ export function distributeContributions(
       accountsWithSpecs.has(indKey(ia)),
     );
     const brokAccounts = groupWithSpecs.length > 0 ? groupWithSpecs : group;
-    const brokTotal = brokAccounts.reduce(
-      (s, ia) => s + (indBalance.get(indKey(ia)) ?? 0),
-      0,
+    const shares = inflowShares(
+      brokAccounts.map((ia) => indBalance.get(indKey(ia)) ?? 0),
+      equalShares(brokAccounts.length),
     );
-    for (const ia of brokAccounts) {
+    for (const [i, ia] of brokAccounts.entries()) {
       const k = indKey(ia);
-      const weight =
-        brokTotal > 0
-          ? (indBalance.get(k) ?? 0) / brokTotal
-          : 1 / brokAccounts.length;
-      const portion = roundToCents(rampAmount * weight);
+      const portion = roundToCents(rampAmount * shares[i]!);
       credit(k, portion, [indContributions, indBalance, indRamp]);
     }
   }

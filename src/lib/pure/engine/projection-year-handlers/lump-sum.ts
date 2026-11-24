@@ -2,7 +2,6 @@
  * applyLumpSums — apply one-time lump-sum injections to balances and per-account
  * tracking. Shared by the accumulation-year and decumulation-year handlers.
  */
-import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import type { LumpSum } from "../types/year-overrides";
 import {
   getAccountTypeConfig,
@@ -17,7 +16,8 @@ import {
 } from "../../accounts/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 import { lumpSumParts, runLumpSums } from "../lump-sum-targets";
-import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
+import { roundToCents } from "../../../utils/math";
+import { equalShares, inflowShares } from "../individual-accounts/part-weights";
 
 /**
  * Apply one-time lump-sum injections for the current year.
@@ -54,18 +54,16 @@ export function applyLumpSums(
     // Its parts take it, by balance when its target is no single part
     if (holdsAccounts) {
       const targets = lumpSumParts(ls, indAccounts);
-      const balanceOf = (ia: IndividualAccountInput) =>
-        Math.max(0, indBalance.get(indKey(ia)) ?? 0);
-      const total = sumBy(targets, balanceOf);
+      const shares = inflowShares(
+        targets.map((ia) => Math.max(0, indBalance.get(indKey(ia)) ?? 0)),
+        equalShares(targets.length),
+      );
       let left = ls.amount;
       targets.forEach((ia, i) => {
         const share =
           i === targets.length - 1
             ? left
-            : roundToCents(
-                ls.amount *
-                  safeDivide(balanceOf(ia), total, 1 / targets.length),
-              );
+            : roundToCents(ls.amount * shares[i]!);
         left = roundToCents(left - share);
         const key = indKey(ia);
         indBalance.set(key, (indBalance.get(key) ?? 0) + share);
