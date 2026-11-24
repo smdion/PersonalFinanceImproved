@@ -189,19 +189,33 @@ export function knownSavedRouting(settings: {
   withdrawalOrder?: string[] | null;
   withdrawalSplits?: Record<string, number> | null;
 }) {
+  // A stored order that isn't a list, or splits that aren't a record
+  // (written outside the app), read as unset: the config's default. Each
+  // stays stored.
   const order = Array.isArray(settings.withdrawalOrder)
     ? knownCategoryList(settings.withdrawalOrder)
-    : { known: settings.withdrawalOrder, unknown: [] };
+    : { known: null, unknown: [] };
   const splits = isRecord(settings.withdrawalSplits)
     ? knownCategoryRecord(settings.withdrawalSplits)
-    : { known: settings.withdrawalSplits, unknown: [] };
+    : { known: null, unknown: [] };
   return {
     withdrawalOrder: order.known,
     withdrawalSplits: splits.known,
     unknownInOrder: order.unknown,
     unknownInSplits: splits.unknown,
+    orderNotAList:
+      settings.withdrawalOrder != null &&
+      !Array.isArray(settings.withdrawalOrder),
+    splitsNotARecord:
+      settings.withdrawalSplits != null && !isRecord(settings.withdrawalSplits),
   };
 }
+
+/** The notes for a saved order or splits `knownSavedRouting` reads as unset. */
+const ORDER_NOT_A_LIST_NOTE =
+  "The saved withdrawal order isn't a list, so the projection uses the default order. Update Ledgr or set the order again.";
+const SPLITS_NOT_A_RECORD_NOTE =
+  "The saved withdrawal splits aren't a share per account type, so the projection uses the default splits. Update Ledgr or set the splits again.";
 
 /**
  * Decumulation defaults from DB settings + client routing overrides, for every run.
@@ -235,12 +249,16 @@ export function buildDecumulationDefaults(
     },
     storedRouting,
   );
-  if (clientDefaults.withdrawalOrder === undefined)
+  if (clientDefaults.withdrawalOrder === undefined) {
     for (const category of known.unknownInOrder)
       notes.push(unknownCategoryNote(category, "withdrawalOrder"));
-  if (clientDefaults.withdrawalSplits === undefined)
+    if (known.orderNotAList) notes.push(ORDER_NOT_A_LIST_NOTE);
+  }
+  if (clientDefaults.withdrawalSplits === undefined) {
     for (const category of known.unknownInSplits)
       notes.push(unknownCategoryNote(category, "withdrawalSplits"));
+    if (known.splitsNotARecord) notes.push(SPLITS_NOT_A_RECORD_NOTE);
+  }
   notes.push(...unknownStrategyNotes(settings.withdrawalStrategy));
   return {
     withdrawalRate: toNumber(settings.withdrawalRate),

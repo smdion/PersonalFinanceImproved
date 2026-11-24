@@ -131,3 +131,50 @@ describe("a stored Retirement Profile filing status this version doesn't know", 
     });
   });
 });
+
+describe.each([
+  [
+    "withdrawalOrder",
+    "an object (splits written into the order)",
+    { "401k": 0.5, ira: 0.5 },
+    "The saved withdrawal order isn't a list, so the projection uses the default order. Update Ledgr or set the order again.",
+  ],
+  [
+    "withdrawalOrder",
+    "a comma string",
+    "401k,ira",
+    "The saved withdrawal order isn't a list, so the projection uses the default order. Update Ledgr or set the order again.",
+  ],
+  [
+    "withdrawalSplits",
+    "a list",
+    ["401k", "ira"],
+    "The saved withdrawal splits aren't a share per account type, so the projection uses the default splits. Update Ledgr or set the splits again.",
+  ],
+  [
+    "withdrawalSplits",
+    "a string",
+    "401k:0.5,ira:0.5",
+    "The saved withdrawal splits aren't a share per account type, so the projection uses the default splits. Update Ledgr or set the splits again.",
+  ],
+] as const)("a stored %s that is %s", (field, _, stored, NOTE) => {
+  let ctx: Ctx;
+  let personId: number;
+
+  beforeAll(async () => {
+    ({ ctx, personId } = await householdWith({ [field]: stored as never }));
+  });
+  afterAll(() => ctx.cleanup());
+
+  it("the projection runs on the default and says so, once", async () => {
+    const response = await ctx.caller.projection.computeProjection({});
+    expect(response.result!.warnings.filter((w) => w === NOTE)).toHaveLength(1);
+    // The Retirement page shows the routing the projection reads: the default.
+    if (!("settings" in response)) throw new Error("no settings");
+    expect(response.settings[field]).toBeNull();
+  });
+
+  it("the stored value is kept", () => {
+    expect(storedRow(ctx, personId)?.[field]).toEqual(stored);
+  });
+});
