@@ -30,6 +30,48 @@ describe("inflowShares", () => {
     expect(inflowShares([0, 0], firstTakesAll(2))).toEqual([1, 0]);
   });
 
+  it("a 1¢ part beside $0 parts takes a small share, not all of it (E0 PW1)", () => {
+    // T = $0.01 of F = $1: 1% by balance, 99% by the fallback.
+    const shares = inflowShares([0.01, 0, 0], equalShares(3));
+    expect(shares[0]).toBeCloseTo(0.01 + 0.99 / 3, 12);
+    expect(shares[1]).toBeCloseTo(0.99 / 3, 12);
+    expect(shares[2]).toBeCloseTo(0.99 / 3, 12);
+    expect(shares.reduce((s, x) => s + x, 0)).toBeCloseTo(1, 12);
+    // $0.50 beside $0, first-takes-all fallback on the $0 part: half each.
+    const half = inflowShares([0, 0.5], firstTakesAll(2));
+    expect(half[0]).toBeCloseTo(0.5, 12);
+    expect(half[1]).toBeCloseTo(0.5, 12);
+  });
+
+  it("is continuous as the group's total goes to $0 and to $1", () => {
+    const near = (a: number[], b: number[], within: number) =>
+      a.every((x, i) => Math.abs(x - b[i]!) <= within);
+    // To $0: 1¢ on the part the fallback leaves out lands within 1% of
+    // the $0 split (today it takes everything).
+    expect(
+      near(
+        inflowShares([0, 0.01], firstTakesAll(2)),
+        inflowShares([0, 0], firstTakesAll(2)),
+        0.01 + 1e-12,
+      ),
+    ).toBe(true);
+    // To $1: 99.5¢ against a fallback on the other part lands within
+    // half a percent of $1's split by balance.
+    expect(
+      near(
+        inflowShares([0.995, 0], () => [0, 1]),
+        inflowShares([1, 0], () => [0, 1]),
+        0.006,
+      ),
+    ).toBe(true);
+  });
+
+  it("is today's split wherever a group holds $1 or more, or exactly $0", () => {
+    expect(inflowShares([1, 0], () => [0, 1])).toEqual([1, 0]);
+    expect(inflowShares([0.6, 0.4], () => [0, 1])).toEqual([0.6, 0.4]);
+    expect(inflowShares([0, 0], () => [0, 1])).toEqual([0, 1]);
+  });
+
   it("asks for the fallback only when it needs it", () => {
     let asked = 0;
     inflowShares([5, 5], () => {

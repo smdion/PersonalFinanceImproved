@@ -1,6 +1,6 @@
 /** One spread of money over account parts: by balance; when all are $0, by
  *  each part's account's other parts (each person's); when those are $0 too,
- *  equally. */
+ *  equally; a group under $1 blends toward the next rule (`inflowShares`). */
 import { roundToCents, sumBy } from "../../../utils/math";
 import type { IndKeyFn } from "../../accounts/account-part";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
@@ -11,18 +11,26 @@ type Ledger = Record<"indAccounts", readonly IndividualAccountInput[]> &
   Record<"indKey", IndKeyFn> &
   Record<"indBalance", Map<string, number>>;
 
+/** From this group total ($1) the balances alone set an inflow's split. */
+const BALANCE_SPLIT_FLOOR = 1;
+
 /**
- * Each member's share of money flowing into a group: by `weights` (the
- * members' balances) while the group holds money; with none, the
- * `fallback()` shares. Every inflow split by balance goes through here.
+ * Each member's share of money flowing into a group of total T (`weights`, its balances): from
+ * $1 by balance; at $0 the `fallback()` shares; between, T/$1 of the first and the rest of the
+ * second, so 1¢ beside $0 parts takes 1% beyond its fallback share, not all (E0 PW1).
  */
 export function inflowShares(
   weights: readonly number[],
   fallback: () => readonly number[],
 ): number[] {
   const total = sumBy(weights, (w) => w);
-  if (total > 0) return weights.map((w) => w / total);
-  return [...fallback()];
+  if (total >= BALANCE_SPLIT_FLOOR) return weights.map((w) => w / total);
+  const fallbackShares = fallback();
+  if (total <= 0) return [...fallbackShares];
+  const byBalance = total / BALANCE_SPLIT_FLOOR;
+  return weights.map(
+    (w, i) => byBalance * (w / total) + (1 - byBalance) * fallbackShares[i]!,
+  );
 }
 
 /** Each of `n` members' share when split equally. */

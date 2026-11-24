@@ -1,7 +1,7 @@
 /** One group of account parts pushed onto its category's balance
  *  (`reconcileIndividualToAggregate`, reconcile.ts). */
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
-import { roundToCents } from "../../../utils/math";
+import { roundToCents, sumBy } from "../../../utils/math";
 import { isRetirementMoney } from "../../../config/account-types";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { equalShares, inflowShares } from "./part-weights";
@@ -38,18 +38,26 @@ export function reconcileGroup(
     (ia) => !isRetirementMoney(ia.parentCategory),
   );
 
-  // `amount` by balance, else equally if `equalWhenEmpty`; returns the unplaced.
+  // A draw by balance; an inflow by inflowShares, toward equal shares if
+  // `equalWhenEmpty`, else toward none (that part unplaced). Returns the unplaced.
   const spread = (
     accounts: IndividualAccountInput[],
     amount: number,
     equalWhenEmpty: boolean,
   ): number => {
     if (accounts.length === 0 || amount === 0) return amount;
-    if (sumOf(accounts) <= 0 && !equalWhenEmpty) return amount;
-    const shares = inflowShares(
-      accounts.map(balance),
-      equalShares(accounts.length),
-    );
+    const total = sumOf(accounts);
+    if (total <= 0 && !equalWhenEmpty) return amount;
+    const weights = accounts.map(balance);
+    const none = () => weights.map(() => 0);
+    const shares =
+      amount < 0
+        ? weights.map((b) => b / total)
+        : inflowShares(
+            weights,
+            equalWhenEmpty ? equalShares(accounts.length) : none,
+          );
+    const placing = roundToCents(amount * sumBy(shares, (s) => s));
     let distributed = 0;
     let largestKey: string | null = null;
     let largestBalance = -Infinity;
@@ -65,14 +73,15 @@ export function reconcileGroup(
       indBalance.set(k, newBalance);
       distributed += roundToCents(newBalance - b);
     }
-    const residual = roundToCents(amount - distributed);
+    const residual = roundToCents(placing - distributed);
+    const unplaced = roundToCents(amount - placing);
     if (residual !== 0 && largestKey) {
       const b = Math.max(0, indBalance.get(largestKey) ?? 0);
       const newBalance = Math.max(0, roundToCents(b + residual));
       indBalance.set(largestKey, newBalance);
-      return roundToCents(residual - (newBalance - b));
+      return roundToCents(unplaced + residual - (newBalance - b));
     }
-    return 0;
+    return unplaced;
   };
 
   let unplaced: number;

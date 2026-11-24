@@ -154,6 +154,32 @@ describe("answer key: a slot's money no spec claims", () => {
     );
   });
 
+  it("eng/US-5 [ENG-19] a part under $1 beside a $0 part blends toward the $0-tie rule, in proportion to its balance", () => {
+    // E0's PW1 ruling (2026-11-24), with T the parts' total and F = $1:
+    // T/F of the balance shares plus (1 - T/F) of the $0-tie shares.
+    // Ann's Roth part holds $0.50 and Bo's $0, so T/F = 0.5; the $0 tie
+    // follows the Traditional parts, 300,000 / 100,000 = 0.75 / 0.25.
+    // Ann 0.5 x 1 + 0.5 x 0.75 = 0.875; Bo 0.5 x 0 + 0.5 x 0.25 = 0.125.
+    // 4,000 of Roth savings lands 3,500 / 500 (not 4,000 / 0).
+    cents(
+      land(
+        [
+          part("Ann 401k", "401k", "preTax", 300_000, 1),
+          part("Bo 401k", "401k", "preTax", 100_000, 2),
+          part("Ann 401k", "401k", "taxFree", 0.5, 1),
+          part("Bo 401k", "401k", "taxFree", 0, 2),
+        ],
+        [slot("401k", { employeeContrib: 4_000, rothContrib: 4_000 })],
+      ),
+      {
+        "Ann 401k preTax": 0,
+        "Bo 401k preTax": 0,
+        "Ann 401k taxFree": 3_500,
+        "Bo 401k taxFree": 500,
+      },
+    );
+  });
+
   it("eng/US-4 [ENG-19] the cents left by the split go to the last part, so the parts hold the slot", () => {
     // 100.00 over three equal parts: 33.33, 33.33, 33.34.
     const credits = land(
