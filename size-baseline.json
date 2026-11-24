@@ -909,7 +909,7 @@
       "RelocationLargePurchases": 198
     },
     "src/components/tools/relocation/metrics-and-banner.tsx": {
-      "RelocationMetricsAndBanner": 168
+      "RelocationMetricsAndBanner": 157
     },
     "src/components/tools/relocation/projection-table.tsx": {
       "ComparisonTable": 217

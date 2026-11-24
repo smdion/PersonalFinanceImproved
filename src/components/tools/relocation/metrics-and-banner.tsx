@@ -61,22 +61,11 @@ export function RelocationMetricsAndBanner({
           </div>
         </div>
 
-        <div className="bg-surface-sunken rounded-lg p-3">
-          <div className="text-muted text-xs uppercase">
-            Additional Nest Egg Needed
-            <HelpTip text="Extra savings required to maintain the same retirement readiness with higher expenses" />
-          </div>
-          <div
-            className={`text-lg font-bold ${additionalNestEggNeeded > 0 ? "text-red-600" : "text-green-600"}`}
-          >
-            {additionalNestEggNeeded > 0 ? "+" : ""}
-            {formatCurrency(additionalNestEggNeeded)}
-          </div>
-          <div className="text-faint text-xs">
-            Target: {formatCurrency(currentFiTargetForDelta)} →{" "}
-            {formatCurrency(relocFiTarget)}
-          </div>
-        </div>
+        <NestEggCard
+          additionalNestEggNeeded={additionalNestEggNeeded}
+          currentFiTargetForDelta={currentFiTargetForDelta}
+          relocFiTarget={relocFiTarget}
+        />
 
         <div className="bg-surface-sunken rounded-lg p-3">
           <div className="text-muted text-xs uppercase">
@@ -328,6 +317,36 @@ function EarliestViableHint({
       — portfolio of{" "}
       {formatCurrency(engineResult.recommendedPortfolioToRelocate)} sustains
       retirement on the relocation budget.
+    </div>
+  );
+}
+
+type NestEggCardProps = {
+  additionalNestEggNeeded: number;
+  currentFiTargetForDelta: number;
+  relocFiTarget: number;
+};
+function NestEggCard({
+  additionalNestEggNeeded,
+  currentFiTargetForDelta,
+  relocFiTarget,
+}: NestEggCardProps) {
+  return (
+    <div className="bg-surface-sunken rounded-lg p-3">
+      <div className="text-muted text-xs uppercase">
+        Additional Nest Egg Needed
+        <HelpTip text="Extra savings required to maintain the same retirement readiness with higher expenses" />
+      </div>
+      <div
+        className={`text-lg font-bold ${additionalNestEggNeeded > 0 ? "text-red-600" : "text-green-600"}`}
+      >
+        {additionalNestEggNeeded > 0 ? "+" : ""}
+        {formatCurrency(additionalNestEggNeeded)}
+      </div>
+      <div className="text-faint text-xs">
+        Target: {formatCurrency(currentFiTargetForDelta)} →{" "}
+        {formatCurrency(relocFiTarget)}
+      </div>
     </div>
   );
 }
