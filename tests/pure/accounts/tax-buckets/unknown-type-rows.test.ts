@@ -7,6 +7,7 @@ import {
   knownCategoryRecord,
   unknownCategoryNote,
   unknownLumpSumTargetNotes,
+  unknownTargetEventNotes,
   unknownTypeContributionNote,
   unknownTypeNote,
   unknownTypeRows,
@@ -237,6 +238,21 @@ describe("deletedRowUnknownTypeNotes", () => {
       'Deleting Changes by year for 2040 also deleted what it set for account type "other_type", which this version doesn\'t know.',
       'Deleting Changes by year for 2040 also deleted its 2 lump sums totalling $10,000 to account type "future_type", which this version doesn\'t know.',
       'Deleting Changes by year for 2040 also deleted its lump sum to parent category "Future", which this version doesn\'t know.',
+    ]);
+  });
+});
+
+describe("unknownTargetEventNotes", () => {
+  it("groups a year's events to one type, a withdrawal shown below zero", () => {
+    expect(
+      unknownTargetEventNotes([
+        { year: "2031", category: "future_type", amount: 2500 },
+        { year: "2032", category: "future_type", amount: -1000 },
+        { year: "2032", category: "future_type", amount: -500 },
+      ]),
+    ).toEqual([
+      'A planned event of $2,500 in 2031 goes to account type "future_type", which this version doesn\'t know, so this page leaves it out and keeps it saved. Update Ledgr to see or change it.',
+      '2 planned events totalling -$1,500 in 2032 go to account type "future_type", which this version doesn\'t know, so this page leaves them out and keeps them saved. Update Ledgr to see or change them.',
     ]);
   });
 });

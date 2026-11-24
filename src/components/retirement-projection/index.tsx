@@ -3,7 +3,7 @@
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
 import { useEffect } from "react";
 import type { DollarBasis } from "@/lib/config/enum-values";
-import { OverridesPanel } from "./overrides/overrides-panel";
+import { ChangesByYearPanel } from "./overrides/changes-by-year-panel";
 import { EngineNotices } from "./projection-card/engine-notices";
 import { RecalculatingBanner } from "./projection-card/recalculating-banner";
 import { ProjectionLoaderStrip } from "./projection-card/loader-strip";
@@ -146,7 +146,7 @@ export function ProjectionCard(props: ProjectionCardProps) {
 
           {/* UNIFIED OVERRIDES */}
           <div className="print:hidden">
-            <OverridesPanel
+            <ChangesByYearPanel
               state={state}
               accumulationExpenseOverride={accumulationExpenseOverride}
             />

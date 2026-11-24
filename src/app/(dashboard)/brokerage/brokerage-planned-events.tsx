@@ -9,7 +9,8 @@ import {
 import { accountOption } from "@/components/retirement-projection/lump-sum-target";
 import { isPortfolioParent } from "@/lib/config/account-types";
 import type { LumpSumEvent } from "@/components/retirement-projection/types";
-import type { RouterOutputs } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
+import { EngineWarnings } from "@/components/retirement-projection/engine-warnings";
 
 export type PlannedEventsCardProps = {
   brokerageLumpSums: LumpSumEvent[];
@@ -28,6 +29,12 @@ export function PlannedEventsCard({
   data,
   setBrokerageLumpSums,
 }: PlannedEventsCardProps) {
+  // The saved events this page leaves out (an account type this version
+  // doesn't know); a save keeps them.
+  const notes =
+    trpc.retirement.projectionOverrides.listUnknownTypeNotes.useQuery({
+      overrideType: "brokerage",
+    }).data ?? [];
   return (
     <Card title="Planned Events" className="mt-6">
       <p className="text-muted mb-2 text-xs">
@@ -35,6 +42,7 @@ export function PlannedEventsCard({
         inheritance, down payment).
         <HelpTip text="Unlike goals (which set a target and let the engine decide if it's funded), planned events directly add or remove dollars in a specific year." />
       </p>
+      <EngineWarnings warnings={notes} />
       {brokerageLumpSums.length > 0 && (
         <div className="mb-3 space-y-1">
           {brokerageLumpSums.map((ls) => (

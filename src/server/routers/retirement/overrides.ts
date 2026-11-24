@@ -13,7 +13,10 @@ import { firstRow } from "@/lib/utils/first-row";
 import { accountCategoryEnum } from "@/lib/config/account-types";
 import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
 import { accumulationOverrideArraySchema } from "@/server/services/projection/projection-run";
-import { withStoredUnknownTypes } from "@/server/services/projection/saved-override-rows";
+import {
+  editableSavedSet,
+  withStoredUnknownTypes,
+} from "@/server/services/projection/saved-override-rows";
 import type { Db, DbOrTx } from "@/lib/db";
 import { lockForTransaction } from "@/server/data/lock-row";
 import type { Session } from "next-auth";
@@ -41,6 +44,10 @@ function savedSetShape(kind: "accumulation" | "decumulation" | "brokerage") {
 }
 
 type SavedSetKind = "accumulation" | "decumulation" | "brokerage";
+
+const savedSetKindInput = z.object({
+  overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
+});
 
 /** One kind's saved set as stored; [] when none. */
 function storedSet(db: DbOrTx, kind: SavedSetKind) {
@@ -202,14 +209,30 @@ export const overrideProcedures = {
   projectionOverrides: createTRPCRouter({
     /**
      * One kind's saved changes by year (accumulation, decumulation or brokerage); [] when none.
+     * An account type this version doesn't know is left out (`editableSavedSet`).
      */
     get: protectedProcedure
-      .input(
-        z.object({
-          overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
-        }),
-      )
-      .query(({ ctx, input }) => storedSet(ctx.db, input.overrideType)),
+      .input(savedSetKindInput)
+      .query(
+        async ({ ctx, input }) =>
+          editableSavedSet(
+            input.overrideType,
+            await storedSet(ctx.db, input.overrideType),
+          ).rows,
+      ),
+    /**
+     * What `get` leaves out of one kind's saved set: a note per account type this version
+     * doesn't know (with each lump sum's or planned event's amount).
+     */
+    listUnknownTypeNotes: protectedProcedure
+      .input(savedSetKindInput)
+      .query(
+        async ({ ctx, input }) =>
+          editableSavedSet(
+            input.overrideType,
+            await storedSet(ctx.db, input.overrideType),
+          ).unknownTypeNotes,
+      ),
     /**
      * Replace one kind's saved changes by year, at the brokerage permission for every kind;
      * a set its kind's shape refuses is refused. Stored entries for unknown account types are

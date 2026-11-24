@@ -3,7 +3,8 @@
  * say): the projection and Tax Buckets leave that money out and say so,
  * naming the row and its amount. A saved setting naming one (the withdrawal
  * order or splits, a "Changes by year" row) drops it and says so; the
- * editors' saves keep it (owner Q-unknown-category-erase (b)).
+ * editors read it the same way, and their saves keep it (owner
+ * Q-unknown-category-erase (b)).
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -21,7 +22,10 @@ import * as schema from "@/lib/db/schema-sqlite";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
 import { openingTotals } from "@/lib/pure/engine/opening-state";
-import { prepareEngineInput } from "@/server/services/projection/projection-run";
+import {
+  accumulationOverrideArraySchema,
+  prepareEngineInput,
+} from "@/server/services/projection/projection-run";
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
   cacheGet: vi.fn().mockResolvedValue(null),
@@ -464,7 +468,7 @@ describe("a saved savings order naming only an account type this version doesn't
   });
 });
 
-describe("the saved sets the editors save, naming an account type this version doesn't know", () => {
+describe("the saved sets the editors read and save, naming an account type this version doesn't know", () => {
   let ctx: Ctx;
   // A newer Ledgr's row (the save path refuses it): an order entry, a split
   // and a lump sum for a type this version doesn't know, beside known ones.
@@ -512,6 +516,41 @@ describe("the saved sets the editors save, naming an account type this version d
     seedHousehold(ctx.db);
   });
   afterAll(() => ctx.cleanup());
+
+  it("get serves the rows as the projection reads them, and listUnknownTypeNotes names what it leaves out", async () => {
+    store("accumulation", [newerRow, known2035]);
+    store("brokerage", [unknownEvent, event("b", "brokerage")]);
+    const { get, listUnknownTypeNotes } =
+      ctx.caller.retirement.projectionOverrides;
+    const rows = await get({ overrideType: "accumulation" });
+    expect(rows).toEqual([
+      {
+        year: 2030,
+        accountOrder: ["401k"],
+        accountSplits: { "401k": 0.5 },
+        lumpSums: [{ amount: 3000, targetAccount: "401k" }],
+      },
+      known2035,
+    ]);
+    expect(
+      await listUnknownTypeNotes({ overrideType: "accumulation" }),
+    ).toEqual([
+      'Account type "future_type", which this version doesn\'t know, is left out of Changes by year for 2030. Update Ledgr or change that setting.',
+      'A lump sum of $5,000 in Changes by year for 2030 goes to account type "future_type", which this version doesn\'t know, so the projection leaves it out. Update Ledgr or change that lump sum.',
+    ]);
+    expect(await get({ overrideType: "brokerage" })).toEqual([
+      event("b", "brokerage"),
+    ]);
+    expect(await listUnknownTypeNotes({ overrideType: "brokerage" })).toEqual([
+      'A planned event of $2,500 in 2031 goes to account type "future_type", which this version doesn\'t know, so this page leaves it out and keeps it saved. Update Ledgr to see or change it.',
+    ]);
+    // The Brokerage page sends these rows with its projection request, which
+    // the stored rows failed.
+    const response = await ctx.caller.projection.computeProjection({
+      accumulationOverrides: accumulationOverrideArraySchema.parse(rows),
+    });
+    expect(response.result).not.toBeNull();
+  });
 
   it("an edit to another year keeps the stored entries for it", async () => {
     store("accumulation", [newerRow, known2035]);

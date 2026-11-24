@@ -9,6 +9,8 @@ import {
   knownCategoryList,
   knownCategoryRecord,
   unknownCategoryNote,
+  unknownLumpSumTargetNotes,
+  unknownTargetEventNotes,
   type UnknownTargetLumpSum,
 } from "@/lib/pure/accounts/tax-buckets/unknown-type-rows";
 
@@ -89,8 +91,8 @@ function unknownLumpSumTarget(
 const isUnknownTarget = (target: unknown): target is string =>
   typeof target === "string" && !isKnownCategory(target);
 
-/** A set to store as an editor saved it, with the notes for what it leaves
- *  out of the stored set. */
+/** A saved set as an editor reads or saves it, with the notes for what it
+ *  leaves out of the stored set. */
 export type EditableSavedSet = {
   rows: Record<string, unknown>[];
   unknownTypeNotes: string[];
@@ -101,6 +103,45 @@ type SavedSetKind = "accumulation" | "decumulation" | "brokerage";
 /** A stored set's rows: its records (another stored value has none). */
 const storedRows = (stored: unknown) =>
   Array.isArray(stored) ? stored.filter(isRecord) : [];
+
+/** A stored event amount ("5000") as a number for its note, when it is one. */
+const eventAmount = (amount: unknown) =>
+  typeof amount === "string" && amount.trim() !== "" && isFinite(+amount)
+    ? +amount
+    : amount;
+
+/** A saved set as the Changes by year editor and the Brokerage page read it:
+ *  each unknown account type dropped as the projection drops it (an event to
+ *  one left out), named in the notes. `withStoredUnknownTypes` keeps them. */
+export function editableSavedSet(
+  kind: SavedSetKind,
+  stored: unknown,
+): EditableSavedSet {
+  const rows = storedRows(stored);
+  if (kind === "accumulation" || kind === "decumulation") {
+    const drops: CategoryDrops = { notes: [], lumpSums: [] };
+    return {
+      rows: rows
+        .map((row) => withKnownCategories(row, CATEGORY_FIELDS[kind], drops))
+        .filter(isRecord),
+      unknownTypeNotes: [
+        ...new Set(drops.notes),
+        ...unknownLumpSumTargetNotes(drops.lumpSums),
+      ],
+    };
+  }
+  const left: Omit<UnknownTargetLumpSum, "target">[] = [];
+  const kept = rows.filter(({ year, targetAccount, amount }) => {
+    if (!isUnknownTarget(targetAccount)) return true;
+    left.push({
+      year: String(year),
+      category: targetAccount,
+      amount: eventAmount(amount),
+    });
+    return false;
+  });
+  return { rows: kept, unknownTypeNotes: unknownTargetEventNotes(left) };
+}
 
 /** A stored row's entries for types this version doesn't know: each list
  *  field's entries at their places, each record field's keys, its lump sums. */

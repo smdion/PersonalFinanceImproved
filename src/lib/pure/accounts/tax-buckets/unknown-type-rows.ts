@@ -208,3 +208,20 @@ export function deletedRowUnknownTypeNotes(
     ),
   ];
 }
+
+/** The notes for the Brokerage page's planned events to an account type this
+ *  version doesn't know, grouped as lump sums are: the page leaves them out,
+ *  and a save keeps them. */
+export function unknownTargetEventNotes(
+  events: readonly Omit<UnknownTargetLumpSum, "target">[],
+): string[] {
+  const asLumpSums = events.map((e) => ({
+    ...e,
+    target: "accountType" as const,
+  }));
+  return lumpSumGroups(asLumpSums).map(({ year, target, count, total }) =>
+    count === 1
+      ? `A planned event ${total ? `of ${total} ` : ""}in ${year} goes to ${target}, so this page leaves it out and keeps it saved. Update Ledgr to see or change it.`
+      : `${count} planned events ${total ? `totalling ${total} ` : ""}in ${year} go to ${target}, so this page leaves them out and keeps them saved. Update Ledgr to see or change them.`,
+  );
+}
