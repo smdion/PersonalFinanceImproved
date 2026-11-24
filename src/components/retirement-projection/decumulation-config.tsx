@@ -65,10 +65,10 @@ type DecumulationConfigProps = {
    *  shows `persistedWithdrawalOrder`, not the local `withdrawalOrder` seed
    *  (display only, like `withdrawalRoutingModeTouched`). */
   withdrawalOrderTouched: boolean;
-  /** The household's PERSISTED withdrawal-order default
-   *  (`retirement_settings.withdrawal_order`), or null/undefined when never
-   *  customized (→ config default). Drives `displayedOrder`. */
-  persistedWithdrawalOrder?: string[] | null;
+  /** The household's PERSISTED withdrawal order as the projection reads it
+   *  (`knownSavedRouting`), or null/undefined when never customized
+   *  (→ config default). Drives `displayedOrder`. */
+  persistedWithdrawalOrder?: AccountCategory[] | null;
   withdrawalSplits: Record<AccountCategory, number>;
   setWithdrawalSplits: React.Dispatch<
     React.SetStateAction<Record<AccountCategory, number>>
@@ -154,8 +154,7 @@ export function DecumulationConfig({
   // config-default seed.
   const displayedOrder: AccountCategory[] = withdrawalOrderTouched
     ? withdrawalOrder
-    : ((persistedWithdrawalOrder as AccountCategory[] | null | undefined) ??
-      withdrawalOrder);
+    : (persistedWithdrawalOrder ?? withdrawalOrder);
   const displayedSplits: Record<AccountCategory, number> =
     withdrawalSplitsTouched
       ? withdrawalSplits

@@ -241,15 +241,15 @@ export function knownSavedRouting(settings: {
 }) {
   const order = Array.isArray(settings.withdrawalOrder)
     ? knownCategoryList(settings.withdrawalOrder)
-    : null;
+    : { known: settings.withdrawalOrder, unknown: [] };
   const splits = isRecord(settings.withdrawalSplits)
     ? knownCategoryRecord(settings.withdrawalSplits)
-    : null;
+    : { known: settings.withdrawalSplits, unknown: [] };
   return {
-    withdrawalOrder: order ? order.known : settings.withdrawalOrder,
-    withdrawalSplits: splits ? splits.known : settings.withdrawalSplits,
-    unknownInOrder: order?.unknown ?? [],
-    unknownInSplits: splits?.unknown ?? [],
+    withdrawalOrder: order.known,
+    withdrawalSplits: splits.known,
+    unknownInOrder: order.unknown,
+    unknownInSplits: splits.unknown,
   };
 }
 

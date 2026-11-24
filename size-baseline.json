@@ -129,7 +129,7 @@
     "src/components/profiles/what-if/what-if-step.tsx": 59,
     "src/components/profiles/what-if/what-if-tab.tsx": 570,
     "src/components/retirement-projection/coast-fire-card.tsx": 397,
-    "src/components/retirement-projection/decumulation-config.tsx": 435,
+    "src/components/retirement-projection/decumulation-config.tsx": 434,
     "src/components/retirement-projection/index.tsx": 159,
     "src/components/retirement-projection/overrides/override-field-parts.tsx": 117,
     "src/components/retirement-projection/overrides/override-forms.tsx": 375,
@@ -723,7 +723,7 @@
       "WhatIfTab": 529
     },
     "src/components/retirement-projection/decumulation-config.tsx": {
-      "DecumulationConfig": 333
+      "DecumulationConfig": 332
     },
     "src/components/retirement-projection/lump-sum-form.tsx": {
       "LumpSumForm": 155
