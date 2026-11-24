@@ -13,13 +13,11 @@ import { firstRow } from "@/lib/utils/first-row";
 import { accountCategoryEnum } from "@/lib/config/account-types";
 import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
 import { accumulationOverrideArraySchema } from "@/server/services/projection/projection-run";
+import { editableSavedSet } from "@/server/services/projection/saved-override-rows";
 import {
-  editableSavedSet,
-  withStoredUnknownTypes,
-} from "@/server/services/projection/saved-override-rows";
-import type { Db, DbOrTx } from "@/lib/db";
-import { lockForTransaction } from "@/server/data/lock-row";
-import type { Session } from "next-auth";
+  storedSet,
+  storeSet,
+} from "@/server/services/projection/saved-override-store";
 
 /** What each kind's saved set reads as: the projection's override shapes
  *  (resolveProjectionOverrides) and the Brokerage page's planned events
@@ -43,57 +41,9 @@ function savedSetShape(kind: "accumulation" | "decumulation" | "brokerage") {
   );
 }
 
-type SavedSetKind = "accumulation" | "decumulation" | "brokerage";
-
 const savedSetKindInput = z.object({
   overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
 });
-
-/** One kind's saved set as stored; [] when none. */
-function storedSet(db: DbOrTx, kind: SavedSetKind) {
-  return db
-    .select({ overrides: schema.projectionOverrides.overrides })
-    .from(schema.projectionOverrides)
-    .where(eq(schema.projectionOverrides.overrideType, kind))
-    .then((r) => r[0]?.overrides ?? []);
-}
-
-/** Stores an editor's set with the stored entries for account types this
- *  version doesn't know merged back (`withStoredUnknownTypes`), one kind at a
- *  time: the stored row (none when a clear leaves nothing) and the notes. */
-function storeSet(
-  ctx: { db: Db; session: Session },
-  kind: SavedSetKind,
-  saved: Record<string, unknown>[],
-  clearing = false,
-) {
-  const user = getSessionUserLabel(ctx.session);
-  return ctx.db.transaction(async (tx) => {
-    // The row may not exist yet: a named lock, not the row's.
-    await lockForTransaction(tx, `projection-overrides:${kind}`);
-    const { rows, unknownTypeNotes } = withStoredUnknownTypes(
-      kind,
-      saved,
-      await storedSet(tx, kind),
-    );
-    if (clearing && rows.length === 0) {
-      await tx
-        .delete(schema.projectionOverrides)
-        .where(eq(schema.projectionOverrides.overrideType, kind));
-      return { row: undefined, unknownTypeNotes };
-    }
-    const row = await tx
-      .insert(schema.projectionOverrides)
-      .values({ overrideType: kind, overrides: rows, createdBy: user })
-      .onConflictDoUpdate({
-        target: schema.projectionOverrides.overrideType,
-        set: { overrides: rows, updatedBy: user },
-      })
-      .returning()
-      .then(firstRow);
-    return { row, unknownTypeNotes };
-  });
-}
 
 export const overrideProcedures = {
   retirementSalaryOverrides: createTRPCRouter({
@@ -257,7 +207,8 @@ export const overrideProcedures = {
       )
       .mutation(async ({ ctx, input }) => {
         const { row, unknownTypeNotes } = await storeSet(
-          ctx,
+          ctx.db,
+          getSessionUserLabel(ctx.session),
           input.overrideType,
           input.overrides,
         );
@@ -275,7 +226,8 @@ export const overrideProcedures = {
       )
       .mutation(async ({ ctx, input }) => {
         const { unknownTypeNotes } = await storeSet(
-          ctx,
+          ctx.db,
+          getSessionUserLabel(ctx.session),
           input.overrideType,
           [],
           true,

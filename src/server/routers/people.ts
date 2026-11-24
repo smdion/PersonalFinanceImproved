@@ -5,7 +5,8 @@ import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { deleteJobsAndEntries } from "@/server/data/delete-jobs";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
-import { getAllPeople, setSpouse } from "@/server/data/people";
+import { getAllPeople } from "@/server/data/people";
+import { storeSpousePair } from "@/server/services/household/spouse-pair";
 import {
   addPersonToRetirementProfile,
   lockFirstRetirementProfile,
@@ -92,28 +93,7 @@ export const peopleProcedures = {
         }),
       )
       .mutation(({ ctx, input: { id, spousePersonId } }) =>
-        ctx.db.transaction(async (tx) => {
-          if (spousePersonId === id)
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "A person can't be their own spouse",
-            });
-          const ids = new Set(
-            (await tx.select({ id: schema.people.id }).from(schema.people)).map(
-              (p) => p.id,
-            ),
-          );
-          if (
-            !ids.has(id) ||
-            (spousePersonId !== null && !ids.has(spousePersonId))
-          )
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "No such person in this household",
-            });
-          await setSpouse(tx, id, spousePersonId);
-          return getAllPeople(tx);
-        }),
+        storeSpousePair(ctx.db, id, spousePersonId),
       ),
     /**
      * Refused while they own a debt, are the primary person, or have a real job or Roth basis;
