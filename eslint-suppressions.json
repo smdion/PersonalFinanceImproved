@@ -4001,9 +4001,14 @@
       "count": 14
     }
   },
+  "src/lib/pure/engine/individual-accounts/reconcile-group.ts": {
+    "ratchet/no-abbreviation": {
+      "count": 3
+    }
+  },
   "src/lib/pure/engine/individual-accounts/reconcile.ts": {
     "ratchet/no-abbreviation": {
-      "count": 19
+      "count": 16
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1
