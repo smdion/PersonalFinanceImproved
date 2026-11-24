@@ -3,7 +3,7 @@
  * (from real past separation only, never a planned date), and their manual-entry mutations.
  */
 import { z } from "zod/v4";
-import { calendarYear, isCalendarDate } from "@/lib/utils/date";
+import { isCalendarDate } from "@/lib/utils/date";
 import { eq, and } from "drizzle-orm";
 import {
   createTRPCRouter,
@@ -11,18 +11,11 @@ import {
   performanceProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { getLatestSnapshot } from "@/server/data/snapshots";
 import { toNumber } from "@/lib/utils/numbers";
 import { zDecimal, zYear } from "@/lib/utils/zod-fields";
 import { recordFill, zFillRecord } from "@/server/services/sync/fill-ledger";
-import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
-import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
-import {
-  unknownTypeNote,
-  unknownTypeRows,
-} from "@/lib/pure/accounts/tax-buckets/unknown-type-rows";
 import { selectCurrentRothBasisRow } from "@/lib/pure/accounts/roth-basis-rollover";
-import { earlyAccessInputs } from "@/server/services/tax/early-access-inputs";
+import { taxBucketBreakdown } from "@/server/services/tax/tax-bucket-breakdown";
 import type { DbOrTx } from "@/lib/db";
 import { upsertSetting } from "@/server/data/settings";
 import { writeStamp } from "@/lib/utils/clock";
@@ -37,71 +30,9 @@ async function stampBasisUpdated(db: DbOrTx) {
 export const taxBucketsRouter = createTRPCRouter({
   /** Real current-state tax-bucket breakdown from the latest snapshot, with
    *  Rule of 55 / Roth-basis-driven penalty-free/tax-free flags per account. */
-  computeBreakdown: protectedProcedure.query(async ({ ctx }) => {
-    const [
-      people,
-      perfAccounts,
-      snapshotData,
-      rothBasisRows,
-      contributionLinks,
-    ] = await Promise.all([
-      ctx.db.select().from(schema.people),
-      ctx.db.select().from(schema.performanceAccounts),
-      getLatestSnapshot(ctx.db),
-      ctx.db.select().from(schema.accountBasis),
-      ctx.db
-        .select({
-          performanceAccountId:
-            schema.contributionAccounts.performanceAccountId,
-          jobId: schema.contributionAccounts.jobId,
-        })
-        .from(schema.contributionAccounts),
-    ]);
-
-    const jobs = await ctx.db.select().from(schema.jobs);
-
-    const breakdown = computeTaxBucketBreakdown(
-      snapshotData,
-      people.map((p) => ({ id: p.id, name: p.name })),
-      perfAccounts.map((p) => ({
-        id: p.id,
-        isActive: p.isActive,
-        accountType: p.accountType,
-        costBasis: p.costBasis,
-      })),
-    );
-
-    const analysis = computeTaxBucketAnalysis({
-      breakdown,
-      ...earlyAccessInputs({
-        jobs,
-        jobLinkRows: contributionLinks,
-        accountBasisRows: rothBasisRows,
-        perfAccounts,
-      }),
-      people: people.map((p) => ({
-        id: p.id,
-        name: p.name,
-        birthYear: calendarYear(p.dateOfBirth),
-      })),
-      currentDate: ctx.scope.asOf,
-    });
-
-    return {
-      portfolioByTaxType: breakdown.portfolioByTaxType,
-      accounts: analysis,
-      // Left out of both views, each noted as the projection notes it.
-      unknownTypeNotes: unknownTypeRows(
-        snapshotData?.accounts ?? [],
-        people,
-      ).map(unknownTypeNote),
-      people: people.map((p) => ({
-        id: p.id,
-        name: p.name,
-        birthYear: calendarYear(p.dateOfBirth),
-      })),
-    };
-  }),
+  computeBreakdown: protectedProcedure.query(({ ctx }) =>
+    taxBucketBreakdown(ctx.db, ctx.scope.asOf),
+  ),
 
   /** Upsert Roth basis for one (account, owner). Without `year`, targets the pair's current
    *  row (as computeBreakdown selects it); an explicit `year` may correct a finalized year

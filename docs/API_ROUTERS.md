@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**397 procedures across 29 routers.**
+**398 procedures across 29 routers.**
 
 Each procedure is listed by its client path (`trpc.<path>`); Source is its file under `src/server/routers/`.
 
@@ -276,6 +276,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `projection.computeStrategyAnalysis`             | query    | `protectedProcedure` | `projection/strategy.ts`                     | Analyze the active strategy — run what-if MC scenarios and return ranked recommendations.                                                                                                                                                                                    |
 | `projection.computeStrategyComparison`           | query    | `protectedProcedure` | `projection/strategy.ts`                     | Compare all withdrawal strategies side-by-side. Fetches DB data once, then runs calculateProjection() for each strategy varying only withdrawalStrategy + strategyParams.                                                                                                    |
 | `projection.computeStressTest`                   | query    | `protectedProcedure` | `projection/stress-test.ts`                  | Runs the projection once per stress scenario (each overrides return, inflation, salary-growth and withdrawal rates) and returns summary metrics per scenario.                                                                                                                |
+| `projection.computeTaxBucketsAtRetirement`       | query    | `protectedProcedure` | `projection/tax-buckets-at-retirement.ts`    | Tax Buckets' "At Retirement" entries and the inflation it deflates by.                                                                                                                                                                                                       |
 | `projection.computeTaxProjection`                | query    | `protectedProcedure` | `projection/tax-optimization.ts`             | Year-by-year tax projection through decumulation from one deterministic run: income sources, taxes, effective rate, balances, running lifetime tax and flags.                                                                                                                |
 | `projection.computeWithdrawalBracketOptimizer`   | query    | `protectedProcedure` | `projection/withdrawal-bracket-optimizer.ts` | Finds the `rothBracketTarget` minimizing lifetime tax (plus a penalty for unconverted Traditional money) while still funding spending, against the requested profile's data. See `optimizeRothBracketTarget` for the scoring.                                                |
 | `projection.computeWithdrawalStrategyComparison` | query    | `protectedProcedure` | `projection/tax-optimization.ts`             | Scores the household's projection on lifetime tax once per withdrawal strategy; each strategy is one extra `decumulationOverride` from the first decumulation year.                                                                                                          |

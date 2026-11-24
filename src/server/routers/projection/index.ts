@@ -16,6 +16,7 @@ import { strategyRouter } from "./strategy";
 import { stressTestRouter } from "./stress-test";
 import { taxOptimizationRouter } from "./tax-optimization";
 import { withdrawalBracketOptimizerRouter } from "./withdrawal-bracket-optimizer";
+import { taxBucketsAtRetirementRouter } from "./tax-buckets-at-retirement";
 
 export const projectionRouter = mergeRouters(
   scenariosRouter,
@@ -31,4 +32,5 @@ export const projectionRouter = mergeRouters(
   taxOptimizationRouter,
   withdrawalBracketOptimizerRouter,
   socialSecurityRouter,
+  taxBucketsAtRetirementRouter,
 );

@@ -5095,11 +5095,6 @@
       "count": 1
     }
   },
-  "src/server/routers/tax-buckets.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 1
-    }
-  },
   "src/server/routers/tiingo.ts": {
     "ratchet/no-unregistered-fallback": {
       "count": 2
@@ -5702,6 +5697,11 @@
     }
   },
   "src/server/services/tax/early-access-inputs.ts": {
+    "ratchet/no-abbreviation": {
+      "count": 1
+    }
+  },
+  "src/server/services/tax/tax-bucket-breakdown.ts": {
     "ratchet/no-abbreviation": {
       "count": 1
     }

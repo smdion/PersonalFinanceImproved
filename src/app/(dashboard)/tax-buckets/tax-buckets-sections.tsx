@@ -1,5 +1,4 @@
 import type { UseTRPCQueryResult } from "@trpc/react-query/shared";
-import type { computeTaxBucketProjection } from "@/lib/pure/accounts/tax-buckets/tax-bucket-projection";
 import type { FocusStateValue } from "@/lib/config/focus-topics";
 import type { DollarBasis } from "@/lib/config/enum-values";
 import type { buildBuckets } from "./tax-buckets-grouping";
@@ -190,12 +189,12 @@ export function TaxBucketKpis({
   );
 }
 
+type AtRetirement =
+  RouterOutputs["projection"]["computeTaxBucketsAtRetirement"];
+
 export type TaxBucketsRetirementNotesProps = {
-  projection: ReturnType<typeof computeTaxBucketProjection> | null;
-  projectionQuery: UseTRPCQueryResult<
-    RouterOutputs["projection"]["computeProjection"],
-    RouterError
-  >;
+  projection: AtRetirement["projection"];
+  projectionQuery: UseTRPCQueryResult<AtRetirement, RouterError>;
   view: FocusStateValue<"taxBucketsView">;
 };
 
@@ -249,7 +248,7 @@ export function TaxBucketsRetirementNotes({
 export type TaxBucketsHeaderProps = {
   canEdit: boolean;
   dollarMode: DollarBasis;
-  projection: ReturnType<typeof computeTaxBucketProjection> | null;
+  projection: AtRetirement["projection"];
   setDollarMode: Dispatch<SetStateAction<DollarBasis>>;
   setShowBulkBasis: Dispatch<SetStateAction<boolean>>;
   setView: (value: FocusStateValue<"taxBucketsView">) => void;

@@ -23,7 +23,6 @@ import { useTaxBucketsProjection } from "./use-tax-buckets-projection";
 export function TaxBucketsContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "performance");
-  const utils = trpc.useUtils();
 
   const [showBulkBasis, setShowBulkBasis] = useState(false);
   // A link to early access opens "At Retirement" (lib/config/focus-topics).
@@ -43,19 +42,14 @@ export function TaxBucketsContent() {
     updateSeparationDate,
     batchUpdateRothBasis,
     projection,
-  } = useTaxBucketsProjection(view, utils, setShowBulkBasis, data);
+  } = useTaxBucketsProjection(view, setShowBulkBasis);
 
   // Same deflation formula as the Retirement page's own dollarMode —
   // real (today's $) divides out inflation between now and the
   // transition year; nominal shows the figure exactly as projected.
-  const projectionSettings =
-    projectionQuery.data && "settings" in projectionQuery.data
-      ? projectionQuery.data.settings
-      : undefined;
+  const annualInflation = projectionQuery.data?.annualInflation;
   const inflationRate =
-    projectionSettings?.annualInflation != null
-      ? Number(projectionSettings.annualInflation)
-      : DEFAULT_INFLATION_RATE;
+    annualInflation != null ? Number(annualInflation) : DEFAULT_INFLATION_RATE;
   const deflator = flatDeflator(new Date().getFullYear(), inflationRate);
   const deflate = (amount: number) =>
     dollarMode === "nominal" || !projection?.transitionYear

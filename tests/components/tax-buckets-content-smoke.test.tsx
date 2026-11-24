@@ -8,8 +8,8 @@
  * it, from the same pure functions (computeTaxBucketBreakdown,
  * computeTaxBucketAnalysis) over an invented snapshot: Ann (50) holds a
  * Traditional 401k and a Roth IRA, Bo a brokerage account. "At Retirement"
- * reads a real engine run of the same household (projection-household.ts)
- * and the page's own projection over it (computeTaxBucketProjection).
+ * reads computeTaxBucketProjection over a real engine run of the same
+ * household (projection-household.ts), as the server returns it.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -127,8 +127,20 @@ beforeEach(() => {
     "taxBuckets.computeBreakdown",
     breakdownAnswer() as MockOutput<"taxBuckets.computeBreakdown">,
   );
-  setQuery("projection.computeProjection", engineData);
+  // The server's composition (routers/tax-buckets-at-retirement.test.ts).
+  setQuery("projection.computeTaxBucketsAtRetirement", {
+    projection: projectedAnswer(),
+    annualInflation: engineData.settings.annualInflation,
+  } as MockOutput<"projection.computeTaxBucketsAtRetirement">);
 });
+
+/** The At Retirement view of the same household at its transition year. */
+const projectedAnswer = () =>
+  computeTaxBucketProjection({
+    nowEntries: breakdownAnswer().accounts,
+    projectionByYear: engineData.result.projectionByYear,
+    people,
+  });
 
 const renderPage = () =>
   render(
@@ -160,11 +172,7 @@ describe("TaxBucketsContent smoke", () => {
     fireEvent.click(screen.getByRole("tab", { name: "At Retirement" }));
     // The projected figures at the household's transition year, never
     // today's.
-    const projected = computeTaxBucketProjection({
-      nowEntries: breakdownAnswer().accounts,
-      projectionByYear: engineData.result.projectionByYear,
-      people,
-    });
+    const projected = projectedAnswer();
     expect(projected.transitionYear).not.toBeNull();
     expect(document.body).toHaveTextContent(String(projected.transitionYear));
     expect(document.body).toHaveTextContent(
