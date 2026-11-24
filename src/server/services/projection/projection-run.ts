@@ -5,7 +5,10 @@ import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import { toNumber } from "@/lib/utils/numbers";
 import * as schema from "@/lib/db/schema";
-import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
+import {
+  readStoredStrategy,
+  unknownStrategyNotes,
+} from "@/lib/db/stored-strategy-key";
 import { readStoredValue } from "@/lib/db/stored-setting";
 import { readStoredShape, storedValueLog } from "@/lib/db/stored-shape";
 import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
@@ -201,9 +204,9 @@ export function knownSavedRouting(settings: {
 }
 
 /**
- * Build decumulation defaults from DB settings + client-supplied routing overrides.
- * Shared by computeProjection and computeSimulation. A saved order or splits
- * the run reads (the client sent none) notes each category it drops in `notes`.
+ * Decumulation defaults from DB settings + client routing overrides, for every run.
+ * `notes` names each category a saved order or splits the run reads drops (the
+ * client sent none), and a saved strategy this version doesn't know (runs as Fixed).
  */
 export function buildDecumulationDefaults(
   settings: Parameters<typeof buildStrategyParams>[0] & {
@@ -238,6 +241,7 @@ export function buildDecumulationDefaults(
   if (clientDefaults.withdrawalSplits === undefined)
     for (const category of known.unknownInSplits)
       notes.push(unknownCategoryNote(category, "withdrawalSplits"));
+  notes.push(...unknownStrategyNotes(settings.withdrawalStrategy));
   return {
     withdrawalRate: toNumber(settings.withdrawalRate),
     // The ONE place the routing is resolved, for every caller: a client

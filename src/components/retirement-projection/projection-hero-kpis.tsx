@@ -15,10 +15,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
 import { KpiCard } from "./kpi-card";
 import { CoastFireCard } from "@/components/retirement-projection/coast-fire-card";
-import {
-  WITHDRAWAL_STRATEGY_CONFIG,
-  type WithdrawalStrategyType,
-} from "@/lib/config/withdrawal-strategies";
+import { runningStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { SIMULATION_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD } from "@/lib/constants";
 import { simulationDollars } from "@/lib/pure/simulation/dollars";
 
@@ -231,9 +228,9 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     // Long-horizon tip names the strategy's real knob: the withdrawal rate
     // for budget-continuation strategies, none for RMD-Based (IRS formula),
     // Strategy Params for Constant %/Endowment/Vanguard Dynamic.
-    const activeStrategy =
-      engineSettings.withdrawalStrategy as WithdrawalStrategyType;
-    const strategyMeta = WITHDRAWAL_STRATEGY_CONFIG[activeStrategy];
+    const strategyMeta = runningStrategyConfig(
+      engineSettings.withdrawalStrategy,
+    );
     const longHorizonTip =
       strategyMeta.incomeSource === "formula"
         ? `Your projection spans ${retSpan} years — longer than the classic 30-year 4% rule. ${strategyMeta.label} has no user-set rate to lower; consider a lower ${strategyMeta.paramFields.find((f) => typeof f.default === "number")?.label ?? "Strategy Params setting"} in Strategy Params if you want to slow spending.`

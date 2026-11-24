@@ -16,3 +16,14 @@ export function storedStrategyConfig(
 ): ReturnType<typeof getStrategyMeta> | undefined {
   return isStrategyKey(key) ? getStrategyMeta(key) : undefined;
 }
+
+/** What a stored key no current strategy has runs as: the column's default
+ *  (docs/FALLBACKS.md, "Stored strategy key"). */
+export const STRATEGY_IF_UNKNOWN = "fixed" satisfies WithdrawalStrategyType;
+
+/** The config of the strategy a stored key runs as: its own, or Fixed's. */
+export function runningStrategyConfig(
+  key: string,
+): ReturnType<typeof getStrategyMeta> {
+  return storedStrategyConfig(key) ?? getStrategyMeta(STRATEGY_IF_UNKNOWN);
+}

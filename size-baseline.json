@@ -161,7 +161,7 @@
     "src/components/retirement-projection/projection-card/use-projection-report.ts": 82,
     "src/components/retirement-projection/projection-chart.tsx": 1066,
     "src/components/retirement-projection/projection-display.ts": 141,
-    "src/components/retirement-projection/projection-hero-kpis.tsx": 468,
+    "src/components/retirement-projection/projection-hero-kpis.tsx": 465,
     "src/components/retirement-projection/report/report-assumptions-summary.tsx": 315,
     "src/components/retirement-projection/simulation/assumption-row.tsx": 27,
     "src/components/retirement-projection/simulation/mc-asset-class-section.tsx": 99,

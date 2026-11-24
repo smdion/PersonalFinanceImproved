@@ -26,8 +26,10 @@ import {
   SIMULATION_RETURN_CLAMP_MIN,
   SIMULATION_RETURN_CLAMP_MAX,
 } from "../../constants";
-import { WITHDRAWAL_STRATEGY_CONFIG } from "../../config/withdrawal-strategies";
-import type { WithdrawalStrategyType } from "../../config/withdrawal-strategies";
+import {
+  STRATEGY_IF_UNKNOWN,
+  runningStrategyConfig,
+} from "../../config/stored-withdrawal-strategy";
 
 // ---------------------------------------------------------------------------
 // Not configured
@@ -203,11 +205,9 @@ function trialSetup(input: MonteCarloInput, warnings: string[]): TrialSetup {
 
   // Strategy config — determines whether stability baseline uses post-retirement
   // raise (from engine's projectedExpenses) or MC inflation (computed baseline).
-  const activeStrategy = (engineInput.decumulationDefaults.withdrawalStrategy ??
-    "fixed") as WithdrawalStrategyType;
-  const strategyUsesRaise =
-    // The stored strategy is a varchar, cast here: an unknown key reads undefined.
-    WITHDRAWAL_STRATEGY_CONFIG[activeStrategy]?.usesPostRetirementRaise ?? true;
+  const strategyUsesRaise = runningStrategyConfig(
+    engineInput.decumulationDefaults.withdrawalStrategy ?? STRATEGY_IF_UNKNOWN,
+  ).usesPostRetirementRaise;
 
   // Nothing to draw returns from. (A mix off 100% is refused by the
   // routers, which check the household's own glide path.)

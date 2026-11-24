@@ -2184,9 +2184,6 @@
     }
   },
   "src/components/retirement-projection/projection-hero-kpis.tsx": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -4614,11 +4611,6 @@
   },
   "src/lib/pure/savings/savings.ts": {
     "ratchet/no-guarded-division": {
-      "count": 1
-    }
-  },
-  "src/lib/pure/simulation/monte-carlo.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
       "count": 1
     }
   },

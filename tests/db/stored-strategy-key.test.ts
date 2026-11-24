@@ -1,6 +1,9 @@
 /** The stored withdrawal strategy key, checked once on read. */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { readStoredStrategy } from "@/lib/db/stored-strategy-key";
+import {
+  readStoredStrategy,
+  unknownStrategyNotes,
+} from "@/lib/db/stored-strategy-key";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -22,9 +25,9 @@ describe("readStoredStrategy", () => {
     ).toEqual([]);
   });
 
-  it("logs a key outside the set and passes it on as stored", () => {
+  it("logs a key outside the set and reads it as Fixed, the column's default", () => {
     const events = eventsDuring(() =>
-      expect(readStoredStrategy("retired_strategy")).toBe("retired_strategy"),
+      expect(readStoredStrategy("retired_strategy")).toBe("fixed"),
     );
     expect(events).toEqual([
       expect.objectContaining({
@@ -43,5 +46,17 @@ describe("readStoredStrategy", () => {
       }),
     ).toHaveLength(1);
     expect(eventsDuring(() => readStoredStrategy("old_key_b"))).toHaveLength(1);
+  });
+});
+
+describe("unknownStrategyNotes", () => {
+  it("names a key outside the set and the strategy that runs instead", () => {
+    expect(unknownStrategyNotes("bucket")).toEqual([
+      'The saved spending strategy "bucket" isn\'t one this version knows, so the projection uses Fixed Real. Update Ledgr or pick a strategy.',
+    ]);
+  });
+
+  it("has nothing to say about a known key", () => {
+    expect(unknownStrategyNotes("guyton_klinger")).toEqual([]);
   });
 });
