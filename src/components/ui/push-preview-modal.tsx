@@ -14,7 +14,20 @@ export type PushPreviewItem = {
   /** A percentage-based goal whose stored amount differs from a live recalc (e.g. income
    *  changed), so the user can recalculate before pushing. */
   stale?: boolean;
+  /** Its saved amount isn't a number: the push skips it, so it's named, never shown as $0. */
+  unreadable?: boolean;
 };
+
+/** The items the push skips for a saved amount that isn't a number, named. */
+function UnreadableItemsNote({ items }: { items: PushPreviewItem[] }) {
+  const names = items.filter((i) => i.unreadable).map((i) => i.name);
+  if (names.length === 0) return null;
+  return (
+    <p className="text-caption mt-2 text-amber-600">
+      {`${names.length} item${names.length !== 1 ? "s" : ""} not pushed — saved amount isn't a number: ${names.join(", ")}.`}
+    </p>
+  );
+}
 
 export function PushPreviewModal({
   title,
@@ -39,10 +52,11 @@ export function PushPreviewModal({
 }) {
   const formatValue = (n: number) =>
     valueFormat === "percent" ? formatPercent(n / 100, 3) : formatCurrency(n);
-  const changed = items.filter(
+  const readable = items.filter((i) => !i.unreadable);
+  const changed = readable.filter(
     (i) => Math.abs(i.newValue - i.currentYnab) >= CHANGE_DETECTION_THRESHOLD,
   );
-  const unchanged = items.filter(
+  const unchanged = readable.filter(
     (i) => Math.abs(i.newValue - i.currentYnab) < CHANGE_DETECTION_THRESHOLD,
   );
   const staleItems = items.filter((i) => i.stale);
@@ -182,6 +196,7 @@ export function PushPreviewModal({
             (already match {applyTarget}).
           </p>
         )}
+        <UnreadableItemsNote items={items} />
       </div>
 
       <div className="flex items-center justify-end gap-2">

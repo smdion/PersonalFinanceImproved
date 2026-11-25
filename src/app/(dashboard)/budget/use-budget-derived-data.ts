@@ -7,6 +7,7 @@
  */
 
 import { budgetItemAmount } from "@/lib/pure/budget/item-amount";
+import { readableBudgetItemAmount } from "@/lib/pure/budget/item-amount";
 import { trpc } from "@/lib/trpc";
 import { useMemo, useCallback } from "react";
 import {
@@ -273,13 +274,14 @@ export function useBudgetDerivedData({
       // resolveLinkedBudgetItemAmounts); the pushed figure is `contribAmounts`.
       const amounts = item.contribAmounts ?? item.amounts;
       const colIndex = Math.min(activeColumn, numCols - 1);
-      const newValue = budgetItemAmount(amounts, colIndex, numCols);
+      const newValue = readableBudgetItemAmount(amounts, colIndex, numCols);
       const actual = apiActualsMap.get(item.id);
       items.push({
         name: item.subcategory,
         field: "Goal Target",
         currentYnab: actual?.goalTarget ?? 0,
-        newValue,
+        newValue: newValue ?? 0,
+        ...(newValue === null && { unreadable: true }),
       });
     }
     return items;

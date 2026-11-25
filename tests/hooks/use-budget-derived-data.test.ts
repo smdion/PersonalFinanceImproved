@@ -281,3 +281,33 @@ describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, n
     expect(result.current.matchContribution("Brokerage")).toBeNull();
   });
 });
+
+describe("useBudgetDerivedData — push preview", () => {
+  it("marks an amount the push skips as unreadable, never as $0", () => {
+    setQuery("paycheck.computeSummary", undefined);
+    const pushed = (subcategory: string, stored: string): RawItem =>
+      ({
+        id: subcategory.length,
+        category: "Food",
+        subcategory,
+        amounts: JSON.parse(stored),
+        isEssential: false,
+        apiCategoryId: `cat-${subcategory}`,
+        apiCategoryName: subcategory,
+        apiSyncDirection: "push",
+      }) as RawItem;
+    const { result } = setup(false, [
+      pushed("Snacks", '["abc"]'),
+      pushed("Rent", "[1200]"),
+    ]);
+
+    const items = result.current.buildPushPreviewItems(0);
+    expect(items.find((i) => i.name === "Snacks")).toMatchObject({
+      unreadable: true,
+    });
+    expect(items.find((i) => i.name === "Rent")).toMatchObject({
+      newValue: 1200,
+    });
+    expect(items.find((i) => i.name === "Rent")!.unreadable).toBeUndefined();
+  });
+});

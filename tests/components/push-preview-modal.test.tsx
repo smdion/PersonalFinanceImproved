@@ -47,3 +47,34 @@ describe("PushPreviewModal — destination wording", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("PushPreviewModal — unreadable amounts", () => {
+  it("names an item the push skips for a saved amount that isn't a number, never showing it as $0", () => {
+    render(
+      <PushPreviewModal
+        title="Push to YNAB"
+        items={[
+          ...items,
+          {
+            name: "Snacks",
+            field: "Goal Target",
+            currentYnab: 80,
+            newValue: 0,
+            unreadable: true,
+          },
+        ]}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        direction="push"
+        destinationLabel="YNAB"
+      />,
+    );
+    expect(
+      screen.getByText(
+        "1 item not pushed — saved amount isn't a number: Snacks.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Snacks")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Push 1 Change" })).toBeTruthy();
+  });
+});
