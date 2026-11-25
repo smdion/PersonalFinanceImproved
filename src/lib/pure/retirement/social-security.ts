@@ -168,11 +168,13 @@ const CLAIMING_TIE_DOLLARS = 1;
 
 /** The recommended claiming age: among the candidates whose plan holds, the
  *  earliest age whose final net worth is within $1 of the best. `null` when
- *  every candidate fails. */
+ *  every candidate fails or none has a finite final net worth. */
 export function pickClaimingAge(
   candidates: readonly ClaimingAgeSweepCandidate[],
 ): number | null {
-  const holding = candidates.filter((c) => !c.fails);
+  const holding = candidates.filter(
+    (c) => !c.fails && Number.isFinite(c.finalNetWorth),
+  );
   if (holding.length === 0) return null;
   const best = Math.max(...holding.map((c) => c.finalNetWorth));
   return Math.min(

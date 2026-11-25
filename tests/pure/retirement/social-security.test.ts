@@ -361,6 +361,19 @@ describe("pickClaimingAge", () => {
     ).toBe(70);
     expect(pickClaimingAge([candidate(62, 1, true)])).toBeNull();
   });
+
+  it("never ranks a non-finite final net worth, and is null when none is finite", () => {
+    expect(
+      pickClaimingAge([
+        candidate(62, Number.NaN),
+        candidate(65, Number.POSITIVE_INFINITY),
+        candidate(70, 1_000_000),
+      ]),
+    ).toBe(70);
+    expect(
+      pickClaimingAge([candidate(62, Number.NaN), candidate(70, Number.NaN)]),
+    ).toBeNull();
+  });
 });
 
 describe("sweepClaimingAges", () => {
