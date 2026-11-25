@@ -102,7 +102,7 @@ export function buildDistributionTaxRates({
     }
     // The LTCG rate at retirement spending, no deduction off, scaled and capped as the ordinary
     // estimate is. Goal draws (goal-draws.ts) and a year without a filing status price gains at
-    // it; a year with one prices them with scaledGainsTax.
+    // it; a year with one prices them with scheduleDGainsTax.
     effectiveBrokerageRate = filingStatus
       ? Math.min(
           getLtcgRate(retirementIncome, filingStatus, ltcgBracketData) *

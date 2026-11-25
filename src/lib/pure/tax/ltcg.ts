@@ -127,9 +127,9 @@ export function computeLtcgTaxUnrounded(
   return tax;
 }
 
-/** A year's long-term gains tax (Schedule D Tax Worksheet): less the unused
- *  deduction, stacked on ordinary taxable income, at most their cost at
- *  ordinary rates above it (line 25). `ordinaryRate` is the engine's. */
+/** A year's long-term gains tax (Schedule D Tax Worksheet): less the unused deduction, stacked
+ *  on ordinary taxable income, × the tax multiplier, at most their cost at the scaled ordinary
+ *  rates (line 25); NIIT stays unscaled. No brackets (flat rates): unscaled, as their rate is. */
 export function scheduleDGainsTax<Bracket>(
   grossOrdinaryIncome: number,
   gains: number,
@@ -169,7 +169,7 @@ export function scheduleDGainsTax<Bracket>(
       taxRates.standardDeduction,
     );
   return Math.min(
-    stacked,
+    stacked * (taxRates.taxMultiplier ?? 1),
     ordinaryTax(grossOrdinaryIncome + gains) - ordinaryTax(grossOrdinaryIncome),
   );
 }

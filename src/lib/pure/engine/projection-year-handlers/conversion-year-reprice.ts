@@ -1,7 +1,10 @@
 import { roundToCents } from "../../../utils/math";
 import { computeNiit } from "../../tax/niit";
-import { getLtcgRate, ltcgStackBase } from "@/lib/pure/tax/ltcg";
-import { scaledGainsTax } from "@/lib/pure/tax/scaled-gains-tax";
+import {
+  getLtcgRate,
+  scheduleDGainsTax,
+  ltcgStackBase,
+} from "@/lib/pure/tax/ltcg";
 import { estimateEffectiveTaxRate } from "../tax-estimation";
 import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
 import type { DecumulationYear, ProjectionContext } from "./types";
@@ -67,7 +70,7 @@ export function repriceConversionYear(
   const stackTop = revised.top;
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     brokerageTaxCost = roundToCents(
-      scaledGainsTax(
+      scheduleDGainsTax(
         actualTaxableIncome + rothConversionAmount,
         brokerageGainsPortion,
         filingStatus,

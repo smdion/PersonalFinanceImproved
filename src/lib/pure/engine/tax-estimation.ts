@@ -9,7 +9,7 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
 } from "../../config/account-types";
-import { scaledGainsTax } from "@/lib/pure/tax/scaled-gains-tax";
+import { scheduleDGainsTax } from "@/lib/pure/tax/ltcg";
 import { sellAtCost } from "./brokerage-basis";
 import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
 import {
@@ -226,7 +226,7 @@ interface ComputeTaxFromSlotsInput {
     taxMultiplier?: number;
     ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
     /** Converts `actualTaxableIncome` (gross) to the taxable income the LTCG
-     *  lookup below uses (`scaledGainsTax`); omitted subtracts nothing. */
+     *  lookup below uses (`scheduleDGainsTax`); omitted subtracts nothing. */
     standardDeduction?: number;
   };
   filingStatus: ReturnFilingStatus | null | undefined;
@@ -333,7 +333,7 @@ export function computeTaxFromSlots(
     // brackets above take it; the gains tax converts it first.
     brokerageTaxCost = filingStatus
       ? roundToCents(
-          scaledGainsTax(
+          scheduleDGainsTax(
             actualTaxableIncome,
             brokerageGainsPortion,
             filingStatus,

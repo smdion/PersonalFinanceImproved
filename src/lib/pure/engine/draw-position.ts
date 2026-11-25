@@ -118,7 +118,7 @@ export function ordinaryCostAt(
 }
 
 /** The year's gains tax at `at` both ways Schedule D's worksheet line 25
- *  compares (`scaledGainsTax` takes the smaller), under the multiplier: stacked
+ *  compares (`scheduleDGainsTax` takes the smaller), under the multiplier: stacked
  *  on the gains table, and as ordinary income. Unrounded: their gap rounds once. */
 export function gainsTaxBothWays(
   at: DrawState,
