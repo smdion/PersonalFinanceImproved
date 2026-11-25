@@ -159,6 +159,7 @@ const MACHINE_TRAILERS = new Set([
   "Rename-path-delete",
   "Rename-path-edit",
   "Comments-only",
+  "Size-exception",
   "Ratchet-raise",
   "Known-renamed",
   "Baseline-rerecord",
@@ -4088,6 +4089,7 @@ export function renamePathProblem(
 // ---------------------------------------------------------------------------
 
 export const COMMENTS_ONLY = "Comments-only";
+const SIZE_EXCEPTION = "Size-exception";
 
 /**
  * Why a `Comments-only:` commit changes more than comments in `src/`: every
@@ -4348,6 +4350,16 @@ export function checkCommit(facts: CommitFacts): Warning[] {
     });
   }
   const exempt = mechanical || commentsOnly;
+  // The owner's OK for one commit past the size limits: `owner <id>, <reason>`.
+  const sizeException = message.trailers[SIZE_EXCEPTION];
+  const ownerSized =
+    sizeException !== undefined && /^owner \S+, \S/.test(sizeException);
+  if (sizeException !== undefined && !ownerSized) {
+    warnings.push({
+      rule: "size-exception",
+      text: `${SIZE_EXCEPTION}: needs "owner <id>, <reason>": "${sizeException}"`,
+    });
+  }
 
   if (!SUBJECT_PREFIX.test(message.subject)) {
     warnings.push({
@@ -4374,14 +4386,19 @@ export function checkCommit(facts: CommitFacts): Warning[] {
     ...typeWarnings(message),
   );
   const srcLines = srcLinesChanged(files);
-  if (srcLines > MAX_SRC_LINES && !exempt) {
+  if (srcLines > MAX_SRC_LINES && !exempt && !ownerSized) {
     warnings.push({
       rule: "size",
       text: `${srcLines} changed src/ lines (limit ${MAX_SRC_LINES}); split it, or add a Mechanical: trailer to a pure move or rename`,
     });
   }
   const srcFiles = srcFileCount(files);
-  if (touchesEngineOrTax(files) && srcFiles > MAX_ENGINE_FILES && !exempt) {
+  if (
+    touchesEngineOrTax(files) &&
+    srcFiles > MAX_ENGINE_FILES &&
+    !exempt &&
+    !ownerSized
+  ) {
     warnings.push({
       rule: "engine-files",
       text: `engine or tax commit touches ${srcFiles} src/ files (limit ${MAX_ENGINE_FILES})`,

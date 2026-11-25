@@ -85,6 +85,46 @@ describe("checkCommit", () => {
     ).toEqual([]);
   });
 
+  it("lifts the size and engine-file limits only for an owner's Size-exception: with an id and a reason", () => {
+    const files = Array.from({ length: 9 }, (_, index) => ({
+      file:
+        index === 0 ? "src/lib/pure/engine/x.ts" : `src/lib/pure/f${index}.ts`,
+      added: 50,
+      deleted: 0,
+    }));
+    const body = "fix(engine): walk\n\nThe walk, its pricing and its start.";
+    expect(rules(facts({ files, raw: body }))).toEqual([
+      "size",
+      "engine-files",
+    ]);
+    expect(
+      rules(
+        facts({
+          files,
+          raw: `${body}\n\nSize-exception: owner Q-BF1-size, they change together`,
+        }),
+      ),
+    ).toEqual([]);
+    for (const value of ["owner Q-BF1-size", "owner , reason", "Q-1, reason"])
+      expect(
+        rules(facts({ files, raw: `${body}\n\nSize-exception: ${value}` })),
+      ).toEqual(["size-exception", "size", "engine-files"]);
+  });
+
+  it("keeps every other rule under a Size-exception:", () => {
+    const files = [
+      { file: "src/lib/pure/engine/x.ts", added: 500, deleted: 0 },
+    ];
+    expect(
+      rules(
+        facts({
+          files,
+          raw: "keep the gap year\n\nThe draw ran twice.\n\nSize-exception: owner Q-9, one commit",
+        }),
+      ),
+    ).toEqual(["prefix"]);
+  });
+
   it("allows 400 src/ lines exactly", () => {
     const files = [{ file: "src/a.ts", added: 200, deleted: 200 }];
     expect(rules(facts({ files }))).toEqual([]);
