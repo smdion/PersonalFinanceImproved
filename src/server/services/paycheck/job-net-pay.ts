@@ -1,6 +1,8 @@
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { getAllPeople } from "@/server/data/people";
+import { getActiveContributionAccountsByType } from "@/server/data/contribution-accounts";
+import { jobContributionsByType } from "@/server/services/contributions/unknown-type-notes";
 import { eq, and, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
@@ -47,6 +49,7 @@ export async function computeJobNetPayPerCheck(
   netPayPerCheck: number;
   payPeriod: PayPeriod;
   anchorPayDate: string | null;
+  unknownTypeNotes: string[];
 }> {
   const [job] = await db
     .select()
@@ -126,12 +129,13 @@ export async function computeJobNetPayPerCheck(
       )
     : { contributionAccounts: {}, deductions: {} };
   const accountActiveFields = contribActiveFieldsRoot.contributionAccounts;
-  const jobContribs = applyContribActiveFields(
-    rawJobContribs,
-    accountActiveFields,
-  );
+  const byType = await jobContributionsByType(db, {
+    job: rawJobContribs,
+    personal: rawPersonalContribs,
+  });
+  const jobContribs = applyContribActiveFields(byType.job, accountActiveFields);
   const personalContribs = applyContribActiveFields(
-    rawPersonalContribs,
+    byType.personal,
     accountActiveFields,
   );
   const jobDeductions = applyDeductionActiveFields(
@@ -190,10 +194,7 @@ export async function computeJobNetPayPerCheck(
   const capped = new Map(
     capForRequest(
       applyContribActiveFields(
-        await db
-          .select()
-          .from(schema.contributionAccounts)
-          .where(eq(schema.contributionAccounts.isActive, true)),
+        (await getActiveContributionAccountsByType(db)).known,
         accountActiveFields,
       ),
       await loadCapHousehold(
@@ -246,5 +247,7 @@ export async function computeJobNetPayPerCheck(
     netPayPerCheck: Math.round(paycheck.netPay * 100) / 100,
     payPeriod: salaryEntry.payPeriod,
     anchorPayDate: salaryEntry.anchorPayDate,
+    // Set when an unknown-type account's deduction is left out: never store the figure.
+    unknownTypeNotes: byType.notes,
   };
 }

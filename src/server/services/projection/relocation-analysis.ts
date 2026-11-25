@@ -9,7 +9,8 @@ import {
 } from "@/server/services/contributions/caps";
 import type { CapPassed } from "@/lib/pure/contributions/contribution-caps";
 import { returnRateAtAge } from "@/lib/pure/simulation/return-rate-breakpoints";
-import { eq, asc } from "drizzle-orm";
+import { asc } from "drizzle-orm";
+import { getActiveContributionAccountsByType } from "@/server/data/contribution-accounts";
 import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import * as schema from "@/lib/db/schema";
 import { calculateRelocation } from "@/lib/pure/retirement/relocation";
@@ -104,7 +105,7 @@ export async function computeRelocationAnalysis(
     allJobs,
     retScenarios,
     returnRates,
-    allContributionsRaw,
+    contributionAccounts,
     snapshotData,
     allBudgetProfiles,
     allBudgetItems,
@@ -118,10 +119,7 @@ export async function computeRelocationAnalysis(
       .select()
       .from(schema.returnRateTable)
       .orderBy(asc(schema.returnRateTable.age)),
-    ctx.db
-      .select()
-      .from(schema.contributionAccounts)
-      .where(eq(schema.contributionAccounts.isActive, true)),
+    getActiveContributionAccountsByType(ctx.db),
     getLatestSnapshot(ctx.db),
     ctx.db
       .select()
@@ -131,9 +129,10 @@ export async function computeRelocationAnalysis(
     ctx.db.select().from(schema.performanceAccounts),
     ctx.db.select().from(schema.appSettings),
   ]);
-  // Filter to Retirement-only contributions for the relocation tool.
+  // Retirement-only contributions of a known type for the relocation tool
+  // (its projection notes name an unknown one).
   const perfCatMap = new Map(perfAccounts.map((p) => [p.id, p.parentCategory]));
-  const allContributions = allContributionsRaw.filter(
+  const allContributions = contributionAccounts.known.filter(
     (c) =>
       c.performanceAccountId != null &&
       isRetirementParent(perfCatMap.get(c.performanceAccountId)),

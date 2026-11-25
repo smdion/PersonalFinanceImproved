@@ -31,7 +31,6 @@ const NOT_YET_CALLED: Record<string, string> = {
     "demo sessions exist only on PostgreSQL; no PostgreSQL test calls it yet",
   "paycheck.earnings.update": "no test yet (found by TS3)",
   "settings.taxDataSync.checkNow": "no test yet (found by TS3)",
-  "savings.extraPaycheckRouting.saveGrowth": "no test yet (found by TS3)",
   "savings.extraPaycheckRouting.setEnabled": "no test yet (found by TS3)",
   "savings.extraPaycheckRouting.saveOverride": "no test yet (found by TS3)",
   "performance.updateCostBasis": "no test yet (found by TS3)",

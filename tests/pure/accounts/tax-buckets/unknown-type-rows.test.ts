@@ -104,7 +104,7 @@ describe("contributionsByType", () => {
 
   it("notes a left-out account's contributions", () => {
     expect(unknownTypeContributionNote("Plan", "future_type")).toBe(
-      'Plan is saved as account type "future_type", which this version doesn\'t know, so the projection leaves out its contributions. Update Ledgr or change its account type.',
+      'Plan is saved as account type "future_type", which this version doesn\'t know, so its contributions are left out. Update Ledgr to a version that knows this type.',
     );
   });
 });

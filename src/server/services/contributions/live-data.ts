@@ -1,6 +1,7 @@
 import * as schema from "@/lib/db/schema";
 import { type AccountCategory } from "@/lib/config/account-types";
 import { filterActiveJobs } from "@/lib/pure/household/profiles";
+import { contributionsByType } from "@/lib/pure/accounts/tax-buckets/unknown-type-rows";
 import {
   mergeSalaryProfileJobFields,
   resolveCompensation,
@@ -61,11 +62,10 @@ export async function loadLiveContribData(db: Db, asOf: Date) {
 
   const peopleMap = new Map(allPeople.map((p) => [p.id, p]));
 
-  // Build ContribRow-compatible rows for aggregation (active only for live resolution)
-  const contribs: LiveContributionRow[] = activeContributions.map((c) => ({
-    ...c,
-    accountType: c.accountType as AccountCategory,
-  }));
+  // ContribRow-compatible rows for aggregation: active, of a type this version
+  // knows (the Contributions page names any other; the projection does too).
+  const contribs: LiveContributionRow[] =
+    contributionsByType(activeContributions).known;
 
   return {
     contribs,

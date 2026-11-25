@@ -63,12 +63,14 @@ export function contributionsByType<
   return { known, unknown };
 }
 
-/** The note for a contribution account `contributionsByType` leaves out. */
+/** The note for a contribution account `contributionsByType` leaves out:
+ *  one text wherever it shows (the projection, Contributions, Paycheck), so
+ *  a page showing two of them names it once. */
 export function unknownTypeContributionNote(
   name: string,
   accountType: StoredAccountType,
 ): string {
-  return `${name} is saved as account type "${accountType}", which this version doesn't know, so the projection leaves out its contributions. Update Ledgr or change its account type.`;
+  return `${name} is saved as account type "${accountType}", which this version doesn't know, so its contributions are left out. Update Ledgr to a version that knows this type.`;
 }
 
 /** A saved list of account categories (a withdrawal order), each entry this

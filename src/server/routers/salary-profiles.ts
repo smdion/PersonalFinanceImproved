@@ -73,6 +73,8 @@ async function refreshExtraPaycheckRoutingIfActive(
         }
         const jobId = Number(jobIdStr);
         const refreshed = await computeJobNetPayPerCheck(tx, jobId, scope.asOf);
+        // Too high to store (an unknown-type deduction left out, logged): keep it.
+        if (refreshed.unknownTypeNotes.length > 0) continue;
         salaries[jobIdStr] = {
           ...entry,
           extraPaycheckRouting: {

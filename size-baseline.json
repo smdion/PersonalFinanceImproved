@@ -11,12 +11,12 @@
     "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 137,
     "src/app/(dashboard)/budget/budget-content.tsx": 634,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 332,
-    "src/app/(dashboard)/contributions/contributions-content.tsx": 922,
+    "src/app/(dashboard)/contributions/contributions-content.tsx": 924,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 804,
     "src/app/(dashboard)/historical/historical-content.tsx": 932,
     "src/app/(dashboard)/house/house-content.tsx": 739,
     "src/app/(dashboard)/networth/networth-content.tsx": 418,
-    "src/app/(dashboard)/paycheck/paycheck-content.tsx": 652,
+    "src/app/(dashboard)/paycheck/paycheck-content.tsx": 654,
     "src/app/(dashboard)/performance/performance-content.tsx": 842,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 155,
     "src/app/(dashboard)/portfolio/portfolio-panels.tsx": 87,
@@ -382,7 +382,7 @@
     "src/server/routers/projection/strategy.ts": 85,
     "src/server/routers/projection/tax-optimization.ts": 432,
     "src/server/routers/retirement/index.ts": 15,
-    "src/server/routers/salary-profiles.ts": 364,
+    "src/server/routers/salary-profiles.ts": 366,
     "src/server/routers/savings/api-sync.ts": 14,
     "src/server/routers/savings/index.ts": 28,
     "src/server/routers/savings/profile-allocations.ts": 347,
@@ -412,8 +412,8 @@
     "src/server/services/net-worth/year-assets.ts": 211,
     "src/server/services/net-worth/year-end-history.ts": 569,
     "src/server/services/paycheck/household-totals.ts": 91,
-    "src/server/services/paycheck/job-net-pay.ts": 250,
-    "src/server/services/paycheck/summary.ts": 644,
+    "src/server/services/paycheck/job-net-pay.ts": 253,
+    "src/server/services/paycheck/summary.ts": 643,
     "src/server/services/performance/finalize-year.ts": 432,
     "src/server/services/performance/summary.ts": 156,
     "src/server/services/profiles/first-retirement-profile.ts": 121,
@@ -424,7 +424,7 @@
     "src/server/services/projection/engine-payload/load.ts": 146,
     "src/server/services/projection/engine-payload/profile-switches.ts": 443,
     "src/server/services/projection/projection-cache.ts": 183,
-    "src/server/services/projection/relocation-analysis.ts": 452,
+    "src/server/services/projection/relocation-analysis.ts": 451,
     "src/server/services/projection/relocation-earliest-move.ts": 66,
     "src/server/services/projection/relocation-projection.ts": 465,
     "src/server/services/projection/strategy-analysis.ts": 643,
@@ -463,7 +463,7 @@
       "useBudgetPageState": 200
     },
     "src/app/(dashboard)/contributions/contributions-content.tsx": {
-      "ContributionsContent": 826,
+      "ContributionsContent": 827,
       "ContributionsContent.map()": 225,
       "ContributionsContent.map().map()": 160
     },
@@ -491,7 +491,7 @@
       "NetWorthContent": 360
     },
     "src/app/(dashboard)/paycheck/paycheck-content.tsx": {
-      "PaycheckContent": 611,
+      "PaycheckContent": 612,
       "PaycheckContent.map()": 308
     },
     "src/app/(dashboard)/performance/performance-content.tsx": {
@@ -1025,7 +1025,7 @@
       "loadContributionMix": 156
     },
     "src/server/services/contributions/summary.ts": {
-      "computeContributionSummary": 630,
+      "computeContributionSummary": 629,
       "computeContributionSummary.results.map()": 412
     },
     "src/server/services/demo/demo-seed.ts": {
@@ -1047,10 +1047,10 @@
       "buildYearEndHistory": 474
     },
     "src/server/services/paycheck/job-net-pay.ts": {
-      "computeJobNetPayPerCheck": 209
+      "computeJobNetPayPerCheck": 210
     },
     "src/server/services/paycheck/summary.ts": {
-      "computePaycheckSummary": 551,
+      "computePaycheckSummary": 550,
       "computePaycheckSummary.results.map()": 200
     },
     "src/server/services/performance/finalize-year.ts": {
@@ -1067,7 +1067,7 @@
       "buildProfileSwitches": 275
     },
     "src/server/services/projection/relocation-analysis.ts": {
-      "computeRelocationAnalysis": 355
+      "computeRelocationAnalysis": 353
     },
     "src/server/services/projection/relocation-projection.ts": {
       "computeRelocationFiProjection": 416

@@ -17,6 +17,17 @@ import { materializeBudgetIncomeAdjustments } from "@/server/services/budget/bud
 import type { DbOrTx } from "@/lib/db";
 import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay";
 
+/** A job's net pay, refused (naming each account) when it leaves out the
+ *  deduction of an account of an unknown type: too high to store. */
+function storableNetPay<T extends { unknownTypeNotes: string[] }>(pay: T): T {
+  if (pay.unknownTypeNotes.length > 0)
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: pay.unknownTypeNotes.join(" "),
+    });
+  return pay;
+}
+
 /**
  * Write a job's extraPaycheckRouting into the globally-ACTIVE Salary Profile only, so
  * comparing profiles never rewrites materialized transactions. PRECONDITION_FAILED with
@@ -169,7 +180,9 @@ export const extraPaycheckRoutingProcedures = {
           netPayPerCheck: baseNetPayPerCheck,
           payPeriod,
           anchorPayDate,
-        } = await computeJobNetPayPerCheck(ctx.db, input.jobId, ctx.scope.asOf);
+        } = storableNetPay(
+          await computeJobNetPayPerCheck(ctx.db, input.jobId, ctx.scope.asOf),
+        );
         const nowYear = ctx.scope.asOf.getFullYear();
         await writeJobExtraPaycheckRouting(
           ctx.db,
@@ -220,7 +233,9 @@ export const extraPaycheckRoutingProcedures = {
           netPayPerCheck: baseNetPayPerCheck,
           payPeriod,
           anchorPayDate,
-        } = await computeJobNetPayPerCheck(ctx.db, input.jobId, ctx.scope.asOf);
+        } = storableNetPay(
+          await computeJobNetPayPerCheck(ctx.db, input.jobId, ctx.scope.asOf),
+        );
         const nowYear = ctx.scope.asOf.getFullYear();
         await writeJobExtraPaycheckRouting(ctx.db, input.jobId, {
           ...existing,

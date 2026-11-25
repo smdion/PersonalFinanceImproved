@@ -56,6 +56,7 @@ import { limitAge } from "@/lib/pure/household/age";
 import { computeViewAwareTotals } from "@/lib/pure/contributions/view-metrics";
 import { findActiveJob } from "@/lib/pure/household/profiles";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
+import { loadPageContributionAccounts } from "@/server/services/contributions/unknown-type-notes";
 import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { loadStoredStamp } from "@/lib/db/stored-setting";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -95,7 +96,7 @@ export async function computeContributionSummary(
   const [
     people,
     allJobs,
-    allContributions,
+    contributionAccounts,
     allLimits,
     priorYearLimitsRaw,
     perfAccounts,
@@ -104,10 +105,7 @@ export async function computeContributionSummary(
   ] = await Promise.all([
     ctx.scope.load(getAllPeople),
     ctx.db.select().from(schema.jobs),
-    ctx.db
-      .select()
-      .from(schema.contributionAccounts)
-      .where(eq(schema.contributionAccounts.isActive, true)),
+    loadPageContributionAccounts(ctx.db),
     ctx.db
       .select()
       .from(schema.contributionLimits)
@@ -137,6 +135,7 @@ export async function computeContributionSummary(
       .where(eq(schema.accountPerformance.year, currentYear)),
     loadStoredStamp(ctx.db, "performance_last_updated"),
   ]);
+  const allContributions = contributionAccounts.known;
 
   const perfLastUpdated = perfStamp ? new Date(perfStamp) : null;
 
@@ -709,6 +708,7 @@ export async function computeContributionSummary(
     filingStatus: capHousehold.filingStatus,
     jointAccountTypes,
     jointTotals,
+    unknownTypeNotes: contributionAccounts.notes,
     priorYearWindow: inPriorYearWindow
       ? { priorYear, deadline: `April 15, ${currentYear}` }
       : null,

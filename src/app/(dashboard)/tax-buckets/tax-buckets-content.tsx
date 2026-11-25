@@ -16,7 +16,7 @@ import { BulkRothBasisForm } from "./tax-buckets-bulk-basis";
 import { TaxBucketKpis, TaxBucketSummary } from "./tax-buckets-sections";
 import { TaxBucketsRetirementNotes } from "./tax-buckets-sections";
 import { TaxBucketsHeader } from "./tax-buckets-sections";
-import { TaxBucketsUnknownTypes } from "./tax-buckets-unknown-types";
+import { UnknownTypeNotes } from "@/components/ui/unknown-type-notes";
 import { buildBuckets } from "./tax-buckets-grouping";
 import { useTaxBucketsProjection } from "./use-tax-buckets-projection";
 
@@ -98,7 +98,7 @@ export function TaxBucketsContent() {
         projectionQuery={projectionQuery}
         view={view}
       />
-      <TaxBucketsUnknownTypes notes={data.unknownTypeNotes} />
+      <UnknownTypeNotes notes={data.unknownTypeNotes} />
 
       <TaxBucketKpis
         activeEntries={activeEntries}

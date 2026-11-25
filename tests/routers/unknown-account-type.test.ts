@@ -9,14 +9,20 @@
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
+  adminSession,
   createTestCaller,
   seedBudgetItem,
   seedBudgetProfile,
   seedContributionAccount,
   seedContributionProfile,
+  seedJob,
   seedPerformanceAccount,
+  seedPerson,
+  seedSavingsGoal,
   seedStandardDataset,
 } from "./setup";
+import { eq } from "drizzle-orm";
+import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "@/lib/db/schema-sqlite";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
@@ -234,6 +240,9 @@ describe("a snapshot row of an account type this version doesn't know", () => {
 describe("a contribution account of an account type this version doesn't know", () => {
   let ctx: Ctx;
   let contributionProfileId: number;
+  let unknownId: number;
+  const NOTE =
+    'Future Plan is saved as account type "future_type", which this version doesn\'t know, so its contributions are left out. Update Ledgr to a version that knows this type.';
 
   beforeAll(async () => {
     ctx = await createTestCaller();
@@ -243,7 +252,7 @@ describe("a contribution account of an account type this version doesn't know", 
       jobId,
       performanceAccountId: perfAcctId,
     });
-    const unknown = seedContributionAccount(ctx.db, {
+    unknownId = seedContributionAccount(ctx.db, {
       accountType: "future_type",
       personId,
       jobId,
@@ -257,7 +266,7 @@ describe("a contribution account of an account type this version doesn't know", 
       contributionActiveFields: {
         contributionAccounts: {
           [String(known)]: tenPercent,
-          [String(unknown)]: tenPercent,
+          [String(unknownId)]: tenPercent,
         },
       },
     });
@@ -276,9 +285,133 @@ describe("a contribution account of an account type this version doesn't know", 
     const response = await ctx.caller.projection.computeProjection({
       selection: { contribution: contributionProfileId },
     });
-    expect(response.result!.warnings).toContain(
-      'Future Plan is saved as account type "future_type", which this version doesn\'t know, so the projection leaves out its contributions. Update Ledgr or change its account type.',
-    );
+    expect(response.result!.warnings).toContain(NOTE);
+  });
+
+  it("the Contributions page runs on the known accounts and names it once", async () => {
+    const summary = await ctx.caller.contribution.computeSummary({
+      contributionProfileId,
+    });
+    expect(summary.unknownTypeNotes).toEqual([NOTE]);
+    // Coast FIRE's notes on the same page carry the same text, which the
+    // page's CoastFireNote leaves out (shownBelow): one note per account.
+    const coastFire = await ctx.caller.projection.computeCoastFire({});
+    const coastFireNotes = "notes" in coastFire ? coastFire.notes : [];
+    expect(
+      coastFireNotes.filter((n) => !summary.unknownTypeNotes.includes(n)),
+    ).not.toContain(NOTE);
+  });
+
+  it("the Paycheck page runs on the known accounts and says so", async () => {
+    const summary = await ctx.caller.paycheck.computeSummary({
+      contributionProfileId,
+    });
+    expect(summary.unknownTypeNotes).toEqual([NOTE]);
+  });
+
+  it("the Contribution Profiles list and detail total the known accounts only", async () => {
+    const totals = async () =>
+      (await ctx.caller.contributionProfile.list()).find(
+        (p) => p.id === contributionProfileId,
+      )!.summary.annualContributions;
+    const withUnknown = await totals();
+    expect(withUnknown).toBeGreaterThan(0);
+    await expect(
+      ctx.caller.contributionProfile.getById({ id: contributionProfileId }),
+    ).resolves.toBeTruthy();
+    // The same total with the unknown account's entry gone.
+    ctx.db
+      .update(schema.contributionAccounts)
+      .set({ isActive: false })
+      .where(eq(schema.contributionAccounts.id, unknownId))
+      .run();
+    expect(await totals()).toBe(withUnknown);
+    ctx.db
+      .update(schema.contributionAccounts)
+      .set({ isActive: true })
+      .where(eq(schema.contributionAccounts.id, unknownId))
+      .run();
+  });
+
+  it("a profile save keeps the unknown account's entry", async () => {
+    await ctx.caller.contributionProfile.update({
+      id: contributionProfileId,
+      name: "Renamed",
+    });
+    const [row] = ctx.db
+      .select()
+      .from(schema.contributionProfiles)
+      .where(eq(schema.contributionProfiles.id, contributionProfileId))
+      .all();
+    expect(
+      (
+        row!.contributionActiveFields as {
+          contributionAccounts: Record<string, unknown>;
+        }
+      ).contributionAccounts[String(unknownId)],
+    ).toBeDefined();
+  });
+});
+
+describe("a job's net pay with an account of a type this version doesn't know", () => {
+  /** The active Salary Profile's routing for the job, as stored. */
+  function storedRouting(ctx: Ctx, jobId: number) {
+    const [profile] = ctx.db.select().from(schema.salaryProfiles).all();
+    const salaries = profile!.salaries as Record<
+      string,
+      { extraPaycheckRouting?: { baseNetPayPerCheck?: number } | null }
+    >;
+    return salaries[String(jobId)]?.extraPaycheckRouting ?? null;
+  }
+  const REFUSAL =
+    "Future Plan is saved as account type \"future_type\", which this version doesn't know, so its paycheck deduction can't be counted and the net pay per check isn't saved. Update Ledgr to a version that knows this type.";
+
+  it("names it, the routing saves refuse, and a salary save keeps the stored net pay", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const personId = await seedPerson(ctx.db, "Routing Person");
+      const jobId = seedJob(ctx.db, personId, {
+        payPeriod: "biweekly",
+        payWeek: "even",
+        anchorPayDate: "2026-01-02",
+      });
+      const goalId = seedSavingsGoal(ctx.db);
+      const rules = [
+        { from: "2026-01", to: null, splits: [{ goalId, pct: 100 }] },
+      ];
+      await ctx.caller.savings.extraPaycheckRouting.save({ jobId, rules });
+      const stored = storedRouting(ctx, jobId)!.baseNetPayPerCheck;
+      expect(stored).toBeGreaterThan(0);
+
+      seedContributionAccount(ctx.db, {
+        accountType: "future_type",
+        personId,
+        jobId,
+        performanceAccountId: seedUnknownAccount(ctx.db, personId),
+      });
+      const pay = await computeJobNetPayPerCheck(ctx.rawDb, jobId, new Date());
+      expect(pay.unknownTypeNotes).toEqual([REFUSAL]);
+      await expect(
+        ctx.caller.savings.extraPaycheckRouting.save({ jobId, rules }),
+      ).rejects.toThrow(REFUSAL);
+      await expect(
+        ctx.caller.savings.extraPaycheckRouting.saveGrowth({
+          jobId,
+          yearlyGrowth: {},
+        }),
+      ).rejects.toThrow(REFUSAL);
+
+      const [profile] = ctx.db.select().from(schema.salaryProfiles).all();
+      await expect(
+        ctx.caller.salaryProfile.update({
+          id: profile!.id,
+          salaries: profile!.salaries as never,
+        }),
+      ).resolves.toBeTruthy();
+      expect(storedRouting(ctx, jobId)!.baseNetPayPerCheck).toBe(stored);
+    } finally {
+      ctx.cleanup();
+    }
   });
 });
 

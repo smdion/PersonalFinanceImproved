@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { useActiveContributionProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { PageHeader } from "@/components/ui/page-header";
 import { CoastFireNote } from "@/components/contributions/coast-fire-note";
+import { UnknownTypeNotes } from "@/components/ui/unknown-type-notes";
 import { ChipToggle } from "@/components/ui/chip-toggle";
 import { HighIncomeLineEdit } from "@/components/dashboard/high-income-line-edit";
 import { Card } from "@/components/ui/card";
@@ -250,7 +251,8 @@ export function ContributionsContent() {
           />
         </div>
       </PageHeader>
-      <CoastFireNote />
+      <CoastFireNote shownBelow={data.unknownTypeNotes} />
+      <UnknownTypeNotes notes={data.unknownTypeNotes} />
 
       {/* Prior-year contribution window banner */}
       {priorYearWindow && (

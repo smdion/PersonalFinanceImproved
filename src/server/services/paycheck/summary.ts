@@ -13,7 +13,7 @@ import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { loadCapHousehold } from "@/server/services/contributions/caps";
 import { capForRequest } from "@/lib/pure/contributions/cap-request";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
-import { eq } from "drizzle-orm";
+import { loadPageContributionAccounts } from "@/server/services/contributions/unknown-type-notes";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import * as schema from "@/lib/db/schema";
 import { bonusCheckContribution } from "@/lib/pure/paycheck/bonus";
@@ -102,7 +102,7 @@ export async function computePaycheckSummary(
     people,
     allJobs,
     allDeductions,
-    allContribs,
+    contributionAccounts,
     allLimitRows,
     allBracketRows,
     allTaxParams,
@@ -111,15 +111,13 @@ export async function computePaycheckSummary(
     ctx.scope.load(getAllPeople),
     ctx.db.select().from(schema.jobs),
     ctx.db.select().from(schema.paycheckDeductions),
-    ctx.db
-      .select()
-      .from(schema.contributionAccounts)
-      .where(eq(schema.contributionAccounts.isActive, true)),
+    loadPageContributionAccounts(ctx.db),
     ctx.db.select().from(schema.contributionLimits),
     ctx.db.select().from(schema.taxBrackets),
     ctx.db.select().from(schema.taxParams),
     ctx.db.select().from(schema.paycheckEarnings),
   ]);
+  const allContribs = contributionAccounts.known;
 
   // Same resolver as the retirement engine, but "null" on a missing year: the
   // year selector can pick a year with no seeded tables, which shows empty, never
@@ -636,6 +634,7 @@ export async function computePaycheckSummary(
       : null,
     rothIra,
     hsaBuffers,
+    unknownTypeNotes: contributionAccounts.notes,
     // The tax-data vintage this summary was priced under — for a
     // "Tax data: YYYY" indicator, matching the retirement projection side.
     taxYear,

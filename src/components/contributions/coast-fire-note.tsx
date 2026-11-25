@@ -13,7 +13,9 @@ import { planAgeLabel } from "@/lib/pure/household/household-timeline";
 import { RETIRED_PLAN_FAILS } from "@/components/dashboard/coast-fire-label";
 import { EngineWarnings } from "@/components/retirement-projection/engine-warnings";
 
-export function CoastFireNote() {
+/** `shownBelow`: notes the page shows itself (the same text), left out here
+ *  so each is shown once. */
+export function CoastFireNote({ shownBelow = [] }: { shownBelow?: string[] }) {
   const { input, ready } = usePlanEngineInput();
   const { data: projection } = useDashboardProjection();
   const { data } = trpc.projection.computeCoastFire.useQuery(input, {
@@ -52,7 +54,9 @@ export function CoastFireNote() {
         .
       </p>
       {/* The input's setup notes, as the Retirement page shows them. */}
-      <EngineWarnings warnings={data.notes} />
+      <EngineWarnings
+        warnings={data.notes.filter((n) => !shownBelow.includes(n))}
+      />
     </>
   );
 }

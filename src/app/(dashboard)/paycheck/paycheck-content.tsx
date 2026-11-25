@@ -24,6 +24,7 @@ import {
   deductionFieldKind,
 } from "@/lib/db/shapes/profile-fields";
 import { EmptyState } from "@/components/ui/empty-state";
+import { UnknownTypeNotes } from "@/components/ui/unknown-type-notes";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { PersonPaycheck } from "@/components/paycheck/person-paycheck";
 import { ContributionSnapshot } from "@/components/contributions/contribution-snapshot";
@@ -326,6 +327,7 @@ export function PaycheckContent() {
           yet.
         </p>
       ))}
+      <UnknownTypeNotes notes={rawData?.unknownTypeNotes ?? []} />
       {views.length === 0 ? (
         <EmptyState
           message="No active jobs found."
