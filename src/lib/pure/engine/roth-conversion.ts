@@ -24,7 +24,11 @@ import {
   type ConversionParts,
 } from "./individual-accounts/conversion";
 import type { WithholdingBracket } from "./tax-estimation";
-import { conversionRoomFor, convertiblePreTax } from "./conversion-room";
+import {
+  conversionOff,
+  conversionRoomFor,
+  convertiblePreTax,
+} from "./conversion-room";
 import { conversionTaxPaid } from "./conversion-tax";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
@@ -65,7 +69,7 @@ export interface RothConversionInput {
   parts?: ConversionParts;
   /** This year's household RMD-smoothing minimum (`computeRmdSmoothingTargets`). When positive it
    *  runs even with `enableRothConversions` off and may raise the target rate up to
-   *  `rmdSmoothingMaxBracketTarget`; `rothConversionTarget === 0` still wins. */
+   *  `rmdSmoothingMaxBracketTarget`; a resolved target of 0 still wins. */
   rmdSmoothingTarget?: number;
   /** Ceiling smoothing may raise the target rate to; always resolved when `rmdSmoothingTarget`
    *  is supplied. */
@@ -135,11 +139,9 @@ export function performRothConversion(
     return zero();
   }
 
-  // target=0 is an explicit household opt-out; smoothing never overrides it.
+  // A resolved target of 0 is off (conversionOff); smoothing never overrides it.
   const configTarget = input.rothConversionTarget;
-  if (configTarget === 0) {
-    return zero();
-  }
+  if (conversionOff(configTarget ?? input.rothBracketTarget)) return zero();
 
   // Total taxable income this year (Traditional withdrawals + taxable SS +
   // non-qualified Roth growth) -- needed before target resolution now,

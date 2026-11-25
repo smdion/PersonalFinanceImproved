@@ -24,8 +24,12 @@ export function convertiblePreTax(
   return roundToCents(balances.preTax - excluded);
 }
 
+/** A resolved conversion target of 0 turns conversions off, whichever setting it came from;
+ *  routing's reservation and the conversion both read this. */
+export const conversionOff = (target: number | undefined) => target === 0;
+
 /** What routing's conversion reservation reads, as `performRothConversion` resolves it: the
- *  target (the year's override first), whether the year converts (a 0 target opts out), and
+ *  target (the year's override first), whether the year converts (`conversionOff`), and
  *  the Traditional it can draw on before this year's draws. */
 export function conversionRoutingInputs(
   config: { rothConversionTarget?: number; rothBracketTarget?: number },
@@ -36,14 +40,15 @@ export function conversionRoutingInputs(
   },
   source: Readonly<Parameters<typeof convertiblePreTax>>,
 ) {
+  const conversionTarget =
+    config.rothConversionTarget ??
+    taxRates.rothConversionTarget ??
+    config.rothBracketTarget ??
+    taxRates.rothBracketTarget;
   return {
-    conversionTarget:
-      config.rothConversionTarget ??
-      taxRates.rothConversionTarget ??
-      config.rothBracketTarget ??
-      taxRates.rothBracketTarget,
+    conversionTarget,
     conversionsEnabled:
-      taxRates.enableRothConversions && config.rothConversionTarget !== 0,
+      taxRates.enableRothConversions && !conversionOff(conversionTarget),
     conversionSource: convertiblePreTax(...source),
   };
 }
@@ -51,7 +56,7 @@ export function conversionRoutingInputs(
 interface ConversionRoomInput {
   /** Conversions on: the household's own target's room is the floor under smoothing's. */
   enableRothConversions: boolean | undefined;
-  /** The household's `rothConversionTarget` (never 0 here: 0 opts out before). */
+  /** The household's `rothConversionTarget` (it and its fallback never 0 here: 0 opts out before). */
   configTarget: number | undefined;
   rothBracketTarget: number | undefined;
   yearTaxableIncome: number;

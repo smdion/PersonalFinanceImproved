@@ -774,6 +774,88 @@ describe("answer key: Bracket filling", () => {
     });
   });
 
+  describe("strategies/CZ a conversion target of 0 is off", () => {
+    // MFJ 2026, both born 1980 (46), retired, no Social Security. A holds
+    // a brokerage of 500,000, all basis, drawn first, and a Traditional
+    // IRA of 1,000,000 the draw avoids (penalty-exposed before 59½); a
+    // conversion owes no 10% penalty. Spending 50,000 comes from the
+    // brokerage, no taxable income. Conversions on: a target of 0% would
+    // convert to the 0% band's top, gross 32,200 (the deduction). A
+    // resolved target of 0, from the plan's conversion target or from the
+    // bracket target it falls back to, turns conversions off: nothing
+    // converts.
+    const person = (id: "A" | "B") => ({
+      id,
+      primary: id === "A",
+      birthDate: "1980-01-15",
+      ssAnnualToday: 0,
+      ssStartAge: 67,
+      jobs: [],
+    });
+    const accounts: LedgerAccount[] = [
+      {
+        id: "A-brokerage",
+        owner: "A",
+        category: "brokerage",
+        tax: "brokerage",
+        parent: "Retirement",
+        balance: 500_000,
+        basis: 500_000,
+      },
+      {
+        id: "A-ira",
+        owner: "A",
+        category: "ira",
+        tax: "traditional",
+        parent: "Retirement",
+        balance: 1_000_000,
+      },
+    ];
+    const h: LedgerHousehold = {
+      filingStatus: "MFJ",
+      inflation: "0",
+      limitGrowth: "0",
+      taxMultiplier: 1,
+      spendingStrategy: "fixed",
+      withdrawalRouting: "waterfall",
+      lumpSums: [],
+      people: [person("A"), person("B")],
+      accounts,
+      contributions: [],
+      returnRates: [{ fromAge: 0, rate: "0" }],
+      annualSpendingToday: 50_000,
+      waterfall: accounts.map((a) => a.id),
+      endYear: 2028,
+    };
+    const converted = (t: { conversion: number | null; bracket?: number }) => {
+      const input = ledgerInput(h, { rothBracketTarget: t.bracket });
+      const rates = input.decumulationDefaults.distributionTaxRates;
+      rates.enableRothConversions = true;
+      rates.rothConversionTarget = t.conversion ?? undefined;
+      const row = runOneYear(input, 2026);
+      if (row.phase !== "decumulation") throw new Error("2026 isn't retired");
+      return {
+        converted: row.rothConversionAmount ?? 0,
+        withdrawal: row.totalWithdrawal,
+      };
+    };
+    it("strategies/CZ1 [RET-10] the plan's conversion target of 0 converts nothing", () => {
+      cents(converted({ conversion: 0 }), { converted: 0, withdrawal: 50_000 });
+    });
+    it("strategies/CZ2 [RET-10] no conversion target and a bracket target of 0 converts nothing", () => {
+      cents(converted({ conversion: null, bracket: 0 }), {
+        converted: 0,
+        withdrawal: 50_000,
+      });
+    });
+    it("strategies/CZ3 [RET-10] the plan's 10% target converts to the 10% band's top: 24,800 + 32,200 = 57,000", () => {
+      cents(converted({ conversion: 0.1 }), {
+        converted: 57_000,
+        withdrawal: 50_000,
+      });
+    });
+  });
+
   it("strategies/BF-K [WDR-05] at a tax multiplier of 3 the HSA (the 50% cap) goes before 20% gains scaled to 60%: HSA 50,000, brokerage 49,100, tax 450,000", () => {
     // MFJ 2026, target 35%, multiplier 3 (D12.16; OD-3 Rec (a): the ranking
     // uses the scaled rates). Need 900,000 from Traditional 2,000,000, an HSA
