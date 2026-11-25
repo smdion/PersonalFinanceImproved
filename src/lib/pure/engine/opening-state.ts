@@ -27,6 +27,7 @@ import {
 import { roundToCents } from "../../utils/math";
 import { accountIdKeyOf, hasRealAccount } from "../accounts/account-part";
 import { specParts } from "./individual-accounts/spec-accounts";
+import { categorySide } from "../accounts/category-side";
 import type {
   AccountBalances,
   IndividualAccountInput,
@@ -368,11 +369,11 @@ export function openingTotals(parts: readonly IndividualAccountInput[]): {
   const accountBalance = buildCategoryRecord(zeroBalance);
   const balances: TaxBuckets = { ...emptyTaxBucketMap(), afterTaxBasis: 0 };
   for (const ia of parts) {
-    const money = ia.startingBalance;
-    const balance = accountBalance[ia.category];
-    balances[ia.taxType] += money;
+    const { startingBalance: money, category, taxType } = ia;
+    const balance = accountBalance[category];
+    balances[taxType] += money;
     if (balance.structure !== "roth_traditional") balance.balance += money;
-    else if (isTaxFreeBucket(ia.taxType)) balance.roth += money;
+    else if (categorySide(category, taxType) === "roth") balance.roth += money;
     else balance.traditional += money;
     if (balance.structure !== "basis_tracking" || ia.startingBasis == null)
       continue;

@@ -26,6 +26,7 @@ import { PENALTY_FREE_AGE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import { categorySide } from "@/lib/pure/accounts/category-side";
 import type { EligibilityReason } from "@/lib/config/eligibility-reason";
 
 /** The structural subset of `IndividualAccountInput` this module needs, named locally
@@ -339,12 +340,9 @@ export function computeNonRetirementExclusion(
     if (balance <= 0) continue;
     total[ia.category] += balance;
     grandTotal += balance;
-    if (
-      getAccountTypeConfig(ia.category).balanceStructure === "roth_traditional"
-    ) {
-      if (isTaxFreeBucket(ia.taxType)) roth[ia.category] += balance;
-      else trad[ia.category] += balance;
-    }
+    const side = categorySide(ia.category, ia.taxType);
+    if (side === "roth") roth[ia.category] += balance;
+    else if (side === "traditional") trad[ia.category] += balance;
   }
 
   const roundCategoryMap = (
