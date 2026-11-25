@@ -12,6 +12,7 @@ import {
 } from "../balance-deduction";
 import { clampIndividualBalances } from "../individual-accounts/reconcile";
 import { performRothConversion } from "../roth-conversion";
+import { premiumYearHasEnrollee } from "../conversion-irmaa-cap";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
@@ -303,8 +304,9 @@ export function yearRothConversion(
     rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
     brokerageGainsPortion,
     irmaaAwareRothConversions:
-      input.irmaaAwareRothConversions ??
-      (enableIrmaaAwareness ? true : undefined),
+      (input.irmaaAwareRothConversions ??
+        (enableIrmaaAwareness ? true : undefined)) &&
+      premiumYearHasEnrollee(input.perPersonBirthYears, thisYear.age, year),
     irmaaBrackets: grownIrmaaBracketsForCap,
     filingStatus,
     balances,

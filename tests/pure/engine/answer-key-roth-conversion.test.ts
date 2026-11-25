@@ -471,3 +471,68 @@ describe("answer key through the engine: a conversion and Social Security", () =
     today: { taxableSS: 0, tax: 5_020 },
   });
 });
+
+// ── The IRMAA-aware cap and who is on Medicare two years on ─────────────
+// Premium year N reads tax year N − 2 (42 USC 1395r(i)(4)(B)(i); 20 CFR
+// 418.1135) and only an enrollee pays it (1395r(i)(1)), so a 2026
+// conversion can raise a premium only for someone 65 by 2028. Single, no
+// Social Security, spending 54,980: W = 60,000 of Traditional draws (TI
+// 60,000 − 16,100 = 43,900; 1,240 + 12% × 31,500 = 5,020), a 1,000,000
+// Traditional IRA, a 500,000 brokerage all basis to pay the conversion's
+// tax, conversions on at 22%, IRMAA-aware. The 22% band's gross top is
+// 105,700 + 16,100 = 121,800: 61,800 of room. The 2026 individual first
+// tier starts above 109,000 (CMS26).
+
+function cappedYear(
+  birthYear: number,
+  couple?: { spouseBirthYear: number; spending: number },
+) {
+  const base = engineHousehold({
+    status: couple ? "MFJ" : "Single",
+    people: couple
+      ? [{ birthYear }, { birthYear: couple.spouseBirthYear }]
+      : [{ birthYear }],
+    traditionalIra: 1_000_000,
+    brokerage: { balance: 500_000, basis: 500_000 },
+    spending: couple?.spending ?? 54_980,
+    endYear: 2027,
+  });
+  const input: ProjectionInput = {
+    ...base,
+    irmaaAwareRothConversions: true,
+    decumulationDefaults: {
+      ...base.decumulationDefaults,
+      distributionTaxRates: {
+        ...base.decumulationDefaults.distributionTaxRates,
+        enableRothConversions: true,
+        rothConversionTarget: 0.22,
+      },
+    },
+  };
+  const r = runOneYear(input, 2026);
+  if (r.phase !== "decumulation") throw new Error("2026 isn't retired");
+  return { w: r.totalWithdrawal, converted: r.rothConversionAmount };
+}
+
+describe("answer key through the engine: the IRMAA cap and Medicare two years on", () => {
+  it("ret/RET10-8 [RET-10] 63 in 2026, 65 in 2028: the conversion stops at the first tier, 109,000 − 60,000 = 49,000", () => {
+    cents(cappedYear(1963), { w: 60_000, converted: 49_000 }, 1);
+  });
+
+  it("ret/RET10-8:62 [RET-10] 62 in 2026, 64 in 2028: no premium reads 2026, so the band's 61,800 converts", () => {
+    cents(cappedYear(1964), { w: 60_000, converted: 61_800 }, 1);
+  });
+
+  it("ret/RET10-8:couple [RET-10] MFJ, born 1963 and 1970: one spouse on Medicare in 2028 is enough, the conversion stops at 218,000 − 150,000 = 68,000", () => {
+    // Both under 65 in 2026: deductions 32,200. Spending 134,660: W =
+    // 150,000 (TI 117,800; 2,480 + 12% × 76,000 + 22% × 17,000 = 15,340).
+    // The 22% band's gross top is 211,400 + 32,200 = 243,600 (93,600 of
+    // room); the joint first tier starts above 218,000, and the spouse
+    // born 1963 is 65 in 2028, so the cap holds.
+    cents(
+      cappedYear(1963, { spouseBirthYear: 1970, spending: 134_660 }),
+      { w: 150_000, converted: 68_000 },
+      1,
+    );
+  });
+});
