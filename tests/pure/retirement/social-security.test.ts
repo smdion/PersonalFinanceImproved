@@ -11,6 +11,7 @@ import { calculateProjection } from "@/lib/pure/engine";
 import {
   computeAdjustedBenefit,
   computeSpousalBenefit,
+  pickClaimingAge,
   sweepClaimingAges,
 } from "@/lib/pure/retirement/social-security";
 import type {
@@ -318,6 +319,47 @@ describe("computeSpousalBenefit — greater-of logic", () => {
       const result = computeSpousalBenefit(37200, 48000, 1963, 70 * 12, 30000);
       expect(result).toBeCloseTo(30000 * 1.24, 2);
     });
+  });
+});
+
+describe("pickClaimingAge", () => {
+  const candidate = (
+    claimingAge: number,
+    finalNetWorth: number,
+    fails = false,
+  ) => ({
+    claimingAge,
+    adjustedAnnualBenefit: 0,
+    finalNetWorth,
+    fails,
+  });
+  const ages = [62, 63, 64, 65, 66, 67, 68, 69, 70];
+
+  it("picks the earliest age when every candidate ties exactly", () => {
+    const tied = ages.map((age) => candidate(age, 15_444_776.54));
+    expect(pickClaimingAge([...tied].reverse())).toBe(62);
+  });
+
+  it("treats a spread under $1 as a tie: the earliest age wins", () => {
+    const spread = ages.map((age, i) => candidate(age, 1_000_000 + i * 0.0625));
+    expect(pickClaimingAge(spread)).toBe(62);
+  });
+
+  it("picks the best when it leads by more than $1", () => {
+    const spread = ages.map((age) =>
+      candidate(age, age === 68 ? 1_000_005 : 1_000_000),
+    );
+    expect(pickClaimingAge(spread)).toBe(68);
+  });
+
+  it("never picks a failing candidate, and is null when all fail", () => {
+    expect(
+      pickClaimingAge([
+        candidate(62, 2_000_000, true),
+        candidate(70, 1_000_000),
+      ]),
+    ).toBe(70);
+    expect(pickClaimingAge([candidate(62, 1, true)])).toBeNull();
   });
 });
 

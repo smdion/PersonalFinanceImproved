@@ -80,8 +80,8 @@ type ClaimingAgeSweepCandidate = {
 };
 
 type ClaimingAgeSweepResult = {
-  /** The claiming age that scores best among the candidates. `null` when
-   *  every candidate fails (nothing safe to recommend). */
+  /** `pickClaimingAge`'s: the earliest age within $1 of the best final net
+   *  worth. `null` when every candidate fails (nothing safe to recommend). */
   recommendedAge: number | null;
   /** Sorted by rank (`compareCandidates`), not claiming age; an age-ordered table must sort by
    *  `claimingAge` itself. */
@@ -163,9 +163,28 @@ function compareCandidates(
   return b.finalNetWorth - a.finalNetWorth;
 }
 
+/** Final net worth within this many dollars of the best counts as a tie. */
+const CLAIMING_TIE_DOLLARS = 1;
+
+/** The recommended claiming age: among the candidates whose plan holds, the
+ *  earliest age whose final net worth is within $1 of the best. `null` when
+ *  every candidate fails. */
+export function pickClaimingAge(
+  candidates: readonly ClaimingAgeSweepCandidate[],
+): number | null {
+  const holding = candidates.filter((c) => !c.fails);
+  if (holding.length === 0) return null;
+  const best = Math.max(...holding.map((c) => c.finalNetWorth));
+  return Math.min(
+    ...holding
+      .filter((c) => c.finalNetWorth >= best - CLAIMING_TIE_DOLLARS)
+      .map((c) => c.claimingAge),
+  );
+}
+
 /**
- * Sweeps one person's claiming age over 62-70 (or a given subset) for the highest end-of-plan
- * household net worth, excluding failing candidates. One `calculateProjection` per age.
+ * Sweeps one person's claiming age over 62-70 (or a given subset) by end-of-plan household net
+ * worth, recommending by `pickClaimingAge`. One `calculateProjection` per age.
  */
 export function sweepClaimingAges(
   options: ClaimingAgeSweepOptions,
@@ -196,11 +215,7 @@ export function sweepClaimingAges(
     })
     .sort(compareCandidates);
 
-  const best = candidates[0];
-  const recommendedAge =
-    best === undefined || best.fails ? null : best.claimingAge;
-
-  return { recommendedAge, candidates };
+  return { recommendedAge: pickClaimingAge(candidates), candidates };
 }
 
 /**
