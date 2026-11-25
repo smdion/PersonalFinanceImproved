@@ -14,6 +14,7 @@ import { CellButton } from "@/components/ui/cell-button";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
 import { DEBT_KIND_CONFIG } from "@/lib/config/debts";
+import { readDebtKind } from "@/lib/config/stored-debt-kind";
 import { DEBT_KIND_VALUES, type DebtKind } from "@/lib/config/enum-values";
 
 type Draft = {
@@ -378,7 +379,7 @@ export function DebtsCard() {
                     <CellButton enabled={admin}>
                       {d.name}
                       <span className="text-faint ml-1.5 text-xs">
-                        {DEBT_KIND_CONFIG[d.kind].label} ·{" "}
+                        {readDebtKind(d.kind).label} ·{" "}
                         {ownerName(d.ownerPersonId)}
                       </span>
                     </CellButton>
@@ -486,7 +487,7 @@ export function DebtsCard() {
                     <span>
                       {d.name}
                       <span className="text-faint ml-1.5">
-                        {DEBT_KIND_CONFIG[d.kind].label}
+                        {readDebtKind(d.kind).label}
                         {d.originalAmount != null &&
                           ` · ${formatCurrency(d.originalAmount)}`}
                       </span>

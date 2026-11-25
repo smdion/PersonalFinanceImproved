@@ -59,7 +59,7 @@
     "src/components/dashboard/retirement-card-stats.tsx": 200,
     "src/components/dashboard/retirement-card.tsx": 174,
     "src/components/dashboard/savings-goals-card.tsx": 406,
-    "src/components/debts/debts-card.tsx": 526,
+    "src/components/debts/debts-card.tsx": 527,
     "src/components/debts/mortgage-settings.tsx": 800,
     "src/components/help/help-content.tsx": 1030,
     "src/components/historical/cells.tsx": 668,

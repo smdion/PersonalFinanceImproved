@@ -198,6 +198,22 @@ describe("debts router", () => {
     }
   });
 
+  it("a stored kind this version doesn't know is judged as Other in Milestones and stays stored", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      await caller.debts.create(loan);
+      // A downgrade or a hand edit: the column's type admits only known kinds.
+      db.update(schema.debts)
+        .set({ kind: "heloc" as never })
+        .run();
+      const { debts } = await caller.milestones.computeInputs({});
+      expect(debts.map((d) => d.kind)).toEqual(["other"]);
+      expect((await caller.debts.list()).map((d) => d.kind)).toEqual(["heloc"]);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("only an admin can change debts; anyone signed in can read them", async () => {
     const { caller, cleanup } = await createTestCaller(viewerSession);
     try {

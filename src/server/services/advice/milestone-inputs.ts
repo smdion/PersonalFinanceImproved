@@ -36,6 +36,7 @@ import { debtPayoffEstimate } from "@/lib/pure/debts/debts";
 import { raiseHistory } from "@/lib/pure/household/raise-history";
 import { downYears } from "@/lib/pure/investments/always-buying";
 import { firstFullSalary } from "@/lib/pure/debts/debt-rules";
+import { readDebtKind } from "@/lib/config/stored-debt-kind";
 import { parseEstimatedFields } from "@/lib/pure/investments/performance-annotations";
 import { ageOnDate } from "@/lib/pure/household/age";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
@@ -244,7 +245,7 @@ export async function loadMilestoneInputs(
     );
     return {
       name: d.name,
-      kind: d.kind,
+      kind: readDebtKind(d.kind).value,
       balance,
       rate,
       ownerAge: ageOf(d.ownerPersonId),
