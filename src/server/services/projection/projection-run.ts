@@ -198,9 +198,13 @@ export function knownSavedRouting(settings: {
   const splits = isRecord(settings.withdrawalSplits)
     ? knownCategoryRecord(settings.withdrawalSplits)
     : { known: null, unknown: [] };
+  // So does a set with a share that isn't a number in [0, 1] (text would
+  // turn every draw NaN): the whole set, not the one share.
+  const splitsNotShares =
+    splits.known !== null && !Object.values(splits.known).every(isShare);
   return {
     withdrawalOrder: order.known,
-    withdrawalSplits: splits.known,
+    withdrawalSplits: splitsNotShares ? null : splits.known,
     unknownInOrder: order.unknown,
     unknownInSplits: splits.unknown,
     orderNotAList:
@@ -208,14 +212,21 @@ export function knownSavedRouting(settings: {
       !Array.isArray(settings.withdrawalOrder),
     splitsNotARecord:
       settings.withdrawalSplits != null && !isRecord(settings.withdrawalSplits),
+    splitsNotShares,
   };
 }
+
+/** A saved split share as its writer's schema allows it: 0 to 1. */
+const isShare = (value: unknown) =>
+  typeof value === "number" && value >= 0 && value <= 1;
 
 /** The notes for a saved order or splits `knownSavedRouting` reads as unset. */
 const ORDER_NOT_A_LIST_NOTE =
   "The saved withdrawal order isn't a list, so the projection uses the default order. Update Ledgr or set the order again.";
 const SPLITS_NOT_A_RECORD_NOTE =
   "The saved withdrawal splits aren't a share per account type, so the projection uses the default splits. Update Ledgr or set the splits again.";
+const SPLITS_NOT_SHARES_NOTE =
+  "The saved withdrawal splits hold a share that isn't a number from 0% to 100%, so the projection uses the default splits. Update Ledgr or set the splits again.";
 
 /**
  * Decumulation defaults from DB settings + client routing overrides, for every run.
@@ -258,6 +269,7 @@ export function buildDecumulationDefaults(
     for (const category of known.unknownInSplits)
       notes.push(unknownCategoryNote(category, "withdrawalSplits"));
     if (known.splitsNotARecord) notes.push(SPLITS_NOT_A_RECORD_NOTE);
+    if (known.splitsNotShares) notes.push(SPLITS_NOT_SHARES_NOTE);
   }
   notes.push(...unknownStrategyNotes(settings.withdrawalStrategy));
   return {

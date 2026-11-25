@@ -157,6 +157,18 @@ describe.each([
     "401k:0.5,ira:0.5",
     "The saved withdrawal splits aren't a share per account type, so the projection uses the default splits. Update Ledgr or set the splits again.",
   ],
+  [
+    "withdrawalSplits",
+    "a record with a share that is text",
+    { "401k": "x", ira: 0.5 },
+    "The saved withdrawal splits hold a share that isn't a number from 0% to 100%, so the projection uses the default splits. Update Ledgr or set the splits again.",
+  ],
+  [
+    "withdrawalSplits",
+    "a record with a share above 100%",
+    { "401k": 1.5, ira: -0.5 },
+    "The saved withdrawal splits hold a share that isn't a number from 0% to 100%, so the projection uses the default splits. Update Ledgr or set the splits again.",
+  ],
 ] as const)("a stored %s that is %s", (field, _, stored, NOTE) => {
   let ctx: Ctx;
   let personId: number;
