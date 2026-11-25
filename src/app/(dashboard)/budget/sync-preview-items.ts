@@ -3,6 +3,7 @@
 import {
   readableBudgetItemAmount,
   storedAmountList,
+  storedColumnAmount,
 } from "@/lib/pure/budget/item-amount";
 import type { RawItem } from "@/components/budget";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
@@ -28,13 +29,17 @@ export function pushPreviewItems(
     const amounts = item.contribAmounts ?? item.amounts;
     const colIndex = Math.min(activeColumn, numCols - 1);
     const newValue = readableBudgetItemAmount(amounts, colIndex, numCols);
+    const missing = storedColumnAmount(amounts, colIndex) === undefined;
     const actual = apiActualsMap.get(item.id);
     items.push({
       name: item.subcategory,
       field: "Goal Target",
       currentYnab: actual?.goalTarget ?? 0,
       newValue: newValue ?? 0,
-      ...(newValue === null && { unreadable: true }),
+      ...(newValue === null && {
+        unreadable: true,
+        ...(missing && { missing }),
+      }),
     });
   }
   return items;

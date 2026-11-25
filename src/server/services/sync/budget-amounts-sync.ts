@@ -26,6 +26,7 @@ import { resolveProfileSelection } from "@/server/services/profile-selection";
 import {
   readableBudgetItemAmount,
   storedAmountList,
+  storedColumnAmount,
 } from "@/lib/pure/budget/item-amount";
 
 export async function syncBudgetFromApi(ctx: { db: Db; scope: RequestScope }) {
@@ -150,9 +151,6 @@ export async function syncBudgetToApi(ctx: { db: Db; scope: RequestScope }) {
       code: "NOT_FOUND",
       message: "No linked or active budget profile",
     });
-  // The connection's column, the same one getPreview's `ledgrAmount` uses
-  // (sync/preview.ts), so the push matches what the preview showed.
-  const colIndex = conn?.linkedColumnIndex ?? 0;
 
   const pushItemRows = await ctx.db
     .select()
@@ -174,6 +172,9 @@ export async function syncBudgetToApi(ctx: { db: Db; scope: RequestScope }) {
   });
 
   const numColumns = profile.columnLabels.length;
+  // The connection's column, the same one getPreview's `ledgrAmount` uses
+  // (sync/preview.ts), so the push matches what the preview showed.
+  const column = Math.min(conn?.linkedColumnIndex ?? 0, numColumns - 1);
   const activeProfiles = await resolveProfileSelection(ctx.scope);
   // Contribution-linked items freeze `amounts` on edit (see
   // resolveLinkedBudgetItemAmounts docblock) — pushing raw `amounts`
@@ -190,6 +191,7 @@ export async function syncBudgetToApi(ctx: { db: Db; scope: RequestScope }) {
   // counted per item, so "nothing to push" stays distinguishable.
   let skippedUnsupported = 0;
   const skippedUnreadable: string[] = []; // stored amount not a number: named
+  const skippedMissing: string[] = []; // no stored amount in the column: named
   // Every read before the first write: a read that fails stops the push
   // with nothing written.
   const prepared: {
@@ -201,13 +203,10 @@ export async function syncBudgetToApi(ctx: { db: Db; scope: RequestScope }) {
     if (item.apiSyncDirection !== "push" && item.apiSyncDirection !== "both")
       continue;
 
-    const amount = readableBudgetItemAmount(
-      item.amounts,
-      Math.min(colIndex, numColumns - 1),
-      numColumns,
-    );
+    const amount = readableBudgetItemAmount(item.amounts, column, numColumns);
     if (amount === null) {
-      skippedUnreadable.push(item.subcategory);
+      const missing = storedColumnAmount(item.amounts, column) === undefined;
+      (missing ? skippedMissing : skippedUnreadable).push(item.subcategory);
       continue;
     }
 
@@ -278,5 +277,6 @@ export async function syncBudgetToApi(ctx: { db: Db; scope: RequestScope }) {
       ),
     });
 
-  return { pushed, skippedUnsupported, skippedUnreadable, service: active };
+  const skipped = { skippedUnsupported, skippedUnreadable, skippedMissing };
+  return { pushed, ...skipped, service: active };
 }

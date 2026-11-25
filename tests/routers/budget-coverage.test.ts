@@ -1095,9 +1095,22 @@ describe("budget router — syncBudgetToApi", () => {
         syncDirection: "push",
       });
 
+      // Saved amounts that stop before the column: skipped, named apart.
+      sqlite.exec(
+        `UPDATE budget_items SET amounts = '[]' WHERE id = ${seed.itemIds[1]}`,
+      );
+      await caller.budget.linkToApi({
+        budgetItemId: seed.itemIds[1]!,
+        service: "ynab",
+        apiCategoryId: "api-push-short",
+        apiCategoryName: "Push Short",
+        syncDirection: "push",
+      });
+
       const result = await caller.budget.syncBudgetToApi();
       expect(result.pushed).toBe(0);
       expect(result.skippedUnreadable).toEqual(["Rent"]);
+      expect(result.skippedMissing).toEqual(["Groceries"]);
       expect(mockUpdateGoal).not.toHaveBeenCalled();
     } finally {
       cleanup();

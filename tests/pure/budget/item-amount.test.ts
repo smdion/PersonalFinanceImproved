@@ -9,6 +9,7 @@ import {
   readableBudgetItemAmount,
   storedAmountList,
   storedBudgetAmount,
+  storedColumnAmount,
 } from "@/lib/pure/budget/item-amount";
 
 describe("budgetItemAmount", () => {
@@ -94,5 +95,15 @@ describe("storedAmountList", () => {
     expect(copy).not.toBe(stored);
     for (const notAList of ['{"0":5}', '"500"', "null"])
       expect(storedAmountList(JSON.parse(notAList))).toBeNull();
+  });
+});
+
+describe("storedColumnAmount", () => {
+  it("reads a column's stored value as stored, and none past a short list or off a non-list", () => {
+    const stored: number[] = JSON.parse('["500", null, 20]');
+    expect(storedColumnAmount(stored, 0)).toBe("500");
+    expect(storedColumnAmount(stored, 1)).toBeNull();
+    expect(storedColumnAmount(stored, 3)).toBeUndefined();
+    expect(storedColumnAmount(JSON.parse('{"0":5}'), 0)).toBeUndefined();
   });
 });

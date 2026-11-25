@@ -45,13 +45,24 @@ export function formatSyncResultToast(
 }
 
 /** A push toast with the items it left out because their saved amount isn't
- *  a number named after it (they are never sent as $0). */
+ *  a number, or because they have none for the column, named after it (they
+ *  are never sent as $0). */
 export function withUnreadableItems(
   message: string,
   names: readonly string[] = [],
+  missing: readonly string[] = [],
 ): string {
-  if (names.length === 0) return message;
-  return `${message} — not pushed, saved amount isn't a number: ${names.join(", ")}`;
+  const notes = [
+    ["saved amount isn't a number", names],
+    ["no saved amount for this column", missing],
+  ] as const;
+  return notes
+    .filter(([, named]) => named.length > 0)
+    .reduce(
+      (text, [why, named]) =>
+        `${text} — not pushed, ${why}: ${named.join(", ")}`,
+      message,
+    );
 }
 
 /** A pull toast with the items it left out because their saved amounts have

@@ -298,6 +298,8 @@ describe("useBudgetDerivedData — push preview", () => {
       }) as RawItem;
     const { result } = setup(false, [
       pushed("Snacks", '["abc"]'),
+      pushed("Short", "[]"),
+      pushed("Odd", '{"0":5}'),
       pushed("Rent", "[1200]"),
     ]);
 
@@ -305,6 +307,13 @@ describe("useBudgetDerivedData — push preview", () => {
     expect(items.find((i) => i.name === "Snacks")).toMatchObject({
       unreadable: true,
     });
+    expect(items.find((i) => i.name === "Snacks")!.missing).toBeUndefined();
+    // No saved amount for the column (none stored, or not a list): missing.
+    for (const name of ["Short", "Odd"])
+      expect(items.find((i) => i.name === name)).toMatchObject({
+        unreadable: true,
+        missing: true,
+      });
     expect(items.find((i) => i.name === "Rent")).toMatchObject({
       newValue: 1200,
     });

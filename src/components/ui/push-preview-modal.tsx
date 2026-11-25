@@ -17,6 +17,8 @@ export type PushPreviewItem = {
   /** Skipped, so named, never shown as $0: a push's saved amount isn't a number, a pull's
    *  saved amounts have no column to write into. */
   unreadable?: boolean;
+  /** Push only, with `unreadable`: it has no saved amount for this column at all. */
+  missing?: boolean;
   /** Pull only: its saved amount isn't a number; the pull replaces it, shown as such. */
   currentUnreadable?: boolean;
 };
@@ -29,12 +31,25 @@ function UnreadableItemsNote({
   items: PushPreviewItem[];
   isPull: boolean;
 }) {
-  const names = items.filter((i) => i.unreadable).map((i) => i.name);
-  if (names.length === 0) return null;
-  return (
-    <p className="text-caption mt-2 text-amber-600">
-      {`${names.length} item${names.length !== 1 ? "s" : ""} ${isPull ? "not pulled — saved amounts have no column to write into" : "not pushed — saved amount isn't a number"}: ${names.join(", ")}.`}
-    </p>
+  const skipped = items.filter((i) => i.unreadable);
+  const notes: [string, PushPreviewItem[]][] = isPull
+    ? [["not pulled — saved amounts have no column to write into", skipped]]
+    : [
+        [
+          "not pushed — saved amount isn't a number",
+          skipped.filter((i) => !i.missing),
+        ],
+        [
+          "not pushed — no saved amount for this column",
+          skipped.filter((i) => i.missing),
+        ],
+      ];
+  return notes.map(([why, named]) =>
+    named.length === 0 ? null : (
+      <p key={why} className="text-caption mt-2 text-amber-600">
+        {`${named.length} item${named.length !== 1 ? "s" : ""} ${why}: ${named.map((i) => i.name).join(", ")}.`}
+      </p>
+    ),
   );
 }
 

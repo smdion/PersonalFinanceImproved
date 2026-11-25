@@ -54,6 +54,7 @@ export function useBudgetSyncMutations() {
             data.service === "actual",
           ),
           data.skippedUnreadable,
+          data.skippedMissing,
         ),
       );
     },

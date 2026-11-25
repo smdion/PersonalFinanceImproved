@@ -33,8 +33,17 @@ export function readableBudgetItemAmount(
   columns: number,
 ): number | null {
   if (col < 0 || col >= columns) return 0;
-  const amount: unknown = storedAmountList(amounts)?.[col];
+  const amount = storedColumnAmount(amounts, col);
   return amount === undefined ? null : storedBudgetAmount(amount);
+}
+
+/** An item's stored value in column `col`, as stored; undefined when it has
+ *  none (amounts that aren't a list, or stop short of `col`). */
+export function storedColumnAmount(
+  amounts: readonly number[],
+  col: number,
+): unknown {
+  return storedAmountList(amounts)?.[col];
 }
 
 /** `readableBudgetItemAmount`, a value that isn't a number counted as $0

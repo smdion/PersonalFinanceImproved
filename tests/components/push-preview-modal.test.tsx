@@ -78,6 +78,42 @@ describe("PushPreviewModal — unreadable amounts", () => {
     expect(screen.getByRole("button", { name: "Push 1 Change" })).toBeTruthy();
   });
 
+  it("names an item the push skips for having no saved amount in the column on its own", () => {
+    const skipped = (name: string, missing?: true) => ({
+      name,
+      field: "Goal Target",
+      currentYnab: 80,
+      newValue: 0,
+      unreadable: true,
+      ...(missing && { missing }),
+    });
+    render(
+      <PushPreviewModal
+        title="Push to YNAB"
+        items={[
+          ...items,
+          skipped("Snacks"),
+          skipped("Rent", true),
+          skipped("Gas", true),
+        ]}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        direction="push"
+        destinationLabel="YNAB"
+      />,
+    );
+    expect(
+      screen.getByText(
+        "1 item not pushed — saved amount isn't a number: Snacks.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "2 items not pushed — no saved amount for this column: Rent, Gas.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("in a pull, names an item the pull skips and shows an amount it replaces as not a number, never $0", () => {
     render(
       <PushPreviewModal
