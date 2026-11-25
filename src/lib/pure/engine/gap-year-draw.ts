@@ -10,6 +10,8 @@ import { roundToCents, sumBy } from "../../utils/math";
 import { SHORTFALL_MATERIALITY } from "../../constants";
 import { resolveDecumulationConfig } from "./override-resolution";
 import { routeForMode } from "./withdrawal-routing";
+import { searchGrossUp } from "./gross-up-search";
+import { scopedBalances } from "./balance-utils";
 import { deriveBasisRankingInputs } from "./withdrawal-cost-ranking";
 import { computeTaxFromSlots } from "./tax-estimation";
 import { clampBalances, deductWithdrawals } from "./balance-deduction";
@@ -222,21 +224,22 @@ export function runGapYearDraw(
     return { priced, taxableSS, cost: roundToCents(added) };
   };
 
-  // The draw pays its own tax; a few passes settle it (small beside the need).
-  let result = route(need);
-  for (let pass = 0; pass < 3; pass++) {
+  // The draw pays its own tax, sized by the retirement year's search.
+  const evaluate = (W: number) => {
+    const routed = route(W);
+    const copyBasis = [...indBasis].map(([k, v]) => [k, { ...v }] as const);
     const trial = shareOut(
-      result.slots,
+      routed.slots,
       new Map(indBalance),
-      new Map([...indBasis].map(([k, v]) => [k, { ...v }])),
+      new Map(copyBasis),
     );
-    result = route(
-      roundToCents(
-        need + price(result.slots, trial.rothGrowth, trial.penalty).cost,
-      ),
-    );
-  }
-  const { slots, warnings } = result;
+    const netCost = price(routed.slots, trial.rothGrowth, trial.penalty).cost;
+    const delivered = sumBy(routed.slots, (s) => s.withdrawal);
+    return { ...routed, routedUnmet: roundToCents(W - delivered), netCost };
+  };
+  const first = { W: need, e: evaluate(need) };
+  const pool = scopedBalances(balances, nonRetirement).allAccountsBalance;
+  const { slots, warnings } = searchGrossUp(need, pool, first, evaluate).e;
 
   const taken = followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
     shareOut(slots, indBalance, indBasis),

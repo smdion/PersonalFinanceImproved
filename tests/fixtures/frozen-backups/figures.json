@@ -97,7 +97,7 @@
     "netWorth.computeSummary": "516427f9102d7e16",
     "performance.computeSummary": "4f8a7d316e3b8f34",
     "mortgage.computeActiveSummary": "37f791a98945a6c7",
-    "projection.computeProjection": "e0f5ae599f86c9ae"
+    "projection.computeProjection": "b3df55816fc1a071"
   },
   "v0.9.9": {
     "paycheck.computeSummary": "000aecde4ab2468b",
@@ -107,7 +107,7 @@
     "netWorth.computeSummary": "516427f9102d7e16",
     "performance.computeSummary": "4f8a7d316e3b8f34",
     "mortgage.computeActiveSummary": "37f791a98945a6c7",
-    "projection.computeProjection": "e0f5ae599f86c9ae"
+    "projection.computeProjection": "b3df55816fc1a071"
   },
   "v0.9.10": {
     "paycheck.computeSummary": "000aecde4ab2468b",
@@ -117,7 +117,7 @@
     "netWorth.computeSummary": "516427f9102d7e16",
     "performance.computeSummary": "4f8a7d316e3b8f34",
     "mortgage.computeActiveSummary": "37f791a98945a6c7",
-    "projection.computeProjection": "e0f5ae599f86c9ae"
+    "projection.computeProjection": "b3df55816fc1a071"
   },
   "v0.10.0": {
     "paycheck.computeSummary": "000aecde4ab2468b",
@@ -127,7 +127,7 @@
     "netWorth.computeSummary": "516427f9102d7e16",
     "performance.computeSummary": "4f8a7d316e3b8f34",
     "mortgage.computeActiveSummary": "37f791a98945a6c7",
-    "projection.computeProjection": "e0f5ae599f86c9ae"
+    "projection.computeProjection": "b3df55816fc1a071"
   },
   "v0.10.1": {
     "paycheck.computeSummary": "000aecde4ab2468b",
@@ -137,7 +137,7 @@
     "netWorth.computeSummary": "516427f9102d7e16",
     "performance.computeSummary": "4f8a7d316e3b8f34",
     "mortgage.computeActiveSummary": "37f791a98945a6c7",
-    "projection.computeProjection": "e0f5ae599f86c9ae"
+    "projection.computeProjection": "b3df55816fc1a071"
   },
   "v0.10.2": {
     "paycheck.computeSummary": "000aecde4ab2468b",
@@ -147,7 +147,7 @@
     "netWorth.computeSummary": "516427f9102d7e16",
     "performance.computeSummary": "4f8a7d316e3b8f34",
     "mortgage.computeActiveSummary": "37f791a98945a6c7",
-    "projection.computeProjection": "e0f5ae599f86c9ae"
+    "projection.computeProjection": "b3df55816fc1a071"
   },
   "v0.10.3": {
     "paycheck.computeSummary": "000aecde4ab2468b",
@@ -157,7 +157,7 @@
     "netWorth.computeSummary": "516427f9102d7e16",
     "performance.computeSummary": "4f8a7d316e3b8f34",
     "mortgage.computeActiveSummary": "37f791a98945a6c7",
-    "projection.computeProjection": "e0f5ae599f86c9ae"
+    "projection.computeProjection": "b3df55816fc1a071"
   },
   "v0.10.4": {
     "paycheck.computeSummary": "000aecde4ab2468b",
@@ -167,6 +167,6 @@
     "netWorth.computeSummary": "516427f9102d7e16",
     "performance.computeSummary": "4f8a7d316e3b8f34",
     "mortgage.computeActiveSummary": "37f791a98945a6c7",
-    "projection.computeProjection": "e0f5ae599f86c9ae"
+    "projection.computeProjection": "b3df55816fc1a071"
   }
 }

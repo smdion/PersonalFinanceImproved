@@ -508,21 +508,21 @@ describe("gap-year figures (pins current behavior)", () => {
       },
       accounts,
     );
-    // Grossed up, the draw nets 56,499.46 against a 56,590 need: 90.54
-    // short, under the funded floor (shortfallFloor), so pinned as is.
+    // Grossed up, the draw nets exactly the 56,590 need: 70,737.50 less its
+    // tax of 14,147.50, nothing unmet.
     expect(figures(input)).toEqual({
       contributions: 0,
       need: 56590,
       pay: 60000,
-      slots: [["ira", 70624.32, 0, 70624.32]],
+      slots: [["ira", 70737.5, 0, 70737.5]],
       spending: 100000,
       spendingCut: 0,
       ssIncome: 0,
-      taxCost: 14124.86,
+      taxCost: 14147.5,
       taxOnIncome: 16590,
-      unmetNeed: 90.54,
+      unmetNeed: 0,
       warnings: [],
-      withdrawal: 70624.32,
+      withdrawal: 70737.5,
     });
   });
 });

@@ -959,6 +959,57 @@ describe("answer key: Bracket filling", () => {
       { hsaShare: 1, brokerage: 0, taxRate: 0.5 },
     );
   });
+
+  // The draw pays its own tax: W − tax(W) = need. On BF-K:gap's household an
+  // HSA dollar costs 50¢, so a 15,000 need draws 30,000 and pays 15,000.
+  // At spending 400,000 the need is 71,589: the whole HSA (50,000, tax
+  // 25,000) and then gains at 53.8¢, G = 46,589 / 0.462 = 100,841.99.
+  const gapPaysItsTax = (o: {
+    spending: number;
+    need: number;
+    hsa: number;
+    brokerage: number;
+  }) => {
+    const { spending, ...want } = o;
+    const row = runOneYear(
+      ledgerInput(kHousehold({ spending, wages: 700_000 }), {
+        rothBracketTarget: 0.35,
+      }),
+      2026,
+    );
+    const gap = row.phase === "accumulation" ? row.gapDraw : undefined;
+    if (!gap) throw new Error("2026 isn't a gap year");
+    const d = drawn(gap.slots);
+    cents(
+      {
+        need: gap.need,
+        hsa: d.hsa,
+        brokerage: d.brokerage,
+        proceeds: gap.withdrawal - gap.taxCost,
+        unmet: gap.unmetNeed,
+      },
+      { ...want, proceeds: o.need, unmet: 0 },
+      0.02,
+    );
+  };
+
+  it("engine/GU-K1 [ENG-15] a gap year at a multiplier of 3: a 15,000 need draws 30,000 from the HSA, tax 15,000, nothing unmet", () => {
+    gapPaysItsTax({
+      spending: 343_411,
+      need: 15_000,
+      hsa: 30_000,
+      brokerage: 0,
+    });
+  });
+
+  it("engine/GU-K2 [ENG-15] a gap year at a multiplier of 3: a 71,589 need draws the whole HSA and 100,841.99 of gains, nothing unmet", () => {
+    gapPaysItsTax({
+      spending: 400_000,
+      need: 71_589,
+      hsa: 50_000,
+      brokerage: 100_841.99,
+    });
+  });
 });
 
 describe("answer key: the gross-up", () => {

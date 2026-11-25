@@ -29,8 +29,8 @@ Left Over After Spending?
 +23%
 77% → 100%
 Portfolio at Retirement?
-+$23,864.47
-$3,732,902.66 → $3,756,767.13
++$23,869.43
+$3,732,897.70 → $3,756,767.13
 Ready to relocate: With your current portfolio of $618,000.00 and the relocation budget, you are projected to retire comfortably at age 62.
 Large Purchases?
 + Add Purchase
@@ -91,17 +91,17 @@ $0.00/mo
 2044
 60
 $6,300.00
-$2,049,176.72
+$2,049,175.34
 $9,100.00
 $2,055,851.89
-+$6,675.17
++$6,676.56
 $0.00/mo
 2045
 61
 $6,300.00
-$2,128,822.23
+$2,128,819.40
 $9,100.00
 $2,142,431.80
-+$13,609.57
++$13,612.40
 $0.00/mo
 RetirePortfolio meets current expense target?Retire (reloc)Portfolio meets relocation expense target?MOVEEarliest year to relocate and still retire on budget?*Custom expense amount applies this year?$A large purchase hits this year?

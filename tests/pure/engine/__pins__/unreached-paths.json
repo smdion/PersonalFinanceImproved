@@ -892,9 +892,9 @@
    "savingStopped": true,
    "gapDraw": {
     "need": 41666.67,
-    "withdrawal": 52000,
-    "taxCost": 10400,
-    "unmetNeed": 66.67,
+    "withdrawal": 52083.34,
+    "taxCost": 10416.67,
+    "unmetNeed": 0,
     "spendingCut": 0,
     "pay": 0,
     "ssIncome": 0,
@@ -904,9 +904,9 @@
     "slots": [
      {
       "category": "401k",
-      "withdrawal": 52000,
+      "withdrawal": 52083.34,
       "rothWithdrawal": 0,
-      "traditionalWithdrawal": 52000,
+      "traditionalWithdrawal": 52083.34,
       "cappedByAccount": false,
       "cappedByTaxType": false,
       "remainingNeed": 0
@@ -953,10 +953,10 @@
    "accounts": [
     {
      "name": "Ann 401k",
-     "balance": 148000,
+     "balance": 147916.66,
      "contribution": 0,
      "draw": {
-      "withdrawal": 52000,
+      "withdrawal": 52083.34,
       "eligibilityLocked": false,
       "reason": {
        "kind": "no_owner"
