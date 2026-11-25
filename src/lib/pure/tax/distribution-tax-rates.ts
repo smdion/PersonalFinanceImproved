@@ -7,7 +7,10 @@ import { getLtcgRate } from "@/lib/pure/tax/ltcg";
 import { requireLimit } from "@/lib/pure/tax/tax-limits";
 import { returnDeductionTerms } from "@/lib/pure/tax/return-deductions";
 import { toNumber } from "@/lib/utils/numbers";
-import { DEFAULT_ROTH_BRACKET_TARGET } from "@/lib/constants";
+import {
+  DEFAULT_ROTH_BRACKET_TARGET,
+  MAX_EFFECTIVE_TAX_RATE,
+} from "@/lib/constants";
 import type { resolveTaxParams } from "@/lib/pure/tax/resolve-tax-params";
 
 type Decimal = string | null | undefined;
@@ -97,11 +100,15 @@ export function buildDistributionTaxRates({
     if (estimatedRate > 0) {
       effectiveTraditionalRate = estimatedRate;
     }
-    // The LTCG rate at retirement spending, no deduction taken off. Brokerage goal draws price
-    // their gains at it (goal-draws.ts), as does a year without a filing status; a year's draws
-    // with one are priced by scheduleDGainsTax.
+    // The LTCG rate at retirement spending, no deduction off, scaled and capped as the ordinary
+    // estimate is. Goal draws (goal-draws.ts) and a year without a filing status price gains at
+    // it; a year with one prices them with scaledGainsTax.
     effectiveBrokerageRate = filingStatus
-      ? getLtcgRate(retirementIncome, filingStatus, ltcgBracketData)
+      ? Math.min(
+          getLtcgRate(retirementIncome, filingStatus, ltcgBracketData) *
+            taxMult,
+          MAX_EFFECTIVE_TAX_RATE,
+        )
       : dbBrokerageRate;
   }
 

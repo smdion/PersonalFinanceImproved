@@ -156,6 +156,8 @@ function yearTax(c: {
   gains?: number;
   taxableSS?: number;
   deductions: number;
+  /** The tax multiplier (a stand-in for state and local tax); 1 omitted. */
+  multiplier?: number;
 }): number {
   const gains = c.gains ?? 0;
   const slot = (
@@ -192,6 +194,7 @@ function yearTax(c: {
       taxBrackets: withholding(c.year, c.status),
       ltcgBrackets: ltcgBrackets(c.year),
       standardDeduction: c.deductions,
+      ...(c.multiplier === undefined ? {} : { taxMultiplier: c.multiplier }),
     },
     filingStatus: c.status,
   }).taxCost;
@@ -523,6 +526,27 @@ describe("answer key: long-term gains", () => {
   it("tax/L13 [TAX-17] first gains dollar over the 2025 MFJ 0% top: 0.15", () => {
     // T 96,701, all gains: L5 0; L9 96,700; L17 1 × 15%.
     cents(stackedTax(2025, "MFJ", 96_701, 96_701), 0.15);
+  });
+
+  it("tax/WS6 [TAX-16] the tax multiplier scales gains tax as well as ordinary: 1.2 on 150,000 ordinary and 40,000 gains, 25,608", () => {
+    // The multiplier stands in for state and local income tax, so it
+    // scales all income tax, gains included; NIIT, penalties and IRMAA
+    // stay unscaled. 2026 MFJ, deduction 32,200: T ordinary 117,800, tax 2,480
+    // + 12% × 76,000 + 22% × 17,000 = 15,340, × 1.2 = 18,408. The gains
+    // stack on 117,800, past the 0% top (98,900): 15% × 40,000 = 6,000,
+    // × 1.2 = 7,200 (line 25's cap, 22% × 1.2 × 40,000 = 10,560, doesn't
+    // bind). 18,408 + 7,200 = 25,608. Unscaled gains would give 24,408.
+    cents(
+      yearTax({
+        year: 2026,
+        status: "MFJ",
+        ordinary: 150_000,
+        gains: 40_000,
+        deductions: 32_200,
+        multiplier: 1.2,
+      }),
+      25_608,
+    );
   });
 
   it("tax/L15 [TAX-16] deduction larger than income: 0", () => {

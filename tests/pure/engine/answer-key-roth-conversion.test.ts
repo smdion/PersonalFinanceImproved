@@ -363,18 +363,18 @@ describe("answer key: the conversion's tax from a Retirement brokerage part", ()
 });
 
 describe("answer key: a conversion year's gains, line 25", () => {
-  it("tax/L6:conversion [TAX-17] the re-priced gains stop at the 12% band's cost: 114", () => {
-    // tax/L6 with part of its ordinary income a conversion: 2026 Single,
-    // draws 55,550 + conversion 10,000 = 65,550 ordinary before the 16,100
-    // deduction, gains 950. L23 stacks the 950 at 15% (142.50); line 24
-    // less the ordinary tax is 5,800 − 5,686 = 114 (L6's figures), so the
-    // re-priced gains are 114.00.
+  // tax/L6 with part of its ordinary income a conversion: 2026 Single,
+  // draws 55,550 + conversion 10,000 = 65,550 ordinary before the 16,100
+  // deduction, gains 950. L23 stacks the 950 at 15% (142.50); line 24
+  // less the ordinary tax is 5,800 − 5,686 = 114 (L6's figures).
+  /** The conversion year's re-priced gains tax under a tax multiplier. */
+  function repricedGains(taxMultiplier: number): number {
     let gainsTax = NaN;
     repriceConversionYear(
       { input: { filingStatus: "Single" } } as never,
       {
         ssIncome: 0,
-        taxRates: { taxMultiplier: 1 },
+        taxRates: { taxMultiplier },
         tables: {
           grownLtcgBrackets: ltcg2026,
           grownTaxBrackets: singleTable,
@@ -399,7 +399,19 @@ describe("answer key: a conversion year's gains, line 25", () => {
         conversion: { rothConversionAmount: 10_000 },
       } as never,
     );
-    cents(gainsTax, 114);
+    return gainsTax;
+  }
+
+  it("tax/L6:conversion [TAX-17] the re-priced gains stop at the 12% band's cost: 114", () => {
+    // min(142.50, 114) = 114.00.
+    cents(repricedGains(1), 114);
+  });
+
+  it("tax/L6:conversion-multiplier [TAX-17] a multiplier of 1.5 scales both sides: 171", () => {
+    // The multiplier scales all income tax, gains included: the stacked
+    // 142.50 × 1.5 = 213.75, line 25's 114 at the scaled ordinary rates
+    // 114 × 1.5 = 171.00, so the re-priced gains are 171.00.
+    cents(repricedGains(1.5), 171);
   });
 });
 

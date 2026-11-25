@@ -78,6 +78,36 @@ describe("buildDistributionTaxRates", () => {
     expect(r.taxBrackets).toHaveLength(3);
   });
 
+  describe("the brokerage rate goal draws price their gains at, under the tax multiplier", () => {
+    const brackets = [
+      { threshold: 20000, baseWithholding: 0, rate: 0.1 },
+      { threshold: 90000, baseWithholding: 2000, rate: 0.12 },
+      { threshold: Infinity, baseWithholding: 10400, rate: 0.22 },
+    ];
+    const rates = (taxMultiplier: string, bracketData = brackets) =>
+      buildDistributionTaxRates({
+        ...base,
+        settings: { ...settings, taxMultiplier },
+        bracketData,
+        decumulationExpenses: 100000,
+      });
+
+    it("scales the estimated gains rate as it scales the ordinary one: 15% × 1.5 = 22.5%", () => {
+      // 100,000 of spending is past the 90,000 0% top: 15%. A goal draw's
+      // 10,000 of gains is then charged 2,250, not 1,500.
+      expect(rates("1").brokerage).toBe(0.15);
+      expect(rates("1.5").brokerage).toBeCloseTo(0.225, 12);
+    });
+
+    it("caps it as the ordinary estimate is capped: 15% × 4 is 50%", () => {
+      expect(rates("4").brokerage).toBe(0.5);
+    });
+
+    it("leaves the household's typed rate as typed when no brackets are seeded", () => {
+      expect(rates("1.5", []).brokerage).toBe(0.15);
+    });
+  });
+
   it("an expired senior deduction degrades to none; a missing standard deduction fails loudly", () => {
     expect(
       buildDistributionTaxRates(base).obbbaSeniorDeductionPerPerson,
