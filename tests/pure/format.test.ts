@@ -333,22 +333,31 @@ describe("accountDisplayName", () => {
 
 describe("withUnreadableItems", () => {
   it("names the items a push left out for a saved amount that isn't a number", () => {
-    expect(withUnreadableItems("Pushed 1 item to YNAB", ["Rent", "Gas"])).toBe(
+    expect(
+      withUnreadableItems("Pushed 1 item to YNAB", {
+        unreadable: ["Rent", "Gas"],
+      }),
+    ).toBe(
       "Pushed 1 item to YNAB — not pushed, saved amount isn't a number: Rent, Gas",
     );
-    expect(withUnreadableItems("Pushed 1 item to YNAB", [])).toBe(
+    expect(withUnreadableItems("Pushed 1 item to YNAB", {})).toBe(
       "Pushed 1 item to YNAB",
     );
   });
 
   it("names the items a push left out for having no saved amount in the column on their own", () => {
     expect(
-      withUnreadableItems("Pushed 1 item to YNAB", [], ["Rent", "Gas"]),
+      withUnreadableItems("Pushed 1 item to YNAB", {
+        missing: ["Rent", "Gas"],
+      }),
     ).toBe(
       "Pushed 1 item to YNAB — not pushed, no saved amount for this column: Rent, Gas",
     );
     expect(
-      withUnreadableItems("Pushed 1 item to YNAB", ["Snacks"], ["Rent"]),
+      withUnreadableItems("Pushed 1 item to YNAB", {
+        unreadable: ["Snacks"],
+        missing: ["Rent"],
+      }),
     ).toBe(
       "Pushed 1 item to YNAB — not pushed, saved amount isn't a number: Snacks — not pushed, no saved amount for this column: Rent",
     );

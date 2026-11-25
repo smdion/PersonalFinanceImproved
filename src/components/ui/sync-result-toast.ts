@@ -49,11 +49,13 @@ export function formatSyncResultToast(
  *  are never sent as $0). */
 export function withUnreadableItems(
   message: string,
-  names: readonly string[] = [],
-  missing: readonly string[] = [],
+  {
+    unreadable = [],
+    missing = [],
+  }: { unreadable?: readonly string[]; missing?: readonly string[] },
 ): string {
   const notes = [
-    ["saved amount isn't a number", names],
+    ["saved amount isn't a number", unreadable],
     ["no saved amount for this column", missing],
   ] as const;
   return notes

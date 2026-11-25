@@ -53,8 +53,10 @@ export function useBudgetSyncMutations() {
             // formatSyncResultToast's requiresManualApply docblock.
             data.service === "actual",
           ),
-          data.skippedUnreadable,
-          data.skippedMissing,
+          {
+            unreadable: data.skippedUnreadable,
+            missing: data.skippedMissing,
+          },
         ),
       );
     },
