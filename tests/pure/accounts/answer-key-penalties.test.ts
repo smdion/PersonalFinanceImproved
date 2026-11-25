@@ -502,6 +502,32 @@ describe("answer key: Roth ordering and the conversion clocks", () => {
       { income: 0, penalty: 500 },
     );
   });
+
+  it("ret/W4 [RET-18] Roth 401(k), 57, no Rule of 55, 150,000 with 90,000 basis, takes 60,000: additional tax 2,400", () => {
+    // A designated Roth account's nonqualified distribution recovers basis
+    // pro rata (IRC 72(e)(8), 402A(d); Pub 575 (2025) "Designated Roth
+    // accounts"): 60,000 × 60,000 / 150,000 = 24,000 is income. The 10%
+    // is on the part included in income (72(t)(1)): 2,400, not 10% of the
+    // whole 60,000.
+    const basis: RothBasisState = {
+      contributionBasis: 90_000,
+      conversionBasis: 0,
+      latestConversionYear: null,
+      sourceYear: 2026,
+      isSeeded: false,
+      stale: false,
+    };
+    cents(
+      yearDraw({
+        account: owned("401k", "taxFree", 1969),
+        year: 2026,
+        take: 60_000,
+        balance: 150_000,
+        basis,
+      }),
+      { penalty: 2_400, penaltyFree: 0 },
+    );
+  });
 });
 
 // ── Blocked, with an item that unblocks them ────────────────────────────
