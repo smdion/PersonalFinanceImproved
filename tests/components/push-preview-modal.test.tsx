@@ -77,4 +77,45 @@ describe("PushPreviewModal — unreadable amounts", () => {
     expect(screen.queryByText("Snacks")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Push 1 Change" })).toBeTruthy();
   });
+
+  it("in a pull, names an item the pull skips and shows an amount it replaces as not a number, never $0", () => {
+    render(
+      <PushPreviewModal
+        title="Pull from YNAB"
+        items={[
+          ...items,
+          {
+            name: "Odd",
+            field: "Goal Target",
+            currentYnab: 0,
+            newValue: 50,
+            unreadable: true,
+          },
+          {
+            name: "Snacks",
+            field: "Goal Target",
+            currentYnab: 0,
+            newValue: 0,
+            currentUnreadable: true,
+          },
+        ]}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        direction="pull"
+      />,
+    );
+    expect(
+      screen.getByText(
+        "1 item not pulled — saved amounts have no column to write into: Odd.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Odd")).not.toBeInTheDocument();
+    const snacks = screen.getByText("Snacks").closest("tr")!;
+    // Ledgr Now and the change: no $0 standing in for the saved value.
+    const cells = [...snacks.querySelectorAll("td")].map(
+      (td) => td.textContent,
+    );
+    expect(cells.slice(2)).toEqual(["not a number", "$0.00", "—"]);
+    expect(screen.getByRole("button", { name: "Pull 2 Changes" })).toBeTruthy();
+  });
 });

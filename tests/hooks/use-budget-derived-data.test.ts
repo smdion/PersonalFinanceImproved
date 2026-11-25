@@ -311,3 +311,47 @@ describe("useBudgetDerivedData — push preview", () => {
     expect(items.find((i) => i.name === "Rent")!.unreadable).toBeUndefined();
   });
 });
+
+describe("useBudgetDerivedData — pull preview", () => {
+  const pulled = (subcategory: string, stored: string): RawItem =>
+    ({
+      id: subcategory.length,
+      category: "Food",
+      subcategory,
+      amounts: JSON.parse(stored),
+      isEssential: false,
+      apiCategoryId: `cat-${subcategory}`,
+      apiCategoryName: subcategory,
+      apiSyncDirection: "pull",
+    }) as RawItem;
+
+  it("names an amount it can't read, as the pull treats it, never showing it as $0", () => {
+    setQuery("paycheck.computeSummary", undefined);
+    const { result } = setup(false, [
+      pulled("Snacks", '["abc"]'), // the pull replaces it
+      pulled("Odd", '{"0":5}'), // not a list: the pull skips it
+      pulled("Short", "[]"), // no stored column: the pull skips it
+      pulled("Rent", "[1200]"),
+    ]);
+
+    const items = result.current.buildPullPreviewItems(0);
+    const named = (name: string) => items.find((i) => i.name === name)!;
+    expect(named("Snacks")).toMatchObject({ currentUnreadable: true });
+    expect(named("Snacks").unreadable).toBeUndefined();
+    expect(named("Odd")).toMatchObject({ unreadable: true });
+    expect(named("Short")).toMatchObject({ unreadable: true });
+    expect(named("Rent")).toEqual({
+      name: "Rent",
+      field: "Goal Target",
+      currentYnab: 1200,
+      newValue: 0,
+    });
+  });
+
+  it("category totals count an amount that isn't a number as $0, as the budget total does", () => {
+    setQuery("paycheck.computeSummary", undefined);
+    const items = [pulled("Snacks", '["abc"]'), pulled("Rent", "[1200]")];
+    const { result } = setup(false, items);
+    expect(result.current.getCatTotals(items)).toEqual([1200]);
+  });
+});

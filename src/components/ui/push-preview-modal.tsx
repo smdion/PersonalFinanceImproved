@@ -14,17 +14,26 @@ export type PushPreviewItem = {
   /** A percentage-based goal whose stored amount differs from a live recalc (e.g. income
    *  changed), so the user can recalculate before pushing. */
   stale?: boolean;
-  /** Its saved amount isn't a number: the push skips it, so it's named, never shown as $0. */
+  /** Skipped, so named, never shown as $0: a push's saved amount isn't a number, a pull's
+   *  saved amounts have no column to write into. */
   unreadable?: boolean;
+  /** Pull only: its saved amount isn't a number; the pull replaces it, shown as such. */
+  currentUnreadable?: boolean;
 };
 
-/** The items the push skips for a saved amount that isn't a number, named. */
-function UnreadableItemsNote({ items }: { items: PushPreviewItem[] }) {
+/** The items the push or pull skips, named. */
+function UnreadableItemsNote({
+  items,
+  isPull,
+}: {
+  items: PushPreviewItem[];
+  isPull: boolean;
+}) {
   const names = items.filter((i) => i.unreadable).map((i) => i.name);
   if (names.length === 0) return null;
   return (
     <p className="text-caption mt-2 text-amber-600">
-      {`${names.length} item${names.length !== 1 ? "s" : ""} not pushed — saved amount isn't a number: ${names.join(", ")}.`}
+      {`${names.length} item${names.length !== 1 ? "s" : ""} ${isPull ? "not pulled — saved amounts have no column to write into" : "not pushed — saved amount isn't a number"}: ${names.join(", ")}.`}
     </p>
   );
 }
@@ -38,6 +47,7 @@ function PreviewRow({
   formatValue: (n: number) => string;
 }) {
   const delta = item.newValue - item.currentYnab;
+  const unread = item.currentUnreadable === true;
   return (
     <tr className="border-subtle border-b">
       <td
@@ -56,7 +66,7 @@ function PreviewRow({
       </td>
       <td className="text-muted py-1.5 pr-2">{item.field}</td>
       <td className="text-muted py-1.5 pr-2 text-right tabular-nums">
-        {formatValue(item.currentYnab)}
+        {unread ? "not a number" : formatValue(item.currentYnab)}
       </td>
       <td className="text-primary py-1.5 pr-2 text-right font-medium tabular-nums">
         {formatValue(item.newValue)}
@@ -64,8 +74,7 @@ function PreviewRow({
       <td
         className={`py-1.5 text-right font-medium tabular-nums ${delta >= 0 ? "text-green-600" : "text-red-600"}`}
       >
-        {delta >= 0 ? "+" : ""}
-        {formatValue(delta)}
+        {unread ? "—" : `${delta >= 0 ? "+" : ""}${formatValue(delta)}`}
       </td>
     </tr>
   );
@@ -95,12 +104,12 @@ export function PushPreviewModal({
   const formatValue = (n: number) =>
     valueFormat === "percent" ? formatPercent(n / 100, 3) : formatCurrency(n);
   const readable = items.filter((i) => !i.unreadable);
-  const changed = readable.filter(
-    (i) => Math.abs(i.newValue - i.currentYnab) >= CHANGE_DETECTION_THRESHOLD,
-  );
-  const unchanged = readable.filter(
-    (i) => Math.abs(i.newValue - i.currentYnab) < CHANGE_DETECTION_THRESHOLD,
-  );
+  // A pull always replaces an amount that isn't a number.
+  const isChange = (i: PushPreviewItem) =>
+    i.currentUnreadable === true ||
+    Math.abs(i.newValue - i.currentYnab) >= CHANGE_DETECTION_THRESHOLD;
+  const changed = readable.filter(isChange);
+  const unchanged = readable.filter((i) => !isChange(i));
   const staleItems = items.filter((i) => i.stale);
   const isPull = direction === "pull";
   const isRecalculate = direction === "recalculate";
@@ -208,7 +217,7 @@ export function PushPreviewModal({
             (already match {applyTarget}).
           </p>
         )}
-        <UnreadableItemsNote items={items} />
+        <UnreadableItemsNote items={items} isPull={isPull} />
       </div>
 
       <div className="flex items-center justify-end gap-2">
