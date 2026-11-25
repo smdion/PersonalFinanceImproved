@@ -879,7 +879,11 @@ describe("budget router", () => {
         .all()
         .find((i) => i.subcategory === "Not A List")!;
       expect(copied.amounts).toEqual({ "0": 5 });
-      await caller.budget.deleteItem({ id: copied.id });
+      // The copy goes, items and all: no profile is left for later tests.
+      await caller.budget.deleteProfile({ id: copy.id });
+      expect(
+        (await caller.budget.listProfiles()).some((p) => p.id === copy.id),
+      ).toBe(false);
       await caller.budget.deleteItem({ id: notAList });
     });
   });
