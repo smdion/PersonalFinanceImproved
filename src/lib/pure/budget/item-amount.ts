@@ -64,6 +64,16 @@ export function storedAmountList(stored: readonly number[]): number[] | null {
   return Array.isArray(value) ? [...stored] : null;
 }
 
+/** `storedAmountList` for a writer of column `col` alone (the pull): null
+ *  when the list has no place for that column, so nothing else shifts. */
+export function amountListWithColumn(
+  stored: readonly number[],
+  col: number,
+): number[] | null {
+  const list = storedAmountList(stored);
+  return list !== null && col >= 0 && col < list.length ? list : null;
+}
+
 /** The items' monthly total in column `col` of `columns` (see budgetItemAmount). */
 export function budgetColumnSum(
   items: readonly { amounts: readonly number[] }[],

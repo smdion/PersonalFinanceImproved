@@ -24,8 +24,8 @@ import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-
 import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import {
+  amountListWithColumn,
   readableBudgetItemAmount,
-  storedAmountList,
   storedColumnAmount,
 } from "@/lib/pure/budget/item-amount";
 
@@ -106,8 +106,8 @@ export async function syncBudgetFromApi(ctx: { db: Db; scope: RequestScope }) {
     // As stored: a column this pull doesn't write keeps what it holds. Saved
     // amounts that aren't a list, or stop short of the linked column, have
     // nowhere to write: skipped and named, never written into another column.
-    const amounts = storedAmountList(item.amounts);
-    if (amounts === null || !(colIndex >= 0 && colIndex < amounts.length)) {
+    const amounts = amountListWithColumn(item.amounts, colIndex);
+    if (amounts === null) {
       skippedUnwritable.push(item.subcategory);
       continue;
     }

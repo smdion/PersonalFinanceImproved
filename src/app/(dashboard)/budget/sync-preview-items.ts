@@ -1,8 +1,8 @@
 /** The Budget page's push and pull preview items: each linked item's Ledgr
  *  amount against the budget app's goal target. */
 import {
+  amountListWithColumn,
   readableBudgetItemAmount,
-  storedAmountList,
   storedColumnAmount,
 } from "@/lib/pure/budget/item-amount";
 import type { RawItem } from "@/components/budget";
@@ -61,8 +61,7 @@ export function pullPreviewItems(
     const colIndex = activeColumn; // as the pull: never another column
     // As the pull: saved amounts with no such column are skipped (named); a
     // value there that isn't a number is replaced (shown as such, not $0).
-    const list = storedAmountList(item.amounts);
-    const skipped = list === null || !(colIndex >= 0 && colIndex < list.length);
+    const skipped = amountListWithColumn(item.amounts, colIndex) === null;
     const currentValue = skipped
       ? null
       : readableBudgetItemAmount(item.amounts, colIndex, numCols);

@@ -4,6 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 import {
+  amountListWithColumn,
   budgetColumnSum,
   budgetItemAmount,
   readableBudgetItemAmount,
@@ -95,6 +96,18 @@ describe("storedAmountList", () => {
     expect(copy).not.toBe(stored);
     for (const notAList of ['{"0":5}', '"500"', "null"])
       expect(storedAmountList(JSON.parse(notAList))).toBeNull();
+  });
+});
+
+describe("amountListWithColumn", () => {
+  it("copies a list that has a place for the column, and is null for one that has none", () => {
+    const stored: number[] = JSON.parse('["500", null, 20]');
+    const copy = amountListWithColumn(stored, 1);
+    expect(copy).toEqual(["500", null, 20]);
+    expect(copy).not.toBe(stored);
+    expect(amountListWithColumn(stored, 3)).toBeNull();
+    expect(amountListWithColumn(stored, -1)).toBeNull();
+    expect(amountListWithColumn(JSON.parse('{"0":5}'), 0)).toBeNull();
   });
 });
 
