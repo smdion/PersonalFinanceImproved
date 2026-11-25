@@ -10,6 +10,7 @@ import type { MutableRefObject } from "react";
 import { trpc } from "@/lib/trpc";
 import { useOptimisticMutation } from "@/components/budget/use-optimistic-mutation";
 import { useInvalidateBudget } from "./use-invalidate-budget";
+import { storedAmountList } from "@/lib/pure/budget/item-amount";
 
 type Options = {
   /** Live-read of the selected column. Kept as a ref so the mutations
@@ -56,7 +57,8 @@ export function useBudgetItemMutations({ selectedColumnRef }: Options) {
                     contribAmounts: newContributionAmounts,
                   };
                 }
-                const newAmounts = [...item.amounts];
+                const newAmounts = storedAmountList(item.amounts);
+                if (!newAmounts) return item; // not a list: the edit refuses
                 newAmounts[variables.colIndex] = variables.amount;
                 return { ...item, amounts: newAmounts };
               },

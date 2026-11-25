@@ -33,7 +33,9 @@ export function readableBudgetItemAmount(
   columns: number,
 ): number | null {
   if (col < 0 || col >= columns) return 0;
-  const amount = amounts[col];
+  const list = storedAmountList(amounts);
+  if (list === null) return null; // saved amounts that aren't a list: missing
+  const amount = list[col];
   if (amount === undefined)
     throw new Error(
       `A budget item holds ${amounts.length} amounts for ${columns} columns`,

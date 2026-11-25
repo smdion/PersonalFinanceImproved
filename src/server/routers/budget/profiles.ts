@@ -12,6 +12,7 @@ import * as schema from "@/lib/db/schema";
 import { canDeleteBudgetProfile } from "@/lib/pure/household/profiles";
 import { columnLabelsSchema } from "@/lib/db/shapes/json-schemas";
 import { firstRow } from "@/lib/utils/first-row";
+import { storedAmountList } from "@/lib/pure/budget/item-amount";
 
 export const profileProcedures = {
   /** Create a new budget profile, pre-populated with standard template
@@ -129,10 +130,10 @@ export const profileProcedures = {
               const amounts =
                 itemActiveMap.size === 0
                   ? rawAmounts
-                  : rawAmounts.map(
+                  : (storedAmountList(rawAmounts)?.map(
                       (amount, col) =>
                         itemActiveMap.get(`${i.id}:${col}`) ?? amount,
-                    );
+                    ) ?? rawAmounts); // not a list: copied as stored
               return {
                 profileId: created.id,
                 category: i.category,

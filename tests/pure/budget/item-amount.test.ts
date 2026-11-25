@@ -76,6 +76,14 @@ describe("readableBudgetItemAmount", () => {
     expect(readableBudgetItemAmount(stored, 1, 2)).toBeNull();
     expect(readableBudgetItemAmount(stored, 2, 2)).toBe(0);
   });
+
+  it("is null for saved amounts that aren't a list, never throwing", () => {
+    for (const notAList of ["500", '{"0":5}', '"500"', "null"]) {
+      const stored: number[] = JSON.parse(notAList);
+      expect(readableBudgetItemAmount(stored, 0, 1)).toBeNull();
+      expect(budgetColumnSum([{ amounts: stored }], 0, 1)).toBe(0);
+    }
+  });
 });
 
 describe("storedAmountList", () => {

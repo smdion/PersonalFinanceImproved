@@ -852,8 +852,34 @@ describe("budget router", () => {
           amount: 1,
         }),
       ).rejects.toThrow("saved amounts aren't a list");
-      // Readers still stop at amounts that aren't a list (a short item
-      // throws by design): leave none behind for the suite.
+      // Readers take amounts that aren't a list as missing ($0, named).
+      const listed = await caller.budget.listProfiles();
+      expect(listed.some((p) => p.id === textProfileId)).toBe(true);
+      const summary = await caller.budget.computeActiveSummary({
+        profileId: textProfileId,
+      });
+      expect(summary.result!.warnings).toContain(
+        'Essentials / Not A List: its saved amounts, {"0":5}, aren\'t a list, so it counts as $0. Re-enter it on the Budget page.',
+      );
+      // The What-If layer and its "keep this" copy leave them as stored.
+      const whatIf = [{ itemId: notAList, colIndex: 0, amount: 7 }];
+      await caller.budget.computeActiveSummary({
+        profileId: textProfileId,
+        itemAmountActiveFields: whatIf,
+      });
+      const copy = await caller.budget.duplicateProfile({
+        sourceProfileId: textProfileId,
+        name: "Text Amounts Copy",
+        itemAmountActiveFields: whatIf,
+      });
+      const copied = db
+        .select()
+        .from(sqliteSchema.budgetItems)
+        .where(eq(sqliteSchema.budgetItems.profileId, copy.id))
+        .all()
+        .find((i) => i.subcategory === "Not A List")!;
+      expect(copied.amounts).toEqual({ "0": 5 });
+      await caller.budget.deleteItem({ id: copied.id });
       await caller.budget.deleteItem({ id: notAList });
     });
   });

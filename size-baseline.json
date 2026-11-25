@@ -394,7 +394,7 @@
     "src/server/routers/sync/preview.ts": 14,
     "src/server/routers/utility-bills.ts": 568,
     "src/server/services/budget/account-balances.ts": 148,
-    "src/server/services/budget/active-summary.ts": 297,
+    "src/server/services/budget/active-summary.ts": 298,
     "src/server/services/budget/annual-expenses.ts": 54,
     "src/server/services/budget/linked-items.ts": 166,
     "src/server/services/contributions/account-edits.ts": 201,
@@ -538,7 +538,7 @@
       "BudgetSummaryTable": 517
     },
     "src/components/budget/use-budget-item-mutations.ts": {
-      "useBudgetItemMutations": 176
+      "useBudgetItemMutations": 177
     },
     "src/components/contributions/contribution-accounts-card.tsx": {
       "AccountCard": 620

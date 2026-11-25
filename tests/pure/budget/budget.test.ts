@@ -501,4 +501,32 @@ describe("calculateBudget — branch coverage", () => {
       'Food / Snacks: its saved amount, "abc", isn\'t a number, so it counts as $0. Re-enter it on the Budget page.',
     ]);
   });
+
+  it("reads saved amounts that aren't a list as missing, named and counted as $0", () => {
+    const notAList: number[] = JSON.parse("500");
+    const result = calculateBudget({
+      columnLabels: ["Standard"],
+      selectedColumn: 0,
+      items: [
+        {
+          category: "Food",
+          label: "Groceries",
+          amounts: [100],
+          isEssential: true,
+        },
+        {
+          category: "Food",
+          label: "Snacks",
+          amounts: notAList,
+          isEssential: true,
+        },
+      ],
+      asOfDate: AS_OF_DATE,
+    });
+    expect(result.totalMonthly).toBe(100);
+    expect(result.essentialTotal).toBe(100);
+    expect(result.warnings).toEqual([
+      "Food / Snacks: its saved amounts, 500, aren't a list, so it counts as $0. Re-enter it on the Budget page.",
+    ]);
+  });
 });

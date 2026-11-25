@@ -22,6 +22,7 @@ import { loadBudgetItemLinks } from "@/server/data/category-links";
 import { resolveTargetBudgetProfile } from "@/server/data/budget-profiles";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
+import { storedAmountList } from "@/lib/pure/budget/item-amount";
 import { getActiveBudgetApi } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import {
@@ -172,9 +173,9 @@ export async function computeBudgetActiveSummary(
   const applyItemActiveFields = (itemId: number, amounts: number[]) =>
     itemActiveMap.size === 0
       ? amounts
-      : amounts.map(
+      : (storedAmountList(amounts)?.map(
           (amount, col) => itemActiveMap.get(`${itemId}:${col}`) ?? amount,
-        );
+        ) ?? amounts); // amounts that aren't a list: read as missing
   const budgetItems = items.map((i) => {
     const resolved = resolvedItemsById.get(i.id)!;
     if (!i.contributionAccountId)
