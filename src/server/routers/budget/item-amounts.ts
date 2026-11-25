@@ -5,7 +5,6 @@ import { zMoneyNumber } from "@/lib/utils/zod-fields";
 import { TRPCError } from "@trpc/server";
 import { budgetProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { budgetAmountsSchema } from "@/lib/db/shapes/json-schemas";
 import { applyContributionAccountEdit } from "@/server/services/contributions/account-edits";
 import { applyContributionAccountEditsBatch } from "@/server/services/contributions/account-edits";
 import type { DbOrTx } from "@/lib/db";
@@ -16,6 +15,7 @@ import {
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { firstRow } from "@/lib/utils/first-row";
 import { lockedRow } from "@/server/data/lock-row";
+import { storedAmountList } from "@/lib/pure/budget/item-amount";
 
 /**
  * The Contribution Profile a budget-linked item edit writes into (the one the page shows).
@@ -37,6 +37,19 @@ async function resolveEffectiveContributionProfileIdForItem(
     });
   }
   return resolvedId;
+}
+
+/** A copy of an item's stored amounts to edit (text kept as stored); amounts
+ *  that aren't a list (written outside the app) refuse the edit. */
+function editableAmounts(stored: number[]): number[] {
+  const amounts = storedAmountList(stored);
+  if (amounts === null)
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message:
+        "This budget item's saved amounts aren't a list, so it can't be edited here. Delete and re-add it.",
+    });
+  return amounts;
 }
 
 export const itemAmountProcedures = {
@@ -93,7 +106,8 @@ export const itemAmountProcedures = {
           .then(firstRow);
         if (!current)
           throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
-        const amounts = budgetAmountsSchema.parse(current.amounts);
+        // As stored: a column this edit doesn't write keeps what it holds.
+        const amounts = editableAmounts(current.amounts);
         if (input.colIndex < 0 || input.colIndex >= amounts.length) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -178,7 +192,7 @@ export const itemAmountProcedures = {
           // `amounts` tracks the profile's column count for linked items too, so it
           // bounds both; an unchecked linked item would write into the active
           // Contribution Profile via the tier fallback, unreported.
-          const amounts = budgetAmountsSchema.parse(item.amounts);
+          const amounts = editableAmounts(item.amounts);
           const valid = changes.filter((c) => {
             if (!Number.isFinite(c.amount)) {
               // Message is user-facing (surfaced by the global

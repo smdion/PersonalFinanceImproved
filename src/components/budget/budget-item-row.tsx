@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { asButton } from "@/components/ui/as-button";
 import { ApiCategoryPicker } from "./api-category-picker";
+import { BudgetAmountText } from "./budget-amount-text";
 import type { RawItem } from "./types";
 import { budgetItemAmount } from "@/lib/pure/budget/item-amount";
 import type { ContribResolutionStatus } from "@/lib/pure/household/profiles";
@@ -259,7 +260,7 @@ export function BudgetItemRow({
               key={col}
               className="text-secondary px-3 py-1.5 text-right text-xs tabular-nums"
             >
-              {n > 0 ? formatCurrency(n) : "\u2014"}
+              <BudgetAmountText item={item} col={col} amount={n} />
             </td>
           );
         }

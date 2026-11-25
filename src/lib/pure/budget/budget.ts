@@ -5,7 +5,7 @@
  */
 import type { BudgetInput, BudgetResult } from "./budget.types";
 import { roundToCents, sumBy } from "../../utils/math";
-import { budgetItemAmount } from "./item-amount";
+import { budgetItemAmount, storedBudgetAmount } from "./item-amount";
 
 const NO_BUDGET = {
   totalMonthly: 0,
@@ -38,6 +38,11 @@ export function calculateBudget(input: BudgetInput): BudgetResult {
 
   for (const item of input.items) {
     const amount = budgetItemAmount(item.amounts, col, columns);
+    const stored: unknown = item.amounts[col];
+    if (storedBudgetAmount(stored) === null)
+      warnings.push(
+        `${item.category} / ${item.label}: its saved amount, ${JSON.stringify(stored)}, isn't a number, so it counts as $0. Re-enter it on the Budget page.`,
+      );
     if (!categoryMap.has(item.category)) {
       categoryMap.set(item.category, []);
     }

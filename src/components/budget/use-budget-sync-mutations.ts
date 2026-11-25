@@ -7,7 +7,10 @@
 
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
-import { formatSyncResultToast } from "@/components/ui/sync-result-toast";
+import {
+  formatSyncResultToast,
+  withUnreadableItems,
+} from "@/components/ui/sync-result-toast";
 import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { useInvalidateBudget } from "./use-invalidate-budget";
 
@@ -34,16 +37,19 @@ export function useBudgetSyncMutations() {
     onSuccess: (data) => {
       invalidateSummary();
       toast.success(
-        formatSyncResultToast(
-          data.pushed,
-          "push",
-          budgetApiServiceLabel(data.service),
-          data.skippedUnsupported,
-          0,
-          undefined,
-          // Same note-based-template caveat as savings' push — see
-          // formatSyncResultToast's requiresManualApply docblock.
-          data.service === "actual",
+        withUnreadableItems(
+          formatSyncResultToast(
+            data.pushed,
+            "push",
+            budgetApiServiceLabel(data.service),
+            data.skippedUnsupported,
+            0,
+            undefined,
+            // Same note-based-template caveat as savings' push — see
+            // formatSyncResultToast's requiresManualApply docblock.
+            data.service === "actual",
+          ),
+          data.skippedUnreadable,
         ),
       );
     },

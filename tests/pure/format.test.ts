@@ -14,7 +14,10 @@ import {
   maskAmountsInText,
   MASKED_AMOUNT_PATTERN,
 } from "@/lib/utils/format";
-import { formatSyncResultToast } from "@/components/ui/sync-result-toast";
+import {
+  formatSyncResultToast,
+  withUnreadableItems,
+} from "@/components/ui/sync-result-toast";
 import { setPrivacyMode, isPrivacyMode } from "@/lib/utils/privacy-mode";
 
 /**
@@ -324,6 +327,17 @@ describe("accountDisplayName", () => {
     // but for types like "hsa" → "HSA" the lookup matters. Verify the
     // lookup path is taken for a type where casing differs.
     expect(accountDisplayName({ accountType: "hsa" })).toBe("HSA");
+  });
+});
+
+describe("withUnreadableItems", () => {
+  it("names the items a push left out for a saved amount that isn't a number", () => {
+    expect(withUnreadableItems("Pushed 1 item to YNAB", ["Rent", "Gas"])).toBe(
+      "Pushed 1 item to YNAB — not pushed, saved amount isn't a number: Rent, Gas",
+    );
+    expect(withUnreadableItems("Pushed 1 item to YNAB", [])).toBe(
+      "Pushed 1 item to YNAB",
+    );
   });
 });
 

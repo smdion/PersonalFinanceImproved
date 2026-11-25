@@ -1,6 +1,6 @@
 import type { ApiSyncDirection } from "@/lib/config/enum-values";
 import type { BudgetInput } from "@/lib/pure/budget/budget.types";
-import { budgetItemAmount } from "@/lib/pure/budget/item-amount";
+import { readableBudgetItemAmount as readableAmount } from "@/lib/pure/budget/item-amount";
 
 export function previewCash(
   conn: {
@@ -115,7 +115,7 @@ export function matchBudgetItems(
     budgetItemId: number;
     ledgrName: string;
     ledgrCategory: string;
-    ledgrAmount: number;
+    ledgrAmount: number | null; // null: not a number stored; push skips it
     status: "linked" | "suggested" | "unmatched" | "orphaned";
     apiCategoryId: string | null;
     apiCategoryName: string | null;
@@ -134,7 +134,7 @@ export function matchBudgetItems(
     budgetItemId: item.id,
     ledgrName: item.subcategory,
     ledgrCategory: item.category,
-    ledgrAmount: budgetItemAmount(item.amounts, column.index, column.of),
+    ledgrAmount: readableAmount(item.amounts, column.index, column.of),
   });
 
   // First pass: already linked items

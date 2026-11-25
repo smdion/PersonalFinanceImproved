@@ -43,3 +43,13 @@ export function formatSyncResultToast(
     ? `${withNotes} as a goal template — open ${destination} and run "Apply Budget Template" to assign it to a month's budget.`
     : withNotes;
 }
+
+/** A push toast with the items it left out because their saved amount isn't
+ *  a number named after it (they are never sent as $0). */
+export function withUnreadableItems(
+  message: string,
+  names: readonly string[] = [],
+): string {
+  if (names.length === 0) return message;
+  return `${message} — not pushed, saved amount isn't a number: ${names.join(", ")}`;
+}

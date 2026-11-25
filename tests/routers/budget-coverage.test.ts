@@ -927,6 +927,19 @@ describe("budget router — syncBudgetFromApi", () => {
       expect(result.updated).toBe(0);
       expect(amountsOf(itemIds[0]!)).toEqual([]);
     });
+
+    it("keeps a text amount in another column as stored", async () => {
+      const { result, amountsOf, itemIds } = await pullWith(
+        [{ id: "c1", goalTarget: 1500 }],
+        1,
+        (sqlite, ids) =>
+          sqlite.exec(
+            `UPDATE budget_items SET amounts = '["100","abc",300]' WHERE id = ${ids[0]}`,
+          ),
+      );
+      expect(result.updated).toBe(1);
+      expect(amountsOf(itemIds[0]!)).toEqual(["100", 1500, 300]);
+    });
   });
 
   it("uses linked profile from apiConnections when configured", async () => {
@@ -1032,6 +1045,41 @@ describe("budget router — syncBudgetToApi", () => {
       // Push must refresh budget_api_cache so subsequent previews don't
       // show stale pre-push diffs (see refreshCategoryCache doc comment).
       expect(refreshCategoryCache).toHaveBeenCalledTimes(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("skips an item whose stored amount isn't a number, naming it, and never pushes $0 over the app's target", async () => {
+    const { getActiveBudgetApi, getClientForService } =
+      await import("@/lib/budget-api");
+    const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
+    (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      "ynab",
+    );
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      goalClient(mockUpdateGoal),
+    );
+
+    const { caller, db, sqlite, cleanup } =
+      await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      sqlite.exec(
+        `UPDATE budget_items SET amounts = '["abc"]' WHERE id = ${seed.itemIds[0]}`,
+      );
+      await caller.budget.linkToApi({
+        budgetItemId: seed.itemIds[0]!,
+        service: "ynab",
+        apiCategoryId: "api-push-cat",
+        apiCategoryName: "Push Cat",
+        syncDirection: "push",
+      });
+
+      const result = await caller.budget.syncBudgetToApi();
+      expect(result.pushed).toBe(0);
+      expect(result.skippedUnreadable).toEqual(["Rent"]);
+      expect(mockUpdateGoal).not.toHaveBeenCalled();
     } finally {
       cleanup();
     }

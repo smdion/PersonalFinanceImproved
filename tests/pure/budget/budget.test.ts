@@ -466,4 +466,39 @@ describe("calculateBudget — branch coverage", () => {
     const food = result.categories.find((c) => c.name === "Food")!;
     expect(food.total).toBe(800);
   });
+
+  it("totals a stored text amount as its number and names one that isn't a number, counted as $0", () => {
+    // As an install can store them (tag 0018 left "500" as text).
+    const stored: number[][] = JSON.parse('[["500"], ["abc"]]');
+    const result = calculateBudget({
+      columnLabels: ["Standard"],
+      selectedColumn: 0,
+      items: [
+        {
+          category: "Food",
+          label: "Groceries",
+          amounts: [100],
+          isEssential: true,
+        },
+        {
+          category: "Food",
+          label: "Dining",
+          amounts: stored[0]!,
+          isEssential: true,
+        },
+        {
+          category: "Food",
+          label: "Snacks",
+          amounts: stored[1]!,
+          isEssential: false,
+        },
+      ],
+      asOfDate: AS_OF_DATE,
+    });
+    expect(result.totalMonthly).toBe(600);
+    expect(result.essentialTotal).toBe(600);
+    expect(result.warnings).toEqual([
+      'Food / Snacks: its saved amount, "abc", isn\'t a number, so it counts as $0. Re-enter it on the Budget page.',
+    ]);
+  });
 });

@@ -6,6 +6,9 @@ import { describe, it, expect } from "vitest";
 import {
   budgetColumnSum,
   budgetItemAmount,
+  readableBudgetItemAmount,
+  storedAmountList,
+  storedBudgetAmount,
 } from "@/lib/pure/budget/item-amount";
 
 describe("budgetItemAmount", () => {
@@ -32,5 +35,56 @@ describe("budgetColumnSum", () => {
     const items = [{ amounts: [100, 200] }, { amounts: [50, 75] }];
     expect(budgetColumnSum(items, 1, 2)).toBe(275);
     expect(budgetColumnSum(items, 2, 2)).toBe(0);
+  });
+
+  it("sums a stored text amount as its number, never as text, and one that isn't a number as $0", () => {
+    // As an install can store them (tag 0018 left "500" as text).
+    const stored: number[] = JSON.parse('["500", "abc", " "]');
+    const items = [{ amounts: [100, 200, 300] }, { amounts: stored }];
+    expect(budgetColumnSum(items, 0, 3)).toBe(600);
+    expect(budgetColumnSum(items, 1, 3)).toBe(200);
+    expect(budgetColumnSum(items, 2, 3)).toBe(300);
+  });
+});
+
+describe("storedBudgetAmount", () => {
+  it("reads a number, or text that is one, and nothing else", () => {
+    expect(storedBudgetAmount(12.5)).toBe(12.5);
+    expect(storedBudgetAmount("500")).toBe(500);
+    expect(storedBudgetAmount("-20.25")).toBe(-20.25);
+    expect(storedBudgetAmount(" .5 ")).toBe(0.5);
+    for (const unreadable of [
+      "abc",
+      "",
+      " ",
+      "0x10",
+      "0b11",
+      "1e3",
+      "Infinity",
+      null,
+      {},
+      [5],
+    ])
+      expect(storedBudgetAmount(unreadable)).toBeNull();
+  });
+});
+
+describe("readableBudgetItemAmount", () => {
+  it("is null for a stored value that isn't a number, $0 outside the list", () => {
+    const stored: number[] = JSON.parse('["500", "abc"]');
+    expect(readableBudgetItemAmount(stored, 0, 2)).toBe(500);
+    expect(readableBudgetItemAmount(stored, 1, 2)).toBeNull();
+    expect(readableBudgetItemAmount(stored, 2, 2)).toBe(0);
+  });
+});
+
+describe("storedAmountList", () => {
+  it("copies a stored list as stored, and is null for one that isn't a list", () => {
+    const stored: number[] = JSON.parse('["500", 20]');
+    const copy = storedAmountList(stored);
+    expect(copy).toEqual(["500", 20]);
+    expect(copy).not.toBe(stored);
+    for (const notAList of ['{"0":5}', '"500"', "null"])
+      expect(storedAmountList(JSON.parse(notAList))).toBeNull();
   });
 });

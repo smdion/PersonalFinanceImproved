@@ -3,7 +3,6 @@ import type { RequestScope } from "@/server/data/request-scope";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
-import { budgetAmountsSchema } from "@/lib/db/shapes/json-schemas";
 import {
   loadBudgetItemLinks,
   setBudgetItemLink,
@@ -24,7 +23,10 @@ import { log } from "@/lib/logger";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
-import { budgetItemAmount } from "@/lib/pure/budget/item-amount";
+import {
+  readableBudgetItemAmount,
+  storedAmountList,
+} from "@/lib/pure/budget/item-amount";
 
 export async function syncBudgetFromApi(ctx: { db: Db; scope: RequestScope }) {
   const active = await requireActiveBudgetApi(ctx.db);
@@ -99,9 +101,10 @@ export async function syncBudgetFromApi(ctx: { db: Db; scope: RequestScope }) {
     // wipe the item's amount.
     if (apiCat.goalTarget == null) continue;
 
-    const amounts = budgetAmountsSchema.parse(item.amounts);
-    // An item with no amount columns has nowhere to write (index -1).
-    if (amounts.length === 0) continue;
+    // As stored: a column this pull doesn't write keeps what it holds. Saved
+    // amounts that aren't a list, or none, have nowhere to write: skipped.
+    const amounts = storedAmountList(item.amounts);
+    if (amounts === null || amounts.length === 0) continue;
     amounts[Math.min(colIndex, amounts.length - 1)] = apiCat.goalTarget;
 
     await ctx.db
@@ -181,6 +184,7 @@ export async function syncBudgetToApi(ctx: { db: Db; scope: RequestScope }) {
   // another shape ("conflict", see BudgetAPIClient.prepareGoalWrite):
   // counted per item, so "nothing to push" stays distinguishable.
   let skippedUnsupported = 0;
+  const skippedUnreadable: string[] = []; // stored amount not a number: named
   // Every read before the first write: a read that fails stops the push
   // with nothing written.
   const prepared: {
@@ -192,11 +196,15 @@ export async function syncBudgetToApi(ctx: { db: Db; scope: RequestScope }) {
     if (item.apiSyncDirection !== "push" && item.apiSyncDirection !== "both")
       continue;
 
-    const amount = budgetItemAmount(
+    const amount = readableBudgetItemAmount(
       item.amounts,
       Math.min(colIndex, numColumns - 1),
       numColumns,
     );
+    if (amount === null) {
+      skippedUnreadable.push(item.subcategory);
+      continue;
+    }
 
     // Push as a goal target (plan-level, not month-specific)
     try {
@@ -265,5 +273,5 @@ export async function syncBudgetToApi(ctx: { db: Db; scope: RequestScope }) {
       ),
     });
 
-  return { pushed, skippedUnsupported, service: active };
+  return { pushed, skippedUnsupported, skippedUnreadable, service: active };
 }

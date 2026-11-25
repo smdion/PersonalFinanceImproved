@@ -794,6 +794,70 @@ describe("budget router", () => {
   // addColumn
   // =========================================================================
 
+  describe("an item whose stored amounts hold text", () => {
+    it("an edit, one or a batch, writes its column and keeps the others as stored", async () => {
+      const textProfileId = await seedBudgetProfile(db, "Text Amounts", false);
+      db.update(sqliteSchema.budgetProfiles)
+        .set({ columnLabels: ["A", "B", "C"] })
+        .where(eq(sqliteSchema.budgetProfiles.id, textProfileId))
+        .run();
+      // As an install can store them (tag 0018 left "500" as text).
+      const stored: number[] = JSON.parse('["500", "abc", 20]');
+      const itemId = seedBudgetItem(db, textProfileId, {
+        subcategory: "Text Amounts Item",
+        amounts: stored,
+      });
+
+      const one = await caller.budget.updateItemAmount({
+        id: itemId,
+        colIndex: 2,
+        amount: 30,
+      });
+      expect(one!.amounts).toEqual(["500", "abc", 30]);
+
+      await caller.budget.updateItemAmounts({
+        updates: [{ id: itemId, colIndex: 2, amount: 40 }],
+      });
+      const row = db
+        .select()
+        .from(sqliteSchema.budgetItems)
+        .where(eq(sqliteSchema.budgetItems.id, itemId))
+        .get()!;
+      expect(row.amounts).toEqual(["500", "abc", 40]);
+
+      // A column added or removed keeps the text amounts as stored, and
+      // skips amounts that aren't a list (an edit of those refuses).
+      const notAList = seedBudgetItem(db, textProfileId, {
+        subcategory: "Not A List",
+        amounts: JSON.parse('{"0":5}'),
+      });
+      const amountsOf = (id: number): unknown =>
+        db
+          .select()
+          .from(sqliteSchema.budgetItems)
+          .where(eq(sqliteSchema.budgetItems.id, id))
+          .get()!.amounts;
+      await caller.budget.addColumn({ label: "D", profileId: textProfileId });
+      expect(amountsOf(itemId)).toEqual(["500", "abc", 40, 0]);
+      await caller.budget.removeColumn({
+        colIndex: 0,
+        profileId: textProfileId,
+      });
+      expect(amountsOf(itemId)).toEqual(["abc", 40, 0]);
+      expect(amountsOf(notAList)).toEqual({ "0": 5 });
+      await expect(
+        caller.budget.updateItemAmount({
+          id: notAList,
+          colIndex: 0,
+          amount: 1,
+        }),
+      ).rejects.toThrow("saved amounts aren't a list");
+      // Readers still stop at amounts that aren't a list (a short item
+      // throws by design): leave none behind for the suite.
+      await caller.budget.deleteItem({ id: notAList });
+    });
+  });
+
   describe("addColumn", () => {
     it("adds a new column to the active profile", async () => {
       const result = await caller.budget.addColumn({ label: "High Spend" });

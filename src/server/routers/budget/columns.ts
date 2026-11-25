@@ -5,10 +5,10 @@ import { TRPCError } from "@trpc/server";
 import { budgetProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { canRemoveColumn } from "@/lib/pure/household/profiles";
+import { storedAmountList } from "@/lib/pure/budget/item-amount";
 import {
   columnLabelsSchema,
   columnMonthsSchema,
-  budgetAmountsSchema,
 } from "@/lib/db/shapes/json-schemas";
 import { requireLockedBudgetProfile } from "@/server/services/budget/budget-client";
 import type { Db, DbOrTx } from "@/lib/db";
@@ -26,6 +26,27 @@ async function editLockedProfile(
     edit(tx, await requireLockedBudgetProfile(tx, profileId)),
   );
   return { ok: true };
+}
+
+/** Each of the profile's items' amounts as `change` makes them from the
+ *  stored ones (text kept as stored); amounts that aren't a list: skipped. */
+async function rewriteItemAmounts(
+  tx: DbOrTx,
+  profileId: number,
+  change: (amounts: number[]) => number[],
+): Promise<void> {
+  const items = await tx
+    .select()
+    .from(schema.budgetItems)
+    .where(eq(schema.budgetItems.profileId, profileId));
+  for (const item of items) {
+    const stored = storedAmountList(item.amounts);
+    if (stored === null) continue;
+    await tx
+      .update(schema.budgetItems)
+      .set({ amounts: change(stored) })
+      .where(eq(schema.budgetItems.id, item.id));
+  }
 }
 
 export const columnProcedures = {
@@ -54,20 +75,7 @@ export const columnProcedures = {
           .where(eq(schema.budgetProfiles.id, profile.id));
 
         // Add a 0 to each item's amounts array
-        const items = await tx
-          .select()
-          .from(schema.budgetItems)
-          .where(eq(schema.budgetItems.profileId, profile.id));
-        for (const item of items) {
-          const amounts = budgetAmountsSchema.parse([
-            ...(item.amounts as number[]),
-            0,
-          ]);
-          await tx
-            .update(schema.budgetItems)
-            .set({ amounts })
-            .where(eq(schema.budgetItems.id, item.id));
-        }
+        await rewriteItemAmounts(tx, profile.id, (amounts) => [...amounts, 0]);
       }),
     ),
 
@@ -113,21 +121,9 @@ export const columnProcedures = {
           .where(eq(schema.budgetProfiles.id, profile.id));
 
         // Remove the column from each item's amounts array
-        const items = await tx
-          .select()
-          .from(schema.budgetItems)
-          .where(eq(schema.budgetItems.profileId, profile.id));
-        for (const item of items) {
-          const amounts = budgetAmountsSchema.parse(
-            (item.amounts as number[]).filter(
-              (_: number, i: number) => i !== input.colIndex,
-            ),
-          );
-          await tx
-            .update(schema.budgetItems)
-            .set({ amounts })
-            .where(eq(schema.budgetItems.id, item.id));
-        }
+        await rewriteItemAmounts(tx, profile.id, (amounts) =>
+          amounts.filter((_, i) => i !== input.colIndex),
+        );
       }),
     ),
 
