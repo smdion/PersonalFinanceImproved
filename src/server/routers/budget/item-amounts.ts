@@ -57,8 +57,11 @@ function editableAmounts(stored: number[]): number[] {
  *  null, read as $0 with a note), never a made-up amount. */
 function editableColumns(
   amounts: readonly number[],
-  columnLabels: readonly string[] = [], // the profile row is locked, never gone
+  columnLabels: readonly string[] | undefined,
 ): number {
+  // An item read under its profile's lock has that profile: items go with it.
+  if (!columnLabels)
+    throw new Error("A budget item's profile is missing under its lock");
   return Math.max(amounts.length, columnLabels.length);
 }
 
