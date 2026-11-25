@@ -3,6 +3,7 @@ import { cloneAccountBalances } from "../balance-utils";
 import { followDraws } from "../brokerage-basis";
 import { routeForMode } from "../withdrawal-routing";
 import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
+import { conversionRoutingInputs } from "../conversion-room";
 import { depleteIndividualBasis } from "../individual-accounts/ledger";
 import { distributeWithdrawals } from "../individual-accounts/withdrawals";
 import type { enforceYearRmd } from "./rmd-step";
@@ -51,13 +52,14 @@ export function routeYearDraw(
     year,
   });
 
-  // The conversion's target, resolved once: the routing reservation and the
-  // conversion that runs later must target the same rate
-  // (roth-conversion-target-priority.test.ts).
-  const resolvedConversionTarget =
-    taxRates.rothConversionTarget ??
-    config.rothBracketTarget ??
-    taxRates.rothBracketTarget;
+  // The conversion's target, opt-out and source, resolved once for the routing
+  // reservation and the conversion that runs later.
+  const conversion = conversionRoutingInputs(config, taxRates, [
+    balances,
+    accountBalances,
+    nonRetirement,
+  ]);
+  const resolvedConversionTarget = conversion.conversionTarget;
   const routeResult = routeForMode(
     targetWithdrawal,
     config,
@@ -66,15 +68,12 @@ export function routeYearDraw(
       taxBrackets: grownTaxBrackets,
       // The year's override, else the plan's default: a rate, so not grown.
       rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
-      // The rate the conversion targets, when it differs (only with
-      // conversions on).
-      conversionTarget: resolvedConversionTarget,
+      ...conversion,
       taxableSS: taxEstimate.taxableSS,
       ssIncome: { gross: thisYear.ssIncome, otherIncome: 0 },
       filingStatus,
       ltcgBrackets: grownLtcgBrackets,
       ...rankingInputs,
-      conversionsEnabled: taxRates.enableRothConversions,
       standardDeduction: grownStandardDeduction,
       discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
       taxMultiplier: taxRates.taxMultiplier,

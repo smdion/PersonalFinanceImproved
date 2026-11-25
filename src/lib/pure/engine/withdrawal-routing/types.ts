@@ -34,6 +34,9 @@ export interface RouteBracketInfo {
   /** Whether this year's Roth conversion runs: bracket filling then reserves
    *  the Traditional room Phase 1 left unused, which the conversion claims. */
   conversionsEnabled?: boolean;
+  /** Traditional the conversion can draw on before this year's draws
+   *  (`convertiblePreTax`); the reservation never passes it. Omitted ⇒ no cap. */
+  conversionSource?: number;
   /** Household's annual standard deduction: gross ordinary income to taxable
    *  income for LTCG lookups (`ltcgStackBase`); omitted subtracts nothing. */
   standardDeduction?: number;

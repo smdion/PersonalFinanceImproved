@@ -638,6 +638,142 @@ describe("answer key: Bracket filling", () => {
     );
   });
 
+  describe("conversions on, 30,000 of Traditional left, target 12%", () => {
+    // MFJ 2026, under 65, no other income. Need 100,000 from Traditional
+    // 30,000 and an all-gain brokerage of 500,000. Traditional gives its
+    // 30,000; a conversion can fill nothing more, as none is left, so no
+    // room is held for it. Ordinary income 30,000 leaves 2,200 of the
+    // 32,200 deduction and the 0% band to 98,900 of taxable income:
+    // 2,200 + 98,900 = 101,100 of gains free, so the brokerage's 70,000
+    // costs 0 (IRC § 1(h); QDCG worksheet). Holding the 12% room
+    // (133,000 − 30,000) for a conversion that can't happen put the
+    // gains past the 0% top, at 15%, with no free capacity.
+    const route = (conversion: { source?: number; enabled?: boolean }) => {
+      const { accountBalance } = holdings({
+        traditional: 30_000,
+        brokerage: 500_000,
+        basis: 0,
+      });
+      return routeForMode(100_000, bracketConfig(), accountBalance, {
+        ...bracketInfo({ target: 0.12, basisRatio: 0 }),
+        conversionsEnabled: conversion.enabled ?? true,
+        ...(conversion.source !== undefined && {
+          conversionSource: conversion.source,
+        }),
+      });
+    };
+    const figures = (r: ReturnType<typeof route>) => ({
+      brokerage: drawn(r.slots).brokerage,
+      cost: r.tierBreakdown?.[0]?.costRate ?? -1,
+      free: r.brokerageZeroLtcgCapacity ?? -1,
+    });
+    it("strategies/BF-CR1 [WDR-05] no Traditional left to convert: nothing is held, the 70,000 of gains are free", () => {
+      cents(figures(route({ source: 30_000 })), {
+        brokerage: 70_000,
+        cost: 0,
+        free: 101_100,
+      });
+    });
+    it("strategies/BF-CR2 [WDR-05] a year that opts out (its callers pass conversions off for a 0 target) holds nothing either", () => {
+      cents(figures(route({ source: 1_000_000, enabled: false })), {
+        brokerage: 70_000,
+        cost: 0,
+        free: 101_100,
+      });
+    });
+    it("strategies/BF-CR3 [WDR-05] with Traditional to convert, the 12% room is held: gains at 15%, none free", () => {
+      cents(figures(route({ source: 1_000_000 })), {
+        brokerage: 70_000,
+        cost: 0.15,
+        free: 0,
+      });
+    });
+  });
+
+  describe("strategies/BF-CR4 a year's conversion target reaches the reservation", () => {
+    // MFJ 2026, both born 1966 (60), retired, no Social Security. A holds
+    // a Traditional IRA of 1,000,000 and an all-gain brokerage of 500,000;
+    // bracket filling at 10%, conversions on with the plan's target 22%;
+    // spending 104,520. Traditional fills to the 10% top: 24,800 + 32,200
+    // = 57,000, tax 2,480. With the 22% room held for the conversion (to
+    // 211,400 + 32,200 = 243,600), the brokerage's gains stack above it:
+    // none in the 0% band. A 2026 conversion target of 0 (the override's
+    // opt-out, which wins over the plan's) holds nothing: the gains stack
+    // on 24,800 of taxable income, 98,900 − 24,800 = 74,100 of them at 0%,
+    // so the 50,000 drawn costs nothing: W 107,000, tax 2,480.
+    const person = (id: "A" | "B") => ({
+      id,
+      primary: id === "A",
+      birthDate: "1966-01-15",
+      ssAnnualToday: 0,
+      ssStartAge: 67,
+      jobs: [],
+    });
+    const accounts: LedgerAccount[] = [
+      {
+        id: "A-ira",
+        owner: "A",
+        category: "ira",
+        tax: "traditional",
+        parent: "Retirement",
+        balance: 1_000_000,
+      },
+      {
+        id: "A-brokerage",
+        owner: "A",
+        category: "brokerage",
+        tax: "brokerage",
+        parent: "Retirement",
+        balance: 500_000,
+        basis: 0,
+      },
+    ];
+    const h: LedgerHousehold = {
+      filingStatus: "MFJ",
+      inflation: "0",
+      limitGrowth: "0",
+      taxMultiplier: 1,
+      spendingStrategy: "fixed",
+      withdrawalRouting: "bracket_filling",
+      lumpSums: [],
+      people: [person("A"), person("B")],
+      accounts,
+      contributions: [],
+      returnRates: [{ fromAge: 0, rate: "0" }],
+      annualSpendingToday: 104_520,
+      waterfall: accounts.map((a) => a.id),
+      endYear: 2028,
+    };
+    const year = (override?: number) => {
+      const input = ledgerInput(h, { rothBracketTarget: 0.1 });
+      const rates = input.decumulationDefaults.distributionTaxRates;
+      rates.enableRothConversions = true;
+      rates.rothConversionTarget = 0.22;
+      if (override !== undefined)
+        input.decumulationOverrides = [
+          { year: 2026, rothConversionTarget: override },
+        ];
+      const row = runOneYear(input, 2026);
+      if (row.phase !== "decumulation") throw new Error("2026 isn't retired");
+      return row;
+    };
+    it("strategies/BF-CR4 [WDR-05] the plan's 22% target holds the room: no gains free", () => {
+      cents(year().brokerageZeroLtcgCapacity ?? -1, 0);
+    });
+    it("strategies/BF-CR4:override [WDR-05] a 2026 target of 0 holds nothing: 74,100 of gains free, W 107,000, tax 2,480", () => {
+      const row = year(0);
+      cents(
+        {
+          free: row.brokerageZeroLtcgCapacity ?? -1,
+          withdrawal: row.totalWithdrawal,
+          tax: row.taxCost,
+          converted: row.rothConversionAmount ?? 0,
+        },
+        { free: 74_100, withdrawal: 107_000, tax: 2_480, converted: 0 },
+      );
+    });
+  });
+
   it("strategies/BF-K [WDR-05] at a tax multiplier of 3 the HSA (the 50% cap) goes before 20% gains scaled to 60%: HSA 50,000, brokerage 49,100, tax 450,000", () => {
     // MFJ 2026, target 35%, multiplier 3 (D12.16; OD-3 Rec (a): the ranking
     // uses the scaled rates). Need 900,000 from Traditional 2,000,000, an HSA

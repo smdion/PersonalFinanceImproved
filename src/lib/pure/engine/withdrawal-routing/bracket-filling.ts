@@ -306,8 +306,8 @@ export function routeWithdrawalsBracketFilling(
     0,
   );
 
-  // Reserve room up to the conversion's own target (`conversionTarget`), which can
-  // differ from the withdrawal target; otherwise `traditionalCap`.
+  // Reserve room up to the conversion's own target (`conversionTarget`, else
+  // `traditionalCap`), at most the Traditional left to convert.
   const conversionCap =
     bracketInfo.conversionTarget != null &&
     bracketInfo.conversionTarget !== bracketInfo.rothBracketTarget
@@ -316,8 +316,10 @@ export function routeWithdrawalsBracketFilling(
           rothBracketTarget: bracketInfo.conversionTarget,
         })
       : traditionalCap;
+  const { conversionSource = Infinity } = bracketInfo;
+  const room = Math.min(conversionCap, conversionSource) - totalTradWithdrawn;
   const conversionReservedRoom = bracketInfo.conversionsEnabled
-    ? Math.max(0, roundToCents(conversionCap - totalTradWithdrawn))
+    ? Math.max(0, roundToCents(room))
     : 0;
   const drawState = {
     ...drawStart(bracketInfo, totalTradWithdrawn, conversionReservedRoom),

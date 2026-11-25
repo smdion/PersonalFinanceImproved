@@ -24,6 +24,30 @@ export function convertiblePreTax(
   return roundToCents(balances.preTax - excluded);
 }
 
+/** What routing's conversion reservation reads, as `performRothConversion` resolves it: the
+ *  target (the year's override first), whether the year converts (a 0 target opts out), and
+ *  the Traditional it can draw on before this year's draws. */
+export function conversionRoutingInputs(
+  config: { rothConversionTarget?: number; rothBracketTarget?: number },
+  taxRates: {
+    enableRothConversions?: boolean;
+    rothConversionTarget?: number;
+    rothBracketTarget?: number;
+  },
+  source: Parameters<typeof convertiblePreTax>,
+) {
+  return {
+    conversionTarget:
+      config.rothConversionTarget ??
+      taxRates.rothConversionTarget ??
+      config.rothBracketTarget ??
+      taxRates.rothBracketTarget,
+    conversionsEnabled:
+      taxRates.enableRothConversions && config.rothConversionTarget !== 0,
+    conversionSource: convertiblePreTax(...source),
+  };
+}
+
 interface ConversionRoomInput {
   /** Conversions on: the household's own target's room is the floor under smoothing's. */
   enableRothConversions: boolean | undefined;

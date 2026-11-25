@@ -303,7 +303,7 @@
     "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 336,
     "src/lib/pure/engine/projection-year-handlers/year-cliffs.ts": 47,
     "src/lib/pure/engine/projection-year-handlers/year-deduction.ts": 57,
-    "src/lib/pure/engine/projection-year-handlers/year-draws.ts": 179,
+    "src/lib/pure/engine/projection-year-handlers/year-draws.ts": 178,
     "src/lib/pure/engine/projection-year-handlers/year-end-accounts.ts": 99,
     "src/lib/pure/engine/projection-year-handlers/year-end.ts": 88,
     "src/lib/pure/engine/projection-year-handlers/year-need.ts": 77,
@@ -317,14 +317,14 @@
     "src/lib/pure/engine/types/projection-result.ts": 568,
     "src/lib/pure/engine/types/routing.ts": 81,
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": 348,
-    "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": 448,
+    "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": 450,
     "src/lib/pure/engine/withdrawal-routing/caps.ts": 64,
     "src/lib/pure/engine/withdrawal-routing/index.ts": 270,
     "src/lib/pure/engine/withdrawal-routing/percentage.ts": 200,
     "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": 55,
-    "src/lib/pure/engine/withdrawal-routing/types.ts": 73,
+    "src/lib/pure/engine/withdrawal-routing/types.ts": 76,
     "src/lib/pure/engine/withdrawal-routing/waterfall.ts": 151,
-    "src/lib/pure/engine/withdrawal-solver.ts": 437,
+    "src/lib/pure/engine/withdrawal-solver.ts": 436,
     "src/lib/pure/household/compensation.ts": 322,
     "src/lib/pure/household/retirement-profile.ts": 65,
     "src/lib/pure/investments/finalize-year.ts": 169,
@@ -980,7 +980,7 @@
       "performRothConversion": 181
     },
     "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": {
-      "routeWithdrawalsBracketFilling": 407
+      "routeWithdrawalsBracketFilling": 409
     },
     "src/lib/pure/engine/withdrawal-routing/percentage.ts": {
       "routeWithdrawalsPercentage": 178

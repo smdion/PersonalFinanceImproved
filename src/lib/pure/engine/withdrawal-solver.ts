@@ -19,6 +19,7 @@ import {
 } from "./tax-estimation";
 import { routeForMode } from "./withdrawal-routing";
 import { deriveBasisRankingInputs } from "./withdrawal-cost-ranking";
+import { conversionRoutingInputs } from "./conversion-room";
 import type {
   EligibilityRecord,
   NonRetirementExclusion,
@@ -151,19 +152,17 @@ function evaluateCost(
       // The resolved (possibly per-year) value, as the real router reads
       // it: this estimate and the router apply the same routing rule.
       rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
-      // Same rule, same reason as rothBracketTarget above: the
-      // reserved-room estimate must target the rate a conversion will
-      // ACTUALLY use, not necessarily the withdrawal target.
-      conversionTarget:
-        taxRates.rothConversionTarget ??
-        config.rothBracketTarget ??
-        taxRates.rothBracketTarget,
+      // Same rule and reason: the conversion's own rate, opt-out and source.
+      ...conversionRoutingInputs(config, taxRates, [
+        balances,
+        accountBalance,
+        nonRetirement,
+      ]),
       taxableSS: laggedTaxableSS,
       ssIncome: { gross: input.ssIncome, otherIncome: 0 },
       filingStatus,
       ltcgBrackets: taxRates.ltcgBrackets,
       ...rankingInputs,
-      conversionsEnabled: taxRates.enableRothConversions,
       // Passed as the real router passes it (same rule as above).
       standardDeduction: taxRates.standardDeduction,
       discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
