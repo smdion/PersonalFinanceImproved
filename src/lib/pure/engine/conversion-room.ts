@@ -2,6 +2,27 @@
 import { roundToCents } from "../../utils/math";
 import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
+import { getAllCategories } from "../../config/account-types";
+import type {
+  AccountBalances,
+  TaxBuckets,
+} from "../accounts/account-balances.types";
+import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
+
+/** The Traditional money a conversion can draw on: the pre-tax balance less Portfolio-parented
+ *  Traditional, which isn't retirement money (with exclusion data; else all of it). */
+export function convertiblePreTax(
+  balances: Pick<TaxBuckets, "preTax">,
+  accountBalance: AccountBalances,
+  nonRetirement: NonRetirementExclusion | undefined,
+): number {
+  if (!nonRetirement) return balances.preTax;
+  const excluded = getAllCategories().reduce((sum, category) => {
+    if (accountBalance[category].structure !== "roth_traditional") return sum;
+    return sum + nonRetirement.trad[category];
+  }, 0);
+  return roundToCents(balances.preTax - excluded);
+}
 
 interface ConversionRoomInput {
   /** Conversions on: the household's own target's room is the floor under smoothing's. */

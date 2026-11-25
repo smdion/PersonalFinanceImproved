@@ -24,7 +24,7 @@ import {
   type ConversionParts,
 } from "./individual-accounts/conversion";
 import type { WithholdingBracket } from "./tax-estimation";
-import { conversionRoomFor } from "./conversion-room";
+import { conversionRoomFor, convertiblePreTax } from "./conversion-room";
 import { conversionTaxPaid } from "./conversion-tax";
 import type { NonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
@@ -160,17 +160,12 @@ export function performRothConversion(
   if (conversionRoom == null || conversionRoom <= 0) return zero();
 
   // Cap at available Traditional balance -- Retirement-only when
-  // exclusion data is available (a Portfolio-parented pretax account isn't
-  // retirement money and can't fund a Roth conversion's source amount).
-  const retirementOnlyPreTax = nonRetirement
-    ? roundToCents(
-        balances.preTax -
-          getAllCategories().reduce((s, cat) => {
-            if (accountBalance[cat].structure !== "roth_traditional") return s;
-            return s + nonRetirement.trad[cat];
-          }, 0),
-      )
-    : balances.preTax;
+  // exclusion data is available.
+  const retirementOnlyPreTax = convertiblePreTax(
+    balances,
+    accountBalance,
+    nonRetirement,
+  );
   let conversion = roundToCents(
     Math.min(conversionRoom, Math.max(0, retirementOnlyPreTax)),
   );
