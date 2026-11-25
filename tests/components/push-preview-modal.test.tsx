@@ -60,7 +60,7 @@ describe("PushPreviewModal — unreadable amounts", () => {
             field: "Goal Target",
             currentYnab: 80,
             newValue: 0,
-            unreadable: true,
+            skipReason: "unreadable",
           },
         ]}
         onConfirm={vi.fn()}
@@ -79,22 +79,21 @@ describe("PushPreviewModal — unreadable amounts", () => {
   });
 
   it("names an item the push skips for having no saved amount in the column on its own", () => {
-    const skipped = (name: string, missing?: true) => ({
+    const skipped = (name: string, skipReason: "unreadable" | "missing") => ({
       name,
       field: "Goal Target",
       currentYnab: 80,
       newValue: 0,
-      unreadable: true,
-      ...(missing && { missing }),
+      skipReason,
     });
     render(
       <PushPreviewModal
         title="Push to YNAB"
         items={[
           ...items,
-          skipped("Snacks"),
-          skipped("Rent", true),
-          skipped("Gas", true),
+          skipped("Snacks", "unreadable"),
+          skipped("Rent", "missing"),
+          skipped("Gas", "missing"),
         ]}
         onConfirm={vi.fn()}
         onCancel={vi.fn()}
@@ -125,7 +124,7 @@ describe("PushPreviewModal — unreadable amounts", () => {
             field: "Goal Target",
             currentYnab: 0,
             newValue: 50,
-            unreadable: true,
+            skipReason: "missing",
           },
           {
             name: "Snacks",

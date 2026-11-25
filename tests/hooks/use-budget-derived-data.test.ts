@@ -305,19 +305,17 @@ describe("useBudgetDerivedData — push preview", () => {
 
     const items = result.current.buildPushPreviewItems(0);
     expect(items.find((i) => i.name === "Snacks")).toMatchObject({
-      unreadable: true,
+      skipReason: "unreadable",
     });
-    expect(items.find((i) => i.name === "Snacks")!.missing).toBeUndefined();
     // No saved amount for the column (none stored, or not a list): missing.
     for (const name of ["Short", "Odd"])
       expect(items.find((i) => i.name === name)).toMatchObject({
-        unreadable: true,
-        missing: true,
+        skipReason: "missing",
       });
     expect(items.find((i) => i.name === "Rent")).toMatchObject({
       newValue: 1200,
     });
-    expect(items.find((i) => i.name === "Rent")!.unreadable).toBeUndefined();
+    expect(items.find((i) => i.name === "Rent")!.skipReason).toBeUndefined();
   });
 });
 
@@ -346,9 +344,9 @@ describe("useBudgetDerivedData — pull preview", () => {
     const items = result.current.buildPullPreviewItems(0);
     const named = (name: string) => items.find((i) => i.name === name)!;
     expect(named("Snacks")).toMatchObject({ currentUnreadable: true });
-    expect(named("Snacks").unreadable).toBeUndefined();
-    expect(named("Odd")).toMatchObject({ unreadable: true });
-    expect(named("Short")).toMatchObject({ unreadable: true });
+    expect(named("Snacks").skipReason).toBeUndefined();
+    expect(named("Odd")).toMatchObject({ skipReason: "missing" });
+    expect(named("Short")).toMatchObject({ skipReason: "missing" });
     expect(named("Rent")).toEqual({
       name: "Rent",
       field: "Goal Target",
@@ -361,7 +359,7 @@ describe("useBudgetDerivedData — pull preview", () => {
     setQuery("paycheck.computeSummary", undefined);
     const { result } = setup(false, [pulled("Rent", "[1200]")]);
     expect(result.current.buildPullPreviewItems(1)).toEqual([
-      expect.objectContaining({ name: "Rent", unreadable: true }),
+      expect.objectContaining({ name: "Rent", skipReason: "missing" }),
     ]);
   });
 

@@ -14,11 +14,10 @@ export type PushPreviewItem = {
   /** A percentage-based goal whose stored amount differs from a live recalc (e.g. income
    *  changed), so the user can recalculate before pushing. */
   stale?: boolean;
-  /** Skipped, so named, never shown as $0: a push's saved amount isn't a number, a pull's
-   *  saved amounts have no column to write into. */
-  unreadable?: boolean;
-  /** Push only, with `unreadable`: it has no saved amount for this column at all. */
-  missing?: boolean;
+  /** Why it's skipped, so named, never shown as $0: a push's saved amount isn't a number
+   *  ("unreadable") or it has none for this column ("missing"); a pull's saved amounts
+   *  have no column to write into ("missing"). */
+  skipReason?: "unreadable" | "missing";
   /** Pull only: its saved amount isn't a number; the pull replaces it, shown as such. */
   currentUnreadable?: boolean;
 };
@@ -31,18 +30,14 @@ function UnreadableItemsNote({
   items: PushPreviewItem[];
   isPull: boolean;
 }) {
-  const skipped = items.filter((i) => i.unreadable);
+  const skipped = items.filter((i) => i.skipReason);
+  const skippedAs = (reason: "unreadable" | "missing") =>
+    skipped.filter((i) => i.skipReason === reason);
   const notes: [string, PushPreviewItem[]][] = isPull
     ? [["not pulled — saved amounts have no column to write into", skipped]]
     : [
-        [
-          "not pushed — saved amount isn't a number",
-          skipped.filter((i) => !i.missing),
-        ],
-        [
-          "not pushed — no saved amount for this column",
-          skipped.filter((i) => i.missing),
-        ],
+        ["not pushed — saved amount isn't a number", skippedAs("unreadable")],
+        ["not pushed — no saved amount for this column", skippedAs("missing")],
       ];
   return notes.map(([why, named]) =>
     named.length === 0 ? null : (
@@ -118,7 +113,7 @@ export function PushPreviewModal({
 }) {
   const formatValue = (n: number) =>
     valueFormat === "percent" ? formatPercent(n / 100, 3) : formatCurrency(n);
-  const readable = items.filter((i) => !i.unreadable);
+  const readable = items.filter((i) => !i.skipReason);
   // A pull always replaces an amount that isn't a number.
   const isChange = (i: PushPreviewItem) =>
     i.currentUnreadable === true ||
