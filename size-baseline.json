@@ -324,7 +324,7 @@
     "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": 55,
     "src/lib/pure/engine/withdrawal-routing/types.ts": 76,
     "src/lib/pure/engine/withdrawal-routing/waterfall.ts": 151,
-    "src/lib/pure/engine/withdrawal-solver.ts": 436,
+    "src/lib/pure/engine/withdrawal-solver.ts": 371,
     "src/lib/pure/household/compensation.ts": 322,
     "src/lib/pure/household/retirement-profile.ts": 65,
     "src/lib/pure/investments/finalize-year.ts": 169,

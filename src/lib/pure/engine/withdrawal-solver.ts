@@ -35,6 +35,13 @@ import type {
   SolverFigures,
   TaxEstimationResult,
 } from "./types/withdrawal-solver";
+import {
+  RESIDUAL_TOLERANCE,
+  deliveredOf,
+  proceedsOf,
+  searchGrossUp,
+  type Trial as SearchTrial,
+} from "./gross-up-search";
 
 /** Input for the convergence estimation. */
 interface TaxEstimationInput {
@@ -267,13 +274,7 @@ function evaluateAtOwnSS(W: number, seedSS: number, input: TaxEstimationInput) {
   return e;
 }
 
-/** Within a cent of the need: the search has converged, and the need is met. */
-const RESIDUAL_TOLERANCE = 0.01;
-
-type Trial = { W: number; e: ReturnType<typeof evaluateAtOwnSS> };
-// What a trial actually delivers: the router can come up short of W.
-const deliveredOf = (t: Trial) => roundToCents(t.W - t.e.routedUnmet);
-const proceedsOf = (t: Trial) => deliveredOf(t) - t.e.netCost;
+type Trial = SearchTrial<ReturnType<typeof evaluateAtOwnSS>>;
 
 function withStatus(figures: SolverFigures, shortfall: number) {
   return shortfall > RESIDUAL_TOLERANCE
@@ -315,11 +316,8 @@ function fixedWithdrawalEstimate(
   );
 }
 
-/**
- * Finds W with `delivered(W) - netCost(W) >= afterTaxNeed`, where cost jumps and
- * isn't monotone: a bracket search (secant inside it, else bisect; Picard under a
- * $1 span) returning `hi`, short of the need only when no larger W delivers more.
- */
+/** The need's gross-up through `searchGrossUp` (gross-up-search.ts), each trial
+ *  evaluated at its own taxable SS from the last trial's. */
 export function estimateWithdrawalTaxCost(
   input: TaxEstimationInput,
 ): TaxEstimationResult {
@@ -328,11 +326,6 @@ export function estimateWithdrawalTaxCost(
     return fixedWithdrawalEstimate(input, input.fixedGrossWithdrawal);
   const { afterTaxNeed } = input;
   const shouldGrossUp = taxRates.grossUpForTaxes !== false;
-  // Smooth years exit in ~3 trials; 20 halvings take a five-figure bracket under
-  // $0.10, inside the $1 a year may stop at. Short of the need, the gap is unmet.
-  const MAX_TRIALS = 20;
-  // Below this span, a secant slope between two cent-rounded costs is noise.
-  const MIN_SECANT_SPAN = 1;
 
   const residualOf = (t: Trial) => roundToCents(afterTaxNeed - proceedsOf(t));
 
@@ -343,68 +336,10 @@ export function estimateWithdrawalTaxCost(
     W: W0,
     e: evaluateAtOwnSS(W0, ssIncome * FIRST_TRIAL_SS_SHARE, input),
   };
-
-  let lo: Trial | null = null;
-  let hi: Trial | null = null;
-  // Bracket widths after the last two trials, for the forced bisection.
-  let widthOneAgo = Infinity;
-  let widthTwoAgo = Infinity;
-  let prev: Trial | null = null;
-  let trials = 1;
-
-  while (shouldGrossUp) {
-    const residual = residualOf(trial);
-    if (Math.abs(residual) <= RESIDUAL_TOLERANCE) break;
-    if (residual > 0) {
-      // Short of the need and no larger trial can do better: the whole pool is
-      // asked for, or more W delivered nothing more (then the smaller trial wins;
-      // asking for unreachable money only inflates the routed shortfall).
-      if (trial.W >= totalBalance - 0.01) break;
-      if (
-        trial.e.routedUnmet > 0.01 &&
-        lo != null &&
-        deliveredOf(trial) <= deliveredOf(lo) + 0.01
-      ) {
-        trial = lo;
-        break;
-      }
-      if (lo == null || trial.W > lo.W) lo = trial;
-    } else if (hi == null || trial.W < hi.W) {
-      hi = trial;
-    }
-    if (lo != null && hi != null && hi.W - lo.W <= 0.01) break;
-    if (lo == null || trials >= MAX_TRIALS) break;
-    const width = hi != null ? hi.W - lo.W : Infinity;
-    const bisectNow = hi != null && width > widthTwoAgo / 2;
-    widthTwoAgo = widthOneAgo;
-    widthOneAgo = width;
-
-    let nextW = afterTaxNeed + trial.e.netCost; // Picard
-    if (prev != null && Math.abs(trial.W - prev.W) >= MIN_SECANT_SPAN) {
-      const slope = (proceedsOf(trial) - proceedsOf(prev)) / (trial.W - prev.W);
-      if (slope > 0 && Number.isFinite(slope))
-        nextW = trial.W + residual / slope;
-    }
-    nextW = roundToCents(Math.min(nextW, totalBalance));
-    if (bisectNow || !(nextW > lo.W && (hi == null || nextW < hi.W))) {
-      nextW =
-        hi != null
-          ? roundToCents((lo.W + hi.W) / 2)
-          : roundToCents(
-              Math.min(totalBalance, lo.W + Math.max(0.01, residual)),
-            );
-    }
-
-    prev = trial;
-    trial = {
-      W: nextW,
-      e: evaluateAtOwnSS(nextW, trial.e.taxableSS, input),
-    };
-    trials++;
-  }
-  // Not converged: the smallest trial known to meet the need, if any.
-  if (hi != null && Math.abs(residualOf(trial)) > RESIDUAL_TOLERANCE)
-    trial = hi;
+  if (shouldGrossUp)
+    trial = searchGrossUp(afterTaxNeed, totalBalance, trial, (W, from) =>
+      evaluateAtOwnSS(W, from.taxableSS, input),
+    );
 
   const targetWithdrawal = trial.W;
   const totalCost = trial.e.totalCost;
