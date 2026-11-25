@@ -2,7 +2,7 @@
  * A spec's money over its parts (`creditSpecParts`): one part takes it all;
  * several (a joint spec on an account held in owner parts) share it by the
  * parts' one weight rule: balance; all $0, each person's other part of the
- * account; those $0 too, equally; the last part takes the cents.
+ * account; those $0 too, equally; the largest share takes the cents.
  */
 import { describe, expect, it } from "vitest";
 import { creditSpecParts } from "@/lib/pure/engine/individual-accounts/spec-accounts";
@@ -50,7 +50,7 @@ describe("a spec's money over its parts", () => {
     expect([...credited]).toEqual([[indKey(annTrad), 1234.56]]);
   });
 
-  it("several parts share it by balance, the last part the cents", () => {
+  it("several parts share it by balance, the largest share the cents", () => {
     expect(
       run(
         [

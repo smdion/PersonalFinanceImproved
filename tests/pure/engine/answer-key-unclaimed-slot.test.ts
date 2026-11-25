@@ -180,8 +180,8 @@ describe("answer key: a slot's money no spec claims", () => {
     );
   });
 
-  it("eng/US-4 [ENG-19] the cents left by the split go to the last part, so the parts hold the slot", () => {
-    // 100.00 over three equal parts: 33.33, 33.33, 33.34.
+  it("eng/US-4 [ENG-19] the cents left by the split go to the largest share, the earlier on a tie, so the parts hold the slot", () => {
+    // 100.00 over three equal parts: 33.34, 33.33, 33.33.
     const credits = land(
       [
         part("A", "hsa", "hsa", 1_000),
@@ -190,7 +190,7 @@ describe("answer key: a slot's money no spec claims", () => {
       ],
       [slot("hsa", { employeeContrib: 100 })],
     );
-    cents(credits, { "A hsa": 33.33, "B hsa": 33.33, "C hsa": 33.34 });
+    cents(credits, { "A hsa": 33.34, "B hsa": 33.33, "C hsa": 33.33 });
     expect(Object.values(credits).reduce((s, v) => s + v, 0)).toBeCloseTo(
       100,
       10,

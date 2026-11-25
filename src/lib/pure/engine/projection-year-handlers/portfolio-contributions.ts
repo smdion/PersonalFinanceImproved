@@ -4,7 +4,11 @@ import { isRetirementMoney } from "../../../config/account-types";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { rampBrokerages } from "../../accounts/brokerage-ramp";
 import { specKeyOf } from "../individual-accounts/ledger";
-import { equalShares, inflowShares } from "../individual-accounts/part-weights";
+import {
+  creditWhole,
+  equalShares,
+  inflowShares,
+} from "../individual-accounts/part-weights";
 import { creditSpecParts } from "../individual-accounts/spec-accounts";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
@@ -58,14 +62,10 @@ export function decumulationPortfolioContributions(
       rampAccounts.map((ia) => indBalance.get(indKey(ia)) ?? 0),
       equalShares(rampAccounts.length),
     );
-    for (const [i, ia] of rampAccounts.entries()) {
-      const k = indKey(ia);
-      const portion = roundToCents(decumRampAmount * shares[i]!);
-      decumContributionByAccount.set(
-        k,
-        (decumContributionByAccount.get(k) ?? 0) + portion,
-      );
-    }
+    const raw = shares.map((s) => decumRampAmount * s);
+    creditWhole(rampAccounts.map(indKey), decumRampAmount, raw, [
+      decumContributionByAccount,
+    ]);
   }
 
   return {

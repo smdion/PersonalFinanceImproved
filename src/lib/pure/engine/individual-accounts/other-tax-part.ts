@@ -2,11 +2,11 @@
  *  no spec in its category carries lands. */
 import type { ContributionSpec } from "../types/contribution-spec";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
-import { roundToCents, safeDivide, sumBy } from "../../../utils/math";
+import { safeDivide, sumBy } from "../../../utils/math";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../../config/tax-treatment-buckets";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
-import { credit, specKeyOf } from "./ledger";
-import { partShares } from "./part-weights";
+import { specKeyOf } from "./ledger";
+import { creditWhole, partShares } from "./part-weights";
 import type { SpecParts } from "./spec-accounts";
 
 /**
@@ -45,9 +45,12 @@ export function otherParts(
       });
     }
     const total = sumBy([...weights.values()], (w) => w);
-    for (const [part, w] of weights) {
-      const share = safeDivide(w, total, 1 / weights.size);
-      credit(part, roundToCents(slotAmount * share), [contributions, balances]);
-    }
+    const raw = [...weights.values()].map(
+      (w) => slotAmount * safeDivide(w, total, 1 / weights.size),
+    );
+    creditWhole([...weights.keys()], slotAmount, raw, [
+      contributions,
+      balances,
+    ]);
   };
 }

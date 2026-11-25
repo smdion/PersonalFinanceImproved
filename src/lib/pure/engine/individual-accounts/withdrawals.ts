@@ -2,7 +2,7 @@
  *  retirement year's slot-level withdrawals. */
 import type { DecumulationSlot } from "../types/routing";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
-import { roundToCents } from "../../../utils/math";
+import { roundToCents, sumBy } from "../../../utils/math";
 import {
   getAccountTypeConfig,
   isOverflowTarget,
@@ -12,6 +12,7 @@ import {
 } from "../../../config/account-types";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
+import { placeWhole } from "./part-weights";
 
 /**
  * The accounts brokerage goals draw from: Portfolio-parented brokerages.
@@ -51,21 +52,18 @@ export function distributeGoalWithdrawal(
   indKey: IndKeyFn,
   indBalance: Map<string, number>,
 ): void {
-  const brokAccounts = goalFundingAccounts(indAccounts);
-  const brokTotal = brokAccounts.reduce(
-    (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
-    0,
-  );
-  // A goal's draw is capped at goalFundingBalance, this same total, so a
-  // draw here always has a total to share by.
-  for (const ia of brokAccounts) {
-    const k = indKey(ia);
-    const weight = Math.max(0, indBalance.get(k) ?? 0) / brokTotal;
+  const keys = goalFundingAccounts(indAccounts).map(indKey);
+  const held = (k: string) => Math.max(0, indBalance.get(k) ?? 0);
+  const brokTotal = sumBy(keys, held);
+  // A goal's draw is capped at goalFundingBalance, this same total, so a draw
+  // here always has a total to share by.
+  const raw = keys.map((k) => drawAmount * (held(k) / brokTotal));
+  placeWhole(drawAmount, raw).forEach((portion, i) =>
     indBalance.set(
-      k,
-      roundToCents((indBalance.get(k) ?? 0) - drawAmount * weight),
-    );
-  }
+      keys[i]!,
+      roundToCents((indBalance.get(keys[i]!) ?? 0) - portion),
+    ),
+  );
 }
 
 /**

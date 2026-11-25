@@ -4008,7 +4008,7 @@
   },
   "src/lib/pure/engine/individual-accounts/withdrawals.ts": {
     "ratchet/no-abbreviation": {
-      "count": 19
+      "count": 18
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1

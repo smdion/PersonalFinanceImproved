@@ -62,15 +62,28 @@ export function partShares(
   );
 }
 
-/** `amount` placed whole over a group: each member its `raw` amount to the
- *  cent, the last member the cents left (the one spread rule). */
+/** An uncapped spread placed whole: each member its `raw` amount to the cent, the largest share
+ *  (the earlier on a tie) the cents left, over or under, so no member ends more than (n − 1)/2
+ *  cents from its raw amount. Draws capped at each part's balance keep their own room rule. */
 export function placeWhole(amount: number, raw: readonly number[]): number[] {
-  let left = amount;
-  return raw.map((r, i) => {
-    const share = i === raw.length - 1 ? left : roundToCents(r);
-    left = roundToCents(left - share);
-    return share;
-  });
+  const placed = raw.map((r) => roundToCents(r));
+  if (placed.length === 0) return placed;
+  const largest = raw.reduce((best, r, i) => (r > raw[best]! ? i : best), 0);
+  const others = sumBy(placed, (share) => share) - placed[largest]!;
+  placed[largest] = roundToCents(amount - others);
+  return placed;
+}
+
+/** `amount` placed whole over `keys` (`placeWhole`), each member's amount
+ *  credited to its key in every map of `into`. */
+export function creditWhole(
+  keys: readonly string[],
+  amount: number,
+  raw: readonly number[],
+  into: Map<string, number>[],
+): void {
+  const placed = placeWhole(amount, raw);
+  keys.forEach((key, i) => credit(key, placed[i]!, into));
 }
 
 /** `amount` over `parts` by their shares (`partShares`), placed whole
@@ -82,9 +95,10 @@ export function creditByWeight(
   into: Map<string, number>[],
 ): void {
   const shares = partShares(ledger, parts);
-  const placed = placeWhole(
+  creditWhole(
+    parts.map((ia) => ledger.indKey(ia)),
     amount,
     shares.map((s) => amount * s),
+    into,
   );
-  parts.forEach((ia, i) => credit(ledger.indKey(ia), placed[i]!, into));
 }

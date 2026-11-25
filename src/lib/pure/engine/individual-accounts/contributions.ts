@@ -4,7 +4,7 @@ import type { ContributionSpec } from "../types/contribution-spec";
 import type { AccumulationSlot } from "../types/routing";
 import type { AccountCategory } from "../../../config/account-types";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
-import { roundToCents } from "../../../utils/math";
+import { roundToCents, sumBy } from "../../../utils/math";
 import {
   getAccountTypeConfig,
   isOverflowTarget,
@@ -15,9 +15,14 @@ import { projectSpecAmount } from "../contribution-projection";
 import { taxTypeOnSide } from "../../../config/tax-treatment-buckets";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { rampBrokerages } from "@/lib/pure/accounts/brokerage-ramp";
-import { credit, retirementFirst, specKeyOf } from "./ledger";
+import { retirementFirst, specKeyOf } from "./ledger";
 import { otherParts } from "./other-tax-part";
-import { equalShares, inflowShares } from "./part-weights";
+import {
+  creditWhole,
+  equalShares,
+  inflowShares,
+  placeWhole,
+} from "./part-weights";
 import { creditSpecParts, onSpecParts, type SpecParts } from "./spec-accounts";
 import { unclaimedSlot } from "./own-part-credits";
 
@@ -153,24 +158,21 @@ export function distributeContributions(
       }
 
       if (scalingSpecs.length > 0 && remaining > 0) {
-        const rawTotal = scalingSpecs.reduce(
-          (s, sp) => s + (specRaw.get(specKeyOf(sp)) ?? 0),
-          0,
+        const keys = scalingSpecs.map(specKeyOf);
+        const rawTotal = sumBy(keys, (sk) => specRaw.get(sk) ?? 0);
+        const paid = keys.filter((sk) => specAccount.has(sk));
+        const weight = (sk: string) =>
+          rawTotal > 0
+            ? (specRaw.get(sk) ?? 0) / rawTotal
+            : 1 / scalingSpecs.length;
+        const raw = paid.map((sk) => remaining * weight(sk));
+        placeWhole(roundToCents(sumBy(raw, (r) => r)), raw).forEach(
+          (portion, i) =>
+            creditSpecParts(input, specAccount.get(paid[i]!)!, portion, [
+              indContributions,
+              indBalance,
+            ]),
         );
-        for (const sp of scalingSpecs) {
-          const sk = specKeyOf(sp);
-          const parts = specAccount.get(sk);
-          if (!parts) continue;
-          const weight =
-            rawTotal > 0
-              ? (specRaw.get(sk) ?? 0) / rawTotal
-              : 1 / scalingSpecs.length;
-          const portion = roundToCents(remaining * weight);
-          creditSpecParts(input, parts, portion, [
-            indContributions,
-            indBalance,
-          ]);
-        }
       }
     };
 
@@ -216,12 +218,8 @@ export function distributeContributions(
       accounts.map((ia) => indBalance.get(indKey(ia)) ?? 0),
       equalShares(accounts.length),
     );
-    accounts.forEach((ia, i) =>
-      credit(indKey(ia), roundToCents(amount * shares[i]!), [
-        indMatch,
-        indBalance,
-      ]),
-    );
+    const raw = shares.map((s) => amount * s);
+    creditWhole(accounts.map(indKey), amount, raw, [indMatch, indBalance]);
   };
   for (const cat of getAllCategories()) {
     const catMatch = slots.find((s) => s.category === cat)?.employerMatch ?? 0;
@@ -229,17 +227,18 @@ export function distributeContributions(
     const parentCatMatchData = employerMatchByParentCat?.get(cat);
     const catAccounts = indAccounts.filter((ia) => ia.category === cat);
     if (parentCatMatchData && parentCatMatchData.size > 0) {
-      let totalMatch = 0;
-      parentCatMatchData.forEach((v) => {
-        totalMatch += v;
-      });
-      parentCatMatchData.forEach((baseMatch, pCat) => {
-        const scaledMatch = roundToCents(catMatch * (baseMatch / totalMatch));
+      const byParent = [...parentCatMatchData];
+      const totalMatch = byParent.reduce((s, [, v]) => s + v, 0);
+      const placed = placeWhole(
+        catMatch,
+        byParent.map(([, baseMatch]) => catMatch * (baseMatch / totalMatch)),
+      );
+      byParent.forEach(([pCat], i) =>
         spreadMatch(
           catAccounts.filter((ia) => indParentCat.get(indKey(ia)) === pCat),
-          scaledMatch,
-        );
-      });
+          placed[i]!,
+        ),
+      );
     } else {
       spreadMatch(catAccounts, catMatch);
     }
@@ -285,16 +284,15 @@ export function distributeContributions(
     if (remaining > 0) {
       const noTargetSpecs = overflowSpecs.filter((s) => s.targetAnnual == null);
       if (noTargetSpecs.length > 0) {
-        const perAccount = roundToCents(remaining / noTargetSpecs.length);
-        for (const spec of noTargetSpecs) {
-          const accountName = specToAccount.get(specKeyOf(spec));
-          if (!accountName) continue;
-          creditSpecParts(input, accountName, perAccount, [
+        const to = noTargetSpecs.map((s) => specToAccount.get(specKeyOf(s))!);
+        const each = to.map(() => remaining / to.length);
+        placeWhole(roundToCents(remaining), each).forEach((portion, i) =>
+          creditSpecParts(input, to[i]!, portion, [
             indContributions,
             indBalance,
             indOverflow,
-          ]);
-        }
+          ]),
+        );
         // Routed in full — the fallback below must not hand it out again.
         remaining = 0;
       } else {
@@ -317,12 +315,14 @@ export function distributeContributions(
     // distribute to joint/unowned brokerage accounts directly.
     if (remaining > 0) {
       const jointBrok = brokAccounts.filter((ia) => ia.ownerPersonId == null);
-      const fallbackAccounts = jointBrok.length > 0 ? jointBrok : brokAccounts;
-      const perAccount = roundToCents(remaining / fallbackAccounts.length);
-      for (const ia of fallbackAccounts) {
-        const k = indKey(ia);
-        credit(k, perAccount, [indContributions, indBalance, indOverflow]);
-      }
+      const fallback = jointBrok.length > 0 ? jointBrok : brokAccounts;
+      const keys = fallback.map(indKey);
+      const each = keys.map(() => remaining / keys.length);
+      creditWhole(keys, roundToCents(remaining), each, [
+        indContributions,
+        indBalance,
+        indOverflow,
+      ]);
     }
   }
 
@@ -359,11 +359,12 @@ export function distributeContributions(
       brokAccounts.map((ia) => indBalance.get(indKey(ia)) ?? 0),
       equalShares(brokAccounts.length),
     );
-    for (const [i, ia] of brokAccounts.entries()) {
-      const k = indKey(ia);
-      const portion = roundToCents(rampAmount * shares[i]!);
-      credit(k, portion, [indContributions, indBalance, indRamp]);
-    }
+    const raw = shares.map((s) => rampAmount * s);
+    creditWhole(brokAccounts.map(indKey), rampAmount, raw, [
+      indContributions,
+      indBalance,
+      indRamp,
+    ]);
   }
 
   return { indContributions, indMatch, indIntentional, indOverflow, indRamp };

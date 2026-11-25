@@ -30,7 +30,7 @@ import {
   addBasis,
 } from "../accounts/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
-import { inflowShares } from "./individual-accounts/part-weights";
+import { inflowShares, placeWhole } from "./individual-accounts/part-weights";
 import { sliceKey } from "./category-slices";
 import type { CategorySide } from "../accounts/category-side";
 
@@ -190,22 +190,13 @@ export function reinvestRmdExcess(
             target.map((_, i) => (i === 0 ? 1 : 0)),
           );
           if (targetTotal > 0) {
-            let credited = 0;
-            for (const [i, ia] of target.entries()) {
-              const k = indKey(ia);
-              const balance = balanceOf(ia);
-              const share = roundToCents(excess * shares[i]!);
-              indBalance.set(k, roundToCents(balance + share));
-              credited += share;
-            }
-            const remainder = roundToCents(excess - credited);
-            if (remainder !== 0) {
-              const k = indKey(first);
+            const raw = shares.map((s) => excess * s);
+            placeWhole(excess, raw).forEach((share, i) =>
               indBalance.set(
-                k,
-                roundToCents((indBalance.get(k) ?? 0) + remainder),
-              );
-            }
+                indKey(target[i]!),
+                roundToCents(balanceOf(target[i]!) + share),
+              ),
+            );
           } else {
             // $0: the fallback above, written on the first part's own
             // balance (a part can sit below $0 until clampIndividualBalances).
