@@ -26,7 +26,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 
 function makeCtx(
   overrides: Partial<{
-    holdsAccounts: boolean;
+    ledgerRuns: boolean;
     indAccounts: {
       name?: string;
       category: string;
@@ -39,7 +39,7 @@ function makeCtx(
   }> = {},
 ): ProjectionContext {
   return {
-    holdsAccounts: false,
+    ledgerRuns: false,
     indAccounts: [],
     // Keyed by category alone — this test\'s indBalance is keyed the same way.
     indKey: (ia: object) => (ia as { category: string }).category,
@@ -102,7 +102,7 @@ function apply(
   state: ProjectionLoopState,
 ) {
   const ctx = makeCtx({
-    holdsAccounts: indAccounts.length > 0,
+    ledgerRuns: indAccounts.length > 0,
     indAccounts,
     indKey,
     lumpSumTargets: targetsOf(ls, indAccounts),
@@ -265,7 +265,7 @@ describe("updatePerPersonTradBalance", () => {
     const rmdMap = new Map([[1, { startAge: 73, birthYear: 1951 }]]);
     const ctx = makeCtx({
       rmdStartAgeByPerson: rmdMap,
-      holdsAccounts: false,
+      ledgerRuns: false,
     });
     const state = makeState();
     state.priorYearEndTradByPerson.set(1, 500);
@@ -285,7 +285,7 @@ describe("updatePerPersonTradBalance", () => {
     ]);
     const ctx = makeCtx({
       rmdStartAgeByPerson: rmdMap,
-      holdsAccounts: true,
+      ledgerRuns: true,
       indAccounts,
       // Keyed by category alone — this test\'s indBalance is keyed the same way.
       indKey: (ia: object) => (ia as { category: string }).category,
@@ -303,7 +303,7 @@ describe("updatePerPersonTradBalance", () => {
     const indBalance = new Map([["401k", 80000]]);
     const ctx = makeCtx({
       rmdStartAgeByPerson: rmdMap,
-      holdsAccounts: true,
+      ledgerRuns: true,
       indAccounts,
       // Keyed by category alone — this test\'s indBalance is keyed the same way.
       indKey: (ia: object) => (ia as { category: string }).category,

@@ -31,7 +31,7 @@ export function runWorkingYearFlows(
   const { yearIndex, config, sized } = terms;
   const { year, returnRate, effectiveSalary: projectedSalary } = setup;
   const {
-    holdsAccounts,
+    ledgerRuns,
     indAccounts: individualAccounts,
     indKey: individualKey,
     indParentCat: individualParentCategory,
@@ -75,7 +75,7 @@ export function runWorkingYearFlows(
     indOverflow: individualOverflow,
     indRamp: individualRamp,
   } = distributeYearContributions(
-    holdsAccounts,
+    ledgerRuns,
     contributionSpecs,
     individualAccounts,
     individualKey,
@@ -115,7 +115,7 @@ export function runWorkingYearFlows(
     brokerageGoalsByYear,
     year,
     balances,
-    holdsAccounts,
+    ledgerRuns,
     individualAccounts,
     individualKey,
     individualBalance,

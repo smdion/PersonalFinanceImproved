@@ -26,7 +26,7 @@ export function closeDecumulationYear(
     contributions: ReturnType<typeof decumulationPortfolioContributions>;
   },
 ) {
-  const { holdsAccounts, indAccounts, indKey } = ctx;
+  const { ledgerRuns, indAccounts, indKey } = ctx;
   const { balances, accountBalance } = state;
   const { indBalance, indBasis, brokBasis } = state;
   const { year, age } = thisYear;
@@ -36,7 +36,7 @@ export function closeDecumulationYear(
   // indBalance reconciled to accountBalance once a year (the tracks drift), after dust
   // cleanup and before the basis re-clamp, so next year's eligibility can't
   // see an eligible balance in a locked category.
-  if (holdsAccounts) {
+  if (ledgerRuns) {
     routeWarnings.push(
       ...followReconciliation(
         indAccounts,
@@ -67,12 +67,12 @@ export function closeDecumulationYear(
 
   // Basis re-clamped after dust cleanup: an account cleaned to $0 carries $0
   // basis into next year (the row already shows the pre-cleanup figure).
-  if (holdsAccounts) {
+  if (ledgerRuns) {
     clampIndividualBasis(indAccounts, indKey, indBasis, indBalance);
   }
   const yearEnd = scopedBalances(
     balances,
-    holdsAccounts
+    ledgerRuns
       ? computeNonRetirementExclusion(indAccounts, indBalance, indKey)
       : undefined,
   );

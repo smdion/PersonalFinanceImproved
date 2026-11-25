@@ -25,7 +25,7 @@ export function routeYearDraw(
   thisYear: DecumulationYear,
   need: ReturnType<typeof yearNeed>,
 ) {
-  const { holdsAccounts, indAccounts, indKey } = ctx;
+  const { ledgerRuns, indAccounts, indKey } = ctx;
   const { filingStatus } = ctx.input;
   const { accountBalance, balances, indBasis, indBalance } = state;
   const { year, taxRates, config, eligibility, retirementBasisRatio } =
@@ -45,10 +45,10 @@ export function routeYearDraw(
   const rankingInputs = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: retirementBasisRatio,
-    indBasis: holdsAccounts ? indBasis : undefined,
-    indAccounts: holdsAccounts ? indAccounts : undefined,
-    indKey: holdsAccounts ? indKey : undefined,
-    indBalance: holdsAccounts ? indBalance : undefined,
+    indBasis: ledgerRuns ? indBasis : undefined,
+    indAccounts: ledgerRuns ? indAccounts : undefined,
+    indKey: ledgerRuns ? indKey : undefined,
+    indBalance: ledgerRuns ? indBalance : undefined,
     year,
   });
 
@@ -113,7 +113,7 @@ export function distributeYearDraws(
     rmd: ReturnType<typeof enforceYearRmd>;
   },
 ) {
-  const { holdsAccounts, indAccounts, indKey } = ctx;
+  const { ledgerRuns, indAccounts, indKey } = ctx;
   const { year, eligibility } = thisYear;
   const { slots, routeWarnings } = flow.route;
   const { ownerRmd } = flow.rmd;
@@ -121,7 +121,7 @@ export function distributeYearDraws(
   const indBalance = new Map(state.indBalance);
   const brokBasis = new Map(state.brokBasis);
   const indBasis = new Map(state.indBasis);
-  const drawn = holdsAccounts
+  const drawn = ledgerRuns
     ? followDrawsSold(indAccounts, indKey, indBalance, brokBasis, () =>
         distributeWithdrawals(
           slots,
@@ -136,7 +136,7 @@ export function distributeYearDraws(
   const decumulationIndWithdrawal =
     drawn?.result.decumulationIndWithdrawal ?? new Map<string, number>();
   routeWarnings.push(...(drawn?.result.warnings ?? []));
-  const basisDraws = holdsAccounts
+  const basisDraws = ledgerRuns
     ? depleteIndividualBasis({
         indAccounts,
         indKey,
@@ -148,7 +148,7 @@ export function distributeYearDraws(
 
   // The Roth growth's taxable share from this year's basis draws (owner
   // under 59 1/2; a joint account counts as qualified).
-  const rothTaxSplit = holdsAccounts
+  const rothTaxSplit = ledgerRuns
     ? splitRothWithdrawalForTax({
         accounts: indAccounts.map((ia) => ({
           indKey: indKey(ia),
@@ -162,7 +162,7 @@ export function distributeYearDraws(
   // The penalty on what was actually drawn: 0 when routing kept penalized
   // money out (the default), priced whatever the reason otherwise.
   const earlyWithdrawalPenalty =
-    holdsAccounts && eligibility
+    ledgerRuns && eligibility
       ? computeEarlyWithdrawalPenalty({
           exposure: eligibility,
           withdrawnByKey: decumulationIndWithdrawal,

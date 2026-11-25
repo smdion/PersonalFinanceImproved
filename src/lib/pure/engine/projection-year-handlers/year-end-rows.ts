@@ -28,7 +28,7 @@ export function growYearToRows(
   },
 ) {
   const {
-    holdsAccounts,
+    ledgerRuns,
     indAccounts: individualAccounts,
     indKey: individualKey,
     indParentCat: individualParentCategory,
@@ -67,7 +67,7 @@ export function growYearToRows(
 
   // Tracked Roth basis clamped to the balance before the row is built
   // (clampBasisToBalance): losses can leave basis above what's held.
-  if (holdsAccounts) {
+  if (ledgerRuns) {
     clampIndividualBasis(
       individualAccounts,
       individualKey,
@@ -77,7 +77,7 @@ export function growYearToRows(
   }
 
   // Build individual account year balances (decumulation)
-  const individualYearBalances: IndividualAccountYearBalance[] = holdsAccounts
+  const individualYearBalances: IndividualAccountYearBalance[] = ledgerRuns
     ? buildIndividualYearBalances(
         individualAccounts,
         individualKey,

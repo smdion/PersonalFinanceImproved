@@ -162,7 +162,7 @@ export type ProjectionContext = {
   // Individual account setup
   /** Some part belongs to a real account (`hasRealAccount`); without one the
    *  run takes the household path and `indAccounts` is empty. */
-  holdsAccounts: boolean;
+  ledgerRuns: boolean;
   indAccounts: EnginePart[];
   indKey: ReturnType<typeof makeIndKey>;
   indParentCat: Map<string, string>;

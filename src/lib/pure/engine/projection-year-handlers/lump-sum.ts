@@ -28,7 +28,7 @@ export function applyLumpSums(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
 ): void {
-  const { holdsAccounts, indAccounts, indKey, lumpSumTargets } = ctx;
+  const { ledgerRuns, indAccounts, indKey, lumpSumTargets } = ctx;
   const { balances, accountBalance, indBalance } = state;
 
   for (const ls of runLumpSums(lumpSums, lumpSumTargets)) {
@@ -52,7 +52,7 @@ export function applyLumpSums(
       addBasis(accountBalance[ls.targetAccount], ls.amount);
     }
     // Its parts take it, by balance when its target is no single part
-    if (holdsAccounts) {
+    if (ledgerRuns) {
       const targets = lumpSumParts(ls, indAccounts);
       const shares = inflowShares(
         targets.map((ia) => Math.max(0, indBalance.get(indKey(ia)) ?? 0)),

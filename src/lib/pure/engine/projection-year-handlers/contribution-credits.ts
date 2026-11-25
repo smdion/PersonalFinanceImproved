@@ -144,7 +144,7 @@ export function creditYearContributions(
 
 /** The year's contributions, match, overflow and ramp, spread to each account. */
 export function distributeYearContributions(
-  holdsAccounts: boolean,
+  ledgerRuns: boolean,
   contributionSpecs: ProjectionLoopState["contributionSpecs"],
   indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
@@ -173,7 +173,7 @@ export function distributeYearContributions(
   // Contributions, match, overflow and the ramp are cash in: new basis.
   const fill = () => {
     // With no specs, every slot is one no spec claims (unclaimedSlot).
-    if (holdsAccounts)
+    if (ledgerRuns)
       return distributeContributions({
         slots,
         contributionSpecs: contributionSpecs ?? [],

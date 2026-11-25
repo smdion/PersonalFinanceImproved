@@ -18,7 +18,7 @@ export function growYear(
   const raised = clampNegative
     ? partFloorRaises(parts, partKey, state.indBalance)
     : new Map<string, number>();
-  const partGrowth = ctx.holdsAccounts
+  const partGrowth = ctx.ledgerRuns
     ? applyIndividualGrowth(
         parts,
         partKey,

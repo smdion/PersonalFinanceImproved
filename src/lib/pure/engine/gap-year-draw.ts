@@ -75,7 +75,7 @@ export function runGapYearDraw(
   state: ProjectionLoopState,
   sized: GapYearNeed,
 ): GapYearRun {
-  const { input, holdsAccounts, indAccounts, indKey } = ctx;
+  const { input, ledgerRuns, indAccounts, indKey } = ctx;
   const { balances, accountBalance, indBalance, indBasis, brokBasis } = state;
   const { year, need, figures, wages, incomeAlone, taxOnIncome } = sized;
   const { taxableSsOn, taxBrackets, standardDeduction, ltcgBrackets } = sized;
@@ -102,7 +102,7 @@ export function runGapYearDraw(
     decumulationDefaults,
     ctx.sortedDecumulationOverrides,
   );
-  const eligibility = ctx.holdsAccounts
+  const eligibility = ctx.ledgerRuns
     ? computeWithdrawalEligibility({
         year,
         indAccounts,
@@ -111,19 +111,19 @@ export function runGapYearDraw(
         indBasis,
       })
     : undefined;
-  const nonRetirement = holdsAccounts
+  const nonRetirement = ledgerRuns
     ? computeNonRetirementExclusion(indAccounts, indBalance, indKey)
     : undefined;
-  const retirementBasisRatio = holdsAccounts
+  const retirementBasisRatio = ledgerRuns
     ? retirementBrokerageBasisRatio(indAccounts, indKey, indBalance, brokBasis)
     : undefined;
   const rankingInputs = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: retirementBasisRatio,
-    indBasis: holdsAccounts ? indBasis : undefined,
-    indAccounts: holdsAccounts ? indAccounts : undefined,
-    indKey: holdsAccounts ? indKey : undefined,
-    indBalance: holdsAccounts ? indBalance : undefined,
+    indBasis: ledgerRuns ? indBasis : undefined,
+    indAccounts: ledgerRuns ? indAccounts : undefined,
+    indKey: ledgerRuns ? indKey : undefined,
+    indBalance: ledgerRuns ? indBalance : undefined,
     year,
   });
   const conversionSource = [balances, accountBalance, nonRetirement] as const;
@@ -158,7 +158,7 @@ export function runGapYearDraw(
     balance: typeof indBalance,
     basis: typeof indBasis,
   ) => {
-    if (!holdsAccounts)
+    if (!ledgerRuns)
       return {
         byKey: new Map<string, number>(),
         draws: new Map<string, BasisDraw>(),
@@ -257,10 +257,10 @@ export function runGapYearDraw(
   const settled = price(slots, taken.rothGrowth, taken.penalty);
   const { priced, cost } = settled;
   const out = priced.brokerageBasisOut;
-  const basisOut = categoryBasis(holdsAccounts ? sold : undefined, out);
+  const basisOut = categoryBasis(ledgerRuns ? sold : undefined, out);
   deductWithdrawals({ slots, balances, accountBalance, basisOut });
   const floorRaised = clampBalances(balances, accountBalance);
-  if (holdsAccounts) floorPartsAndSlices(ctx, state, floorRaised);
+  if (ledgerRuns) floorPartsAndSlices(ctx, state, floorRaised);
   const withdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));
   const accounts: GapYearAccounts = {
     withdrawal: taken.byKey,

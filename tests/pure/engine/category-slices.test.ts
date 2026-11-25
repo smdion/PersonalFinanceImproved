@@ -96,7 +96,7 @@ vi.mock(
           });
         const before = gapNow();
         const result = actual.growYear(...args);
-        if (ctx.holdsAccounts)
+        if (ctx.ledgerRuns)
           grown.push({
             year: state.projectionByYear.length,
             before,
@@ -275,7 +275,7 @@ function heldRun(parts: IndividualAccountInput[], partBalance: number[]) {
     parts.map((part, i) => [accountIdKeyOf(part), partBalance[i]]),
   );
   const runFields = {
-    holdsAccounts: true,
+    ledgerRuns: true,
     indAccounts: parts,
     indKey: accountIdKeyOf,
   };

@@ -17,7 +17,7 @@ export function yearNeed(
   thisYear: DecumulationYear,
   irmaa: IrmaaCharge | undefined,
 ) {
-  const { input, holdsAccounts, indAccounts, indKey } = ctx;
+  const { input, ledgerRuns, indAccounts, indKey } = ctx;
   const { filingStatus } = input;
   const { balances, accountBalance, indBalance, indBasis } = state;
   const { year, config, eligibility, taxRates, ssIncome } = thisYear;
@@ -63,10 +63,10 @@ export function yearNeed(
     brokerageBasisRatio: retirementBasisRatio,
     eligibility,
     nonRetirement,
-    indAccounts: holdsAccounts ? indAccounts : undefined,
-    indKey: holdsAccounts ? indKey : undefined,
-    indBalance: holdsAccounts ? indBalance : undefined,
-    indBasis: holdsAccounts ? indBasis : undefined,
+    indAccounts: ledgerRuns ? indAccounts : undefined,
+    indKey: ledgerRuns ? indKey : undefined,
+    indBalance: ledgerRuns ? indBalance : undefined,
+    indBasis: ledgerRuns ? indBasis : undefined,
     year,
   });
   const { targetWithdrawal } = taxEstimate;

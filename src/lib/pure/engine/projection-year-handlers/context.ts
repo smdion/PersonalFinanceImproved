@@ -154,8 +154,8 @@ export function buildProjectionContext(
   }
 
   const declared = openingParts(input);
-  const holdsAccounts = declared.some(hasRealAccount);
-  const indAccounts = holdsAccounts ? declared : [];
+  const ledgerRuns = declared.some(hasRealAccount);
+  const indAccounts = ledgerRuns ? declared : [];
   const indKey = makeIndKey();
   const indParentCat = new Map<string, string>();
   for (const ia of indAccounts) {
@@ -185,7 +185,7 @@ export function buildProjectionContext(
     sortedAccOverrides,
     sortedDecumulationOverrides,
     sortedProfileSwitches,
-    holdsAccounts,
+    ledgerRuns,
     indAccounts,
     indKey,
     indParentCat,

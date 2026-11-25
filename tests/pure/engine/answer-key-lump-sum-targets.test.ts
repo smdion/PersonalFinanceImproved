@@ -52,7 +52,7 @@ function land(
 ): Record<string, number> {
   const indBalance = new Map(parts.map((p) => [indKey(p), p.startingBalance]));
   const ctx = {
-    holdsAccounts: true,
+    ledgerRuns: true,
     indAccounts: parts,
     indKey,
     // Resolved over the parts, as `resolveLumpSums` does for each run.

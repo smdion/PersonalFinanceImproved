@@ -161,7 +161,7 @@ export function settleYearDraws(
   thisYear: DecumulationYear,
   flow: Omit<DecumulationFlow, "conversion">,
 ) {
-  const { indAccounts, indKey, holdsAccounts } = ctx;
+  const { indAccounts, indKey, ledgerRuns } = ctx;
   // Each account's draw (distributeYearDraws) lands with the deduction below.
   for (const [k, v] of flow.drawn.ledger.indBalance) state.indBalance.set(k, v);
   for (const [k, v] of flow.drawn.ledger.brokBasis) state.brokBasis.set(k, v);
@@ -194,13 +194,13 @@ export function settleYearDraws(
     cost.netCost,
     balances,
     accountBalance,
-    holdsAccounts ? indAccounts : undefined,
-    holdsAccounts ? indBalance : undefined,
-    holdsAccounts ? indKey : undefined,
-    holdsAccounts ? brokBasis : undefined,
+    ledgerRuns ? indAccounts : undefined,
+    ledgerRuns ? indBalance : undefined,
+    ledgerRuns ? indKey : undefined,
+    ledgerRuns ? brokBasis : undefined,
   );
 
-  if (holdsAccounts) floorPartsAndSlices(ctx, state, floorRaised);
+  if (ledgerRuns) floorPartsAndSlices(ctx, state, floorRaised);
 
   // Track per-account depletions
   trackDepletions(
@@ -222,7 +222,7 @@ export function yearRothConversion(
   thisYear: DecumulationYear,
   flow: Pick<DecumulationFlow, "need" | "route" | "rmd" | "priced" | "parts">,
 ) {
-  const { holdsAccounts, rmdStartAgeByPerson, indAccounts, indKey } = ctx;
+  const { ledgerRuns, rmdStartAgeByPerson, indAccounts, indKey } = ctx;
   const { input } = ctx;
   const { enableIrmaaAwareness, filingStatus } = input;
   const { indBalance, balances, brokBasis, accountBalance } = state;
@@ -304,7 +304,7 @@ export function yearRothConversion(
     accountBalance,
     // Portfolio-parented money stays out of the conversion and its tax.
     nonRetirement,
-    parts: holdsAccounts
+    parts: ledgerRuns
       ? {
           accounts: indAccounts,
           balances: indBalance,
