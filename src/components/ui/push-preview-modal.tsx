@@ -29,6 +29,48 @@ function UnreadableItemsNote({ items }: { items: PushPreviewItem[] }) {
   );
 }
 
+/** One changed item: before, new value and the change. */
+function PreviewRow({
+  item,
+  formatValue,
+}: {
+  item: PushPreviewItem;
+  formatValue: (n: number) => string;
+}) {
+  const delta = item.newValue - item.currentYnab;
+  return (
+    <tr className="border-subtle border-b">
+      <td
+        className="text-secondary max-w-[140px] truncate py-1.5 pr-2"
+        title={item.name}
+      >
+        {item.name}
+        {item.stale && (
+          <span
+            className="ml-1 text-amber-600"
+            title="Stale vs. current income — recalculate before pushing"
+          >
+            ⚠
+          </span>
+        )}
+      </td>
+      <td className="text-muted py-1.5 pr-2">{item.field}</td>
+      <td className="text-muted py-1.5 pr-2 text-right tabular-nums">
+        {formatValue(item.currentYnab)}
+      </td>
+      <td className="text-primary py-1.5 pr-2 text-right font-medium tabular-nums">
+        {formatValue(item.newValue)}
+      </td>
+      <td
+        className={`py-1.5 text-right font-medium tabular-nums ${delta >= 0 ? "text-green-600" : "text-red-600"}`}
+      >
+        {delta >= 0 ? "+" : ""}
+        {formatValue(delta)}
+      </td>
+    </tr>
+  );
+}
+
 export function PushPreviewModal({
   title,
   items,
@@ -149,43 +191,13 @@ export function PushPreviewModal({
               </tr>
             </thead>
             <tbody>
-              {changed.map((item) => {
-                const delta = item.newValue - item.currentYnab;
-                return (
-                  <tr
-                    key={`${item.name}-${item.field}`}
-                    className="border-subtle border-b"
-                  >
-                    <td
-                      className="text-secondary max-w-[140px] truncate py-1.5 pr-2"
-                      title={item.name}
-                    >
-                      {item.name}
-                      {item.stale && (
-                        <span
-                          className="ml-1 text-amber-600"
-                          title="Stale vs. current income — recalculate before pushing"
-                        >
-                          ⚠
-                        </span>
-                      )}
-                    </td>
-                    <td className="text-muted py-1.5 pr-2">{item.field}</td>
-                    <td className="text-muted py-1.5 pr-2 text-right tabular-nums">
-                      {formatValue(item.currentYnab)}
-                    </td>
-                    <td className="text-primary py-1.5 pr-2 text-right font-medium tabular-nums">
-                      {formatValue(item.newValue)}
-                    </td>
-                    <td
-                      className={`py-1.5 text-right font-medium tabular-nums ${delta >= 0 ? "text-green-600" : "text-red-600"}`}
-                    >
-                      {delta >= 0 ? "+" : ""}
-                      {formatValue(delta)}
-                    </td>
-                  </tr>
-                );
-              })}
+              {changed.map((item) => (
+                <PreviewRow
+                  key={`${item.name}-${item.field}`}
+                  item={item}
+                  formatValue={formatValue}
+                />
+              ))}
             </tbody>
           </table>
         )}
