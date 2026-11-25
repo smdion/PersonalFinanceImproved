@@ -102,6 +102,12 @@ export function accrueContributionBasis(
   };
 }
 
+/** The share of a `pro_rata` Roth draw that returns basis: basis over the balance just before
+ *  the draw, at most 1; none from an empty balance. */
+export function proRataBasisShare(basis: number, balance: number): number {
+  return balance > 0 ? Math.min(1, basis / balance) : 0;
+}
+
 /**
  * Slices one withdrawal into contribution basis / conversion basis / growth by the category's
  * `rothOrderingRules`: `basis_first` in that order, `pro_rata` by the basis/balance ratio just
@@ -131,10 +137,7 @@ export function drawFromBasis(input: {
 
   // pro_rata
   const totalBasis = state.contributionBasis + state.conversionBasis;
-  const ratio =
-    balanceBeforeWithdrawal > 0
-      ? Math.min(1, totalBasis / balanceBeforeWithdrawal)
-      : 0;
+  const ratio = proRataBasisShare(totalBasis, balanceBeforeWithdrawal);
   const basisDrawn = withdrawal * ratio;
   const contributionShareOfBasis =
     totalBasis > 0 ? state.contributionBasis / totalBasis : 0;
