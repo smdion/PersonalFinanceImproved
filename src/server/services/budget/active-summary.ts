@@ -14,7 +14,7 @@ import type { Db } from "@/lib/db";
 import type { RequestScope } from "@/server/data/request-scope";
 import { eq, asc, and, gte, lt } from "drizzle-orm";
 import { log } from "@/lib/logger";
-import { toItemAmountActiveMap } from "@/lib/pure/household/what-if.schema";
+import { itemAmountOverlay } from "@/server/services/budget/what-if-amounts";
 import * as schema from "@/lib/db/schema";
 import { calculateBudget } from "@/lib/pure/budget/budget";
 import type { BudgetInput } from "@/lib/pure/budget/budget.types";
@@ -22,7 +22,6 @@ import { loadBudgetItemLinks } from "@/server/data/category-links";
 import { resolveTargetBudgetProfile } from "@/server/data/budget-profiles";
 import { resolveLinkedBudgetItemAmounts } from "@/server/services/budget/linked-items";
 import { computeBudgetAnnualTotal } from "@/lib/pure/budget/annual-total";
-import { storedAmountList } from "@/lib/pure/budget/item-amount";
 import { getActiveBudgetApi } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/utils/date-keys";
 import {
@@ -43,7 +42,7 @@ export const zBudgetActiveSummaryInput = z
      *  netMonthlyIncome), so both see the same income. */
     sandboxSalaryEntries: zSandboxSalaryEntries,
     /** The What-If tab's budget item amounts, one more layer on the
-     *  per-item resolution chain (see toItemAmountActiveMap). */
+     *  per-item resolution chain (see itemAmountOverlay). */
     itemAmountActiveFields: zItemAmountActiveFields,
     /** As in zPaycheckSummaryInput; they reach netMonthlyIncome's paycheck
      *  summary, so a deduction edit moves the income the budget is checked
@@ -169,13 +168,9 @@ export async function computeBudgetActiveSummary(
   // Linked items take the contribution's monthly amount; unlinked use DB amounts. The
   // What-If tab's hand-edited amounts layer on top here so every downstream total
   // reflects the sandbox through this one path.
-  const itemActiveMap = toItemAmountActiveMap(input?.itemAmountActiveFields);
-  const applyItemActiveFields = (itemId: number, amounts: number[]) =>
-    itemActiveMap.size === 0
-      ? amounts
-      : (storedAmountList(amounts)?.map(
-          (amount, col) => itemActiveMap.get(`${itemId}:${col}`) ?? amount,
-        ) ?? amounts); // amounts that aren't a list: read as missing
+  const applyItemActiveFields = itemAmountOverlay(
+    input?.itemAmountActiveFields,
+  );
   const budgetItems = items.map((i) => {
     const resolved = resolvedItemsById.get(i.id)!;
     if (!i.contributionAccountId)

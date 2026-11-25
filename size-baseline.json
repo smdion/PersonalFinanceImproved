@@ -394,7 +394,7 @@
     "src/server/routers/sync/preview.ts": 14,
     "src/server/routers/utility-bills.ts": 568,
     "src/server/services/budget/account-balances.ts": 148,
-    "src/server/services/budget/active-summary.ts": 298,
+    "src/server/services/budget/active-summary.ts": 293,
     "src/server/services/budget/annual-expenses.ts": 54,
     "src/server/services/budget/linked-items.ts": 166,
     "src/server/services/contributions/account-edits.ts": 201,
@@ -1016,7 +1016,7 @@
       "summaryProcedures.computeSummary.query()": 230
     },
     "src/server/services/budget/active-summary.ts": {
-      "computeBudgetActiveSummary": 217
+      "computeBudgetActiveSummary": 213
     },
     "src/server/services/contributions/contribution-mix.ts": {
       "loadContributionMix": 156

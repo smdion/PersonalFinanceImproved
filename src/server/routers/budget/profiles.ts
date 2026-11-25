@@ -4,15 +4,12 @@ import { eq, asc } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { budgetProcedure } from "../../trpc";
-import {
-  zItemAmountActiveFields,
-  toItemAmountActiveMap,
-} from "@/lib/pure/household/what-if.schema";
+import { zItemAmountActiveFields } from "@/lib/pure/household/what-if.schema";
+import { itemAmountOverlay } from "@/server/services/budget/what-if-amounts";
 import * as schema from "@/lib/db/schema";
 import { canDeleteBudgetProfile } from "@/lib/pure/household/profiles";
 import { columnLabelsSchema } from "@/lib/db/shapes/json-schemas";
 import { firstRow } from "@/lib/utils/first-row";
-import { storedAmountList } from "@/lib/pure/budget/item-amount";
 
 export const profileProcedures = {
   /** Create a new budget profile, pre-populated with standard template
@@ -93,7 +90,7 @@ export const profileProcedures = {
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const itemActiveMap = toItemAmountActiveMap(input.itemAmountActiveFields);
+      const overlay = itemAmountOverlay(input.itemAmountActiveFields);
       return ctx.db.transaction(async (tx) => {
         const source = await tx
           .select()
@@ -126,14 +123,7 @@ export const profileProcedures = {
         if (items.length > 0) {
           await tx.insert(schema.budgetItems).values(
             items.map((i) => {
-              const rawAmounts = i.amounts as number[];
-              const amounts =
-                itemActiveMap.size === 0
-                  ? rawAmounts
-                  : (storedAmountList(rawAmounts)?.map(
-                      (amount, col) =>
-                        itemActiveMap.get(`${i.id}:${col}`) ?? amount,
-                    ) ?? rawAmounts); // not a list: copied as stored
+              const amounts = overlay(i.id, i.amounts as number[]);
               return {
                 profileId: created.id,
                 category: i.category,
