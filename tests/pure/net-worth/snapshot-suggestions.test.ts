@@ -186,6 +186,23 @@ describe("splitAccountBalance", () => {
     expect(sum(amounts)).toBeCloseTo(600, 10);
   });
 
+  it("places the whole balance; the largest share takes the cents left, never a $0 part", () => {
+    // $1,000.01 over $500 / $500 / $0: each $500 share is $500.005, which
+    // rounds to $500.01 twice; the first $500 part gives back the cent, and
+    // the $0 part listed last stays at $0 instead of going to -$0.01.
+    const { amounts } = splitAccountBalance(
+      [sub("roth", 1, 500, "taxFree"), sub("trad", 1, 500), sub("empty", 1, 0)],
+      1000.01,
+      null,
+      null,
+    );
+    expect(Object.fromEntries(amounts)).toEqual({
+      roth: 500,
+      trad: 500.01,
+      empty: 0,
+    });
+  });
+
   it("places the match by tax type, and after-tax money in the after-tax part", () => {
     const parts = [
       sub("roth", 1, 100, "taxFree"),

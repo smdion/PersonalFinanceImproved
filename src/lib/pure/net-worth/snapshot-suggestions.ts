@@ -9,6 +9,7 @@ import {
   isTaxFreeBucket,
 } from "@/lib/config/account-types";
 import { roundToCents } from "@/lib/utils/math";
+import { placeWhole } from "@/lib/pure/accounts/place-whole";
 
 type SnapshotSub = {
   key: string;
@@ -114,15 +115,11 @@ export function splitAccountBalance(
   const weightOf = (p: SnapshotSub) =>
     Math.max(p.amount, 0) + (added.get(p.key) ?? 0);
   const weight = parts.reduce((t, p) => t + weightOf(p), 0);
-  const amounts = new Map<string, number>();
-  let left = roundToCents(total);
-  parts.forEach((p, i) => {
-    const share = weight > 0 ? weightOf(p) / weight : 1 / parts.length;
-    // The last part takes the rounding remainder.
-    const amount = i === parts.length - 1 ? left : roundToCents(total * share);
-    left = roundToCents(left - amount);
-    amounts.set(p.key, amount);
-  });
+  const raw = parts.map(
+    (p) => total * (weight > 0 ? weightOf(p) / weight : 1 / parts.length),
+  );
+  const whole = placeWhole(total, raw);
+  const amounts = new Map(parts.map((p, i) => [p.key, whole[i]!]));
   return { amounts, placed: roundToCents(placed) };
 }
 
