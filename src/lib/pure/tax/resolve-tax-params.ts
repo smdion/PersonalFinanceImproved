@@ -247,25 +247,35 @@ export function resolveTaxParams(
 }
 
 /** Stored withholding tables as every reader (projection, paycheck, job net pay) prices them:
- *  a negative rate reads as 0%, never a negative tax, with a note naming the table. Stored
- *  rows are kept; a table with no negative rate comes back as the same object. */
+ *  a negative rate reads as 0%, never a negative tax, with a note naming the table (`rateNotesOf`:
+ *  the tables a reader used). Stored rows are kept; a table with no negative rate is the same object. */
 export function readWithholdingTables<
   R extends Pick<WithholdingBracketRow, "filingStatus" | "w4Checkbox"> & {
     brackets: readonly { rate: number }[];
   },
->(rows: readonly R[]): { tables: R[]; rateNotes: string[] } {
-  const rateNotes: string[] = [];
+>(
+  rows: readonly R[],
+): {
+  tables: R[];
+  rateNotes: string[];
+  rateNotesOf: (used: ReadonlySet<R>) => string[];
+} {
+  const noted = new Map<R, string>();
   const tables = rows.map((row) => {
     if (!row.brackets.some((b) => b.rate < 0)) return row;
-    rateNotes.push(
-      `The ${row.filingStatus}${row.w4Checkbox ? " Step 2(c)" : ""} withholding table (Tax Brackets) has a negative rate, read as 0%. Fix it in Settings → Reference Data.`,
-    );
-    return {
+    const table = {
       ...row,
       brackets: row.brackets.map((b) => (b.rate < 0 ? { ...b, rate: 0 } : b)),
     };
+    noted.set(
+      table,
+      `The ${row.filingStatus}${row.w4Checkbox ? " Step 2(c)" : ""} withholding table (Tax Brackets) has a negative rate, read as 0%. Fix it in Settings → Reference Data.`,
+    );
+    return table;
   });
-  return { tables, rateNotes };
+  const rateNotesOf = (used: ReadonlySet<R>) =>
+    tables.flatMap((t) => (used.has(t) ? (noted.get(t) ?? []) : []));
+  return { tables, rateNotes: [...noted.values()], rateNotesOf };
 }
 
 /** Years whose rows cover every required filing status (`keep` narrows

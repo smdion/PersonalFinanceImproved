@@ -23,6 +23,7 @@ export function householdTotals(
   limitsMap: Map<string, number>,
   limitsRecord: Record<string, number>,
   taxYear: number,
+  priced: Set<typeof schema.taxBrackets.$inferSelect>,
 ) {
   // Household income and this year's return (household-return.ts): federal
   // tax on combined income, FICA per person, Additional Medicare on combined
@@ -45,6 +46,7 @@ export function householdTotals(
           limitsMap,
           limitsRecord,
           taxYear,
+          priced,
         )
       : null;
 

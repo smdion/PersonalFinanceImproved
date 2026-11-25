@@ -141,9 +141,10 @@ export async function computePaycheckSummary(
     resolvedTax?.resolvedYear ??
     input?.taxYearOverride ??
     ctx.scope.asOf.getFullYear();
-  const { tables: allBrackets, rateNotes } = readWithholdingTables(
+  const { tables: allBrackets, rateNotesOf } = readWithholdingTables(
     allBracketRows.filter((b) => b.taxYear === resolvedTax?.resolvedYear),
   );
+  const priced = new Set<(typeof allBrackets)[number]>(); // the tables read
 
   const limitsRecord: Record<string, number> = resolvedTax?.limits ?? {};
   const limitsMap = new Map<string, number>(Object.entries(limitsRecord));
@@ -224,6 +225,7 @@ export async function computePaycheckSummary(
         b.w4Checkbox === job.w4Box2cChecked,
     );
     if (!bracketRow) return null;
+    priced.add(bracketRow);
     // A job has no salary/bonus of its own — the Salary Profile, then
     // (current job only) the What-If sandbox.
     const comp = resolveCompensation(salaryProfileActiveMap, job.id);
@@ -620,6 +622,7 @@ export async function computePaycheckSummary(
     limitsMap,
     limitsRecord,
     taxYear,
+    priced,
   );
 
   return {
@@ -637,7 +640,7 @@ export async function computePaycheckSummary(
       : null,
     rothIra,
     hsaBuffers,
-    unknownTypeNotes: [...contributionAccounts.notes, ...rateNotes],
+    unknownTypeNotes: [...contributionAccounts.notes, ...rateNotesOf(priced)],
     // The tax-data vintage this summary was priced under — for a
     // "Tax data: YYYY" indicator, matching the retirement projection side.
     taxYear,

@@ -463,7 +463,7 @@ describe("readWithholdingTables — the one reader of a stored table's rates", (
           }
         : r,
     );
-    const { tables, rateNotes } = readWithholdingTables(edited);
+    const { tables, rateNotes, rateNotesOf } = readWithholdingTables(edited);
     const hoh = edited.filter((r) => r.filingStatus === "HOH");
     for (const row of hoh) {
       const read = tables[edited.indexOf(row)]!;
@@ -471,6 +471,15 @@ describe("readWithholdingTables — the one reader of a stored table's rates", (
       expect(read.brackets[1]).toBe(row.brackets[1]);
       expect(row.brackets[2]!.rate).toBe(-0.05);
     }
+    // A reader names only the tables it used.
+    const standardHoh = tables.find(
+      (t) => t.filingStatus === "HOH" && !t.w4Checkbox,
+    )!;
+    const single = tables.find((t) => t.filingStatus === "Single")!;
+    expect(rateNotesOf(new Set([single, standardHoh]))).toEqual([
+      "The HOH withholding table (Tax Brackets) has a negative rate, read as 0%. Fix it in Settings → Reference Data.",
+    ]);
+    expect(rateNotesOf(new Set([single]))).toEqual([]);
     expect(rateNotes).toHaveLength(hoh.length);
     expect(rateNotes).toContain(
       "The HOH Step 2(c) withholding table (Tax Brackets) has a negative rate, read as 0%. Fix it in Settings → Reference Data.",

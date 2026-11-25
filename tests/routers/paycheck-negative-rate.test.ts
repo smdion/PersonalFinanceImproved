@@ -63,11 +63,10 @@ describe("a negative stored withholding rate", () => {
     const { unknownTypeNotes: zeroNotes, ...zeroFigures } = zero.summary;
     expect(figures).toEqual(zeroFigures);
     expect(zeroNotes).toEqual([]);
-    expect(notes).toContainEqual(
-      expect.stringMatching(
-        /^The Single withholding table \(Tax Brackets\) has a negative rate, read as 0%\. Fix it in Settings → Reference Data\.$/,
-      ),
-    );
+    // Only the table the paycheck reads is named, not every table of the year.
+    expect(notes).toEqual([
+      "The Single withholding table (Tax Brackets) has a negative rate, read as 0%. Fix it in Settings → Reference Data.",
+    ]);
 
     expect(negative.netPay.netPayPerCheck).toBe(zero.netPay.netPayPerCheck);
     // job net pay has no page to name it on; its stored-figure gate

@@ -23,6 +23,8 @@ export function householdReturnTax(
   limitsMap: Map<string, number>,
   limitsRecord: Record<string, number>,
   taxYear: number,
+  /** Collects the withholding table it prices the return on. */
+  priced: Set<typeof schema.taxBrackets.$inferSelect>,
 ) {
   const status = parseReturnFilingStatus(filingStatus);
   if (!status) return null;
@@ -31,6 +33,7 @@ export function householdReturnTax(
     (b) => b.filingStatus === row && b.w4Checkbox === false,
   );
   if (!bracketRow) return null;
+  priced.add(bracketRow);
   // People 65+ at Dec 31 of the tax year, at most as many as the return has.
   const over65 = Math.min(
     results.filter(
