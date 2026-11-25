@@ -357,6 +357,46 @@ describe("reinvestRmdExcess: what the RMD added past the draw's cost (D1), reinv
     expect(indBal.get(indKey(accts[1]!))).toBe(0);
   });
 
+  it("reinvest: a member below $0 in a group holding money keeps its shortfall; the accounts gain the excess, not more", () => {
+    const { balances, accountBalance } = start();
+    const accts = accounts().slice(0, 2);
+    const [a, b] = accts.map((ia) => indKey(ia));
+    const indBal = new Map([
+      [a!, 30000],
+      [b!, -1000],
+    ]);
+    const basis = new Map([
+      [a!, 20000],
+      [b!, 0],
+    ]);
+    // 90,000 drawn - 50,000 need - 10,000 tax = 30,000 excess, all to A (B
+    // holds nothing). B stays at -1,000: read at $0 and written back as
+    // 0 + 0, the accounts gained 31,000 for the category's 30,000.
+    const excess = reinvestRmdExcess(
+      "reinvest",
+      RMD_ADDED_ALL,
+      90000,
+      50000,
+      10000,
+      balances,
+      accountBalance,
+      accts,
+      indBal,
+      indKey,
+      basis,
+    );
+    expect(excess).toBe(30000);
+    expect([indBal.get(a!), indBal.get(b!)]).toEqual([60000, -1000]);
+    expect([basis.get(a!), basis.get(b!)]).toEqual([50000, 0]);
+    expect(balances.afterTax).toBe(150000);
+    expect(balances.afterTaxBasis).toBe(110000);
+    expect(accountBalance.brokerage).toEqual({
+      structure: "basis_tracking",
+      balance: 150000,
+      basis: 110000,
+    });
+  });
+
   it("reinvest with a basis ledger: the category and the buckets take the basis the accounts took in, not the excess", () => {
     const { balances, accountBalance } = start();
     const accts = accounts().slice(0, 2);

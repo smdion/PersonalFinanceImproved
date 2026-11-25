@@ -237,13 +237,12 @@ function creditRmdExcess(
             target.map((_, i) => (i === 0 ? 1 : 0)),
           );
           if (targetTotal > 0) {
+            // Each share on the part's own balance, as the $0 branch.
             const raw = shares.map((s) => excess * s);
-            placeWhole(excess, raw).forEach((share, i) =>
-              indBalance.set(
-                indKey(target[i]!),
-                roundToCents(balanceOf(target[i]!) + share),
-              ),
-            );
+            placeWhole(excess, raw).forEach((share, i) => {
+              const k = indKey(target[i]!);
+              indBalance.set(k, roundToCents((indBalance.get(k) ?? 0) + share));
+            });
           } else {
             // $0: the fallback above, written on the first part's own
             // balance (a part can sit below $0 until clampIndividualBalances).
