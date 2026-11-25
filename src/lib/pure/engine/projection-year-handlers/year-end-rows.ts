@@ -1,5 +1,4 @@
 /** The decumulation year's growth, year-end state and rows, before the reconcile. */
-import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
 import { cleanupDust } from "../balance-deduction";
 import { followDraws } from "../brokerage-basis";
 import {
@@ -29,6 +28,7 @@ export function growYearToRows(
 ) {
   const {
     ledgerRuns,
+    holdsRealAccount,
     indAccounts: individualAccounts,
     indKey: individualKey,
     indParentCat: individualParentCategory,
@@ -77,7 +77,7 @@ export function growYearToRows(
   }
 
   // Build individual account year balances (decumulation)
-  const individualYearBalances: IndividualAccountYearBalance[] = ledgerRuns
+  const individualYearBalances = holdsRealAccount
     ? buildIndividualYearBalances(
         individualAccounts,
         individualKey,

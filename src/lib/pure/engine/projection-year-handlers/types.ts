@@ -164,7 +164,7 @@ export type ProjectionContext = {
    *  takes the household path. Today it runs exactly when `holdsRealAccount`. */
   ledgerRuns: boolean;
   /** Some part belongs to a real account (`hasRealAccount`). Reads that need
-   *  an owner or an entered account (QCDs, per-owner RMDs, eligibility). */
+   *  an owner or an entered account (QCDs, per-owner RMDs, eligibility, rows). */
   holdsRealAccount: boolean;
   indAccounts: EnginePart[];
   indKey: ReturnType<typeof makeIndKey>;

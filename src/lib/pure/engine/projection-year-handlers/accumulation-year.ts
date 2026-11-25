@@ -73,6 +73,7 @@ export function runAccumulationYear(
   const { indYearBalances, allAccountsBalance, retirementBalance } =
     closeYearAccounts(
       ledgerRuns,
+      ctx.holdsRealAccount,
       indAccounts,
       indKey,
       indBalance,
