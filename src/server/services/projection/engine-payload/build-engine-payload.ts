@@ -172,6 +172,7 @@ export async function buildEnginePayload(
     fplByHouseholdData,
     bracketData,
     missingLimitsWarning,
+    rateNotes,
   } = resolveTaxYear(
     filingStatus,
     retProfiles,
@@ -380,7 +381,7 @@ export async function buildEnginePayload(
 
   const { switchProfileMap, switchSalaryProfileMap, switchWarnings } =
     await loadSwitchProfiles(db, profileSwitchOverrides);
-  inputWarnings.push(...switchWarnings, ...missingLimitsWarning);
+  inputWarnings.push(...switchWarnings, ...missingLimitsWarning, ...rateNotes);
 
   // Budget overrides from DB (stored as monthly, engine expects monthly too)
   const dbBudgetOverrides = budgetOverrideRows
