@@ -28,11 +28,16 @@ describe("BudgetAmountText", () => {
     }
   });
 
-  it("marks a column the saved amounts stop short of, counted as $0", () => {
-    render(<BudgetAmountText item={item([100])} col={1} amount={0} />);
-    expect(screen.getByText("?").getAttribute("title")).toBe(
-      "No saved amount for this column; counts as $0",
-    );
+  it("marks a column the saved amounts stop short of, or hold null in, counted as $0", () => {
+    for (const stored of [[100], [100, null]]) {
+      const { unmount } = render(
+        <BudgetAmountText item={item(stored)} col={1} amount={0} />,
+      );
+      expect(screen.getByText("?").getAttribute("title")).toBe(
+        "No saved amount for this column; counts as $0",
+      );
+      unmount();
+    }
   });
 
   it("shows a readable amount", () => {

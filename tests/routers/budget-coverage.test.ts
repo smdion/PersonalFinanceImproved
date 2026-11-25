@@ -1107,10 +1107,22 @@ describe("budget router — syncBudgetToApi", () => {
         syncDirection: "push",
       });
 
+      // A stored null in the column: no saved amount there either.
+      sqlite.exec(
+        `UPDATE budget_items SET amounts = '[null]' WHERE id = ${seed.itemIds[2]}`,
+      );
+      await caller.budget.linkToApi({
+        budgetItemId: seed.itemIds[2]!,
+        service: "ynab",
+        apiCategoryId: "api-push-null",
+        apiCategoryName: "Push Null",
+        syncDirection: "push",
+      });
+
       const result = await caller.budget.syncBudgetToApi();
       expect(result.pushed).toBe(0);
       expect(result.skippedUnreadable).toEqual(["Rent"]);
-      expect(result.skippedMissing).toEqual(["Groceries"]);
+      expect(result.skippedMissing).toEqual(["Groceries", "Dining"]);
       expect(mockUpdateGoal).not.toHaveBeenCalled();
     } finally {
       cleanup();

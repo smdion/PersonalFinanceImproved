@@ -58,13 +58,17 @@ export function pullPreviewItems(
       continue;
     const colIndex = activeColumn; // as the pull: never another column
     // As the pull: saved amounts with no such column are skipped (named); a
-    // value there that isn't a number is replaced (shown as such, not $0).
+    // value there it can't read is filled in (shown as such, not $0).
     const skipReason =
       amountListWithColumn(item.amounts, colIndex) === null ? "missing" : null;
     const skipped = skipReason !== null;
     const currentValue = skipped
       ? null
       : readableBudgetItemAmount(item.amounts, colIndex, numCols);
+    const currentReason =
+      storedColumnAmount(item.amounts, colIndex) === undefined
+        ? "missing"
+        : "unreadable";
     const actual = apiActualsMap.get(item.id);
     items.push({
       name: item.subcategory,
@@ -72,7 +76,7 @@ export function pullPreviewItems(
       currentYnab: currentValue ?? 0,
       newValue: actual?.goalTarget ?? 0,
       ...(skipReason && { skipReason }),
-      ...(!skipped && currentValue === null && { currentUnreadable: true }),
+      ...(!skipped && currentValue === null && { currentReason }),
     });
   }
   return items;

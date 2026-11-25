@@ -195,9 +195,26 @@ describe("calculateBudget — branch coverage", () => {
     const result = calculateBudget(input);
     expect(result.totalMonthly).toBe(0);
     expect(result.warnings).toEqual([
-      "Housing / Rent: its saved amounts stop before column 3 (Emergency), so it counts as $0 there. Re-enter it on the Budget page.",
+      "Housing / Rent: it has no saved amount for column 3 (Emergency), so it counts as $0 there. Re-enter it on the Budget page.",
     ]);
     expect(input.items[0]!.amounts).toEqual([1000, 800]);
+  });
+
+  it("an item with a stored null in a column reads as missing there, never as a value that isn't a number", () => {
+    // An edit past a short list's end leaves the columns between unset.
+    const amounts: number[] = JSON.parse("[1000, null, 600]");
+    const result = calculateBudget({
+      columnLabels: ["Standard", "Tight", "Emergency"],
+      selectedColumn: 1,
+      items: [
+        { category: "Housing", label: "Rent", amounts, isEssential: true },
+      ],
+      asOfDate: AS_OF_DATE,
+    });
+    expect(result.totalMonthly).toBe(0);
+    expect(result.warnings).toEqual([
+      "Housing / Rent: it has no saved amount for column 2 (Tight), so it counts as $0 there. Re-enter it on the Budget page.",
+    ]);
   });
 
   it("a column past the list reads as no budget, with a warning", () => {
@@ -369,7 +386,7 @@ describe("calculateBudget — branch coverage", () => {
     expect(result.totalMonthly).toBe(500);
     expect(result.essentialTotal).toBe(500);
     expect(result.warnings).toEqual([
-      "Housing / Empty: its saved amounts stop before column 1 (Standard), so it counts as $0 there. Re-enter it on the Budget page.",
+      "Housing / Empty: it has no saved amount for column 1 (Standard), so it counts as $0 there. Re-enter it on the Budget page.",
     ]);
   });
 

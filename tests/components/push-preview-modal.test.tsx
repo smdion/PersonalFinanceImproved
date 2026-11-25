@@ -131,7 +131,14 @@ describe("PushPreviewModal — unreadable amounts", () => {
             field: "Goal Target",
             currentYnab: 0,
             newValue: 0,
-            currentUnreadable: true,
+            currentReason: "unreadable",
+          },
+          {
+            name: "Gap",
+            field: "Goal Target",
+            currentYnab: 0,
+            newValue: 0,
+            currentReason: "missing",
           },
         ]}
         onConfirm={vi.fn()}
@@ -145,12 +152,13 @@ describe("PushPreviewModal — unreadable amounts", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("Odd")).not.toBeInTheDocument();
-    const snacks = screen.getByText("Snacks").closest("tr")!;
     // Ledgr Now and the change: no $0 standing in for the saved value.
-    const cells = [...snacks.querySelectorAll("td")].map(
-      (td) => td.textContent,
-    );
-    expect(cells.slice(2)).toEqual(["not a number", "$0.00", "—"]);
-    expect(screen.getByRole("button", { name: "Pull 2 Changes" })).toBeTruthy();
+    const cells = (name: string) =>
+      [...screen.getByText(name).closest("tr")!.querySelectorAll("td")]
+        .map((td) => td.textContent)
+        .slice(2);
+    expect(cells("Snacks")).toEqual(["not a number", "$0.00", "—"]);
+    expect(cells("Gap")).toEqual(["no saved amount", "$0.00", "—"]);
+    expect(screen.getByRole("button", { name: "Pull 3 Changes" })).toBeTruthy();
   });
 });

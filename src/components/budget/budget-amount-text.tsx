@@ -3,6 +3,7 @@
 import {
   storedAmountList,
   storedBudgetAmount,
+  storedColumnAmount,
 } from "@/lib/pure/budget/item-amount";
 import { formatCurrency } from "@/lib/utils/format";
 import type { RawItem } from "./types";
@@ -19,7 +20,8 @@ export function BudgetAmountText({
   // A linked item shows its contribution's figure, never a stored value.
   const list = storedAmountList(item.amounts);
   const linked = item.contribAmounts?.[col] ?? item.contribAmount;
-  const stored = linked ?? (list ? list[col] : item.amounts);
+  const stored =
+    linked ?? (list ? storedColumnAmount(item.amounts, col) : item.amounts);
   const notAList = linked == null && !list;
   if (notAList || storedBudgetAmount(stored) === null)
     return (

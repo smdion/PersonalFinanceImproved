@@ -18,8 +18,8 @@ export type PushPreviewItem = {
    *  ("unreadable") or it has none for this column ("missing"); a pull's saved amounts
    *  have no column to write into ("missing"). */
   skipReason?: "unreadable" | "missing";
-  /** Pull only: its saved amount isn't a number; the pull replaces it, shown as such. */
-  currentUnreadable?: boolean;
+  /** Pull only: why its saved amount can't be read, shown as such; the pull fills it in. */
+  currentReason?: "unreadable" | "missing";
 };
 
 /** The items the push or pull skips, named. */
@@ -57,7 +57,13 @@ function PreviewRow({
   formatValue: (n: number) => string;
 }) {
   const delta = item.newValue - item.currentYnab;
-  const unread = item.currentUnreadable === true;
+  const unread = item.currentReason !== undefined;
+  const current =
+    item.currentReason === "unreadable"
+      ? "not a number"
+      : item.currentReason === "missing"
+        ? "no saved amount"
+        : formatValue(item.currentYnab);
   return (
     <tr className="border-subtle border-b">
       <td
@@ -76,7 +82,7 @@ function PreviewRow({
       </td>
       <td className="text-muted py-1.5 pr-2">{item.field}</td>
       <td className="text-muted py-1.5 pr-2 text-right tabular-nums">
-        {unread ? "not a number" : formatValue(item.currentYnab)}
+        {current}
       </td>
       <td className="text-primary py-1.5 pr-2 text-right font-medium tabular-nums">
         {formatValue(item.newValue)}
@@ -114,9 +120,9 @@ export function PushPreviewModal({
   const formatValue = (n: number) =>
     valueFormat === "percent" ? formatPercent(n / 100, 3) : formatCurrency(n);
   const readable = items.filter((i) => !i.skipReason);
-  // A pull always replaces an amount that isn't a number.
+  // A pull always fills in an amount it can't read.
   const isChange = (i: PushPreviewItem) =>
-    i.currentUnreadable === true ||
+    i.currentReason !== undefined ||
     Math.abs(i.newValue - i.currentYnab) >= CHANGE_DETECTION_THRESHOLD;
   const changed = readable.filter(isChange);
   const unchanged = readable.filter((i) => !isChange(i));

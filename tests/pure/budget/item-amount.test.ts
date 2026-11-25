@@ -112,10 +112,10 @@ describe("amountListWithColumn", () => {
 });
 
 describe("storedColumnAmount", () => {
-  it("reads a column's stored value as stored, and none past a short list or off a non-list", () => {
+  it("reads a column's stored value as stored, and none for a stored null, past a short list or off a non-list", () => {
     const stored: number[] = JSON.parse('["500", null, 20]');
     expect(storedColumnAmount(stored, 0)).toBe("500");
-    expect(storedColumnAmount(stored, 1)).toBeNull();
+    expect(storedColumnAmount(stored, 1)).toBeUndefined();
     expect(storedColumnAmount(stored, 3)).toBeUndefined();
     expect(storedColumnAmount(JSON.parse('{"0":5}'), 0)).toBeUndefined();
   });

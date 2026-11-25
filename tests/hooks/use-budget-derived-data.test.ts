@@ -300,6 +300,7 @@ describe("useBudgetDerivedData — push preview", () => {
       pushed("Snacks", '["abc"]'),
       pushed("Short", "[]"),
       pushed("Odd", '{"0":5}'),
+      pushed("Gap", "[null]"),
       pushed("Rent", "[1200]"),
     ]);
 
@@ -307,8 +308,8 @@ describe("useBudgetDerivedData — push preview", () => {
     expect(items.find((i) => i.name === "Snacks")).toMatchObject({
       skipReason: "unreadable",
     });
-    // No saved amount for the column (none stored, or not a list): missing.
-    for (const name of ["Short", "Odd"])
+    // No saved amount for the column (none stored, null, or not a list): missing.
+    for (const name of ["Short", "Odd", "Gap"])
       expect(items.find((i) => i.name === name)).toMatchObject({
         skipReason: "missing",
       });
@@ -338,12 +339,15 @@ describe("useBudgetDerivedData — pull preview", () => {
       pulled("Snacks", '["abc"]'), // the pull replaces it
       pulled("Odd", '{"0":5}'), // not a list: the pull skips it
       pulled("Short", "[]"), // no stored column: the pull skips it
+      pulled("Gap", "[null]"), // no saved amount: the pull fills it
       pulled("Rent", "[1200]"),
     ]);
 
     const items = result.current.buildPullPreviewItems(0);
     const named = (name: string) => items.find((i) => i.name === name)!;
-    expect(named("Snacks")).toMatchObject({ currentUnreadable: true });
+    expect(named("Snacks")).toMatchObject({ currentReason: "unreadable" });
+    expect(named("Gap")).toMatchObject({ currentReason: "missing" });
+    expect(named("Gap").skipReason).toBeUndefined();
     expect(named("Snacks").skipReason).toBeUndefined();
     expect(named("Odd")).toMatchObject({ skipReason: "missing" });
     expect(named("Short")).toMatchObject({ skipReason: "missing" });
