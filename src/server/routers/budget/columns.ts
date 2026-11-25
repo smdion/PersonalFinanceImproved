@@ -74,8 +74,15 @@ export const columnProcedures = {
           })
           .where(eq(schema.budgetProfiles.id, profile.id));
 
-        // Add a 0 to each item's amounts array
-        await rewriteItemAmounts(tx, profile.id, (amounts) => [...amounts, 0]);
+        // A 0 in the new column of each item's amounts, by column index: a
+        // list short of the profile's columns keeps its missing ones missing
+        // (stored null, read as $0 with a note), never a made-up 0.
+        const newCol = profile.columnLabels.length;
+        await rewriteItemAmounts(tx, profile.id, (amounts) => {
+          amounts.length = Math.max(amounts.length, newCol);
+          amounts.splice(newCol, 0, 0);
+          return amounts;
+        });
       }),
     ),
 
@@ -120,7 +127,8 @@ export const columnProcedures = {
           })
           .where(eq(schema.budgetProfiles.id, profile.id));
 
-        // Remove the column from each item's amounts array
+        // Remove the column from each item's amounts, by column index (a list
+        // that stops short of it stays as stored)
         await rewriteItemAmounts(tx, profile.id, (amounts) =>
           amounts.filter((_, i) => i !== input.colIndex),
         );

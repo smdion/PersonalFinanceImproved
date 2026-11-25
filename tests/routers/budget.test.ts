@@ -946,6 +946,71 @@ describe("budget router", () => {
       ).rejects.toThrow("Column index out of bounds");
       await caller.budget.deleteProfile({ id: shortProfileId });
     });
+
+    it("a column added or removed acts by column index: the missing columns stay missing, never a made-up $0", async () => {
+      const shortProfileId = await seedBudgetProfile(
+        db,
+        "Short Columns",
+        false,
+      );
+      db.update(sqliteSchema.budgetProfiles)
+        .set({ columnLabels: ["A", "B", "C"] })
+        .where(eq(sqliteSchema.budgetProfiles.id, shortProfileId))
+        .run();
+      const short = seedBudgetItem(db, shortProfileId, {
+        subcategory: "Short",
+        amounts: [100],
+      });
+      const full = seedBudgetItem(db, shortProfileId, {
+        subcategory: "Full",
+        amounts: [1, 2, 3],
+      });
+      const long = seedBudgetItem(db, shortProfileId, {
+        subcategory: "Long",
+        amounts: [1, 2, 3, 9],
+      });
+      const stored = (id: number): unknown =>
+        db
+          .select()
+          .from(sqliteSchema.budgetItems)
+          .where(eq(sqliteSchema.budgetItems.id, id))
+          .get()!.amounts;
+
+      // The new column 3 gets the full list's 0; columns 1 and 2 stay missing.
+      await caller.budget.addColumn({ label: "D", profileId: shortProfileId });
+      expect(stored(short)).toEqual([100, null, null, 0]);
+      expect(stored(full)).toEqual([1, 2, 3, 0]);
+      // Past the columns: the new column gets 0, never the stray value.
+      expect(stored(long)).toEqual([1, 2, 3, 0, 9]);
+      const middle = await caller.budget.computeActiveSummary({
+        profileId: shortProfileId,
+        selectedColumn: 1,
+      });
+      expect(middle.result!.totalMonthly).toBe(4);
+      expect(middle.result!.warnings).toHaveLength(1);
+
+      // Removing a column drops that column's value; past a short list's end
+      // the list stays as stored.
+      await caller.budget.removeColumn({
+        colIndex: 1,
+        profileId: shortProfileId,
+      });
+      expect(stored(short)).toEqual([100, null, 0]);
+      expect(stored(full)).toEqual([1, 3, 0]);
+      expect(stored(long)).toEqual([1, 3, 0, 9]);
+      db.update(sqliteSchema.budgetItems)
+        .set({ amounts: [100] })
+        .where(eq(sqliteSchema.budgetItems.id, short))
+        .run();
+      await caller.budget.removeColumn({
+        colIndex: 2,
+        profileId: shortProfileId,
+      });
+      expect(stored(short)).toEqual([100]);
+      expect(stored(full)).toEqual([1, 3]);
+      expect(stored(long)).toEqual([1, 3, 9]);
+      await caller.budget.deleteProfile({ id: shortProfileId });
+    });
   });
 
   describe("addColumn", () => {
