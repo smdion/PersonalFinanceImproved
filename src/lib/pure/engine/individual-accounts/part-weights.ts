@@ -62,8 +62,19 @@ export function partShares(
   );
 }
 
-/** `amount` over `parts` by their shares (`partShares`), the last part the
- *  cents left; each share credited to the part in every map of `into`. */
+/** `amount` placed whole over a group: each member its `raw` amount to the
+ *  cent, the last member the cents left (the one spread rule). */
+export function placeWhole(amount: number, raw: readonly number[]): number[] {
+  let left = amount;
+  return raw.map((r, i) => {
+    const share = i === raw.length - 1 ? left : roundToCents(r);
+    left = roundToCents(left - share);
+    return share;
+  });
+}
+
+/** `amount` over `parts` by their shares (`partShares`), placed whole
+ *  (`placeWhole`); each share credited to the part in every map of `into`. */
 export function creditByWeight(
   ledger: Ledger,
   parts: IndividualAccountInput[],
@@ -71,11 +82,9 @@ export function creditByWeight(
   into: Map<string, number>[],
 ): void {
   const shares = partShares(ledger, parts);
-  let left = amount;
-  parts.forEach((ia, i) => {
-    const share =
-      i === parts.length - 1 ? left : roundToCents(amount * shares[i]!);
-    left = roundToCents(left - share);
-    credit(ledger.indKey(ia), share, into);
-  });
+  const placed = placeWhole(
+    amount,
+    shares.map((s) => amount * s),
+  );
+  parts.forEach((ia, i) => credit(ledger.indKey(ia), placed[i]!, into));
 }

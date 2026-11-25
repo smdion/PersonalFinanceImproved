@@ -16,8 +16,11 @@ import {
 } from "../../accounts/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 import { lumpSumParts, runLumpSums } from "../lump-sum-targets";
-import { roundToCents } from "../../../utils/math";
-import { equalShares, inflowShares } from "../individual-accounts/part-weights";
+import {
+  equalShares,
+  inflowShares,
+  placeWhole,
+} from "../individual-accounts/part-weights";
 
 /**
  * Apply one-time lump-sum injections for the current year.
@@ -58,15 +61,13 @@ export function applyLumpSums(
         targets.map((ia) => Math.max(0, indBalance.get(indKey(ia)) ?? 0)),
         equalShares(targets.length),
       );
-      let left = ls.amount;
+      const placed = placeWhole(
+        ls.amount,
+        shares.map((s) => ls.amount * s),
+      );
       targets.forEach((ia, i) => {
-        const share =
-          i === targets.length - 1
-            ? left
-            : roundToCents(ls.amount * shares[i]!);
-        left = roundToCents(left - share);
         const key = indKey(ia);
-        indBalance.set(key, (indBalance.get(key) ?? 0) + share);
+        indBalance.set(key, (indBalance.get(key) ?? 0) + placed[i]!);
       });
     }
   }

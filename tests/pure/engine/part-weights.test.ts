@@ -8,6 +8,7 @@ import {
   equalShares,
   inflowShares,
   partShares,
+  placeWhole,
 } from "@/lib/pure/engine/individual-accounts/part-weights";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
@@ -116,5 +117,34 @@ describe("partShares", () => {
       shares([annRoth, boRoth, annTrad, boTrad], [annRoth, boRoth]),
     ).toEqual([0.75, 0.25]);
     expect(shares([annRoth, boRoth], [annRoth, boRoth])).toEqual([0.5, 0.5]);
+  });
+});
+
+describe("placeWhole", () => {
+  it("rounds each member's amount; the last takes the cents left", () => {
+    // $100 in thirds: 33.33 + 33.33, and the last 33.34, not 33.33.
+    expect(placeWhole(100, [100 / 3, 100 / 3, 100 / 3])).toEqual([
+      33.33, 33.33, 33.34,
+    ]);
+    // One member takes the whole amount, whatever its raw amount says.
+    expect(placeWhole(10, [9.996])).toEqual([10]);
+  });
+
+  it("places the whole amount for any split", () => {
+    for (const [amount, weights] of [
+      [1234.57, [0.123, 0.456, 0.421]],
+      [0.05, [0.5, 0.5, 0, 0]],
+      [999_999.99, [1 / 7, 2 / 7, 4 / 7]],
+    ] as const) {
+      const placed = placeWhole(
+        amount,
+        weights.map((w) => amount * w),
+      );
+      const sum = placed.reduce((s, x) => s + x, 0);
+      expect(Math.round(sum * 100)).toBe(Math.round(amount * 100));
+      placed.forEach((x) =>
+        expect(Math.round(x * 100)).toBeCloseTo(x * 100, 6),
+      );
+    }
   });
 });
