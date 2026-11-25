@@ -10,10 +10,13 @@ import type {
   TaxBuckets,
 } from "../../accounts/account-balances.types";
 import type { AccountBalance } from "../../../config/account-types.types";
-import { getBasis, setBasis } from "../../accounts/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
-import { roundToCents, sumBy } from "../../../utils/math";
-import { followDraws, type BrokerageBasis } from "../brokerage-basis";
+import { roundToCents } from "../../../utils/math";
+import {
+  followDrawsSold,
+  takeBasisOut,
+  type BrokerageBasis,
+} from "../brokerage-basis";
 import { ROTH_SPLIT_PARTS } from "../../../config/tax-treatment-buckets";
 
 /** The account parts a conversion moves money on, their balances and each
@@ -105,18 +108,8 @@ export function payConversionTaxFromParts(
   totals: { balances: TaxBuckets; category: AccountBalance },
 ): void {
   const { accounts, keyOf, balances, basis } = parts;
-  const held = () => sumBy(accounts, (ia) => basis.get(keyOf(ia)) ?? 0);
-  const before = held();
-  followDraws(accounts, keyOf, balances, basis, () =>
+  const { sold } = followDrawsSold(accounts, keyOf, balances, basis, () =>
     debitByBalance(parts, retirementParts(parts, category), tax),
   );
-  const sold = roundToCents(before - held());
-  totals.balances.afterTaxBasis = roundToCents(
-    Math.max(0, totals.balances.afterTaxBasis - sold),
-  );
-  if (totals.category.structure === "basis_tracking")
-    setBasis(
-      totals.category,
-      roundToCents(Math.max(0, getBasis(totals.category) - sold)),
-    );
+  takeBasisOut(totals.balances, totals.category, sold.get(category) ?? 0);
 }

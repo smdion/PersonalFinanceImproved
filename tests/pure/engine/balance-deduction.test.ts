@@ -65,7 +65,7 @@ describe("deductWithdrawals (pins current behavior)", () => {
       ],
       balances,
       accountBalance,
-      basisOut: 9000,
+      basisOut: () => 9000,
     });
     // Rounded to cents: 400,000 - 20,000.004 = 379,999.996 -> 380,000.00.
     expect(balances).toEqual({
@@ -102,7 +102,7 @@ describe("deductWithdrawals (pins current behavior)", () => {
       slots: [makeDecumulationSlot("brokerage", { withdrawal: 130000 })],
       balances,
       accountBalance,
-      basisOut: 90000,
+      basisOut: () => 90000,
     });
     expect(balances.afterTax).toBe(-10000);
     expect(balances.afterTaxBasis).toBe(0);
@@ -119,7 +119,7 @@ describe("deductWithdrawals (pins current behavior)", () => {
       slots: [makeDecumulationSlot("ira", { withdrawal: 50000 })],
       balances,
       accountBalance,
-      basisOut: 0,
+      basisOut: () => 0,
     });
     expect(balances.preTax).toBe(400000);
     expect(accountBalance.ira).toMatchObject({ traditional: 100000, roth: 0 });

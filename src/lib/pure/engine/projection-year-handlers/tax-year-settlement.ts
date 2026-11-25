@@ -173,7 +173,7 @@ export function settleYearDraws(
   const { taxFromSlots, cost } = flow.priced;
   const { rmdAdded, totalWithdrawal } = flow.rmd;
   const { afterTaxNeed, irmaa } = flow.need;
-  const basisOut = taxFromSlots.brokerageBasisOut;
+  const basisOut = () => taxFromSlots.brokerageBasisOut;
   deductWithdrawals({ slots, balances, accountBalance, basisOut });
   const floorRaised = clampBalances(balances, accountBalance);
   // Lump sums (one-time, outside limits) are cash in: new basis in the
@@ -185,24 +185,18 @@ export function settleYearDraws(
   // RMD money past the need and the year-start charge, reinvested or spent,
   // after the draw's whole cost: tax, NIIT and penalty, less the SS surplus
   // (the row's NIIT is charged in the re-price).
-  const rmdExcessAmount = followInflows(
-    indAccounts,
-    indKey,
-    indBalance,
-    brokBasis,
-    () =>
-      reinvestRmdExcess(
-        config.rmdExcessHandling,
-        rmdAdded,
-        totalWithdrawal,
-        afterTaxNeed + irmaaOutsideNeed(irmaa, state),
-        cost.netCost,
-        balances,
-        accountBalance,
-        holdsAccounts ? indAccounts : undefined,
-        holdsAccounts ? indBalance : undefined,
-        holdsAccounts ? indKey : undefined,
-      ),
+  const rmdExcessAmount = reinvestRmdExcess(
+    config.rmdExcessHandling,
+    rmdAdded,
+    totalWithdrawal,
+    afterTaxNeed + irmaaOutsideNeed(irmaa, state),
+    cost.netCost,
+    balances,
+    accountBalance,
+    holdsAccounts ? indAccounts : undefined,
+    holdsAccounts ? indBalance : undefined,
+    holdsAccounts ? indKey : undefined,
+    holdsAccounts ? brokBasis : undefined,
   );
 
   if (holdsAccounts) floorPartsAndSlices(ctx, state, floorRaised);

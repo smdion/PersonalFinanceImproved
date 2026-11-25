@@ -5,9 +5,11 @@
 import { describe, it, expect } from "vitest";
 import {
   basisOut,
+  followDrawsSold,
   seedBrokerageBasis,
   sellAtCost,
   syncAggregateBasis,
+  takeBasisOut,
 } from "@/lib/pure/engine/brokerage-basis";
 import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
@@ -49,6 +51,52 @@ describe("sellAtCost", () => {
       basisPortion: 4000,
       gainsPortion: 0,
     });
+  });
+});
+
+describe("followDrawsSold and takeBasisOut", () => {
+  it("each category's basis sold is the sum its accounts gave up, each at its own ratio", () => {
+    // A: $30,000 at $12,000 basis (0.4) sells $3,000 → $1,200; B: $10,000 at $10,000 (1.0) sells $1,000 → $1,000.
+    const accts = [brokerage("A", 0), brokerage("B", 0)];
+    const indBal = new Map([
+      [indKey(accts[0]!), 30000],
+      [indKey(accts[1]!), 10000],
+    ]);
+    const basis = new Map([
+      [indKey(accts[0]!), 12000],
+      [indKey(accts[1]!), 10000],
+    ]);
+    const { result, sold } = followDrawsSold(
+      accts,
+      indKey,
+      indBal,
+      basis,
+      () => {
+        indBal.set(indKey(accts[0]!), 27000);
+        indBal.set(indKey(accts[1]!), 9000);
+        return "drawn";
+      },
+    );
+    expect(result).toBe("drawn");
+    expect(sold.get("brokerage")).toBe(2200);
+    expect(accts.map((a) => basis.get(indKey(a)))).toEqual([10800, 9000]);
+  });
+
+  it("the basis out leaves the tax buckets and the category, each floored at 0", () => {
+    const balances: TaxBuckets = {
+      preTax: 0,
+      taxFree: 0,
+      hsa: 0,
+      afterTax: 5000,
+      afterTaxBasis: 3000,
+    };
+    const accountBalance = accountBalancesFromTaxBuckets(balances);
+    takeBasisOut(balances, accountBalance.brokerage, 1000.004);
+    expect(balances.afterTaxBasis).toBe(2000);
+    expect(accountBalance.brokerage).toMatchObject({ basis: 2000 });
+    takeBasisOut(balances, accountBalance.brokerage, 9000);
+    expect(balances.afterTaxBasis).toBe(0);
+    expect(accountBalance.brokerage).toMatchObject({ basis: 0 });
   });
 });
 

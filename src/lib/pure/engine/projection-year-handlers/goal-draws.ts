@@ -1,7 +1,12 @@
-import { followDraws, groupBasisRatio, sellAtCost } from "../brokerage-basis";
+import {
+  followDraws,
+  groupBasisRatio,
+  sellAtCost,
+  takeBasisOut,
+} from "../brokerage-basis";
 import type { EngineAccumulationYear } from "../types/projection-result";
 import { roundToCents } from "../../../utils/math";
-import { addBalance, setBasis, getBasis } from "../../accounts/account-balance";
+import { addBalance } from "../../accounts/account-balance";
 import { DEFAULT_TAX_RATE_BROKERAGE } from "../../../constants";
 import {
   distributeGoalWithdrawal,
@@ -92,16 +97,8 @@ export function brokerageGoalDraws(
           DEFAULT_TAX_RATE_BROKERAGE),
     );
     balances.afterTax = roundToCents(balances.afterTax - drawAmount);
-    balances.afterTaxBasis = roundToCents(
-      Math.max(0, balances.afterTaxBasis - basisOut),
-    );
     addBalance(accountBalance[OVERFLOW_CATEGORY], -drawAmount);
-    setBasis(
-      accountBalance[OVERFLOW_CATEGORY],
-      roundToCents(
-        Math.max(0, getBasis(accountBalance[OVERFLOW_CATEGORY]) - basisOut),
-      ),
-    );
+    takeBasisOut(balances, accountBalance[OVERFLOW_CATEGORY], basisOut);
     if (holdsAccounts) {
       followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
         distributeGoalWithdrawal(drawAmount, indAccounts, indKey, indBalance),

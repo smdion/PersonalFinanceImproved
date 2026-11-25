@@ -21,7 +21,6 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-  getBasis,
   setTraditional,
   setRoth,
   setBalance,
@@ -33,6 +32,11 @@ import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { inflowShares, placeWhole } from "./individual-accounts/part-weights";
 import { sliceKey } from "./category-slices";
 import type { CategorySide } from "../accounts/category-side";
+import {
+  followInflows,
+  takeBasisOut,
+  type BrokerageBasis,
+} from "./brokerage-basis";
 
 // ---------------------------------------------------------------------------
 // Withdrawal Deduction
@@ -42,8 +46,8 @@ interface DeductWithdrawalsInput {
   slots: DecumulationSlot[];
   balances: TaxBuckets;
   accountBalance: AccountBalances;
-  /** The brokerage draw's basis out at average cost (`computeTaxFromSlots`). */
-  basisOut: number;
+  /** Each brokerage category's basis out for its draw. */
+  basisOut: (category: AccountCategory) => number;
 }
 
 /**
@@ -66,20 +70,16 @@ export function deductWithdrawals(input: DeductWithdrawalsInput): void {
       );
     } else if (isOverflowTarget(slot.category)) {
       balances.afterTax = roundToCents(balances.afterTax - slot.withdrawal);
-      balances.afterTaxBasis = roundToCents(
-        Math.max(0, balances.afterTaxBasis - basisOut),
-      );
       setBalance(
         accountBalance[slot.category],
         roundToCents(
           getTotalBalance(accountBalance[slot.category]) - slot.withdrawal,
         ),
       );
-      setBasis(
+      takeBasisOut(
+        balances,
         accountBalance[slot.category],
-        roundToCents(
-          Math.max(0, getBasis(accountBalance[slot.category]) - basisOut),
-        ),
+        basisOut(slot.category),
       );
     } else {
       // 401k, 403b, or IRA (roth_traditional)
@@ -147,8 +147,48 @@ export function clampBalances(
 /**
  * Returns the RMD excess over need + tax, at most what the RMD added: only RMD dollars beyond
  * the need. "reinvest" credits it to brokerage as basis (and to Retirement-parented overflow
- * accounts in `indBalance`), mutating `balances`/`accountBalance`; "spend" credits nothing. */
+ * accounts, whose basis follows), mutating `balances`/`accountBalance`; "spend" credits nothing. */
 export function reinvestRmdExcess(
+  mode: "reinvest" | "spend",
+  rmdAdded: number,
+  totalWithdrawal: number,
+  afterTaxNeed: number,
+  taxCost: number,
+  balances: TaxBuckets,
+  accountBalance: AccountBalances,
+  partAccounts?: IndividualAccountInput[],
+  partBalance?: Map<string, number>,
+  partKey?: IndKeyFn,
+  partBasis?: BrokerageBasis,
+): number {
+  const credit = () =>
+    creditRmdExcess(
+      mode,
+      rmdAdded,
+      totalWithdrawal,
+      afterTaxNeed,
+      taxCost,
+      balances,
+      accountBalance,
+      partAccounts,
+      partBalance,
+      partKey,
+    );
+  const excess =
+    partAccounts && partBalance && partKey && partBasis
+      ? followInflows(partAccounts, partKey, partBalance, partBasis, credit)
+      : credit();
+  if (mode === "reinvest" && excess > 0) {
+    balances.afterTaxBasis = roundToCents(balances.afterTaxBasis + excess);
+    const category = getAllCategories().find(isOverflowTarget);
+    if (category) addBasis(accountBalance[category], excess);
+  }
+  return excess;
+}
+
+/** The RMD excess, its money credited (not its basis): to brokerage and to
+ *  Retirement-parented overflow accounts in `indBalance`. */
+function creditRmdExcess(
   mode: "reinvest" | "spend",
   rmdAdded: number,
   totalWithdrawal: number,
@@ -165,11 +205,9 @@ export function reinvestRmdExcess(
   if (excess <= 0) return 0;
   if (mode === "reinvest") {
     balances.afterTax = roundToCents(balances.afterTax + excess);
-    balances.afterTaxBasis = roundToCents(balances.afterTaxBasis + excess);
     for (const cat of getAllCategories()) {
       if (isOverflowTarget(cat)) {
         addBalance(accountBalance[cat], excess);
-        addBasis(accountBalance[cat], excess);
         if (indAccounts && indBalance && indKey) {
           // The chosen account, else every Retirement brokerage by balance;
           // the opening state always holds one. Never a Portfolio account.

@@ -8,7 +8,9 @@ import {
   getAccountTypeConfig,
   isRetirementMoney,
 } from "../../config/account-types";
-import { setBasis } from "../accounts/account-balance";
+import type { AccountCategory } from "../../config/account-types";
+import type { AccountBalance } from "../../config/account-types.types";
+import { getBasis, setBasis } from "../accounts/account-balance";
 import type {
   AccountBalances,
   IndividualAccountInput,
@@ -137,6 +139,51 @@ export function followDraws<T>(
     basis.set(k, roundToCents(Math.max(0, b - basisOut(was - now, b / was))));
   }
   return result;
+}
+
+/** The basis each category's brokerage accounts hold, unrounded. */
+function basisByCategory(
+  accounts: readonly IndividualAccountInput[],
+  keyOf: IndKeyFn,
+  basis: BrokerageBasis,
+): Map<AccountCategory, number> {
+  const held = new Map<AccountCategory, number>();
+  for (const account of basisTrackedAccounts(accounts)) {
+    const b = basis.get(keyOf(account)) ?? 0;
+    held.set(account.category, (held.get(account.category) ?? 0) + b);
+  }
+  return held;
+}
+
+/** `followDraws`, also returning the basis each category's accounts gave up,
+ *  to the cent: what the category and the tax buckets give up with them. */
+export function followDrawsSold<T>(
+  accounts: readonly IndividualAccountInput[],
+  keyOf: IndKeyFn,
+  balances: Map<string, number>,
+  basis: BrokerageBasis,
+  mutate: () => T,
+): { result: T; sold: Map<AccountCategory, number> } {
+  const before = basisByCategory(accounts, keyOf, basis);
+  const result = followDraws(accounts, keyOf, balances, basis, mutate);
+  const after = basisByCategory(accounts, keyOf, basis);
+  const sold = new Map<AccountCategory, number>();
+  for (const [category, was] of before)
+    sold.set(category, roundToCents(was - (after.get(category) ?? 0)));
+  return { result, sold };
+}
+
+/** A brokerage sale's basis out leaves the tax buckets and the category it
+ *  was sold from, each floored at 0. */
+export function takeBasisOut(
+  balances: TaxBuckets,
+  category: AccountBalance,
+  out: number,
+): void {
+  balances.afterTaxBasis = roundToCents(
+    Math.max(0, balances.afterTaxBasis - out),
+  );
+  setBasis(category, roundToCents(Math.max(0, getBasis(category) - out)));
 }
 
 /** Run `mutate` (money in); every brokerage account's increase is new

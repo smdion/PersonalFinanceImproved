@@ -253,7 +253,7 @@ export function runGapYearDraw(
     slots,
     balances,
     accountBalance,
-    basisOut: priced.brokerageBasisOut,
+    basisOut: () => priced.brokerageBasisOut,
   });
   const floorRaised = clampBalances(balances, accountBalance);
   if (holdsAccounts) floorPartsAndSlices(ctx, state, floorRaised);
