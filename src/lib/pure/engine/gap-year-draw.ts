@@ -30,6 +30,7 @@ import type {
   ProjectionLoopState,
 } from "./projection-year-handlers/types";
 import type { IncomeBesideWages } from "@/lib/pure/tax/year-income";
+import { drawNiit } from "@/lib/pure/tax/niit";
 
 /** Each account's part of the draw, for the year's account rows. Not on
  *  the year row itself (Maps don't serialize). */
@@ -214,7 +215,10 @@ export function runGapYearDraw(
       first.actualTaxableIncome - incomeAlone + first.brokerageGainsPortion;
     const taxableSS = taxableSsOn(wages + drawIncome);
     const priced = pricedWith(wages + taxableSS);
-    const added = Math.max(0, priced.taxCost - taxOnIncome) + penaltyCost;
+    // The NIIT's MAGI counts the wages beside the draw (IRC § 1411(d)).
+    const niit = drawNiit(priced, wages + taxableSS, filingStatus);
+    const added =
+      Math.max(0, priced.taxCost - taxOnIncome) + penaltyCost + niit;
     return { priced, taxableSS, cost: roundToCents(added) };
   };
 
