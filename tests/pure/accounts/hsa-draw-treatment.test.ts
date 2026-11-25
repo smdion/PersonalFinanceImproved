@@ -10,7 +10,9 @@ describe("HSA_DRAW_TREATMENT", () => {
   it("says the projection's assumption, with the configured age and rate", () => {
     expect(HSA_DRAW_TREATMENT).toContain("non-medical");
     expect(HSA_DRAW_TREATMENT).toContain("ordinary income");
-    expect(HSA_DRAW_TREATMENT).toContain("20% penalty before age 65");
+    expect(HSA_DRAW_TREATMENT).toContain(
+      "20% penalty through the year you turn 65",
+    );
     expect(HSA_DRAW_TREATMENT).toContain("doesn't model");
   });
 });

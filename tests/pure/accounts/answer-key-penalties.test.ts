@@ -315,11 +315,23 @@ describe("answer key: HSA non-medical draws at 64 and 65", () => {
     );
   });
 
-  it("ret/E21 [RET-22] HSA at 65: 0", () => {
-    // Born 1961, 2026: 65, attained (223(f)(4)(C)): no additional tax.
-    // With E20 this pins the year the gate opens.
+  it("ret/E21 [RET-22] HSA in the year of 65: 2,000 (the year counts as before 65)", () => {
+    // Born 1961, 2026: the year of 65. A draw after the birthday owes no
+    // additional tax (223(f)(4)(C)), but the plan year can't see the date,
+    // so it counts the whole year as before 65, the cautious side
+    // (docs/CALCULATIONS.md RET-22): 20% × 10,000 = 2,000.
     cents(
       yearDraw({ account: owned("hsa", "hsa", 1961), year: 2026, take: 10_000 })
+        .penalty,
+      2_000,
+    );
+  });
+
+  it("ret/E21:66 [RET-22] HSA the year after 65: 0", () => {
+    // Born 1960, 2026: 66, 65 reached before the year began: no
+    // additional tax. With E21 this pins the year the gate opens.
+    cents(
+      yearDraw({ account: owned("hsa", "hsa", 1960), year: 2026, take: 10_000 })
         .penalty,
       0,
     );

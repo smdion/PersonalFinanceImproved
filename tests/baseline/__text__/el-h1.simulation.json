@@ -1005,10 +1005,10 @@
          "category": "hsa",
          "draw": {
           "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
+          "eligibilityLocked": true,
           "reason": {
            "gate": "hsa_age_65",
-           "kind": "age_reached"
+           "kind": "locked"
           }
          },
          "name": "Dana HSA (Health Savings Co)",
@@ -4012,10 +4012,10 @@
          "category": "hsa",
          "draw": {
           "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
+          "eligibilityLocked": true,
           "reason": {
            "gate": "hsa_age_65",
-           "kind": "age_reached"
+           "kind": "locked"
           }
          },
          "name": "Dana HSA (Health Savings Co)",
@@ -6968,10 +6968,10 @@
         "category": "hsa",
         "draw": {
          "allowPenalizedWithdrawals": false,
-         "eligibilityLocked": false,
+         "eligibilityLocked": true,
          "reason": {
           "gate": "hsa_age_65",
-          "kind": "age_reached"
+          "kind": "locked"
          }
         },
         "name": "Dana HSA (Health Savings Co)",

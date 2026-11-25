@@ -157,7 +157,7 @@ export function fixedByLawGroups(): FixedByLawGroup[] {
         },
         {
           label: "HSA non-medical withdrawals penalty-free from",
-          value: `${HSA_NON_MEDICAL_PENALTY_AGE}`,
+          value: `${HSA_NON_MEDICAL_PENALTY_AGE} (Ledgr counts from the year after you reach it)`,
           citation: "IRC §223(f)(4)(C)",
         },
         {

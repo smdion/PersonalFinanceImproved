@@ -43,7 +43,7 @@ function detailLines(b: Extract<Bridge, { status: "bridge" }>): string[] {
     );
   if (b.hsa > 0)
     lines.push(
-      `Not counted: HSA ${compactCurrency(b.hsa)} (medical only before 65)`,
+      `Not counted: HSA ${compactCurrency(b.hsa)} (medical only through the year of 65)`,
     );
   if (b.unlocks.length > 0)
     lines.push(`Opens: ${list(b.unlocks.map((u) => `${u.name} ${u.year}`))}`);

@@ -121,8 +121,8 @@ export const PENALTY_FREE_AGE = 59.5;
  *  is applied per the user's tracked latest-conversion-year, conservatively). */
 export const ROTH_CONVERSION_SEASONING_YEARS = 5;
 
-/** Age HSA non-medical withdrawals stop incurring the 20% penalty (income tax still applies).
- *  Qualified medical withdrawals are penalty- and tax-free at any age. */
+/** Age HSA non-medical withdrawals stop incurring the 20% penalty (income tax still applies), charged
+ *  through the plan year the owner reaches it. Qualified medical withdrawals are penalty- and tax-free at any age. */
 export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
 
 /** Age for the IRC §63(f)(1) additional standard deduction, tested as `age >= 65` in whole
@@ -135,7 +135,7 @@ export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
 export const EARLY_WITHDRAWAL_PENALTY_RATE = 0.1;
 
 /** 20% penalty on HSA non-medical distributions before `HSA_NON_MEDICAL_PENALTY_AGE`
- *  (IRC §223(f)(4)). */
+ *  (IRC §223(f)(4)), charged through the plan year the owner reaches it. */
 export const HSA_NON_MEDICAL_PENALTY_RATE = 0.2;
 
 // ---------------------------------------------------------------------------

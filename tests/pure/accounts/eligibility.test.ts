@@ -329,7 +329,7 @@ describe("computeWithdrawalEligibility", () => {
     expect(entry.basisRemaining).toBe(0);
   });
 
-  it("locks an HSA under 65, unlocks at/after 65", () => {
+  it("locks an HSA through the year of 65, unlocks after it", () => {
     const young = account({
       name: "HSA",
       category: "hsa",
@@ -344,7 +344,7 @@ describe("computeWithdrawalEligibility", () => {
     }).byKey.get(indKey(young))!;
     expect(lockedResult.penaltyExposedAmount).toBe(15000);
     expect(describeEligibility(lockedResult.reason)).toBe(
-      "Locked until age 65 — non-medical withdrawal penalty (currently 46)",
+      "Locked through the year of age 65 — non-medical withdrawal penalty (currently 46)",
     );
 
     const old = account({
@@ -361,7 +361,7 @@ describe("computeWithdrawalEligibility", () => {
     }).byKey.get(indKey(old))!;
     expect(eligibleResult.penaltyExposedAmount).toBe(0);
     expect(describeEligibility(eligibleResult.reason)).toBe(
-      "Eligible — age 65 or older",
+      "Eligible — past the year of age 65",
     );
   });
 

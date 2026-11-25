@@ -43,9 +43,12 @@ const CASES: [EligibilityReason, string][] = [
   ],
   [
     { kind: "locked", gate: "hsa_age_65", currentAge: 61 },
-    "Locked until age 65 — non-medical withdrawal penalty (currently 61)",
+    "Locked through the year of age 65 — non-medical withdrawal penalty (currently 61)",
   ],
-  [{ kind: "age_reached", gate: "hsa_age_65" }, "Eligible — age 65 or older"],
+  [
+    { kind: "age_reached", gate: "hsa_age_65" },
+    "Eligible — past the year of age 65",
+  ],
   [
     { kind: "always_available" },
     "Always accessible — no age or employer restriction",

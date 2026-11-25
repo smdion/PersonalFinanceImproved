@@ -11,7 +11,8 @@ const LOCKED_UNTIL: Record<EligibilityLockedGate, string> = {
   rule_of_55_or_age: "Locked until Rule of 55 or age 59½",
   rule_of_55_unavailable:
     "Locked until age 59½ — Rule of 55 marked unavailable for forecasting",
-  hsa_age_65: "Locked until age 65 — non-medical withdrawal penalty",
+  hsa_age_65:
+    "Locked through the year of age 65 — non-medical withdrawal penalty",
 };
 
 /** The words for an account's withdrawal eligibility this year. Not in
@@ -25,7 +26,7 @@ export function describeEligibility(reason: EligibilityReason): string {
       return "Always accessible — no age or employer restriction";
     case "age_reached":
       return reason.gate === "hsa_age_65"
-        ? "Eligible — age 65 or older"
+        ? "Eligible — past the year of age 65"
         : "Eligible — age 59½ or older";
     case "rule_of_55":
       return reason.separationYear != null

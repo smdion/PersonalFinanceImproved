@@ -81,7 +81,7 @@ export type AccountAnalysisEntry = {
   /** Raw `performance_accounts.costBasis` for a Brokerage account (else null), its own
    *  field so the projection never string-matches a slice label. */
   costBasis: number | null;
-  /** IRA (59½) or HSA (65) age-gate status — null for every other
+  /** IRA (59½) or HSA (the year after 65) age-gate status — null for every other
    *  category (401k/403b use `ruleOf55` instead; Brokerage has no age
    *  gate at all). Also null when there's no resolvable owner/age. */
   ageThresholdStatus: AgeThresholdStatus | null;

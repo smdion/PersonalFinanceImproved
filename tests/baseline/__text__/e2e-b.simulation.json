@@ -2668,10 +2668,10 @@
          "category": "hsa",
          "draw": {
           "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
+          "eligibilityLocked": true,
           "reason": {
            "gate": "hsa_age_65",
-           "kind": "age_reached"
+           "kind": "locked"
           }
          },
          "name": "Jordan HSA (HealthEquity)",
@@ -10919,10 +10919,10 @@
          "category": "hsa",
          "draw": {
           "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
+          "eligibilityLocked": true,
           "reason": {
            "gate": "hsa_age_65",
-           "kind": "age_reached"
+           "kind": "locked"
           }
          },
          "name": "Jordan HSA (HealthEquity)",
@@ -19130,10 +19130,10 @@
          "category": "hsa",
          "draw": {
           "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
+          "eligibilityLocked": true,
           "reason": {
            "gate": "hsa_age_65",
-           "kind": "age_reached"
+           "kind": "locked"
           }
          },
          "name": "Jordan HSA (HealthEquity)",
@@ -27188,10 +27188,10 @@
         "category": "hsa",
         "draw": {
          "allowPenalizedWithdrawals": false,
-         "eligibilityLocked": false,
+         "eligibilityLocked": true,
          "reason": {
           "gate": "hsa_age_65",
-          "kind": "age_reached"
+          "kind": "locked"
          }
         },
         "name": "Jordan HSA (HealthEquity)",

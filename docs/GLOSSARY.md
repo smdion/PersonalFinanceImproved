@@ -51,7 +51,7 @@ are IRS-level categories independent of the account type that holds them.
 | ---------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `preTax`   | Traditional           | Pre-tax in, tax at withdrawal as ordinary income.                                                                                                                                 |
 | `taxFree`  | Roth                  | After-tax in, tax-free growth, tax-free at withdrawal.                                                                                                                            |
-| `hsa`      | HSA                   | Special bucket — pre-tax in, tax-free out for qualified medical (otherwise income tax + 20% penalty before 65; after 65 a non-medical draw is still income, without the penalty). |
+| `hsa`      | HSA                   | Special bucket — pre-tax in, tax-free out for qualified medical (otherwise income tax + 20% penalty through the year of 65; from the year after, non-medical draws owe only tax). |
 | `afterTax` | After-tax / Brokerage | After-tax in, capital gains tax on growth.                                                                                                                                        |
 
 ## Retirement / withdrawal

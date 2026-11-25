@@ -242,10 +242,17 @@ export function computeRothIraAccess(input: {
  * One sentence for every surface showing an HSA draw: the engine treats each as non-medical
  * spending (as `computeHsaAccess` does), which can overstate tax.
  */
-export const HSA_DRAW_TREATMENT = `Projected as non-medical: taxed as ordinary income, plus a ${formatPercent(HSA_NON_MEDICAL_PENALTY_RATE)} penalty before age ${HSA_NON_MEDICAL_PENALTY_AGE}. Money you spend on qualified medical costs would be tax- and penalty-free at any age, which the projection doesn't model, so it may overstate the tax.`;
+export const HSA_DRAW_TREATMENT = `Projected as non-medical: taxed as ordinary income, plus a ${formatPercent(HSA_NON_MEDICAL_PENALTY_RATE)} penalty through the year you turn ${HSA_NON_MEDICAL_PENALTY_AGE} (the projection can't see your birthday, so it counts that whole year as before ${HSA_NON_MEDICAL_PENALTY_AGE}). Money you spend on qualified medical costs would be tax- and penalty-free at any age, which the projection doesn't model, so it may overstate the tax.`;
+
+/** Whether an HSA's non-medical draws are penalty-free at a plan year's age
+ *  (age at Dec 31): the year someone turns 65 counts as before it, the
+ *  cautious side, so from the year after. */
+function hsaPenaltyFreeAt(age: number): boolean {
+  return age > HSA_NON_MEDICAL_PENALTY_AGE;
+}
 
 /** HSA, modeled as non-medical spending (medical tax-free use not assumed): like a
- *  Traditional IRA, penalty-free at 65 and always ordinary income; no basis split. */
+ *  Traditional IRA, penalty-free after the year of 65 and always ordinary income; no basis split. */
 export function computeHsaAccess(
   balance: number,
   currentAge: number,
@@ -254,7 +261,7 @@ export function computeHsaAccess(
     {
       label: "HSA (non-medical spending in retirement)",
       amount: balance,
-      penaltyFree: currentAge >= HSA_NON_MEDICAL_PENALTY_AGE,
+      penaltyFree: hsaPenaltyFreeAt(currentAge),
       taxFree: false,
     },
   ];
@@ -331,7 +338,10 @@ export function ageThresholdStatusOf(
       : rule === "hsa_non_medical"
         ? HSA_NON_MEDICAL_PENALTY_AGE
         : null;
-  return thresholdAge == null
-    ? null
-    : { thresholdAge, eligible: age >= thresholdAge };
+  if (thresholdAge == null) return null;
+  return {
+    thresholdAge,
+    eligible:
+      rule === "hsa_non_medical" ? hsaPenaltyFreeAt(age) : age >= thresholdAge,
+  };
 }

@@ -90,13 +90,16 @@ export function AccountDetailRow({
       {entry.ageThresholdStatus && (
         <div className="text-caption mt-1 flex items-center gap-2">
           <Badge color={entry.ageThresholdStatus.eligible ? "green" : "amber"}>
-            Age {entry.ageThresholdStatus.thresholdAge}:{" "}
+            {hasEarlyAccessRule(entry.category, "hsa_non_medical")
+              ? "After age"
+              : "Age"}{" "}
+            {entry.ageThresholdStatus.thresholdAge}:{" "}
             {entry.ageThresholdStatus.eligible ? "eligible" : "not yet"}
           </Badge>
           <HelpTip
             text={
               hasEarlyAccessRule(entry.category, "hsa_non_medical")
-                ? "At 65, non-medical HSA withdrawals stop incurring the 20% penalty — ordinary income tax still applies. Qualified medical withdrawals are always penalty-free and tax-free at any age."
+                ? "From the year after you turn 65 (the year you turn 65 counts as before it), non-medical HSA withdrawals stop incurring the 20% penalty — ordinary income tax still applies. Qualified medical withdrawals are always penalty-free and tax-free at any age."
                 : "At 59½, retirement-account withdrawals become penalty-free generally. There's no Rule-of-55 equivalent for an IRA (only SEPP/72(t), not modeled here)."
             }
           />

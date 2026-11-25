@@ -180,10 +180,13 @@ describe("per-owner RMDs through the engine", () => {
 
 describe("per-owner RMDs with an HSA draw and real returns", () => {
   // Routing draws the HSA first, then Bo's 401k; Ann's IRA holds the RMD.
+  // The HSA is Ann's: Bo turns 65 in 2026, a year whose HSA draws still
+  // owe the 20% (the year of 65 counts as before it), so routing would
+  // pass his over.
   const accounts = [
     acct("Ann IRA", "ira", 500000, 1),
     acct("Bo 401k", "401k", 500000, 2),
-    acct("Bo HSA", "hsa", 20000, 2, "hsa"),
+    acct("Ann HSA", "hsa", 20000, 1, "hsa"),
   ];
   const input = () => {
     const base = household(

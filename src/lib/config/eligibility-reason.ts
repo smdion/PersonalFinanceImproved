@@ -1,6 +1,6 @@
 /** Which early-access gate a locked account waits on: 59½ (IRA), Rule of
  *  55 or 59½ (employer plan; the Rule of 55 marked unavailable for
- *  forecasting is its own case), 65 (HSA non-medical draws). */
+ *  forecasting is its own case), the year after 65 (HSA non-medical draws). */
 export type EligibilityLockedGate =
   "age_59_half" | "rule_of_55_or_age" | "rule_of_55_unavailable" | "hsa_age_65";
 

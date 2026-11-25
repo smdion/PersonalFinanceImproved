@@ -51,7 +51,7 @@ export type RetirementBridge =
       years: BridgeYear[];
       /** Penalty-free money at the start of the bridge, by where it sits. */
       sources: { kind: BridgeSourceKind; amount: number }[];
-      /** HSA money — usable penalty-free only for medical costs before 65,
+      /** HSA money — usable penalty-free only for medical costs through the year of 65,
        *  never counted above. */
       hsa: number;
       /** When each person's locked money unlocks (the year after their
@@ -96,7 +96,7 @@ function sourceKind(a: IndividualAccountYearBalance): BridgeSourceKind {
   return "other";
 }
 
-/** HSA money is set apart: medical only before its non-medical age. */
+/** HSA money is set apart: medical only through the year of its non-medical age. */
 const isMedicalOnly = (a: IndividualAccountYearBalance) =>
   hasEarlyAccessRule(a.category, "hsa_non_medical");
 
