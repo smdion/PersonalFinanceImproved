@@ -246,6 +246,28 @@ export function resolveTaxParams(
   };
 }
 
+/** Stored withholding tables as every reader (projection, paycheck, job net pay) prices them:
+ *  a negative rate reads as 0%, never a negative tax, with a note naming the table. Stored
+ *  rows are kept; a table with no negative rate comes back as the same object. */
+export function readWithholdingTables<
+  R extends Pick<WithholdingBracketRow, "filingStatus" | "w4Checkbox"> & {
+    brackets: readonly { rate: number }[];
+  },
+>(rows: readonly R[]): { tables: R[]; rateNotes: string[] } {
+  const rateNotes: string[] = [];
+  const tables = rows.map((row) => {
+    if (!row.brackets.some((b) => b.rate < 0)) return row;
+    rateNotes.push(
+      `The ${row.filingStatus}${row.w4Checkbox ? " Step 2(c)" : ""} withholding table (Tax Brackets) has a negative rate, read as 0%. Fix it in Settings → Reference Data.`,
+    );
+    return {
+      ...row,
+      brackets: row.brackets.map((b) => (b.rate < 0 ? { ...b, rate: 0 } : b)),
+    };
+  });
+  return { tables, rateNotes };
+}
+
 /** Years whose rows cover every required filing status (`keep` narrows
  *  which rows count — withholding's standard, non-2(c) table). */
 function completeYears<R extends { taxYear: number; filingStatus: string }>(

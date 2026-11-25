@@ -28,7 +28,10 @@ import { toNumber } from "@/lib/utils/numbers";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { DeductionLine } from "@/lib/pure/paycheck/paycheck.types";
 import type { PayPeriod } from "@/lib/config/enum-values";
-import { resolveTaxParams } from "@/lib/pure/tax/resolve-tax-params";
+import {
+  readWithholdingTables,
+  resolveTaxParams,
+} from "@/lib/pure/tax/resolve-tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import {
   deductionLine,
@@ -116,8 +119,8 @@ export async function computeJobNetPayPerCheck(
     undefined,
     { onMissing: "nearest" },
   );
-  const allBrackets = allBracketRows.filter(
-    (b) => b.taxYear === resolvedTax.resolvedYear,
+  const { tables: allBrackets } = readWithholdingTables(
+    allBracketRows.filter((b) => b.taxYear === resolvedTax.resolvedYear),
   );
 
   // Accounts carry no contribution value: the active Contribution Profile's.

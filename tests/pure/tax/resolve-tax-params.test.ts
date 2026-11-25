@@ -15,6 +15,7 @@ import {
   taxDataWithholding,
 } from "../../helpers/tax-data";
 import {
+  readWithholdingTables,
   resolveTaxParams,
   type TaxParamsRowSets,
 } from "@/lib/pure/tax/resolve-tax-params";
@@ -439,5 +440,43 @@ describe("resolveTaxParams — sectionFallback", () => {
     expect(Object.keys(r.withholdingBrackets ?? {})).toEqual(["MFJ"]);
     expect(r.ltcgByStatus).toBeUndefined();
     expect(resolveTaxParams(rows, 2028, { onMissing: "null" })).toBeNull();
+  });
+});
+
+describe("readWithholdingTables — the one reader of a stored table's rates", () => {
+  const stored = taxDataWithholding();
+
+  it("passes valid tables through as the same objects, with no note", () => {
+    const { tables, rateNotes } = readWithholdingTables(stored);
+    expect(tables.every((t, i) => t === stored[i])).toBe(true);
+    expect(rateNotes).toEqual([]);
+  });
+
+  it("reads a negative rate as 0%, naming the table, and leaves the stored row alone", () => {
+    const edited = stored.map((r) =>
+      r.filingStatus === "HOH"
+        ? {
+            ...r,
+            brackets: r.brackets.map((b, i) =>
+              i === 2 ? { ...b, rate: -0.05 } : b,
+            ),
+          }
+        : r,
+    );
+    const { tables, rateNotes } = readWithholdingTables(edited);
+    const hoh = edited.filter((r) => r.filingStatus === "HOH");
+    for (const row of hoh) {
+      const read = tables[edited.indexOf(row)]!;
+      expect(read.brackets[2]).toEqual({ ...row.brackets[2], rate: 0 });
+      expect(read.brackets[1]).toBe(row.brackets[1]);
+      expect(row.brackets[2]!.rate).toBe(-0.05);
+    }
+    expect(rateNotes).toHaveLength(hoh.length);
+    expect(rateNotes).toContain(
+      "The HOH Step 2(c) withholding table (Tax Brackets) has a negative rate, read as 0%. Fix it in Settings → Reference Data.",
+    );
+    expect(rateNotes).toContain(
+      "The HOH withholding table (Tax Brackets) has a negative rate, read as 0%. Fix it in Settings → Reference Data.",
+    );
   });
 });

@@ -2,6 +2,7 @@
 import { filingRules } from "@/lib/config/filing-status";
 import type { retirementFilingStatus } from "@/lib/pure/tax/filing-status";
 import {
+  readWithholdingTables,
   resolveTaxParams,
   type TaxParamsRowSets,
   type TaxSection,
@@ -77,22 +78,20 @@ export function resolveTaxYear(
     resolvedTax.withholdingBrackets?.[filingRules(filingStatus).survivorRow]
       ?.false;
   if (!withholding) throw new Error(`No ${filingStatus} withholding table.`);
-  const storedBrackets = withholding as {
-    threshold: number;
-    baseWithholding: number;
-    rate: number;
-  }[];
-  // A hand-edited negative rate reads as 0% (never a negative tax); the
-  // stored table is kept as it is.
-  const bracketData = storedBrackets.some((b) => b.rate < 0)
-    ? storedBrackets.map((b) => (b.rate < 0 ? { ...b, rate: 0 } : b))
-    : storedBrackets;
-  const rateNotes =
-    bracketData === storedBrackets
-      ? []
-      : [
-          `The ${filingStatus} withholding table (Tax Brackets) has a negative rate, read as 0%. Fix it in Settings → Reference Data.`,
-        ];
+  // The paycheck's reader too: a negative rate reads as 0% with a note;
+  // the stored table is kept as it is.
+  const { tables, rateNotes } = readWithholdingTables([
+    {
+      filingStatus,
+      w4Checkbox: false,
+      brackets: withholding as {
+        threshold: number;
+        baseWithholding: number;
+        rate: number;
+      }[],
+    },
+  ]);
+  const bracketData = tables[0]!.brackets;
 
   return {
     resolvedTax,

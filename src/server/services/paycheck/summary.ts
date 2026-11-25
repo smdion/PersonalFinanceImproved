@@ -60,7 +60,10 @@ import {
   earningLines,
 } from "@/lib/pure/paycheck/paycheck-lines";
 import { findActiveJob, otherCurrentJobs } from "@/lib/pure/household/profiles";
-import { resolveTaxParams } from "@/lib/pure/tax/resolve-tax-params";
+import {
+  readWithholdingTables,
+  resolveTaxParams,
+} from "@/lib/pure/tax/resolve-tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions/irs-limits";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import { householdTotals } from "@/server/services/paycheck/household-totals";
@@ -138,9 +141,9 @@ export async function computePaycheckSummary(
     resolvedTax?.resolvedYear ??
     input?.taxYearOverride ??
     ctx.scope.asOf.getFullYear();
-  const allBrackets = resolvedTax
-    ? allBracketRows.filter((b) => b.taxYear === resolvedTax.resolvedYear)
-    : [];
+  const { tables: allBrackets, rateNotes } = readWithholdingTables(
+    allBracketRows.filter((b) => b.taxYear === resolvedTax?.resolvedYear),
+  );
 
   const limitsRecord: Record<string, number> = resolvedTax?.limits ?? {};
   const limitsMap = new Map<string, number>(Object.entries(limitsRecord));
@@ -634,7 +637,7 @@ export async function computePaycheckSummary(
       : null,
     rothIra,
     hsaBuffers,
-    unknownTypeNotes: contributionAccounts.notes,
+    unknownTypeNotes: [...contributionAccounts.notes, ...rateNotes],
     // The tax-data vintage this summary was priced under — for a
     // "Tax data: YYYY" indicator, matching the retirement projection side.
     taxYear,
