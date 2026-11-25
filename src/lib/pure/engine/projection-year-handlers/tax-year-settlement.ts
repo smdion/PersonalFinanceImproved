@@ -3,7 +3,7 @@ import { roundToCents } from "../../../utils/math";
 import { ageInYear } from "../../../utils/date";
 import { isOverflowTarget, isPreTaxType } from "../../../config/account-types";
 import { soleBeneficiarySpouseAges } from "../../../config/rmd-tables";
-import { followInflows } from "../brokerage-basis";
+import { categoryBasis, followInflows } from "../brokerage-basis";
 import {
   clampBalances,
   deductWithdrawals,
@@ -173,7 +173,8 @@ export function settleYearDraws(
   const { taxFromSlots, cost } = flow.priced;
   const { rmdAdded, totalWithdrawal } = flow.rmd;
   const { afterTaxNeed, irmaa } = flow.need;
-  const basisOut = () => taxFromSlots.brokerageBasisOut;
+  const out = taxFromSlots.brokerageBasisOut;
+  const basisOut = categoryBasis(flow.drawn.basisSold, out);
   deductWithdrawals({ slots, balances, accountBalance, basisOut });
   const floorRaised = clampBalances(balances, accountBalance);
   // Lump sums (one-time, outside limits) are cash in: new basis in the

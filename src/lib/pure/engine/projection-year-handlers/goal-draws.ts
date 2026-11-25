@@ -1,5 +1,6 @@
 import {
-  followDraws,
+  categoryBasis,
+  followDrawsSold,
   groupBasisRatio,
   sellAtCost,
   takeBasisOut,
@@ -98,12 +99,13 @@ export function brokerageGoalDraws(
     );
     balances.afterTax = roundToCents(balances.afterTax - drawAmount);
     addBalance(accountBalance[OVERFLOW_CATEGORY], -drawAmount);
-    takeBasisOut(balances, accountBalance[OVERFLOW_CATEGORY], basisOut);
-    if (holdsAccounts) {
-      followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
-        distributeGoalWithdrawal(drawAmount, indAccounts, indKey, indBalance),
-      );
-    }
+    const drawn = holdsAccounts
+      ? followDrawsSold(indAccounts, indKey, indBalance, brokBasis, () =>
+          distributeGoalWithdrawal(drawAmount, indAccounts, indKey, indBalance),
+        )
+      : undefined;
+    const out = categoryBasis(drawn?.sold, basisOut)(OVERFLOW_CATEGORY);
+    takeBasisOut(balances, accountBalance[OVERFLOW_CATEGORY], out);
     goalWithdrawals.push({
       goalId: goal.id,
       name: goal.name,

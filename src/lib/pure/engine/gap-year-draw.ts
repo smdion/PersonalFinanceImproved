@@ -19,7 +19,11 @@ import { clampBalances, deductWithdrawals } from "./balance-deduction";
 import { floorPartsAndSlices } from "./category-slices";
 import { depleteIndividualBasis } from "./individual-accounts/ledger";
 import { distributeWithdrawals } from "./individual-accounts/withdrawals";
-import { followDraws, retirementBrokerageBasisRatio } from "./brokerage-basis";
+import {
+  categoryBasis,
+  followDrawsSold,
+  retirementBrokerageBasisRatio,
+} from "./brokerage-basis";
 import {
   computeNonRetirementExclusion,
   computeWithdrawalEligibility,
@@ -243,18 +247,18 @@ export function runGapYearDraw(
   const pool = scopedBalances(balances, nonRetirement).allAccountsBalance;
   const { slots, warnings } = searchGrossUp(need, pool, first, evaluate).e;
 
-  const taken = followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
-    shareOut(slots, indBalance, indBasis),
+  const { result: taken, sold } = followDrawsSold(
+    indAccounts,
+    indKey,
+    indBalance,
+    brokBasis,
+    () => shareOut(slots, indBalance, indBasis),
   );
   const settled = price(slots, taken.rothGrowth, taken.penalty);
   const { priced, cost } = settled;
-
-  deductWithdrawals({
-    slots,
-    balances,
-    accountBalance,
-    basisOut: () => priced.brokerageBasisOut,
-  });
+  const out = priced.brokerageBasisOut;
+  const basisOut = categoryBasis(holdsAccounts ? sold : undefined, out);
+  deductWithdrawals({ slots, balances, accountBalance, basisOut });
   const floorRaised = clampBalances(balances, accountBalance);
   if (holdsAccounts) floorPartsAndSlices(ctx, state, floorRaised);
   const withdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));

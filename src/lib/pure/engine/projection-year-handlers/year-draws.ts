@@ -1,6 +1,6 @@
 /** The decumulation year's draw: routed, then followed to each account. */
 import { cloneAccountBalances } from "../balance-utils";
-import { followDraws } from "../brokerage-basis";
+import { followDrawsSold } from "../brokerage-basis";
 import { routeForMode } from "../withdrawal-routing";
 import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
 import { conversionRoutingInputs } from "../conversion-room";
@@ -121,8 +121,8 @@ export function distributeYearDraws(
   const indBalance = new Map(state.indBalance);
   const brokBasis = new Map(state.brokBasis);
   const indBasis = new Map(state.indBasis);
-  const distributeResult = holdsAccounts
-    ? followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
+  const drawn = holdsAccounts
+    ? followDrawsSold(indAccounts, indKey, indBalance, brokBasis, () =>
         distributeWithdrawals(
           slots,
           indAccounts,
@@ -132,9 +132,10 @@ export function distributeYearDraws(
           ownerRmd?.pins,
         ),
       )
-    : { decumulationIndWithdrawal: new Map<string, number>(), warnings: [] };
-  const decumulationIndWithdrawal = distributeResult.decumulationIndWithdrawal;
-  routeWarnings.push(...distributeResult.warnings);
+    : undefined;
+  const decumulationIndWithdrawal =
+    drawn?.result.decumulationIndWithdrawal ?? new Map<string, number>();
+  routeWarnings.push(...(drawn?.result.warnings ?? []));
   const basisDraws = holdsAccounts
     ? depleteIndividualBasis({
         indAccounts,
@@ -174,5 +175,7 @@ export function distributeYearDraws(
     rothTaxSplit,
     earlyWithdrawalPenalty,
     ledger: { indBalance, brokBasis, indBasis },
+    /** Each category's basis its accounts sold; none without an account ledger. */
+    basisSold: drawn?.sold,
   };
 }

@@ -267,6 +267,10 @@ describe("isOverflowTarget", () => {
     expect(isOverflowTarget("401k")).toBe(false);
     expect(isOverflowTarget("hsa")).toBe(false);
   });
+
+  it("exactly one category ships as the overflow target, so a brokerage sale's basis has one category to leave", () => {
+    expect(getAllCategories().filter(isOverflowTarget)).toEqual(["brokerage"]);
+  });
 });
 
 describe("getLimitGroup", () => {

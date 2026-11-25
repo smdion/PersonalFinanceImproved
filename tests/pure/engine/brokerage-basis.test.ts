@@ -5,7 +5,9 @@
 import { describe, it, expect } from "vitest";
 import {
   basisOut,
+  categoryBasis,
   followDrawsSold,
+  followInflowsAdded,
   seedBrokerageBasis,
   sellAtCost,
   syncAggregateBasis,
@@ -80,6 +82,30 @@ describe("followDrawsSold and takeBasisOut", () => {
     expect(result).toBe("drawn");
     expect(sold.get("brokerage")).toBe(2200);
     expect(accts.map((a) => basis.get(indKey(a)))).toEqual([10800, 9000]);
+  });
+
+  it("money in: each category's basis added is the sum of its accounts' rises", () => {
+    const accts = [brokerage("A", 0), brokerage("B", 0)];
+    const indBal = new Map([
+      [indKey(accts[0]!), 100],
+      [indKey(accts[1]!), 0],
+    ]);
+    const basis = new Map([
+      [indKey(accts[0]!), 50],
+      [indKey(accts[1]!), 0],
+    ]);
+    const { added } = followInflowsAdded(accts, indKey, indBal, basis, () => {
+      indBal.set(indKey(accts[0]!), 100.33);
+      indBal.set(indKey(accts[1]!), 200.34);
+    });
+    expect(added.get("brokerage")).toBe(200.67);
+  });
+
+  it("a category's basis is its accounts' with a ledger, else the one aggregate amount", () => {
+    const sold = new Map([["brokerage" as const, 12.34]]);
+    expect(categoryBasis(sold, 99)("brokerage")).toBe(12.34);
+    expect(categoryBasis(sold, 99)("ira")).toBe(0);
+    expect(categoryBasis(undefined, 99)("brokerage")).toBe(99);
   });
 
   it("the basis out leaves the tax buckets and the category, each floored at 0", () => {

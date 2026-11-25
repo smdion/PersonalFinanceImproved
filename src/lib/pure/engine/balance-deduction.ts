@@ -33,7 +33,8 @@ import { inflowShares, placeWhole } from "./individual-accounts/part-weights";
 import { sliceKey } from "./category-slices";
 import type { CategorySide } from "../accounts/category-side";
 import {
-  followInflows,
+  categoryBasis,
+  followInflowsAdded,
   takeBasisOut,
   type BrokerageBasis,
 } from "./brokerage-basis";
@@ -174,14 +175,21 @@ export function reinvestRmdExcess(
       partBalance,
       partKey,
     );
-  const excess =
+  const { result: excess, added } =
     partAccounts && partBalance && partKey && partBasis
-      ? followInflows(partAccounts, partKey, partBalance, partBasis, credit)
-      : credit();
+      ? followInflowsAdded(
+          partAccounts,
+          partKey,
+          partBalance,
+          partBasis,
+          credit,
+        )
+      : { result: credit(), added: undefined };
   if (mode === "reinvest" && excess > 0) {
-    balances.afterTaxBasis = roundToCents(balances.afterTaxBasis + excess);
     const category = getAllCategories().find(isOverflowTarget);
-    if (category) addBasis(accountBalance[category], excess);
+    const basisIn = category ? categoryBasis(added, excess)(category) : excess;
+    balances.afterTaxBasis = roundToCents(balances.afterTaxBasis + basisIn);
+    if (category) addBasis(accountBalance[category], basisIn);
   }
   return excess;
 }
