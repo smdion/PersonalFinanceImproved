@@ -968,7 +968,7 @@
       "distributeContributions": 307
     },
     "src/lib/pure/engine/projection-year-handlers/context.ts": {
-      "buildProjectionContext": 180
+      "buildProjectionContext": 182
     },
     "src/lib/pure/engine/projection-year-handlers/pre-year-setup.ts": {
       "runPreYearSetup": 363

@@ -7,7 +7,7 @@ import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** Each owner takes their own RMD: a real account and someone's RMD age. */
 export function perOwnerRmds(ctx: ProjectionContext): boolean {
-  return ctx.ledgerRuns && ctx.rmdStartAgeByPerson.size > 0;
+  return ctx.holdsRealAccount && ctx.rmdStartAgeByPerson.size > 0;
 }
 
 /**

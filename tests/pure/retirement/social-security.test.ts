@@ -408,7 +408,7 @@ describe("sweepClaimingAges", () => {
     // for a single-person household silently activates per-person RMD
     // tracking a real single-person projection never uses. Per-person RMD
     // requires BOTH `rmdStartAgeByPerson.size > 0` (from
-    // socialSecurityEntries) AND `ledgerRuns` (context.ts's
+    // socialSecurityEntries) AND `holdsRealAccount` (context.ts's
     // gate) — makeSingleHousehold() already has owned individualAccounts,
     // so this fixture alone exercises that second gate; adding an
     // UNASSIGNED (ownerPersonId: undefined) pre-tax account is what

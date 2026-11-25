@@ -160,9 +160,12 @@ export type ProjectionContext = {
   sortedProfileSwitches: ProfileSwitch[];
 
   // Individual account setup
-  /** Some part belongs to a real account (`hasRealAccount`); without one the
-   *  run takes the household path and `indAccounts` is empty. */
+  /** The per-part ledger runs; without it `indAccounts` is empty and the run
+   *  takes the household path. Today it runs exactly when `holdsRealAccount`. */
   ledgerRuns: boolean;
+  /** Some part belongs to a real account (`hasRealAccount`). Reads that need
+   *  an owner or an entered account (QCDs, per-owner RMDs, eligibility). */
+  holdsRealAccount: boolean;
   indAccounts: EnginePart[];
   indKey: ReturnType<typeof makeIndKey>;
   indParentCat: Map<string, string>;

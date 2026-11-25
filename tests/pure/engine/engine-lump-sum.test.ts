@@ -27,6 +27,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 function makeCtx(
   overrides: Partial<{
     ledgerRuns: boolean;
+    holdsRealAccount: boolean;
     indAccounts: {
       name?: string;
       category: string;
@@ -40,6 +41,7 @@ function makeCtx(
 ): ProjectionContext {
   return {
     ledgerRuns: false,
+    holdsRealAccount: false,
     indAccounts: [],
     // Keyed by category alone — this test\'s indBalance is keyed the same way.
     indKey: (ia: object) => (ia as { category: string }).category,
@@ -265,7 +267,7 @@ describe("updatePerPersonTradBalance", () => {
     const rmdMap = new Map([[1, { startAge: 73, birthYear: 1951 }]]);
     const ctx = makeCtx({
       rmdStartAgeByPerson: rmdMap,
-      ledgerRuns: false,
+      holdsRealAccount: false,
     });
     const state = makeState();
     state.priorYearEndTradByPerson.set(1, 500);
@@ -285,7 +287,7 @@ describe("updatePerPersonTradBalance", () => {
     ]);
     const ctx = makeCtx({
       rmdStartAgeByPerson: rmdMap,
-      ledgerRuns: true,
+      holdsRealAccount: true,
       indAccounts,
       // Keyed by category alone — this test\'s indBalance is keyed the same way.
       indKey: (ia: object) => (ia as { category: string }).category,
@@ -303,7 +305,7 @@ describe("updatePerPersonTradBalance", () => {
     const indBalance = new Map([["401k", 80000]]);
     const ctx = makeCtx({
       rmdStartAgeByPerson: rmdMap,
-      ledgerRuns: true,
+      holdsRealAccount: true,
       indAccounts,
       // Keyed by category alone — this test\'s indBalance is keyed the same way.
       indKey: (ia: object) => (ia as { category: string }).category,

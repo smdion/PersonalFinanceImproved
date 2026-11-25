@@ -154,7 +154,8 @@ export function buildProjectionContext(
   }
 
   const declared = openingParts(input);
-  const ledgerRuns = declared.some(hasRealAccount);
+  const holdsRealAccount = declared.some(hasRealAccount);
+  const ledgerRuns = holdsRealAccount;
   const indAccounts = ledgerRuns ? declared : [];
   const indKey = makeIndKey();
   const indParentCat = new Map<string, string>();
@@ -186,6 +187,7 @@ export function buildProjectionContext(
     sortedDecumulationOverrides,
     sortedProfileSwitches,
     ledgerRuns,
+    holdsRealAccount,
     indAccounts,
     indKey,
     indParentCat,
