@@ -16,11 +16,8 @@ import {
 } from "../../accounts/account-balance";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 import { lumpSumParts, runLumpSums } from "../lump-sum-targets";
-import {
-  equalShares,
-  inflowShares,
-  placeWhole,
-} from "../individual-accounts/part-weights";
+import { equalShares, inflowShares } from "../individual-accounts/part-weights";
+import { placeWhole } from "@/lib/pure/accounts/place-whole";
 
 /**
  * Apply one-time lump-sum injections for the current year.

@@ -29,7 +29,8 @@ import {
   addBasis,
 } from "../accounts/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
-import { inflowShares, placeWhole } from "./individual-accounts/part-weights";
+import { inflowShares } from "./individual-accounts/part-weights";
+import { placeWhole } from "@/lib/pure/accounts/place-whole";
 import { sliceKey } from "./category-slices";
 import type { CategorySide } from "../accounts/category-side";
 import {

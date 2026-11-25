@@ -1,9 +1,10 @@
 /** One spread of money over account parts: by balance; when all are $0, by
  *  each part's account's other parts (each person's); when those are $0 too,
  *  equally; a group under $1 blends toward the next rule (`inflowShares`). */
-import { roundToCents, sumBy } from "../../../utils/math";
+import { sumBy } from "../../../utils/math";
 import type { IndKeyFn } from "../../accounts/account-part";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
+import { placeWhole } from "@/lib/pure/accounts/place-whole";
 import { credit } from "./ledger";
 
 /** The run's parts and their balances. */
@@ -60,18 +61,6 @@ export function partShares(
   return inflowShares(parts.map(balance), () =>
     inflowShares(otherParts(), equalShares(parts.length)),
   );
-}
-
-/** An uncapped spread placed whole: each member its `raw` amount to the cent, the largest share
- *  (the earlier on a tie) the cents left, over or under, so no member ends more than (n − 1)/2
- *  cents from its raw amount. Draws capped at each part's balance keep their own room rule. */
-export function placeWhole(amount: number, raw: readonly number[]): number[] {
-  const placed = raw.map((r) => roundToCents(r));
-  if (placed.length === 0) return placed;
-  const largest = raw.reduce((best, r, i) => (r > raw[best]! ? i : best), 0);
-  const others = sumBy(placed, (share) => share) - placed[largest]!;
-  placed[largest] = roundToCents(amount - others);
-  return placed;
 }
 
 /** `amount` placed whole over `keys` (`placeWhole`), each member's amount

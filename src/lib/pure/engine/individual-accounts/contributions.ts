@@ -17,12 +17,8 @@ import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { rampBrokerages } from "@/lib/pure/accounts/brokerage-ramp";
 import { retirementFirst, specKeyOf } from "./ledger";
 import { otherParts } from "./other-tax-part";
-import {
-  creditWhole,
-  equalShares,
-  inflowShares,
-  placeWhole,
-} from "./part-weights";
+import { creditWhole, equalShares, inflowShares } from "./part-weights";
+import { placeWhole } from "@/lib/pure/accounts/place-whole";
 import { creditSpecParts, onSpecParts, type SpecParts } from "./spec-accounts";
 import { unclaimedSlot } from "./own-part-credits";
 

@@ -1,5 +1,5 @@
 /**
- * A spread places its whole amount (part-weights.ts `placeWhole`): every
+ * A spread places its whole amount (place-whole.ts `placeWhole`): every
  * spread of money over account parts, specs or parent categories rounds
  * each member's amount to the cent and gives the member with the largest
  * share (the earlier on a tie) the cents left, so the parts take exactly

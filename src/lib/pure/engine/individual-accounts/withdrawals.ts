@@ -12,7 +12,7 @@ import {
 } from "../../../config/account-types";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
-import { placeWhole } from "./part-weights";
+import { placeWhole } from "@/lib/pure/accounts/place-whole";
 
 /**
  * The accounts brokerage goals draw from: Portfolio-parented brokerages.
