@@ -175,7 +175,7 @@ describe("calculateBudget", () => {
 });
 
 describe("calculateBudget — branch coverage", () => {
-  it("an item with fewer amounts than columns stops the read", () => {
+  it("an item with fewer amounts than columns counts as $0 there, with a note", () => {
     const input: BudgetInput = {
       columnLabels: ["Standard", "Tight", "Emergency"],
       selectedColumn: 2,
@@ -190,10 +190,14 @@ describe("calculateBudget — branch coverage", () => {
       asOfDate: AS_OF_DATE,
     };
 
-    // The writers and the money migration give every item every column.
-    expect(() => calculateBudget(input)).toThrow(
-      "A budget item holds 2 amounts for 3 columns",
-    );
+    // The writers and the migrations give every item every column; one
+    // edited outside the app can stop short (any install).
+    const result = calculateBudget(input);
+    expect(result.totalMonthly).toBe(0);
+    expect(result.warnings).toEqual([
+      "Housing / Rent: its saved amounts stop before column 3 (Emergency), so it counts as $0 there. Re-enter it on the Budget page.",
+    ]);
+    expect(input.items[0]!.amounts).toEqual([1000, 800]);
   });
 
   it("a column past the list reads as no budget, with a warning", () => {
@@ -345,7 +349,7 @@ describe("calculateBudget — branch coverage", () => {
     expect(result.totalMonthly).toBeCloseTo(100.0, 2);
   });
 
-  it("an item with no amounts stops the read", () => {
+  it("an item with no amounts counts as $0, with a note", () => {
     const input: BudgetInput = {
       columnLabels: ["Standard"],
       selectedColumn: 0,
@@ -361,9 +365,12 @@ describe("calculateBudget — branch coverage", () => {
       asOfDate: AS_OF_DATE,
     };
 
-    expect(() => calculateBudget(input)).toThrow(
-      "A budget item holds 0 amounts for 1 columns",
-    );
+    const result = calculateBudget(input);
+    expect(result.totalMonthly).toBe(500);
+    expect(result.essentialTotal).toBe(500);
+    expect(result.warnings).toEqual([
+      "Housing / Empty: its saved amounts stop before column 1 (Standard), so it counts as $0 there. Re-enter it on the Budget page.",
+    ]);
   });
 
   it("has correct per-category totals and item breakdown", () => {

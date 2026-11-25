@@ -460,10 +460,11 @@ export function BudgetContent({
               syncActions={{
                 isPulling: syncFromApi.isPending,
                 isPushing: syncToApi.isPending,
+                // The linked column both sync calls use, not the viewed one.
                 onPullFromApi: () =>
-                  setPullPreviewItems(buildPullPreviewItems(activeColumn)),
-                // Preview the column syncBudgetToApi pushes (the connection's
-                // linkedColumnIndex), not necessarily the viewed column.
+                  setPullPreviewItems(
+                    buildPullPreviewItems(apiLinkedColumnIndex ?? activeColumn),
+                  ),
                 onOpenPushPreview: () =>
                   setPushPreviewItems(
                     buildPushPreviewItems(apiLinkedColumnIndex ?? activeColumn),

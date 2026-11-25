@@ -30,11 +30,10 @@ describe("computeBudgetColumnTotal", () => {
     expect(computeBudgetColumnTotal(items, 2, 3)).toBe(3960);
   });
 
-  it("stops at an item short of a column of the list", () => {
+  it("counts an item short of a column of the list as $0 there", () => {
     const items = [{ amounts: [100] }, { amounts: [50, 75] }];
-    expect(() => computeBudgetColumnTotal(items, 1, 2)).toThrow(
-      "A budget item holds 1 amounts for 2 columns",
-    );
+    // Column 1: (0 + 75) × 12 = 900
+    expect(computeBudgetColumnTotal(items, 1, 2)).toBe(900);
   });
 
   it("reads a column past the list as no budget", () => {

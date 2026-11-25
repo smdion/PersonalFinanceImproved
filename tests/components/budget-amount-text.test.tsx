@@ -28,6 +28,13 @@ describe("BudgetAmountText", () => {
     }
   });
 
+  it("marks a column the saved amounts stop short of, counted as $0", () => {
+    render(<BudgetAmountText item={item([100])} col={1} amount={0} />);
+    expect(screen.getByText("?").getAttribute("title")).toBe(
+      "No saved amount for this column; counts as $0",
+    );
+  });
+
   it("shows a readable amount", () => {
     render(<BudgetAmountText item={item([250])} col={0} amount={250} />);
     expect(screen.getByText("$250.00")).toBeTruthy();

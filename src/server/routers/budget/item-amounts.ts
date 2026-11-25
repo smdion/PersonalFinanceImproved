@@ -52,6 +52,16 @@ function editableAmounts(stored: number[]): number[] {
   return amounts;
 }
 
+/** The columns an edit may write: the profile's, so a list short of them (any
+ *  install) takes its missing columns; the ones between stay missing (stored
+ *  null, read as $0 with a note), never a made-up amount. */
+function editableColumns(
+  amounts: readonly number[],
+  columnLabels: readonly string[] = [], // the profile row is locked, never gone
+): number {
+  return Math.max(amounts.length, columnLabels.length);
+}
+
 export const itemAmountProcedures = {
   /** Update a single amount cell for a budget item. */
   updateItemAmount: budgetProcedure
@@ -98,7 +108,11 @@ export const itemAmountProcedures = {
 
       // Under the profile's lock (column edits rewrite every item's amounts).
       return ctx.db.transaction(async (tx) => {
-        await lockedRow(tx, schema.budgetProfiles, item.profileId);
+        const profile = await lockedRow(
+          tx,
+          schema.budgetProfiles,
+          item.profileId,
+        );
         const current = await tx
           .select()
           .from(schema.budgetItems)
@@ -108,7 +122,8 @@ export const itemAmountProcedures = {
           throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
         // As stored: a column this edit doesn't write keeps what it holds.
         const amounts = editableAmounts(current.amounts);
-        if (input.colIndex < 0 || input.colIndex >= amounts.length) {
+        const columns = editableColumns(amounts, profile?.columnLabels);
+        if (input.colIndex < 0 || input.colIndex >= columns) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Column index out of bounds",
@@ -161,8 +176,11 @@ export const itemAmountProcedures = {
       // Apply atomically — either the whole applicable paste lands or none
       // of it does (a mid-loop failure must not leave half a paste saved).
       const { skipped, toApply } = await ctx.db.transaction(async (tx) => {
-        for (const profileId of profileIds)
-          await lockedRow(tx, schema.budgetProfiles, profileId);
+        const columnLabelsOf = new Map<number, readonly string[]>();
+        for (const profileId of profileIds) {
+          const profile = await lockedRow(tx, schema.budgetProfiles, profileId);
+          if (profile) columnLabelsOf.set(profileId, profile.columnLabels);
+        }
         // One fetch, not one-per-item, under the lock of every profile it
         // touches (ascending), so a column edit can't interleave.
         const items = await tx
@@ -189,10 +207,14 @@ export const itemAmountProcedures = {
               skipped.push({ id, colIndex: c.colIndex, reason: "deleted" });
             continue;
           }
-          // `amounts` tracks the profile's column count for linked items too, so it
-          // bounds both; an unchecked linked item would write into the active
-          // Contribution Profile via the tier fallback, unreported.
+          // `columns` bounds linked and unlinked items alike; an unchecked linked
+          // item would write into the active Contribution Profile via the tier
+          // fallback, unreported.
           const amounts = editableAmounts(item.amounts);
+          const columns = editableColumns(
+            amounts,
+            columnLabelsOf.get(item.profileId),
+          );
           const valid = changes.filter((c) => {
             if (!Number.isFinite(c.amount)) {
               // Message is user-facing (surfaced by the global
@@ -202,7 +224,7 @@ export const itemAmountProcedures = {
                 message: "One of the pasted amounts isn't a valid number.",
               });
             }
-            if (c.colIndex < 0 || c.colIndex >= amounts.length) {
+            if (c.colIndex < 0 || c.colIndex >= columns) {
               skipped.push({
                 id,
                 colIndex: c.colIndex,

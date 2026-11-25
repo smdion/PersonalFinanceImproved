@@ -888,6 +888,66 @@ describe("budget router", () => {
     });
   });
 
+  describe("an item whose stored amounts stop short of its profile's columns", () => {
+    it("an edit, one or a batch, of a missing column saves it; the columns between stay missing, never a made-up $0", async () => {
+      const shortProfileId = await seedBudgetProfile(
+        db,
+        "Short Amounts",
+        false,
+      );
+      db.update(sqliteSchema.budgetProfiles)
+        .set({ columnLabels: ["A", "B", "C"] })
+        .where(eq(sqliteSchema.budgetProfiles.id, shortProfileId))
+        .run();
+      const one = seedBudgetItem(db, shortProfileId, {
+        subcategory: "Short One",
+        amounts: [100],
+      });
+      const batch = seedBudgetItem(db, shortProfileId, {
+        subcategory: "Short Batch",
+        amounts: [100],
+      });
+      const stored = (id: number): unknown =>
+        db
+          .select()
+          .from(sqliteSchema.budgetItems)
+          .where(eq(sqliteSchema.budgetItems.id, id))
+          .get()!.amounts;
+
+      await caller.budget.updateItemAmount({
+        id: one,
+        colIndex: 2,
+        amount: 30,
+      });
+      expect(stored(one)).toEqual([100, null, 30]);
+      const result = await caller.budget.updateItemAmounts({
+        updates: [{ id: batch, colIndex: 2, amount: 40 }],
+      });
+      expect(result).toMatchObject({ updated: 1, skipped: [] });
+      expect(stored(batch)).toEqual([100, null, 40]);
+
+      // Read back: the edited column holds the new value, the one between
+      // stays unreadable ($0, named), never a number.
+      const summary = await caller.budget.computeActiveSummary({
+        profileId: shortProfileId,
+        selectedColumn: 2,
+      });
+      expect(summary.result!.totalMonthly).toBe(70);
+      const middle = await caller.budget.computeActiveSummary({
+        profileId: shortProfileId,
+        selectedColumn: 1,
+      });
+      expect(middle.result!.totalMonthly).toBe(0);
+      expect(middle.result!.warnings).toHaveLength(2);
+
+      // Past the profile's columns is still out of bounds.
+      await expect(
+        caller.budget.updateItemAmount({ id: one, colIndex: 3, amount: 1 }),
+      ).rejects.toThrow("Column index out of bounds");
+      await caller.budget.deleteProfile({ id: shortProfileId });
+    });
+  });
+
   describe("addColumn", () => {
     it("adds a new column to the active profile", async () => {
       const result = await caller.budget.addColumn({ label: "High Spend" });

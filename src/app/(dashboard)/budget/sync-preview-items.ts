@@ -53,7 +53,7 @@ export function pullPreviewItems(
     if (!item.apiCategoryId) continue;
     if (item.apiSyncDirection !== "pull" && item.apiSyncDirection !== "both")
       continue;
-    const colIndex = Math.min(activeColumn, numCols - 1);
+    const colIndex = activeColumn; // as the pull: never another column
     // As the pull: saved amounts with no such column are skipped (named); a
     // value there that isn't a number is replaced (shown as such, not $0).
     const list = storedAmountList(item.amounts);

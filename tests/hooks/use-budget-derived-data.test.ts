@@ -348,6 +348,14 @@ describe("useBudgetDerivedData — pull preview", () => {
     });
   });
 
+  it("previews the pull's own column: one past the items' amounts is skipped, as the pull skips it", () => {
+    setQuery("paycheck.computeSummary", undefined);
+    const { result } = setup(false, [pulled("Rent", "[1200]")]);
+    expect(result.current.buildPullPreviewItems(1)).toEqual([
+      expect.objectContaining({ name: "Rent", unreadable: true }),
+    ]);
+  });
+
   it("category totals count an amount that isn't a number as $0, as the budget total does", () => {
     setQuery("paycheck.computeSummary", undefined);
     const items = [pulled("Snacks", '["abc"]'), pulled("Rent", "[1200]")];

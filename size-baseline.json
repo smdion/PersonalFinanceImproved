@@ -9,7 +9,7 @@
     "src/app/(dashboard)/brokerage/brokerage-year-table-head.tsx": 36,
     "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 283,
     "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 137,
-    "src/app/(dashboard)/budget/budget-content.tsx": 634,
+    "src/app/(dashboard)/budget/budget-content.tsx": 635,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 294,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 924,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 804,
@@ -454,7 +454,7 @@
       "BrokerageGoalsSection": 293
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
-      "BudgetContent": 562
+      "BudgetContent": 563
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
       "useBudgetDerivedData": 229

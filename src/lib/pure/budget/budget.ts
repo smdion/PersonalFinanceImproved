@@ -44,7 +44,11 @@ export function calculateBudget(input: BudgetInput): BudgetResult {
     const amount = budgetItemAmount(item.amounts, col, columns);
     const list = storedAmountList(item.amounts);
     const stored: unknown = list ? list[col] : item.amounts;
-    if (storedBudgetAmount(stored) === null || !list)
+    if (stored === undefined)
+      warnings.push(
+        `${item.category} / ${item.label}: its saved amounts stop before column ${col + 1} (${input.columnLabels[col]}), so it counts as $0 there. Re-enter it on the Budget page.`,
+      );
+    else if (storedBudgetAmount(stored) === null || !list)
       warnings.push(
         `${item.category} / ${item.label}: its saved ${list ? "amount" : "amounts"}, ${JSON.stringify(stored)}, ${list ? "isn't a number" : "aren't a list"}, so it counts as $0. Re-enter it on the Budget page.`,
       );

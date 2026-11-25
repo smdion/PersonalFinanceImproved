@@ -1,6 +1,6 @@
 /**
- * One budget item's amount in one column: every item holds one amount per
- * column, so a short item stops the read; a column outside the list is $0.
+ * One budget item's amount in one column: a column an item stops short of
+ * reads as missing ($0, named); a column outside the list is $0.
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -23,10 +23,10 @@ describe("budgetItemAmount", () => {
     expect(budgetItemAmount([], 0, 0)).toBe(0);
   });
 
-  it("stops at an item short of a column of the list, naming counts only", () => {
-    expect(() => budgetItemAmount([100], 1, 3)).toThrow(
-      "A budget item holds 1 amounts for 3 columns",
-    );
+  it("reads a column an item stops short of as missing: unreadable, counted as $0", () => {
+    expect(readableBudgetItemAmount([100], 1, 3)).toBeNull();
+    expect(budgetItemAmount([100], 1, 3)).toBe(0);
+    expect(budgetItemAmount([100], 0, 3)).toBe(100);
   });
 });
 

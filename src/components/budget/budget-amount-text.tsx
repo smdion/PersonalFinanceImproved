@@ -25,7 +25,11 @@ export function BudgetAmountText({
     return (
       <span
         className="text-amber-600"
-        title={`Saved as ${JSON.stringify(stored)}, ${notAList ? "not a list of amounts" : "not a number"}; counts as $0`}
+        title={
+          stored === undefined
+            ? "No saved amount for this column; counts as $0"
+            : `Saved as ${JSON.stringify(stored)}, ${notAList ? "not a list of amounts" : "not a number"}; counts as $0`
+        }
       >
         ?
       </span>

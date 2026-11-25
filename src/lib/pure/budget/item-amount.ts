@@ -25,22 +25,16 @@ export function storedBudgetAmount(stored: unknown): number | null {
 }
 
 /** An item's monthly amount in column `col` of `columns`, null when its stored
- *  value isn't one (`storedBudgetAmount`). A column outside the list (a removed
- *  column, or none) holds no budget: $0; an item short of a column throws. */
+ *  value isn't one (`storedBudgetAmount`) or is missing (amounts that aren't a
+ *  list, or stop short of `col`). A column outside the list holds no budget: $0. */
 export function readableBudgetItemAmount(
   amounts: readonly number[],
   col: number,
   columns: number,
 ): number | null {
   if (col < 0 || col >= columns) return 0;
-  const list = storedAmountList(amounts);
-  if (list === null) return null; // saved amounts that aren't a list: missing
-  const amount = list[col];
-  if (amount === undefined)
-    throw new Error(
-      `A budget item holds ${amounts.length} amounts for ${columns} columns`,
-    );
-  return storedBudgetAmount(amount);
+  const amount: unknown = storedAmountList(amounts)?.[col];
+  return amount === undefined ? null : storedBudgetAmount(amount);
 }
 
 /** `readableBudgetItemAmount`, a value that isn't a number counted as $0

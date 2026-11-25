@@ -190,6 +190,17 @@ describe("matching budget items and savings goals", () => {
     expect([...usedApiIds].sort()).toEqual(["c1", "c4", "zz"]);
   });
 
+  it("reads an item whose amounts stop short of the linked column as unreadable (the push skips it)", () => {
+    const short = { ...item(1, "Rent", "c1"), amounts: [1400] };
+    const { budgetMatches } = matchBudgetItems(
+      [short],
+      apiCats,
+      { index: 1, of: 2 },
+      normalize,
+    );
+    expect(budgetMatches[0]).toMatchObject({ ledgrAmount: null });
+  });
+
   it("matches savings goals to what the budget items left, and splits the rest by skipped", () => {
     const { usedApiIds } = matchBudgetItems(
       [item(1, "Rent", "c1")],
