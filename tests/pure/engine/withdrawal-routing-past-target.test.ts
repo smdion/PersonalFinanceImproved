@@ -180,7 +180,7 @@ describe("the last-resort pass and the household's caps", () => {
 describe("Roth growth past 59½ ranks as free", () => {
   const account = (ownerBirthYear: number) => ({
     name: "Roth",
-    category: "ira",
+    category: "ira" as const,
     taxType: "taxFree",
     parentCategory: "Retirement",
     ownerBirthYear,

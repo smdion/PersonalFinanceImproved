@@ -137,7 +137,7 @@ export function describeBracketTargetChoice(
 type DiscretionaryCapacityInput = {
   rothBasisCapacity: number;
   /** Withdrawal dollars, not LTCG gains room: adjusted for the brokerage basis ratio
-   *  (see `RankedWithdrawalTiers`). */
+   *  (see `freeDrawCapacities`). */
   brokerageZeroLtcgCapacity: number;
 };
 
@@ -168,14 +168,14 @@ export function describeDiscretionaryCapacityMath(
   }
 
   // Numbers only, no cause: a per-category cap can cut a draw short of capacity.
-  // lint-violation-ok: `source` is WithdrawalTier's cost-ranking kind, not an AccountCategory.
+  // lint-violation-ok: `source` is a `WithdrawalSourceKind`, not an AccountCategory.
   const rothZeroUsedRaw = tierBreakdown
     .filter((t) => t.source === "roth" && t.costRate === 0)
     .reduce((s, t) => s + t.amount, 0);
   // Capped at rothBasisCapacity: a $0-cost Roth entry may be growth in the 0% bracket,
   // so "used" must not exceed the basis.
   const rothZeroUsed = Math.min(rothZeroUsedRaw, rothBasisCapacity);
-  // lint-violation-ok: `source` is WithdrawalTier's kind, not an AccountCategory.
+  // lint-violation-ok: `source` is a `WithdrawalSourceKind`, not an AccountCategory.
   const brokerageZeroUsed = tierBreakdown
     .filter((t) => t.source === "brokerage" && t.costRate === 0)
     .reduce((s, t) => s + t.amount, 0);

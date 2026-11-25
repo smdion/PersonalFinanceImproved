@@ -962,11 +962,11 @@ describe("formatDiscretionaryTierBreakdown", () => {
     expect(result).not.toContain("0.0%");
   });
 
-  it("formats a priced tier's rate as a percentage", () => {
+  it("formats a priced tier's cost as cents of tax per dollar drawn", () => {
     const result = formatDiscretionaryTierBreakdown([
       { source: "brokerage", costRate: 0.188, amount: 3000 },
     ]);
-    expect(result).toContain("18.8%");
+    expect(result).toContain("about 18.8¢ of tax per dollar drawn");
   });
 
   it("joins multiple tiers in draw order with an arrow", () => {
@@ -978,7 +978,7 @@ describe("formatDiscretionaryTierBreakdown", () => {
     const brokerageFreeIdx = result.indexOf("Brokerage (cheapest available");
     const rothFreeIdx = result.indexOf("Roth (cheapest available");
     const brokeragePricedIdx = result.indexOf(
-      "Brokerage (15.0% long-term capital-gains rate)",
+      "Brokerage (about 15¢ of tax per dollar drawn, on its long-term gains)",
     );
     expect(brokerageFreeIdx).toBeGreaterThanOrEqual(0);
     expect(rothFreeIdx).toBeGreaterThan(brokerageFreeIdx);

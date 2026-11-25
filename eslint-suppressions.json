@@ -4253,9 +4253,6 @@
     }
   },
   "src/lib/pure/engine/withdrawal-cost-ranking.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 8
     },
@@ -4263,7 +4260,7 @@
       "count": 1
     },
     "ratchet/no-string-closed-set-field": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": {
@@ -4271,10 +4268,10 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 12
+      "count": 11
     },
     "ratchet/no-unregistered-fallback": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/pure/engine/withdrawal-routing/caps.ts": {

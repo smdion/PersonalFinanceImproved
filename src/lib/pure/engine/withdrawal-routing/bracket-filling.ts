@@ -3,6 +3,7 @@ import type { DecumulationSlot } from "../types/routing";
 import type { ResolvedDecumulationConfig } from "../types/decumulation";
 import type { AccountBalances } from "../../accounts/account-balances.types";
 import { roundToCents } from "../../../utils/math";
+import { drawStart } from "./draw-start";
 import {
   getAllCategories,
   getAccountTypeConfig,
@@ -10,21 +11,33 @@ import {
   categoriesWithTaxPreference,
   tradPreferenceEngineCategories,
 } from "../../../config/account-types";
+import type { AccountCategory } from "../../../config/account-types";
 import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
 } from "../../accounts/account-balance";
-import { rankWithdrawalTiers } from "../withdrawal-cost-ranking";
-import type { WithdrawalSourceKind } from "../withdrawal-cost-ranking";
+import {
+  drawByMarginalCost,
+  freeDrawCapacities,
+} from "../withdrawal-cost-ranking";
+import type { DrawPart, DrawSources } from "../draw-position";
 import { routeWithdrawalsWaterfall } from "./waterfall";
 import { computeBracketTraditionalCap, pastTargetWarning } from "./caps";
 import type { RouteBracketInfo, RouteResult } from "./types";
 
+/** A category's Roth money is drawn `pro_rata` (a designated Roth 401(k)/403(b))
+ *  or `basis_first` (a Roth IRA). */
+type RothRule = "basis_first" | "pro_rata";
+const rothRuleOf = (category: AccountCategory): RothRule =>
+  getAccountTypeConfig(category).rothOrderingRules === "pro_rata"
+    ? "pro_rata"
+    : "basis_first";
+
 /**
  * Bracket-filling routing: fill Traditional up to the `rothBracketTarget` bracket
  * cap in the configured account order, then draw the rest by marginal cost
- * (`rankWithdrawalTiers`). Without brackets or a target, behaves as waterfall.
+ * (`walkDiscretionaryDraw`). Without brackets or a target, behaves as waterfall.
  */
 export function routeWithdrawalsBracketFilling(
   targetWithdrawal: number,
@@ -115,14 +128,15 @@ export function routeWithdrawalsBracketFilling(
 
   // --- Phases 2-4: cost-ranked sources ---
   // Roth growth is ordinary income, so a fixed order can pick the costlier source;
-  // this drains the order rankWithdrawalTiers returns.
+  // this draws the segments walkDiscretionaryDraw returns.
 
-  function drawRothTierCapped(cap: number): void {
+  function drawRothTierCapped(cap: number, rule: RothRule | undefined): void {
     let tierRemaining = Math.min(remaining, cap);
     // Same `phase1Order` as Phase 1: Roth draws come from the same accounts, so
     // the configured order must apply to both.
     for (const category of phase1Order) {
       if (remaining <= 0 || tierRemaining <= 0) break;
+      if (rule && rothRuleOf(category) !== rule) continue;
 
       const accountCap = config.withdrawalAccountCaps[category];
       const catDrawn = categoryWithdrawn.get(category) ?? 0;
@@ -274,10 +288,15 @@ export function routeWithdrawalsBracketFilling(
   }
 
   const categoryRothDrawn = new Map<string, number>();
-  const rothAvailableTotal = categoriesWithTaxPreference().reduce(
-    (s, cat) => s + getRothBalance(balances[cat]),
-    0,
-  );
+  // An untracked pro_rata Roth (no `rothProRata`) is drawn with the rest, as
+  // `rothBasisAvailable` then counts its basis too.
+  const proRataRule = bracketInfo.rothProRata ? "pro_rata" : undefined;
+  const basisFirstRule = proRataRule && "basis_first";
+  const rothTotal = (rule: RothRule | undefined) =>
+    categoriesWithTaxPreference()
+      .filter((category) => !rule || rothRuleOf(category) === rule)
+      .reduce((s, category) => s + getRothBalance(balances[category]), 0);
+  const basisFirstTotal = rothTotal(basisFirstRule);
   const brokerageAvailableTotal = overflowCats.reduce(
     (s, cat) => s + getTotalBalance(balances[cat]),
     0,
@@ -286,10 +305,6 @@ export function routeWithdrawalsBracketFilling(
     (s, cat) => s + getTotalBalance(balances[cat]),
     0,
   );
-
-  // Fixed point: LTCG room depends on ordinary income, which includes the Roth
-  // growth this ranking outputs. Re-rank up to 3 times, refining the floor by the
-  // previous pass's Roth growth draw; bounded to guarantee termination.
 
   // Reserve room up to the conversion's own target (`conversionTarget`), which can
   // differ from the withdrawal target; otherwise `traditionalCap`.
@@ -304,70 +319,49 @@ export function routeWithdrawalsBracketFilling(
   const conversionReservedRoom = bracketInfo.conversionsEnabled
     ? Math.max(0, roundToCents(conversionCap - totalTradWithdrawn))
     : 0;
-  const baseOrdinaryFloor =
-    (bracketInfo.taxableSS ?? 0) + totalTradWithdrawn + conversionReservedRoom;
-  // One base for the seed pass and every refine pass below; only
-  // `ordinaryIncomeFloor` varies between them.
-  const rankingBaseInput = {
-    filingStatus: bracketInfo.filingStatus,
-    taxBrackets: bracketInfo.taxBrackets ?? [],
-    ltcgBrackets: bracketInfo.ltcgBrackets,
-    rothBasisAvailable: bracketInfo.rothBasisAvailable ?? rothAvailableTotal,
-    rothAvailable: rothAvailableTotal,
-    brokerageAvailable: brokerageAvailableTotal,
+  const drawState = {
+    ...drawStart(bracketInfo, totalTradWithdrawn, conversionReservedRoom),
     brokerageBasisRatio: bracketInfo.brokerageBasisRatio ?? 0,
-    hsaAvailable: hsaAvailableTotal,
-    magiBeforeThisDraw: bracketInfo.magiBeforeThisDraw ?? baseOrdinaryFloor,
-    standardDeduction: bracketInfo.standardDeduction,
-    discretionaryWithdrawalOrder: bracketInfo.discretionaryWithdrawalOrder,
   };
-  let impliedRothGrowth = 0;
-  let ranked = rankWithdrawalTiers({
-    ...rankingBaseInput,
-    ordinaryIncomeFloor: baseOrdinaryFloor,
-  });
-  for (let iter = 0; iter < 3; iter++) {
-    let capacitySoFar = 0;
-    let growthTierCapacity = 0;
-    for (const tier of ranked.tiers) {
-      if (tier.source === "roth" && tier.costRate > 0) {
-        growthTierCapacity = Math.max(
-          0,
-          Math.min(remaining - capacitySoFar, tier.capacity),
-        );
-        break;
-      }
-      capacitySoFar += tier.capacity;
-    }
-    if (Math.abs(growthTierCapacity - impliedRothGrowth) < 1) break;
-    impliedRothGrowth = growthTierCapacity;
-    ranked = rankWithdrawalTiers({
-      ...rankingBaseInput,
-      ordinaryIncomeFloor: baseOrdinaryFloor + impliedRothGrowth,
-    });
-  }
-  const tiers = ranked.tiers;
-
-  const tierDrawers: Record<WithdrawalSourceKind, (cap: number) => void> = {
-    roth: drawRothTierCapped,
+  const rothBasis = Math.max(
+    0,
+    Math.min(
+      bracketInfo.rothBasisAvailable ?? basisFirstTotal,
+      basisFirstTotal,
+    ),
+  );
+  const sources: DrawSources = {
+    rothBasis,
+    rothGrowth: Math.max(0, basisFirstTotal - rothBasis),
+    rothProRata: proRataRule ? rothTotal(proRataRule) : 0,
+    brokerage: brokerageAvailableTotal,
+    hsa: hsaAvailableTotal,
+  };
+  const drawers: Record<DrawPart, (cap: number) => void> = {
+    rothBasis: (cap) => drawRothTierCapped(cap, basisFirstRule),
+    rothGrowth: (cap) => drawRothTierCapped(cap, basisFirstRule),
+    rothProRata: (cap) => drawRothTierCapped(cap, proRataRule),
     brokerage: drawBrokerageTierCapped,
     hsa: drawHsaTierCapped,
   };
-  const tierBreakdown: NonNullable<RouteResult["tierBreakdown"]> = [];
-  for (const tier of tiers) {
-    if (remaining <= 0) break;
-    const before = remaining;
-    tierDrawers[tier.source](tier.capacity);
-    const drawn = roundToCents(before - remaining);
-    if (drawn > 0) {
-      tierBreakdown.push({
-        source: tier.source,
-        costRate: tier.costRate,
-        amount: drawn,
-        ...(tier.includesNiit && { includesNiit: true as const }),
-      });
-    }
-  }
+  const tierBreakdown = drawByMarginalCost(
+    drawState,
+    sources,
+    remaining,
+    (segment) => {
+      const before = remaining;
+      drawers[segment.part](segment.amount);
+      return roundToCents(before - remaining);
+    },
+  )
+    .filter((s) => s.drawn > 0)
+    .map((s) => ({
+      source: s.source,
+      costRate: s.marginalCost,
+      amount: s.drawn,
+      ...(s.includesNiit && { includesNiit: true as const }),
+    }));
+  const free = freeDrawCapacities(drawState, sources);
 
   // --- Phase 5: Traditional above the bracket target ---
   // The target orders withdrawals, it doesn't limit spending: Traditional covers
@@ -448,7 +442,7 @@ export function routeWithdrawalsBracketFilling(
     traditionalCap,
     unmetNeed: remaining > 0 ? remaining : undefined,
     tierBreakdown,
-    rothBasisCapacity: ranked.rothBasisCapacity,
-    brokerageZeroLtcgCapacity: ranked.brokerageZeroLtcgCapacity,
+    rothBasisCapacity: free.rothBasisCapacity,
+    brokerageZeroLtcgCapacity: free.brokerageZeroLtcgCapacity,
   };
 }

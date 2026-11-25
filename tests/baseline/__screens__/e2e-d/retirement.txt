@@ -21,8 +21,8 @@ $2,614,038.44
 Range $2,569,648.99 – $2,646,105.58
 Baseline: $2,390,000.00 (fixed returns)
 End Balance
-$4,751,597.70
-Range $3,414,394.14 – $9,801,116.87 in 2072
+$4,751,597.73
+Range $3,414,394.14 – $9,802,276.32 in 2072
 Baseline: $0.00 (fixed returns)
 Coast FIRE?
 Not reachable
@@ -279,7 +279,7 @@ $0.00
 $0.00
 $0.00
 $0.00
-$5,060,100.86
+$5,060,100.88
 1 warning
 2070
 DRAW
@@ -294,7 +294,7 @@ $0.00
 $0.00
 $0.00
 $0.00
-$4,885,782.89
+$4,885,782.91
 1 warning
 2072
 DRAW
@@ -309,7 +309,7 @@ $0.00
 $0.00
 $0.00
 $0.00
-$4,751,597.70
+$4,751,597.73
 1 warning
 Lifetime Tax Paid (Retirement)$56,863.67(2.4% effective)
 How contributions & distributions are projected

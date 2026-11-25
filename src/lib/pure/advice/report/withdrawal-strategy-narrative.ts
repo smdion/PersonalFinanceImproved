@@ -4,7 +4,7 @@
 import type { EngineDecumulationYear } from "@/lib/pure/engine/types/index";
 import type { BracketOptimizerResult } from "@/lib/pure/retirement/withdrawal-bracket-optimizer";
 import type { WithdrawalSourceKind } from "@/lib/pure/engine";
-import { formatPercent, formatCurrency } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
 import type { ReportWithdrawalStrategySection } from "./types";
 import {
   describeBracketTargetChoice,
@@ -17,19 +17,19 @@ const TIER_SOURCE_LABEL: Record<WithdrawalSourceKind, string> = {
   hsa: "HSA",
 };
 
-/** What kind of rate a tier's `costRate` is (Roth basis free; growth and brokerage gains
- *  at the household's rates, +3.8% over the surtax line). `source` can't tell Roth basis
- *  from growth, so a $0-cost Roth entry names both possibilities. */
+/** A tier's `costRate` as tax per dollar withdrawn (Roth basis free; it counts gains
+ *  pushed up, the 3.8% surtax and the benefits made taxable). `source` can't tell Roth
+ *  basis from growth, so a $0-cost Roth entry names both possibilities. */
 function describeTierRate(
   source: WithdrawalSourceKind,
   costRate: number,
   includesNiit: boolean,
 ): string {
-  if (costRate <= 0) {
+  if (roundedCents(costRate) === 0) {
     if (source === "roth") {
       return "cheapest available — already-taxed Roth contributions are always tax-free, or this is Roth growth taxed at your current 0% bracket";
     }
-    // lint-violation-ok: `source` is WithdrawalTier's cost-ranking kind, not
+    // lint-violation-ok: `source` is a `WithdrawalSourceKind`, not
     // an AccountCategory; the strings overlap, so no account-types.ts
     // predicate applies.
     if (source === "brokerage") {
@@ -37,21 +37,26 @@ function describeTierRate(
     }
     return "cheapest available";
   }
+  const cost = `about ${centsPerDollar(costRate)} of tax per dollar drawn`;
   if (source === "roth") {
-    return `Roth growth taxed at your ${formatPercent(costRate, 1)} ordinary income rate (not your tax-free contributions)`;
+    return `${cost}: Roth growth is taxed as income, not your tax-free contributions`;
   }
   // lint-violation-ok: see the "roth"/"brokerage" note above — same
-  // WithdrawalTier source kind, not an AccountCategory.
+  // `WithdrawalSourceKind`, not an AccountCategory.
   if (source === "hsa") {
-    return `taxed at your ${formatPercent(costRate, 1)} ordinary income rate (a non-medical HSA withdrawal)`;
+    return `${cost}: a non-medical HSA withdrawal is taxed as income`;
   }
-  // brokerage — the ranking says which rate it priced
+  // brokerage — the walk says whether it priced the surtax
   // (withdrawal-cost-ranking.ts), so nothing is inferred from the number.
   if (includesNiit) {
-    return `${formatPercent(costRate, 1)} — your long-term capital-gains rate plus the 3.8% Medicare surtax, since this draw crosses that income threshold`;
+    return `${cost}, including the 3.8% Medicare surtax, since this draw crosses that income threshold`;
   }
-  return `${formatPercent(costRate, 1)} long-term capital-gains rate`;
+  return `${cost}, on its long-term gains`;
 }
+
+/** A cost per dollar as cents: 0.188 → "18.8¢", 0.15 → "15¢". */
+const roundedCents = (rate: number) => Number((rate * 100).toFixed(1));
+const centsPerDollar = (rate: number) => `${roundedCents(rate)}¢`;
 
 /**
  * "Why was this account used" for a year's discretionary withdrawals, read straight off

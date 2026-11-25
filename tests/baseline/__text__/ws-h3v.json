@@ -1418,103 +1418,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -1616,103 +1520,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -1814,103 +1622,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -2012,103 +1724,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -2210,103 +1826,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -2408,103 +1928,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -2606,103 +2030,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -2804,103 +2132,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -3002,103 +2234,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -3200,103 +2336,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -3398,103 +2438,7 @@
    "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
-    }
-   ],
-   "hasBudgetOverride": false,
-   "phase": "decumulation",
-   "preWithdrawalAcctBal": {
-    "401k": {
-     "structure": "roth_traditional"
     },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "rmdOverrodeRouting": false,
-   "slots": [
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "brokerage"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "401k"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "hsa"
-    }
-   ],
-   "ssIncomeByPerson": [
-    {
-     "personName": "Jamie"
-    },
-    {
-     "personName": "Pat"
-    }
-   ],
-   "unmetNeedMaterial": false,
-   "withdrawalSized": true
-  },
-  {
-   "acaStatus": "not_checked",
-   "acaSubsidyPreserved": false,
-   "balanceByAccount": {
-    "401k": {
-     "structure": "roth_traditional"
-    },
-    "403b": {
-     "structure": "roth_traditional"
-    },
-    "brokerage": {
-     "structure": "basis_tracking"
-    },
-    "hsa": {
-     "structure": "single_bucket"
-    },
-    "ira": {
-     "structure": "roth_traditional"
-    }
-   },
-   "config": {
-    "avoidPenalizedWithdrawals": true,
-    "discretionaryWithdrawalOrder": "roth_first",
-    "qcdMaximize": false,
-    "rmdExcessHandling": "reinvest",
-    "rmdSmoothingEnabled": false,
-    "rothBracketOverlay": true,
-    "withdrawalOrder": [
-     "401k",
-     "403b",
-     "ira",
-     "brokerage",
-     "hsa"
-    ],
-    "withdrawalRoutingMode": "bracket_filling"
-   },
-   "discretionaryTierBreakdown": [
     {
      "source": "brokerage"
     }
@@ -3595,6 +2539,1155 @@
    },
    "discretionaryTierBreakdown": [
     {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    },
+    {
+     "includesNiit": true,
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    },
+    {
+     "includesNiit": true,
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    },
+    {
+     "includesNiit": true,
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    },
+    {
+     "includesNiit": true,
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    },
+    {
+     "includesNiit": true,
+     "source": "brokerage"
+    }
+   ],
+   "hasBudgetOverride": false,
+   "phase": "decumulation",
+   "preWithdrawalAcctBal": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "rmdOverrodeRouting": false,
+   "slots": [
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "brokerage"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "401k"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "403b"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
+     "category": "hsa"
+    }
+   ],
+   "ssIncomeByPerson": [
+    {
+     "personName": "Jamie"
+    },
+    {
+     "personName": "Pat"
+    }
+   ],
+   "unmetNeedMaterial": false,
+   "withdrawalSized": true
+  },
+  {
+   "acaStatus": "not_checked",
+   "acaSubsidyPreserved": false,
+   "balanceByAccount": {
+    "401k": {
+     "structure": "roth_traditional"
+    },
+    "403b": {
+     "structure": "roth_traditional"
+    },
+    "brokerage": {
+     "structure": "basis_tracking"
+    },
+    "hsa": {
+     "structure": "single_bucket"
+    },
+    "ira": {
+     "structure": "roth_traditional"
+    }
+   },
+   "config": {
+    "avoidPenalizedWithdrawals": true,
+    "discretionaryWithdrawalOrder": "roth_first",
+    "qcdMaximize": false,
+    "rmdExcessHandling": "reinvest",
+    "rmdSmoothingEnabled": false,
+    "rothBracketOverlay": true,
+    "withdrawalOrder": [
+     "401k",
+     "403b",
+     "ira",
+     "brokerage",
+     "hsa"
+    ],
+    "withdrawalRoutingMode": "bracket_filling"
+   },
+   "discretionaryTierBreakdown": [
+    {
+     "source": "brokerage"
+    },
+    {
+     "source": "brokerage"
+    },
+    {
+     "includesNiit": true,
      "source": "brokerage"
     }
    ],

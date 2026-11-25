@@ -1,7 +1,7 @@
 /** Routing's bracket input and the result every mode returns. */
 import type { DecumulationSlot } from "../types/routing";
 import type { WithholdingBracket } from "../tax-estimation";
-import type { WithdrawalSourceKind } from "../withdrawal-cost-ranking";
+import type { WithdrawalSourceKind } from "../draw-position";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 export interface RouteBracketInfo {
@@ -54,16 +54,16 @@ export type RouteResult = {
    *  `unmetNeed`: `min(unmetNeed, nonRetirement.grandTotal)`. */
   nonRetirementShortfall?: number;
   /** bracket_filling only: drawn tiers (amount > 0) beyond the Traditional
-   *  target, in draw order at their cost, straight from `rankWithdrawalTiers`.
+   *  target, in draw order at their cost: `walkDiscretionaryDraw`'s segments.
    *  Feeds the "why was this account used" explanation. */
   tierBreakdown?: {
     source: WithdrawalSourceKind;
     costRate: number;
     amount: number;
-    /** See WithdrawalTier.includesNiit. */
+    /** See `DrawSegment.includesNiit`. */
     includesNiit?: true;
   }[];
-  /** Both free tiers' capacity before any draw, from `rankWithdrawalTiers`, so
+  /** Both free tiers' capacity before any draw, from `freeDrawCapacities`, so
    *  room the year never reached still shows. bracket_filling only, like
    *  `tierBreakdown`. */
   rothBasisCapacity?: number;

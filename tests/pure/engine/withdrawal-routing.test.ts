@@ -18,6 +18,8 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import type { AccountBalances } from "@/lib/pure/accounts/account-balances.types";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import { shippedTaxTables } from "../../helpers/tax-data";
+import { acct, household } from "../fixtures/two-person-household";
+import { runOneYear } from "../../fixtures/answer-key";
 
 /** Read only with a filing status; these tests mostly route without one. */
 const LTCG = shippedTaxTables().ltcgBrackets;
@@ -759,6 +761,47 @@ describe("routeWithdrawalsBracketFilling", () => {
     expect(rothSlot?.rothWithdrawal ?? 0).toBe(0);
   });
 
+  it("draws a pro_rata Roth 401(k) at its taxable share before Roth IRA growth", () => {
+    // 40% of a Roth 401(k) dollar is taxed growth (4.8% in the 12% bracket);
+    // every Roth IRA dollar is growth (12%).
+    const balances = makeAccountBalances({
+      preTax: 0,
+      taxFree: 0,
+      afterTax: 0,
+      afterTaxBasis: 0,
+      hsa: 0,
+    });
+    balances["401k"] = {
+      structure: "roth_traditional",
+      traditional: 0,
+      roth: 100000,
+    };
+    balances.ira = {
+      structure: "roth_traditional",
+      traditional: 0,
+      roth: 100000,
+    };
+    const result = routeWithdrawalsBracketFilling(
+      10000,
+      makeDecumulationConfig(),
+      balances,
+      {
+        taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
+        rothBracketTarget: 0.12,
+        taxableSS: 50000,
+        filingStatus: "MFJ",
+        rothBasisAvailable: 0,
+        rothProRata: { balance: 100000, basis: 60000, qualifiedBalance: 0 },
+      },
+    );
+    expect(slotFor(result.slots, "401k")!.rothWithdrawal).toBe(10000);
+    expect(slotFor(result.slots, "ira")!.rothWithdrawal).toBe(0);
+    expect(result.tierBreakdown).toEqual([
+      { source: "roth", costRate: expect.closeTo(0.048, 9), amount: 10000 },
+    ]);
+  });
+
   it("draws brokerage instead of Roth once real ordinary income is high enough that Roth's REAL bracket rate exceeds LTCG (advisor review, 2026-08-29)", () => {
     // Before the fix, Roth growth was priced off `rothBracketTarget`
     // (here 0.1, "next bracket up is 12%") regardless of the household's
@@ -877,19 +920,13 @@ describe("routeWithdrawalsBracketFilling", () => {
     // A materially lower real conversion target.
     const withLowerTarget = routeWith(0.1);
 
-    const controlRoth =
-      slotFor(control.slots, "401k")?.rothWithdrawal ??
-      slotFor(control.slots, "ira")?.rothWithdrawal ??
-      0;
-    const lowerTargetRoth =
-      slotFor(withLowerTarget.slots, "401k")?.rothWithdrawal ??
-      slotFor(withLowerTarget.slots, "ira")?.rothWithdrawal ??
-      0;
+    const rothCost = (r: typeof control) =>
+      r.tierBreakdown?.find((t) => t.source === "roth")?.costRate;
 
-    expect(lowerTargetRoth).not.toBe(controlRoth);
     // Lower reserved room -> lower ordinary-income floor -> Roth growth
-    // priced cheaper -> the ranking draws MORE from Roth, not less.
-    expect(lowerTargetRoth).toBeGreaterThan(controlRoth);
+    // priced at the 12% bracket it now lands in, not the 35% one.
+    expect(rothCost(control)).toBe(0.35);
+    expect(rothCost(withLowerTarget)).toBe(0.12);
   });
 
   it("omitting conversionTarget reproduces the exact same output as before this field existed (no regression for existing callers)", () => {
@@ -1723,5 +1760,75 @@ describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposur
     );
     expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
     expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(20000);
+  });
+});
+
+describe("a Roth 401(k) under 59½, reached through Rule of 55", () => {
+  it("is drawn past the Traditional cap at its taxed-growth share of the ordinary rate", () => {
+    // Ann is 57 and separated in 2025. Her Roth 401(k) holds 200,000 with
+    // 120,000 of basis, so 40% of a dollar is taxed growth. Traditional fills
+    // the 12% bracket; past it each Roth 401(k) dollar costs 40% × 22%.
+    const roth401k = {
+      ...acct("Ann Roth 401k", "401k", 200_000, 1, "taxFree"),
+      ruleOf55: {
+        eligible: true,
+        separationYear: 2025,
+        source: "explicit" as const,
+        knownFutureSeparationYear: null,
+      },
+      rothBasisMeta: {
+        year: 2026,
+        contributionBasis: 120_000,
+        conversionBasis: 0,
+        latestConversionYear: null,
+        isSeeded: true,
+        updatedAt: new Date(2026, 0, 1),
+      },
+    };
+    const born = (personId: number) => ({
+      personId,
+      personName: personId === 1 ? "Ann" : "Bo",
+      birthYear: 1969,
+      startAge: 70,
+      annualAmount: 0,
+    });
+    const row = runOneYear(
+      household(
+        [
+          {
+            ...acct("Ann Traditional 401k", "401k", 300_000, 1),
+            ruleOf55: roth401k.ruleOf55,
+          },
+          roth401k,
+        ],
+        {
+          currentAge: 57,
+          birthYear: 1969,
+          perPersonBirthYears: [1969, 1969],
+          socialSecurityEntries: [born(1), born(2)],
+          annualExpenses: 200_000,
+          decumulationAnnualExpenses: 200_000,
+        },
+        {
+          withdrawalRoutingMode: "bracket_filling",
+          distributionTaxRates: {
+            rothBracketOverlay: true,
+            ...shippedTaxTables(),
+            traditionalFallbackRate: 0.22,
+            roth: 0,
+            hsa: 0,
+            brokerage: 0.15,
+            rothBracketTarget: 0.12,
+            taxBrackets: TEST_BRACKETS,
+          },
+        },
+      ),
+    );
+    if (row.phase !== "decumulation") throw new Error("the year isn't retired");
+    const roth = (row.discretionaryTierBreakdown ?? []).filter(
+      (t) => t.source === "roth",
+    );
+    expect(roth.length).toBeGreaterThan(0);
+    for (const tier of roth) expect(tier.costRate).toBeCloseTo(0.4 * 0.22, 6);
   });
 });

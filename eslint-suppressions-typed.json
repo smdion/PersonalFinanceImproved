@@ -226,7 +226,7 @@
   },
   "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/pure/sync/budget-preview.ts": {

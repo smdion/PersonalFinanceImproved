@@ -1,27 +1,40 @@
 /**
- * Ranks withdrawal sources beyond the Traditional bracket cap by marginal cost:
- * free tiers (Roth basis, brokerage 0%-LTCG room) first, then Roth growth vs priced
- * brokerage vs HSA. Single-year only: no IRMAA, no look-ahead to brackets or RMDs.
+ * Draws the sources beyond the Traditional bracket cap by marginal cost: each dollar
+ * from the source whose next dollar costs least in ordinary tax, gains tax, NIIT and
+ * the benefits it makes taxable. No IRMAA, no look-ahead to later years.
  */
 import { isQualifiedRothOwner } from "@/lib/pure/tax/roth-distribution-tax";
 import type { TaxBuckets } from "../accounts/account-balances.types";
-import { marginalRateAtIncome } from "./tax-estimation";
-import type { WithholdingBracket } from "./tax-estimation";
+import { ltcgBracketAt, ltcgStackBase } from "@/lib/pure/tax/ltcg";
 import {
-  ltcgRoomForRate,
-  ltcgRateForNextDollar,
-  ltcgStackBase,
-} from "@/lib/pure/tax/ltcg";
-import { isRetirementMoney, isTaxFreeBucket } from "../../config/account-types";
+  getAccountTypeConfig,
+  isRetirementMoney,
+  isTaxFreeBucket,
+} from "../../config/account-types";
+import type { AccountCategory } from "../../config/account-types";
 import { NIIT_RATE, niitThresholdFor } from "../../config/niit";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
-import type { ReturnFilingStatus } from "@/lib/config/filing-status";
-
-export type WithdrawalSourceKind = "roth" | "brokerage" | "hsa";
+import {
+  advance,
+  cents,
+  dollarMove,
+  drawsGains,
+  gainShareOf,
+  gainsTaxBothWays,
+  gap,
+  ordinaryBracketAt,
+  socialSecurityInclusionAt,
+} from "./draw-position";
+import type {
+  DrawPart,
+  DrawSources,
+  DrawState,
+  WithdrawalSourceKind,
+} from "./draw-position";
 
 /**
- * Derives `rothBasisAvailable`/`brokerageBasisRatio` once for both the real year
+ * Derives the Roth and brokerage ranking inputs once for both the real year
  * (decumulation-year.ts) and the solver's estimate, so they match (docs/RULES.md
  * single computation path). `magiBeforeThisDraw` is left to the router's floor.
  */
@@ -36,7 +49,7 @@ export function deriveBasisRankingInputs(params: {
    *  depends on `avoidPenalizedWithdrawals`, which neither call site has. */
   indAccounts?: {
     name: string;
-    category: string;
+    category: AccountCategory;
     taxType: string;
     ownerPersonId?: number;
     ownerBirthYear?: number;
@@ -47,23 +60,45 @@ export function deriveBasisRankingInputs(params: {
    *  growth past 59½ costs no more than basis does. */
   indBalance?: ReadonlyMap<string, number>;
   year?: number;
-}): { rothBasisAvailable: number | undefined; brokerageBasisRatio: number } {
+}): {
+  /** The `basis_first` (Roth IRA) money a draw takes tax-free. */
+  rothBasisAvailable: number | undefined;
+  rothProRata: RothProRataHoldings | undefined;
+  brokerageBasisRatio: number;
+} {
   const { balances, indBasis, indAccounts, indKey, indBalance, year } = params;
   let rothBasisAvailable: number | undefined;
+  let rothProRata: RothProRataHoldings | undefined;
   if (indBasis) {
     if (indAccounts && indKey) {
-      rothBasisAvailable = indAccounts.reduce((s, ia) => {
-        if (!isTaxFreeBucket(ia.taxType)) return s;
-        if (!isRetirementMoney(ia.parentCategory)) return s;
-        if (
-          indBalance &&
+      const proRata = { balance: 0, basis: 0, qualifiedBalance: 0 };
+      rothBasisAvailable = indAccounts.reduce((s, account) => {
+        if (!isTaxFreeBucket(account.taxType)) return s;
+        if (!isRetirementMoney(account.parentCategory)) return s;
+        const balance = Math.max(0, indBalance?.get(indKey(account)) ?? 0);
+        const state = indBasis.get(indKey(account));
+        const qualified =
+          indBalance !== undefined &&
           year !== undefined &&
-          isQualifiedRothOwner(ia.ownerBirthYear, year)
-        )
-          return s + Math.max(0, indBalance.get(indKey(ia)) ?? 0);
-        const state = indBasis.get(indKey(ia));
-        return state ? s + state.contributionBasis + state.conversionBasis : s;
+          isQualifiedRothOwner(account.ownerBirthYear, year);
+        const { rothOrderingRules } = getAccountTypeConfig(account.category);
+        // Without balances a pro_rata Roth can't be split: its basis counts here.
+        if (rothOrderingRules !== "pro_rata" || !indBalance) {
+          if (qualified) return s + balance;
+          return state
+            ? s + state.contributionBasis + state.conversionBasis
+            : s;
+        }
+        proRata.balance += balance;
+        if (qualified) proRata.qualifiedBalance += balance;
+        else if (state)
+          proRata.basis += Math.min(
+            balance,
+            state.contributionBasis + state.conversionBasis,
+          );
+        return s;
       }, 0);
+      if (indBalance) rothProRata = proRata;
     } else {
       rothBasisAvailable = Array.from(indBasis.values()).reduce(
         (s, state) => s + state.contributionBasis + state.conversionBasis,
@@ -76,290 +111,238 @@ export function deriveBasisRankingInputs(params: {
     params.brokerageBasisRatio ??
       (balances.afterTax > 0 ? balances.afterTaxBasis / balances.afterTax : 0),
   );
-  return { rothBasisAvailable, brokerageBasisRatio };
+  return { rothBasisAvailable, rothProRata, brokerageBasisRatio };
 }
 
-export type WithdrawalTier = {
+/** A `pro_rata` Roth's holdings: every draw is part basis, part growth. */
+export type RothProRataHoldings = {
+  balance: number;
+  /** Contribution and conversion basis of the accounts whose owner isn't qualified. */
+  basis: number;
+  /** The balance of qualified owners' accounts, whose growth is tax-free too. */
+  qualifiedBalance: number;
+};
+
+/** One stretch of the draw at one marginal cost per dollar withdrawn. */
+export type DrawSegment = {
   source: WithdrawalSourceKind;
-  /** Marginal cost rate for a dollar in this tier (0 = free). Informational
-   *  — actual tax/penalty pricing is always `computeTaxFromSlots`'s job;
-   *  this is what the ranking used to ORDER tiers, not a price to charge. */
-  costRate: number;
-  /** Max $ in this tier at its stated cost. `Infinity` when no bracket or basis
-   *  limit bounds it (the caller still clamps to account balances). */
-  capacity: number;
-  /** Brokerage beyond the Medicare surtax threshold: `costRate` is the
-   *  capital-gains rate plus NIIT. */
+  part: DrawPart;
+  amount: number;
+  /** Tax per dollar withdrawn: ordinary, gains pushed up or taxed, NIIT, and
+   *  the benefits the dollar makes taxable. */
+  marginalCost: number;
+  /** `marginalCost` includes the 3.8% NIIT. */
   includesNiit?: true;
 };
 
-export interface RankWithdrawalTiersInput {
-  filingStatus: ReturnFilingStatus | null | undefined;
-  /** Gross ordinary income already in the bracket stack (Traditional draws +
-   *  taxable SS + conversion-reserved room): the LTCG-stacking floor and the
-   *  point Roth growth's marginal rate is read at. */
-  ordinaryIncomeFloor: number;
-  taxBrackets: WithholdingBracket[];
-  ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
-  /** Free Roth room (basis) in the accounts routing draws from. Without
-   *  individual-account tracking, pass `rothAvailable` (all basis), which
-   *  gives the fixed "Roth is free" order. */
-  rothBasisAvailable: number;
-  /** Total Roth balance available to route from (basis + growth). */
-  rothAvailable: number;
-  brokerageAvailable: number;
-  /** `afterTaxBasis / afterTax`, 0..1 — fraction of a brokerage withdrawal
-   *  that's a tax-free return of basis rather than a taxable gain. */
-  brokerageBasisRatio: number;
-  hsaAvailable: number;
-  /** MAGI before any gains/growth this ranking realizes — for the NIIT
-   *  headroom check on the brokerage/Roth-growth tier. IRMAA is NOT
-   *  modeled here (explicitly out of scope — see module docblock). */
-  magiBeforeThisDraw: number;
-  /** Household's annual standard deduction: converts `ordinaryIncomeFloor`
-   *  (gross) to the taxable income LTCG brackets use (`ltcgStackBase`);
-   *  undefined subtracts nothing. */
-  standardDeduction?: number;
-  /** Which free tier drains first: Roth basis or brokerage's 0%-LTCG room. Only
-   *  the free/free tie-break; priced tiers stay cost-ranked. Undefined ⇒ roth_first;
-   *  brokerage_first is an opt-in, since 0% LTCG gains still count toward MAGI. */
-  discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
+const PART_SOURCE: Record<DrawPart, WithdrawalSourceKind> = {
+  rothBasis: "roth",
+  rothGrowth: "roth",
+  rothProRata: "roth",
+  brokerage: "brokerage",
+  hsa: "hsa",
+};
+/** Equal costs: the free sources by the household's order, else Roth growth,
+ *  the pro_rata Roth, brokerage, then HSA. */
+const FREE_ORDER = {
+  roth_first: ["rothBasis", "rothProRata", "brokerage", "rothGrowth", "hsa"],
+  brokerage_first: [
+    "brokerage",
+    "rothBasis",
+    "rothProRata",
+    "rothGrowth",
+    "hsa",
+  ],
+} satisfies Record<string, DrawPart[]>;
+const PRICED: DrawPart[] = [
+  "rothBasis",
+  "rothGrowth",
+  "rothProRata",
+  "brokerage",
+  "hsa",
+];
+
+const reachAt = (distance: number, rate: number) =>
+  rate > 0 ? distance / rate : Infinity;
+
+/** `part`'s cost for its next dollar at `at`, and how far it can be drawn
+ *  before the cost changes. No filing status: brokerage at its gain share of
+ *  the ordinary rate, unbounded (the walk draws it last). */
+function priceAt(at: DrawState, part: DrawPart) {
+  const inclusion = socialSecurityInclusionAt(at);
+  const move = dollarMove(at, part, inclusion.rate);
+  if (move.ordinary === 0 && move.gains === 0)
+    return { cost: 0, includesNiit: false, reach: Infinity };
+  const { filingStatus, ltcgBrackets, standardDeduction: deduction } = at;
+  const { ordinaryIncome: o, gains: g, magi: m } = at;
+  const ordinary = ordinaryBracketAt(o, at);
+  let reach = reachAt(gap(ordinary.top, o), move.ordinary);
+  if (!filingStatus) {
+    const cost = drawsGains(part)
+      ? gainShareOf(at) * ordinary.rate
+      : move.ordinary * ordinary.rate;
+    if (drawsGains(part)) reach = Infinity;
+    return { cost, includesNiit: false, reach };
+  }
+  const { ordinaryTaxable: taxable, unusedDeduction: unused } = ltcgStackBase(
+    o,
+    deduction,
+  );
+  const top = taxable + Math.max(0, g - unused);
+  const topBracket = ltcgBracketAt(top, filingStatus, ltcgBrackets);
+  const bottom = ltcgBracketAt(taxable, filingStatus, ltcgBrackets);
+  const inDeduction = deduction !== undefined && cents(o) < cents(deduction);
+  const gainsTaxed = cents(g) > cents(unused);
+  const excess = m - niitThresholdFor(filingStatus);
+  const niitOn = cents(excess) >= 0;
+  const magiBinds = niitOn && cents(excess) < cents(g);
+  const pushed = gainsTaxed
+    ? topBracket.rate - (inDeduction ? 0 : bottom.rate)
+    : 0;
+  const gainsRate = cents(g) >= cents(unused) ? topBracket.rate : 0;
+  const niit = niitOn ? NIIT_RATE * (magiBinds ? move.magi : move.gains) : 0;
+  // The gains' top rises with ordinary income and gains alike.
+  const rise = move.ordinary + move.gains;
+  if (inDeduction)
+    reach = Math.min(reach, reachAt(gap(deduction, o), move.ordinary));
+  if (cents(g) < cents(unused))
+    reach = Math.min(reach, reachAt(gap(unused, g), rise));
+  else reach = Math.min(reach, reachAt(gap(topBracket.top, top), rise));
+  if (!inDeduction)
+    reach = Math.min(reach, reachAt(gap(bottom.top, taxable), move.ordinary));
+  if (!niitOn) reach = Math.min(reach, reachAt(-gap(excess, 0), move.magi));
+  else if (magiBinds)
+    reach = Math.min(reach, reachAt(gap(g, excess), move.magi - move.gains));
+  reach = Math.min(reach, reachAt(inclusion.room, move.provisional));
+  // Line 25: gains taxed as ordinary income when that costs less. `spread`
+  // (cents) falls at `closing` per dollar until the two ways cross.
+  const above = ordinaryBracketAt(o + g, at);
+  const asOrdinary = move.ordinary * (above.rate - ordinary.rate);
+  const slopeAsOrdinary = asOrdinary + move.gains * above.rate;
+  const stackedSlope = move.ordinary * pushed + move.gains * gainsRate;
+  const both = gainsTaxBothWays(at, filingStatus);
+  const spread = cents(both.stacked - both.asOrdinary);
+  const capped = spread > 0 || (spread === 0 && slopeAsOrdinary < stackedSlope);
+  const closing = capped
+    ? slopeAsOrdinary - stackedSlope
+    : stackedSlope - slopeAsOrdinary;
+  reach = Math.min(reach, reachAt(Math.abs(spread) / 100, closing));
+  if (capped) reach = Math.min(reach, reachAt(gap(above.top, o + g), rise));
+  const cost = capped
+    ? move.ordinary * ordinary.rate + slopeAsOrdinary + niit
+    : move.ordinary * (ordinary.rate + pushed) + move.gains * gainsRate + niit;
+  return { cost, includesNiit: niit > 0, reach };
 }
 
-/**
- * Draw-ordered `tiers` plus both free tiers' capacities before any draw, so
- * callers can show free room the year never reached. Capacities are 0, not
- * omitted, when there is none.
- */
-type RankedWithdrawalTiers = {
-  tiers: WithdrawalTier[];
-  /** Roth basis capacity — always tax-free, independent of bracket. */
-  rothBasisCapacity: number;
-  /** Brokerage's 0%-LTCG capacity in withdrawal dollars (gains room scaled up by
-   *  `brokerageBasisRatio`), not the gains room itself. 0 without a filing
-   *  status. */
-  brokerageZeroLtcgCapacity: number;
-};
-
-/**
- * Ranks the post-Traditional-cap sources cheapest-first, in draw order. Each
- * tier's `capacity` is clamped to its source's balance for the slice priced at
- * that rate (brokerage tiers in withdrawal dollars).
- */
-export function rankWithdrawalTiers(
-  input: RankWithdrawalTiersInput,
-): RankedWithdrawalTiers {
-  const {
-    filingStatus,
-    ordinaryIncomeFloor,
-    taxBrackets,
-    ltcgBrackets,
-    rothBasisAvailable,
-    rothAvailable,
-    brokerageAvailable,
-    brokerageBasisRatio,
-    hsaAvailable,
-    magiBeforeThisDraw,
-    standardDeduction,
-    discretionaryWithdrawalOrder,
-  } = input;
-
-  const brokerageFirst = discretionaryWithdrawalOrder === "brokerage_first";
-
-  // Roth basis — free. Capacity only; NOT pushed into `tiers` yet, since
-  // where it lands depends on `discretionaryWithdrawalOrder` (assembled at
-  // the bottom of this function).
-  const rothBasisCapacity = Math.max(
-    0,
-    Math.min(rothBasisAvailable, rothAvailable),
-  );
-  const rothBasisTier: WithdrawalTier | undefined =
-    rothBasisCapacity > 0
-      ? { source: "roth", costRate: 0, capacity: rothBasisCapacity }
-      : undefined;
-  const rothGrowthAvailable = Math.max(0, rothAvailable - rothBasisCapacity);
-
-  if (!filingStatus) {
-    // No filing status ⇒ no LTCG bracket or NIIT threshold (both keyed by it):
-    // brokerage gets flat-fallback pricing. Roth growth and HSA (already
-    // penalty-excluded here) stack as ordinary income on the same floor.
-    const ordinaryRate = marginalRateAtIncome(
-      ordinaryIncomeFloor,
-      taxBrackets,
-      standardDeduction,
-    );
-    const rothGrowthTier: WithdrawalTier | undefined =
-      rothGrowthAvailable > 0
-        ? {
-            source: "roth",
-            costRate: ordinaryRate,
-            capacity: rothGrowthAvailable,
-          }
-        : undefined;
-    const hsaTier: WithdrawalTier | undefined =
-      hsaAvailable > 0
-        ? { source: "hsa", costRate: ordinaryRate, capacity: hsaAvailable }
-        : undefined;
-    const brokerageTier: WithdrawalTier | undefined =
-      brokerageAvailable > 0
-        ? {
-            source: "brokerage",
-            costRate: Infinity, // priced by caller's flat fallback, not this module
-            capacity: brokerageAvailable,
-          }
-        : undefined;
-    const rothTiers = [rothBasisTier, rothGrowthTier].filter(
-      (t): t is WithdrawalTier => t != null,
-    );
-    const brokerageTiers = [brokerageTier].filter(
-      (t): t is WithdrawalTier => t != null,
-    );
-    // No brokerage 0% tier to reorder against, so `discretionaryWithdrawalOrder`
-    // has nothing to act on: fixed order roth, hsa, then flat-fallback brokerage.
-    return {
-      tiers: [...rothTiers, ...(hsaTier ? [hsaTier] : []), ...brokerageTiers],
-      rothBasisCapacity,
-      brokerageZeroLtcgCapacity: 0,
-    };
+/** Draws `need` from the source whose next dollar costs least, to the next cost
+ *  change (an edge, the deduction, NIIT, a Social Security zone), a source's end
+ *  or the need; with no reach left it stops. No filing status: brokerage last. */
+export function walkDiscretionaryDraw(
+  state: DrawState,
+  sources: DrawSources,
+  need: number,
+): DrawSegment[] {
+  const left = { ...sources };
+  const at = { ...state };
+  const freeOrder =
+    FREE_ORDER[state.discretionaryWithdrawalOrder ?? "roth_first"];
+  const segments: DrawSegment[] = [];
+  let rest = need;
+  for (let step = 0; cents(rest) > 0 && step <= 10_000; step++) {
+    const open = PRICED.filter((p) => cents(left[p]) > 0);
+    if (open.length === 0) break;
+    const prices = new Map(open.map((p) => [p, priceAt(at, p)]));
+    const priceOf = (p: DrawPart) => prices.get(p)!;
+    const last = !state.filingStatus && open.length > 1;
+    const rank = (p: DrawPart) =>
+      last && drawsGains(p) ? Infinity : priceOf(p).cost;
+    const part = open.reduce((best, p) => {
+      const d = rank(p) - rank(best);
+      if (Math.abs(d) > 1e-12) return d < 0 ? p : best;
+      const order = priceOf(p).cost <= 1e-12 ? freeOrder : PRICED;
+      return order.indexOf(p) < order.indexOf(best) ? p : best;
+    });
+    const { cost: marginalCost, includesNiit, reach } = priceOf(part);
+    if (!(reach > 0)) break;
+    const amount = Math.min(left[part], rest, reach);
+    const prev = segments.at(-1);
+    if (
+      prev?.part === part &&
+      prev.marginalCost === marginalCost &&
+      !!prev.includesNiit === includesNiit
+    )
+      prev.amount += amount;
+    else
+      segments.push({
+        source: PART_SOURCE[part],
+        part,
+        amount,
+        marginalCost,
+        ...(includesNiit && { includesNiit: true as const }),
+      });
+    left[part] -= amount;
+    rest -= amount;
+    advance(at, part, amount);
   }
+  return segments;
+}
 
-  // Brokerage 0%-LTCG room is free: the deduction ordinary income leaves unused,
-  // then the 0% band above the ordinary taxable income. Gains room converts to
-  // withdrawal room via the basis ratio.
-  const stackBase = ltcgStackBase(ordinaryIncomeFloor, standardDeduction);
-  const zeroBandRoom = ltcgRoomForRate(
-    0,
-    stackBase.ordinaryTaxable,
-    filingStatus,
-    ltcgBrackets,
-  );
-  const zeroGainsRoom = stackBase.unusedDeduction + zeroBandRoom;
-  const zeroWithdrawalRoom =
-    brokerageBasisRatio < 1
-      ? zeroGainsRoom / (1 - brokerageBasisRatio)
-      : Infinity;
-  const brokerageZeroCapacity = Math.max(
-    0,
-    Math.min(brokerageAvailable, zeroWithdrawalRoom),
-  );
-  const brokerageZeroTier: WithdrawalTier | undefined =
-    brokerageZeroCapacity > 0
-      ? { source: "brokerage", costRate: 0, capacity: brokerageZeroCapacity }
-      : undefined;
-  const brokerageRemaining = Math.max(
-    0,
-    brokerageAvailable - brokerageZeroCapacity,
-  );
-
-  // Roth/HSA price at the bracket income actually sits in, not the one above the
-  // fill target: Traditional can run out below the target, and the target rate
-  // would then overprice Roth/HSA against brokerage.
-  const rothGrowthRate = marginalRateAtIncome(
-    ordinaryIncomeFloor,
-    taxBrackets,
-    standardDeduction,
-  );
-  // HSA reaching this ranking is already penalty-excluded, so it prices like Roth
-  // growth. With penalty avoidance off, exposed HSA may rank sub-optimally; the
-  // penalty itself is still charged by computeEarlyWithdrawalPenalty.
-  const hsaRate = rothGrowthRate;
-
-  // `ordinaryTaxable + zeroBandRoom` sits exactly on the 0% ceiling, where
-  // `getLtcgRate` (a dollar at the ceiling) says 0%. This tier starts past
-  // it, so it's priced at the next dollar's rate.
-  const ltcgRate = ltcgRateForNextDollar(
-    stackBase.ordinaryTaxable + zeroBandRoom,
-    filingStatus,
-    ltcgBrackets,
-  );
-  // NIIT is 3.8% on the lesser of investment income or MAGI over the threshold,
-  // so split brokerage's capacity where this tier's own gains cross it: only the
-  // post-threshold slice carries the +3.8%.
-  const niitThreshold = niitThresholdFor(filingStatus);
-  // `magiBeforeThisDraw` predates the 0%-LTCG tier drawn ahead of this one; its
-  // gains (not basis) raise MAGI, so net them out of the NIIT headroom. Ordering
-  // only: computeNiit prices the real charge downstream.
-  const zeroTierGainsPortion =
-    brokerageZeroCapacity * (1 - brokerageBasisRatio);
-  const magiHeadroomForNiit = Math.max(
-    0,
-    niitThreshold - magiBeforeThisDraw - zeroTierGainsPortion,
-  );
-  const preNiitWithdrawalRoom =
-    brokerageBasisRatio < 1
-      ? magiHeadroomForNiit / (1 - brokerageBasisRatio)
-      : Infinity;
-  const brokeragePreNiitCapacity = Math.max(
-    0,
-    Math.min(brokerageRemaining, preNiitWithdrawalRoom),
-  );
-  const brokeragePostNiitCapacity = Math.max(
-    0,
-    brokerageRemaining - brokeragePreNiitCapacity,
-  );
-
-  const rothGrowthTier: WithdrawalTier | undefined =
-    rothGrowthAvailable > 0
-      ? {
-          source: "roth",
-          costRate: rothGrowthRate,
-          capacity: rothGrowthAvailable,
-        }
-      : undefined;
-  const brokeragePreNiitTier: WithdrawalTier | undefined =
-    brokeragePreNiitCapacity > 0
-      ? {
-          source: "brokerage",
-          costRate: ltcgRate,
-          capacity: brokeragePreNiitCapacity,
-        }
-      : undefined;
-  const brokeragePostNiitTier: WithdrawalTier | undefined =
-    brokeragePostNiitCapacity > 0
-      ? {
-          source: "brokerage",
-          costRate: ltcgRate + NIIT_RATE,
-          capacity: brokeragePostNiitCapacity,
-          includesNiit: true,
-        }
-      : undefined;
-  const hsaTier: WithdrawalTier | undefined =
-    hsaAvailable > 0
-      ? { source: "hsa", costRate: hsaRate, capacity: hsaAvailable }
-      : undefined;
-
-  // Tier 2: Roth growth, brokerage at its LTCG+NIIT rate and HSA, ranked by cost;
-  // `discretionaryWithdrawalOrder` does not apply here.
-  const priced = [
-    rothGrowthTier,
-    brokeragePreNiitTier,
-    brokeragePostNiitTier,
-    hsaTier,
-  ]
-    .filter((t): t is WithdrawalTier => t != null)
-    // Stable sort (guaranteed by the spec since ES2019) — ties keep their
-    // filter order above (roth, brokerage-pre-NIIT, brokerage-post-NIIT,
-    // hsa), so a tie favors Roth.
-    .sort((a, b) => a.costRate - b.costRate);
-
-  // Tiers 0/1: both free — Roth basis and brokerage's 0%-LTCG room.
-  // `discretionaryWithdrawalOrder` only controls which of these two goes
-  // first; the priced tier above is unaffected.
-  const tiers = brokerageFirst
-    ? [
-        ...(brokerageZeroTier ? [brokerageZeroTier] : []),
-        ...(rothBasisTier ? [rothBasisTier] : []),
-        ...priced,
-      ]
-    : [
-        ...(rothBasisTier ? [rothBasisTier] : []),
-        ...(brokerageZeroTier ? [brokerageZeroTier] : []),
-        ...priced,
-      ];
-
+/** Free capacity before any draw, so callers show room the year never reached:
+ *  Roth basis (with an untaxed pro_rata Roth), and brokerage withdrawals whose gains
+ *  fit in the unused deduction and the 0% bracket (0 without a filing status). */
+export function freeDrawCapacities(
+  state: DrawState,
+  sources: DrawSources,
+): { rothBasisCapacity: number; brokerageZeroLtcgCapacity: number } {
+  const rothBasisCapacity =
+    sources.rothBasis +
+    (state.rothProRataTaxableShare > 0 ? 0 : sources.rothProRata);
+  if (!state.filingStatus)
+    return { rothBasisCapacity, brokerageZeroLtcgCapacity: 0 };
+  const stack = ltcgStackBase(state.ordinaryIncome, state.standardDeduction);
+  const taxable = stack.ordinaryTaxable;
+  const zero = ltcgBracketAt(taxable, state.filingStatus, state.ltcgBrackets);
+  const gains =
+    stack.unusedDeduction + (zero.rate === 0 ? zero.top - taxable : 0);
+  const share = gainShareOf(state);
+  const withdrawal = share > 0 ? gains / share : Infinity;
   return {
-    tiers,
     rothBasisCapacity,
-    brokerageZeroLtcgCapacity: brokerageZeroCapacity,
+    brokerageZeroLtcgCapacity: Math.max(
+      0,
+      Math.min(sources.brokerage, withdrawal),
+    ),
   };
+}
+
+/** Draws `need` by marginal cost through `drawFrom` (draws up to a segment, returns
+ *  what it drew). A source drawn short (an account or tax-type cap) is closed and
+ *  the rest walked again from what was drawn. Returns each segment's draw. */
+export function drawByMarginalCost(
+  start: DrawState,
+  sources: DrawSources,
+  need: number,
+  drawFrom: (segment: DrawSegment) => number,
+): (DrawSegment & { drawn: number })[] {
+  const at = { ...start };
+  const left = { ...sources };
+  const out: (DrawSegment & { drawn: number })[] = [];
+  let rest = need;
+  for (let pass = 0; pass < 4 && cents(rest) > 0; pass++) {
+    let short = false;
+    for (const segment of walkDiscretionaryDraw(at, left, rest)) {
+      const drawn = drawFrom(segment);
+      out.push({ ...segment, drawn });
+      rest -= drawn;
+      left[segment.part] -= drawn;
+      advance(at, segment.part, drawn);
+      short = cents(drawn) < cents(segment.amount) && cents(rest) > 0;
+      if (short) {
+        left[segment.part] = 0;
+        break;
+      }
+    }
+    if (!short) break;
+  }
+  return out;
 }

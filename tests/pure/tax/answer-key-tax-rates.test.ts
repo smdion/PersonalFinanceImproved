@@ -36,11 +36,7 @@ import {
 } from "../fixtures/paycheck-answer-key";
 import { readTaxData } from "../../helpers/tax-data";
 import { sumBracketTax } from "@/lib/pure/tax/tax-brackets";
-import {
-  getLtcgRate,
-  ltcgRateForNextDollar,
-  ltcgRoomForRate,
-} from "@/lib/pure/tax/ltcg";
+import { getLtcgRate, ltcgBracketAt } from "@/lib/pure/tax/ltcg";
 import { calculatePaycheck } from "@/lib/pure/paycheck/per-check";
 import { computeAnnualEarnings } from "@/lib/pure/household/household-income";
 import { salaryDivisor } from "@/lib/pure/paycheck/year-paydays";
@@ -225,9 +221,9 @@ describe("answer key: the gains rate and room", () => {
     // 49,451, past the 0% amount: 15%. At 49,449 the next dollar is the
     // 49,450th: 0%. HOH at 579,600: the next dollar is 20%.
     expect([
-      ltcgRateForNextDollar(49_449, "Single", ltcg2026),
-      ltcgRateForNextDollar(49_450, "Single", ltcg2026),
-      ltcgRateForNextDollar(579_600, "HOH", ltcg2026),
+      ltcgBracketAt(49_449, "Single", ltcg2026).rate,
+      ltcgBracketAt(49_450, "Single", ltcg2026).rate,
+      ltcgBracketAt(579_600, "HOH", ltcg2026).rate,
     ]).toEqual([0, 0.15, 0.2]);
   });
 
@@ -236,13 +232,28 @@ describe("answer key: the gains rate and room", () => {
     // 38,900; 15% room 613,700 − 60,000 = 553,700. Ordinary 120,000 is
     // past the 0% amount: room 0. Single ordinary 40,000: 49,450 − 40,000
     // = 9,450. HOH ordinary 0: the whole 66,200.
+    // Room: climb the brackets from ordinary taxable income while each
+    // rate stays within the target.
+    const room = (
+      target: number,
+      ordinary: number,
+      status: Parameters<typeof ltcgBracketAt>[1],
+    ): number => {
+      let at = ordinary;
+      for (;;) {
+        const bracket = ltcgBracketAt(at, status, ltcg2026);
+        if (bracket.rate > target) return Math.max(0, at - ordinary);
+        if (!Number.isFinite(bracket.top)) return Infinity;
+        at = bracket.top;
+      }
+    };
     cents(
       {
-        mfj0: ltcgRoomForRate(0, 60_000, "MFJ", ltcg2026),
-        mfj15: ltcgRoomForRate(0.15, 60_000, "MFJ", ltcg2026),
-        past: ltcgRoomForRate(0, 120_000, "MFJ", ltcg2026),
-        single0: ltcgRoomForRate(0, 40_000, "Single", ltcg2026),
-        hoh0: ltcgRoomForRate(0, 0, "HOH", ltcg2026),
+        mfj0: room(0, 60_000, "MFJ"),
+        mfj15: room(0.15, 60_000, "MFJ"),
+        past: room(0, 120_000, "MFJ"),
+        single0: room(0, 40_000, "Single"),
+        hoh0: room(0, 0, "HOH"),
       },
       { mfj0: 38_900, mfj15: 553_700, past: 0, single0: 9_450, hoh0: 66_200 },
     );

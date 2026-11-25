@@ -113,30 +113,6 @@ export function marginalRateAboveTarget(
   return targetRate;
 }
 
-/**
- * Marginal ordinary rate for the next dollar at `income` (dollar-based, unlike
- * `marginalRateAboveTarget`). 0 for income ≤ 0 or no brackets; `standardDeduction` applies the
- * Worksheet 1A residual, so income under the full deduction gets 0%.
- */
-export function marginalRateAtIncome(
-  income: number,
-  brackets: WithholdingBracket[],
-  standardDeduction?: number,
-): number {
-  if (income <= 0 || brackets.length === 0) return 0;
-  const bracketIncome = toOrdinaryBracketIncome(
-    income,
-    brackets,
-    standardDeduction,
-  );
-  if (bracketIncome <= 0) return 0;
-  for (let i = brackets.length - 1; i >= 0; i--) {
-    const b = brackets[i]!;
-    if (bracketIncome >= b.threshold) return b.rate;
-  }
-  return 0;
-}
-
 // ---------------------------------------------------------------------------
 // Social Security taxation — IRS provisional income formula (Phase 2)
 // ---------------------------------------------------------------------------

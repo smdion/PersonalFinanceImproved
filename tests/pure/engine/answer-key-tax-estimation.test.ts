@@ -23,9 +23,9 @@ import { readTaxData } from "../../helpers/tax-data";
 import {
   estimateEffectiveTaxRate,
   incomeCapForMarginalRate,
-  marginalRateAtIncome,
   type WithholdingBracket,
 } from "@/lib/pure/engine/tax-estimation";
+import { ordinaryBracketAt } from "@/lib/pure/engine/draw-position";
 import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 
 /** The 2026 Pub 15-T standard table, as shipped (the input). */
@@ -76,10 +76,15 @@ describe("answer key: the Projection's marginal rate and rate caps", () => {
   it("tax/TAX14-1 [TAX-14] the band a gross income's taxable income falls in", () => {
     // MFJ 150,000: TI 117,800, over 100,800: 22%. Single 60,000: TI
     // 43,900, over 12,400 not over 50,400: 12%. Single 16,000: TI 0: 0.
+    const rate = (
+      income: number,
+      taxBrackets: WithholdingBracket[],
+      standardDeduction: number,
+    ) => ordinaryBracketAt(income, { taxBrackets, standardDeduction }).rate;
     expect([
-      marginalRateAtIncome(150_000, table("MFJ"), 32_200),
-      marginalRateAtIncome(60_000, table("Single"), 16_100),
-      marginalRateAtIncome(16_000, table("Single"), 16_100),
+      rate(150_000, table("MFJ"), 32_200),
+      rate(60_000, table("Single"), 16_100),
+      rate(16_000, table("Single"), 16_100),
     ]).toEqual([0.22, 0.12, 0]);
   });
 

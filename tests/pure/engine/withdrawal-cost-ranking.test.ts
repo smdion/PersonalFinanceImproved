@@ -1,11 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
-  rankWithdrawalTiers,
   deriveBasisRankingInputs,
-  type RankWithdrawalTiersInput,
+  drawByMarginalCost,
+  freeDrawCapacities,
+  walkDiscretionaryDraw,
+  type DrawSegment,
 } from "@/lib/pure/engine/withdrawal-cost-ranking";
+import type { DrawSources, DrawState } from "@/lib/pure/engine/draw-position";
+import { computeTaxableSS } from "@/lib/pure/engine/tax-estimation";
 import type { RothBasisState } from "@/lib/pure/accounts/roth-basis-tracking";
-import { shippedTaxTables } from "../../helpers/tax-data";
 
 function rothState(
   contributionBasis: number,
@@ -24,9 +27,7 @@ function rothState(
 // The 2025 rate schedule for married filing jointly, Rev. Proc. 2024-40
 // § 2.01 Table 1 (taxable income over / tax on that / rate on the
 // excess), as `WithholdingBracket` rows. No standard deduction is passed,
-// so `ordinaryIncomeFloor` reads as taxable income. (It used to be read
-// one row off: 10% from 23,850 and 0% below, each base a row late, so
-// 150,000 sat in "12%"; strategies audit, 2026-11-02.)
+// so `ordinaryIncome` reads as taxable income.
 const MFJ_BRACKETS = [
   { threshold: 0, baseWithholding: 0, rate: 0.1 },
   { threshold: 23850, baseWithholding: 2385, rate: 0.12 },
@@ -36,511 +37,483 @@ const MFJ_BRACKETS = [
   { threshold: 501050, baseWithholding: 114462, rate: 0.35 },
   { threshold: 751600, baseWithholding: 202154.5, rate: 0.37 },
 ];
+/** MFJ gains brackets (Rev. Proc. 2025-32 § 4.03): 0% to 98,900, 15% to
+ *  613,700, then 20%. */
+const LTCG = {
+  MFJ: [
+    { threshold: 98900, rate: 0 },
+    { threshold: 613700, rate: 0.15 },
+    { threshold: null, rate: 0.2 },
+  ],
+};
 
-function baseInput(
-  overrides: Partial<RankWithdrawalTiersInput> = {},
-): RankWithdrawalTiersInput {
+function state(overrides: Partial<DrawState> = {}): DrawState {
   return {
     filingStatus: "MFJ",
-    ordinaryIncomeFloor: 150000, // in the 22% bracket (96,950 to 206,700)
+    ordinaryIncome: 50000,
+    gains: 0,
+    magi: overrides.ordinaryIncome ?? 50000,
     taxBrackets: MFJ_BRACKETS,
-    ltcgBrackets: shippedTaxTables().ltcgBrackets,
-    rothBasisAvailable: 0,
-    rothAvailable: 50000,
-    brokerageAvailable: 50000,
+    ltcgBrackets: LTCG,
     brokerageBasisRatio: 0,
-    hsaAvailable: 10000,
-    magiBeforeThisDraw: 0,
+    rothProRataTaxableShare: 0,
     ...overrides,
   };
 }
+const sources = (s: Partial<DrawSources>): DrawSources => ({
+  rothBasis: 0,
+  rothGrowth: 0,
+  rothProRata: 0,
+  brokerage: 0,
+  hsa: 0,
+  ...s,
+});
+/** [part, amount to the cent, marginal cost to 1e-9, NIIT]. */
+const of = (segments: DrawSegment[]) =>
+  segments.map((s) => [
+    s.part,
+    Math.round(s.amount * 100) / 100,
+    Math.round(s.marginalCost * 1e9) / 1e9,
+    !!s.includesNiit,
+  ]);
 
-describe("rankWithdrawalTiers", () => {
-  it("Roth basis always ranks first, free", () => {
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({ rothBasisAvailable: 20000 }),
-    );
-    expect(tiers[0]).toMatchObject({
-      source: "roth",
-      costRate: 0,
-      capacity: 20000,
-    });
-  });
-
-  it("discretionaryWithdrawalOrder omitted defaults to roth_first (Roth basis before brokerage's 0% tier)", () => {
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 0,
-        rothBasisAvailable: 20000,
+describe("walkDiscretionaryDraw: each dollar from the source whose next dollar costs least", () => {
+  it("an HSA dollar that pushes taxed gains from 0% to 15% costs 10% + 15%, so a 94%-gain brokerage dollar (≈ 14.1%) goes first", () => {
+    // Ordinary 20,000 (10% bracket); 100,000 of gains already stacked on it,
+    // their top at 120,000 in the 15% bracket, their bottom in the 0% one.
+    const segments = walkDiscretionaryDraw(
+      state({
+        ordinaryIncome: 20000,
+        gains: 100000,
+        magi: 120000,
+        brokerageBasisRatio: 0.06,
       }),
+      sources({ hsa: 50000, brokerage: 50000 }),
+      10000,
     );
-    const rothIdx = tiers.findIndex(
-      (t) => t.source === "roth" && t.costRate === 0,
-    );
-    const brokerageIdx = tiers.findIndex(
-      (t) => t.source === "brokerage" && t.costRate === 0,
-    );
-    expect(rothIdx).toBeGreaterThanOrEqual(0);
-    expect(brokerageIdx).toBeGreaterThanOrEqual(0);
-    expect(rothIdx).toBeLessThan(brokerageIdx);
+    expect(of(segments)).toEqual([["brokerage", 10000, 0.141, false]]);
   });
 
-  it("discretionaryWithdrawalOrder: brokerage_first ranks brokerage's 0% tier before Roth basis (R55 follow-up)", () => {
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 0,
-        rothBasisAvailable: 20000,
-        discretionaryWithdrawalOrder: "brokerage_first",
+  it("stops at an ordinary edge and goes on at the next bracket's rate", () => {
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: 20000 }),
+      sources({ hsa: 50000 }),
+      10000,
+    );
+    expect(of(segments)).toEqual([
+      ["hsa", 3850, 0.1, false],
+      ["hsa", 6150, 0.12, false],
+    ]);
+  });
+
+  it("stops where the gains' top reaches an LTCG edge", () => {
+    const segments = walkDiscretionaryDraw(
+      state(),
+      sources({ brokerage: 100000 }),
+      60000,
+    );
+    expect(of(segments)).toEqual([
+      ["brokerage", 48900, 0, false],
+      ["brokerage", 11100, 0.15, false],
+    ]);
+  });
+
+  it("stops where ordinary income lifts the gains' bottom across an LTCG edge", () => {
+    // Ordinary 90,000 under 20,000 of gains: an HSA dollar costs 12% and moves
+    // a gains dollar from 0% to 15% (27%); past 96,950 it pays 22% + 15%;
+    // once the bottom passes 98,900 it moves 15% gains to 15% (22%).
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: 90000, gains: 20000, magi: 110000 }),
+      sources({ hsa: 50000 }),
+      10000,
+    );
+    expect(of(segments)).toEqual([
+      ["hsa", 6950, 0.27, false],
+      ["hsa", 1950, 0.37, false],
+      ["hsa", 1100, 0.22, false],
+    ]);
+  });
+
+  it("stops at the NIIT threshold: brokerage gains past it pay 3.8% more", () => {
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: 240000 }),
+      sources({ brokerage: 100000 }),
+      20000,
+    );
+    expect(of(segments)).toEqual([
+      ["brokerage", 10000, 0.15, false],
+      ["brokerage", 10000, 0.15 + 0.038, true],
+    ]);
+  });
+
+  it("gains fill the unused deduction at 0%, then the 0% bracket, then pay 15%", () => {
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: 20000, standardDeduction: 30000 }),
+      sources({ brokerage: 200000 }),
+      120000,
+    );
+    expect(of(segments)).toEqual([
+      ["brokerage", 108900, 0, false],
+      ["brokerage", 11100, 0.15, false],
+    ]);
+  });
+
+  it("goes on to the next source when one runs out, and stops at the need", () => {
+    const segments = walkDiscretionaryDraw(
+      state(),
+      sources({ rothBasis: 5000, hsa: 10000 }),
+      8000,
+    );
+    expect(of(segments)).toEqual([
+      ["rothBasis", 5000, 0, false],
+      ["hsa", 3000, 0.12, false],
+    ]);
+  });
+
+  it("the brokerage dollars past the 0% top pay 15% when the stack lands one ulp under it", () => {
+    const T0 = 99405.91325738844;
+    const a = 24873.43; // a + (T0 − a) is one ulp below T0
+    expect(a + (T0 - a) < T0).toBe(true);
+    const segments = walkDiscretionaryDraw(
+      state({
+        ordinaryIncome: a,
+        ltcgBrackets: {
+          MFJ: [
+            { threshold: T0, rate: 0 },
+            { threshold: 613700, rate: 0.15 },
+            { threshold: null, rate: 0.2 },
+          ],
+        },
       }),
+      sources({ brokerage: 200000 }),
+      200000,
     );
-    const rothIdx = tiers.findIndex(
-      (t) => t.source === "roth" && t.costRate === 0,
-    );
-    const brokerageIdx = tiers.findIndex(
-      (t) => t.source === "brokerage" && t.costRate === 0,
-    );
-    expect(rothIdx).toBeGreaterThanOrEqual(0);
-    expect(brokerageIdx).toBeGreaterThanOrEqual(0);
-    expect(brokerageIdx).toBeLessThan(rothIdx);
+    expect(of(segments)).toEqual([
+      ["brokerage", 74532.48, 0, false],
+      ["brokerage", 125467.52, 0.15, false],
+    ]);
   });
 
-  it("discretionaryWithdrawalOrder: no LTCG data (no filingStatus) means nothing to reorder — brokerage_first has no effect there", () => {
-    // Verified against the user's own spreadsheet: brokerage's withdrawal
-    // is capped at exactly the free 0%-LTCG room, so with no LTCG data at
-    // all there's no brokerage-0%-tier counterpart for Roth basis to swap
-    // against — the fixed order (roth, then brokerage's flat fallback)
-    // applies regardless of this setting.
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        filingStatus: undefined,
-        rothBasisAvailable: 20000,
-        brokerageAvailable: 50000,
-        discretionaryWithdrawalOrder: "brokerage_first",
-      }),
+  it("a floor $0.001 under an edge is on it: no sub-cent stretch at the lower rate", () => {
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: 96949.999 }),
+      sources({ hsa: 10000 }),
+      10000,
     );
-    expect(tiers[0]).toMatchObject({ source: "roth", capacity: 20000 });
+    expect(of(segments)).toEqual([["hsa", 10000, 0.22, false]]);
   });
 
-  it("discretionaryWithdrawalOrder does NOT affect the cost-ranked tier beyond the free 0%-LTCG zone, either direction (matches the user's spreadsheet: brokerage is capped at the free room, not preferred unconditionally)", () => {
-    // ordinaryIncomeFloor high enough that most/all brokerage gains land in
-    // the real-rate (non-zero) LTCG tier, not the free 0% tier.
-    const inputs = {
-      ordinaryIncomeFloor: 300000,
-      rothBasisAvailable: 20000,
-      rothAvailable: 50000,
-      brokerageAvailable: 50000,
-    };
-    const { tiers: rothFirstTiers } = rankWithdrawalTiers(baseInput(inputs));
-    const { tiers: brokerageFirstTiers } = rankWithdrawalTiers(
-      baseInput({ ...inputs, discretionaryWithdrawalOrder: "brokerage_first" }),
+  it("a floor equal to a grown edge in cents, though not as floats, starts in the bracket above", () => {
+    // A grown 22% edge at 96,950.004; the Traditional cap rounds the floor
+    // to it in cents: 96,950.00, under the edge as a float.
+    const grown = MFJ_BRACKETS.map((b) =>
+      b.rate === 0.22 ? { ...b, threshold: 96950.004 } : b,
     );
-    // The priced (non-zero, non-Infinity cost) tier is identical either
-    // way — only the two free tiers' relative order can differ.
-    const pricedOnly = (tiers: typeof rothFirstTiers) =>
-      tiers.filter((t) => t.costRate > 0 && t.costRate < Infinity);
-    expect(pricedOnly(brokerageFirstTiers)).toEqual(pricedOnly(rothFirstTiers));
-    // And it's genuinely cost-ranked, not brokerage-unconditionally-first:
-    // a real-rate brokerage tier exists but doesn't precede every Roth tier.
-    const pricedBrokerage = rothFirstTiers.find(
-      (t) => t.source === "brokerage" && t.costRate > 0,
+    expect(96950 < 96950.004).toBe(true);
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: 96950, taxBrackets: grown }),
+      sources({ hsa: 10000 }),
+      10000,
     );
-    expect(pricedBrokerage).toBeDefined();
+    expect(of(segments)).toEqual([["hsa", 10000, 0.22, false]]);
   });
 
-  it("brokerage in the 0% LTCG zone ranks free, alongside Roth basis", () => {
-    // ordinaryIncomeFloor 0 -> full 0%-LTCG room available
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({ ordinaryIncomeFloor: 0, rothBasisAvailable: 0 }),
+  it("Roth growth and the HSA share a bracket's room, Roth first", () => {
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: 90000 }),
+      sources({ rothGrowth: 5000, hsa: 5000 }),
+      10000,
     );
-    const brokerageTier = tiers.find((t) => t.source === "brokerage");
-    expect(brokerageTier?.costRate).toBe(0);
+    expect(of(segments)).toEqual([
+      ["rothGrowth", 5000, 0.12, false],
+      ["hsa", 1950, 0.12, false],
+      ["hsa", 3050, 0.22, false],
+    ]);
   });
 
-  // Roth/HSA growth rate is now priced off ordinaryIncomeFloor directly
-  // (marginalRateAtIncome), not marginalRateAboveTarget(targetRate, ...)
-  // (targetRate assumed Phase 1 always
-  // filled Traditional up to the bracket-filling cap, which isn't true
-  // when Traditional simply ran out below it; pricing off the target
-  // instead of the household's REAL income level systematically
-  // overpriced Roth/HSA whenever the two diverge).
-  it("Roth growth is priced at the bracket ordinaryIncomeFloor ACTUALLY sits in", () => {
-    // 150,000 sits in the 22% bracket (96,950 <= 150,000 < 206,700,
-    // Rev. Proc. 2024-40 Table 1) -- marginalRateAtIncome must return 0.22
-    // regardless of any bracket-filling target elsewhere in the system.
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 150000,
-        rothBasisAvailable: 0,
-        brokerageAvailable: 0,
-        hsaAvailable: 0,
-      }),
-    );
-    const rothTier = tiers.find((t) => t.source === "roth");
-    expect(rothTier?.costRate).toBeCloseTo(0.22, 5);
-  });
-
-  it("no Roth basis ⇒ Roth growth (12%) ranks BEFORE 15% LTCG brokerage when it's genuinely cheaper", () => {
-    // 90,000 sits in the 12% bracket (23,850 to 96,950). Gains stack on
-    // it: 98,900 - 90,000 = 8,900 at 0%, then 15%. Roth growth at 12%
-    // ranks before the 15% brokerage tier (the 0% tier ranks first). At
-    // the default 150,000 Roth growth is 22% and ranks after it.
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 90000,
-        rothBasisAvailable: 0,
-        magiBeforeThisDraw: 0,
-      }),
-    );
-    const rothIdx = tiers.findIndex(
-      (t) => t.source === "roth" && t.costRate > 0,
-    );
-    const brokerageIdx = tiers.findIndex(
-      (t) => t.source === "brokerage" && t.costRate > 0,
-    );
-    expect(rothIdx).toBeGreaterThanOrEqual(0);
-    expect(brokerageIdx).toBeGreaterThanOrEqual(0);
-    expect(rothIdx).toBeLessThan(brokerageIdx);
-  });
-
-  it("brokerage ranks before Roth once income is high enough that Roth's real bracket rate exceeds LTCG", () => {
-    // 600,000 sits in the 35% bracket (501,050 to 751,600) while LTCG
-    // here is still 15% -- brokerage is genuinely cheaper at this income level,
-    // unlike the old targetRate-driven pricing which could make Roth look
-    // artificially cheap regardless of the household's real income.
-    // (Deliberately NOT 613,700, the exact 15%/20% LTCG boundary -- gains
-    // stack ON TOP of ordinary income, so the first dollar of gains when
-    // ordinary income is exactly AT a bracket's own ceiling lands in the
-    // NEXT bracket, per computeLtcgTax's `floor >= threshold` stacking
-    // logic; see ltcgRateForNextDollar in lib/pure/tax/ltcg.ts.)
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 600000,
-        rothBasisAvailable: 0,
-        magiBeforeThisDraw: 0,
-      }),
-    );
-    const rothIdx = tiers.findIndex((t) => t.source === "roth");
-    const brokerageIdx = tiers.findIndex((t) => t.source === "brokerage");
-    expect(tiers.find((t) => t.source === "roth")?.costRate).toBeCloseTo(
-      0.35,
-      5,
-    );
-    expect(tiers.find((t) => t.source === "brokerage")?.costRate).toBeCloseTo(
-      0.15,
-      5,
-    );
-    expect(brokerageIdx).toBeLessThan(rothIdx);
-  });
-
-  it("prices the brokerage tier beyond the free 0%-LTCG room at the real next bracket's rate, not 0% (boundary bug, found 2026-08-31)", () => {
-    // ordinary=57000 gross, standardDeduction=32200 -> taxable=24800.
-    // zeroGainsRoom = 98900 - 24800 = 74100 exactly reaches the 0% ceiling,
-    // so brokerageOrdinaryIncome + zeroGainsRoom lands EXACTLY on 98900 by
-    // construction -- getLtcgRate's inclusive <= would wrongly return 0%
-    // for the tier that actually starts at 98901. Large brokerageAvailable
-    // ensures a real "beyond the free room" slice exists to price.
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 57000,
-        standardDeduction: 32200,
-        rothBasisAvailable: 0,
-        brokerageAvailable: 1_000_000,
-        magiBeforeThisDraw: 0,
-      }),
-    );
-    const pricedBrokerage = tiers.filter(
-      (t) => t.source === "brokerage" && t.costRate > 0,
-    );
-    expect(pricedBrokerage.length).toBeGreaterThan(0);
-    // Pre-NIIT slice should be the real 15% rate, not 0%.
-    expect(pricedBrokerage[0]!.costRate).toBeCloseTo(0.15, 5);
-  });
-
-  it("still prices the top LTCG bracket (20%) correctly for high-income households, not a flat 15% (guards against a wrong 'first bracket above 0%' fix)", () => {
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 700000, // past the 613,700 MFJ 15%/20% boundary
-        rothBasisAvailable: 0,
-        magiBeforeThisDraw: 0,
-      }),
-    );
-    const brokerageTier = tiers.find(
-      (t) => t.source === "brokerage" && t.costRate > 0 && t.costRate < 0.3,
-    );
-    expect(brokerageTier?.costRate).toBeCloseTo(0.2, 5);
-  });
-
-  it("NIIT adds exactly 3.8% to brokerage's rate once MAGI is above the filing-status threshold", () => {
-    const { tiers: withoutNiit } = rankWithdrawalTiers(
-      baseInput({ ordinaryIncomeFloor: 250000, magiBeforeThisDraw: 0 }),
-    );
-    const { tiers: withNiit } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 250000,
-        magiBeforeThisDraw: 300000, // above MFJ's $250k NIIT threshold
-      }),
-    );
-    const brokerageRateWithout = withoutNiit.find(
-      (t) => t.source === "brokerage" && t.costRate > 0,
-    )?.costRate;
-    const brokerageRateWith = withNiit.find(
-      (t) => t.source === "brokerage" && t.costRate > 0,
-    )?.costRate;
-    expect(brokerageRateWithout).toBeCloseTo(0.15, 5);
-    expect(brokerageRateWith).toBeCloseTo(0.188, 5);
-  });
-
-  // NIIT threshold split: a household whose
-  // MAGI is BELOW the threshold, but whose brokerage tier's own gains
-  // would push it OVER, must get NIIT priced only on the portion past the
-  // threshold -- not 0%/full-rate on the whole tier (the old all-or-
-  // nothing cliff, which mis-ranked exactly at the boundary where the
-  // ranking is supposed to earn its keep).
-  it("splits the brokerage tier at the NIIT threshold crossing instead of pricing the whole tier at one rate", () => {
-    // MFJ NIIT threshold is $250,000. magiBeforeThisDraw=245,000 leaves
-    // only $5,000 of headroom before NIIT kicks in -- with a much larger
-    // brokerage balance available, most of the tier should land in a
-    // post-NIIT sub-tier while a small pre-NIIT sub-tier stays NIIT-free.
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 600000, // 15% LTCG zone here (not the exact 613,700 boundary -- see the previous test's comment)
-        rothAvailable: 0,
-        rothBasisAvailable: 0,
-        brokerageAvailable: 100000,
-        brokerageBasisRatio: 0,
-        magiBeforeThisDraw: 245000,
-        hsaAvailable: 0,
-      }),
-    );
-    const brokerageTiers = tiers.filter((t) => t.source === "brokerage");
-    // Two distinct brokerage sub-tiers: one at the bare LTCG rate (pre-NIIT),
-    // one at LTCG + 3.8% (post-NIIT).
-    expect(brokerageTiers.length).toBe(2);
-    const preNiit = brokerageTiers.find((t) => t.capacity < 100000)!;
-    const postNiit = brokerageTiers.find((t) => t.costRate > preNiit.costRate)!;
-    expect(preNiit.capacity).toBeCloseTo(5000, 2); // exactly the $5k MAGI headroom
-    expect(preNiit.costRate).toBeCloseTo(0.15, 5);
-    expect(postNiit.costRate).toBeCloseTo(0.188, 5);
-    expect(preNiit.capacity + postNiit.capacity).toBeCloseTo(100000, 2);
-  });
-
-  // NIIT headroom nets out the 0%-LTCG zero tier's own MAGI contribution:
-  // that tier is ranked and drawn ahead of
-  // the NIIT-split tier in the same sequence, and its GAINS (not basis)
-  // count toward MAGI just like any other realized gain, 0% federal rate
-  // notwithstanding.
-  it("nets the 0%-LTCG zero tier's own gains out of NIIT headroom, instead of measuring headroom as if that tier never drew", () => {
-    // ordinary=40000 gross, standardDeduction=32200 -> taxable=7800.
-    // zeroGainsRoom (0% LTCG ceiling 98900 - 7800) = 91100 -- a real,
-    // sizeable zero-rate tier that drawer BEFORE the NIIT-split tier.
-    // magiBeforeThisDraw=153900 -> raw headroom to the $250k MFJ threshold
-    // is $96,100 -- but $91,100 of that headroom is already consumed by
-    // the zero tier's own gains (brokerageBasisRatio: 0, all gains), so
-    // the REAL headroom left for the next tier is only $5,000.
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 40000,
-        standardDeduction: 32200,
-        rothAvailable: 0,
-        rothBasisAvailable: 0,
-        brokerageAvailable: 150000,
-        brokerageBasisRatio: 0,
-        magiBeforeThisDraw: 153900,
-        hsaAvailable: 0,
-      }),
-    );
-    const brokerageTiers = tiers.filter((t) => t.source === "brokerage");
-    expect(brokerageTiers.length).toBe(3);
-    const zeroTier = brokerageTiers.find((t) => t.costRate === 0)!;
-    const preNiit = brokerageTiers.find(
-      (t) => t.costRate > 0 && t.costRate < 0.18,
-    )!;
-    const postNiit = brokerageTiers.find((t) => t.costRate > 0.18)!;
-    expect(zeroTier.capacity).toBeCloseTo(91100, 2);
-    // Without the fix, this would read ~$96,100 (the raw threshold
-    // headroom, ignoring the zero tier's own $91,100 of gains).
-    expect(preNiit.capacity).toBeCloseTo(5000, 2);
-    expect(preNiit.costRate).toBeCloseTo(0.15, 5);
-    expect(postNiit.costRate).toBeCloseTo(0.188, 5);
-    expect(postNiit.capacity).toBeCloseTo(53900, 2);
-  });
-
-  // HSA is no longer hardcoded last -- once
-  // its balance reaches this ranking it's ordinarily already the
-  // penalty-free portion (excluded upstream when still locked, per
-  // withdrawal-eligibility.ts's computeHsaAccess/subtractExcluded), so it
-  // competes on real cost like Roth growth instead of an assumed-worst
-  // rate that made it lose to genuinely-more-expensive sources too.
-  it("HSA competes on ordinary rate alongside Roth growth, ranking BEFORE a more expensive brokerage tier", () => {
-    // 90,000: ordinary 12%, gains 0% for the first 8,900 then 15% (as
-    // above). At the default 150,000 the HSA's ordinary rate is 22%,
-    // dearer than 15% gains.
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 90000,
-        rothBasisAvailable: 0,
-        magiBeforeThisDraw: 0,
-      }),
-    );
-    const hsaTier = tiers.find((t) => t.source === "hsa")!;
-    const rothGrowthTier = tiers.find(
-      (t) => t.source === "roth" && t.costRate > 0,
-    )!;
-    // Same ordinary-rate formula as Roth growth -- ties, not "always worse."
-    expect(hsaTier.costRate).toBeCloseTo(rothGrowthTier.costRate, 5);
-    const hsaIdx = tiers.findIndex((t) => t.source === "hsa");
-    const brokerageIdx = tiers.findIndex(
-      (t) => t.source === "brokerage" && t.costRate > 0,
-    );
-    // At this income level (12% ordinary vs 15% LTCG) HSA is genuinely
-    // cheaper than brokerage, so it must rank before it -- not last
-    // purely by construction.
-    expect(hsaIdx).toBeLessThan(brokerageIdx);
-  });
-
-  it("no filingStatus ⇒ Roth and HSA tie at the ordinary rate, both ranked before brokerage's flat fallback", () => {
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({ filingStatus: undefined, rothBasisAvailable: 0 }),
-    );
-    const sources = tiers.map((t) => t.source);
-    expect(sources.indexOf("roth")).toBeLessThan(sources.indexOf("brokerage"));
-    expect(sources.indexOf("hsa")).toBeLessThan(sources.indexOf("brokerage"));
-    const rothTier = tiers.find((t) => t.source === "roth")!;
-    const hsaTier = tiers.find((t) => t.source === "hsa")!;
-    expect(hsaTier.costRate).toBeCloseTo(rothTier.costRate, 5);
-  });
-
-  it("rothBasisAvailable omitted-as-0 with no tracking still lets Roth rank first when it's the household's only free source (ties broken toward Roth)", () => {
-    // Simulates hasIndTracking:false callers, which pass
-    // rothBasisAvailable equal to the full rothAvailable balance (per
-    // RouteBracketInfo's docblock) -- not exercised via this pure
-    // function's own default, but documents the expected caller contract.
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({ rothBasisAvailable: 50000, rothAvailable: 50000 }),
-    );
-    expect(tiers[0]).toMatchObject({ source: "roth", costRate: 0 });
-  });
-
-  // Regression guard: ordinaryIncomeFloor was fed straight into the
-  // LTCG lookup with no standard-deduction subtraction — real household
-  // numbers: $120,100 gross
-  // Traditional withdrawal, MFJ $32,200 standard deduction, $98,900
-  // 0%-LTCG ceiling. Pre-fix: zero 0%-LTCG room (120,100 already exceeds
-  // 98,900 on its own). Post-fix: ~$11,000 of real room.
-  it("standardDeduction converts gross ordinaryIncomeFloor to taxable income before the LTCG lookup", () => {
-    const { tiers: withoutDeduction } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 120100,
-        rothBasisAvailable: 0,
-        brokerageAvailable: 50000,
-        brokerageBasisRatio: 0,
-      }),
-    );
-    const zeroTierWithout = withoutDeduction.find(
-      (t) => t.source === "brokerage" && t.costRate === 0,
-    );
-    expect(zeroTierWithout).toBeUndefined();
-
-    const { tiers: withDeduction } = rankWithdrawalTiers(
-      baseInput({
-        ordinaryIncomeFloor: 120100,
-        standardDeduction: 32200,
-        rothBasisAvailable: 0,
-        brokerageAvailable: 50000,
-        brokerageBasisRatio: 0,
-      }),
-    );
-    const zeroTierWith = withDeduction.find(
-      (t) => t.source === "brokerage" && t.costRate === 0,
-    );
-    expect(zeroTierWith?.capacity).toBe(11000);
-  });
-
-  it("zero remaining balances in every source ⇒ returns tiers with zero total capacity, never throws", () => {
-    const { tiers } = rankWithdrawalTiers(
-      baseInput({
-        rothBasisAvailable: 0,
-        rothAvailable: 0,
-        brokerageAvailable: 0,
-        hsaAvailable: 0,
-      }),
-    );
-    expect(tiers.reduce((s, t) => s + t.capacity, 0)).toBe(0);
-  });
-
-  // Found live, 2026-08-31: a household couldn't tell why brokerage's
-  // 0%-LTCG room wasn't draining before Roth. rothBasisCapacity/
-  // brokerageZeroLtcgCapacity exist specifically to make that room visible
-  // even when the draw loop never reaches it (e.g. Roth basis alone covers
-  // the year's need under roth_first) -- these tests guard the two
-  // properties that matter for that: (1) the numbers reflect real capacity
-  // regardless of order, (2) discretionaryWithdrawalOrder changes ONLY
-  // which drains first, never the capacity figures themselves.
-  describe("rothBasisCapacity / brokerageZeroLtcgCapacity", () => {
-    it("both reflect real capacity even though the draw loop never touches capacity", () => {
-      const { rothBasisCapacity, brokerageZeroLtcgCapacity } =
-        rankWithdrawalTiers(
-          baseInput({
-            ordinaryIncomeFloor: 0, // full 0%-LTCG room available
-            rothBasisAvailable: 20000,
-            rothAvailable: 20000,
-            brokerageAvailable: 50000,
-            brokerageBasisRatio: 0,
-          }),
-        );
-      expect(rothBasisCapacity).toBe(20000);
-      expect(brokerageZeroLtcgCapacity).toBeGreaterThan(0);
+  describe("ties", () => {
+    it("free sources go by discretionaryWithdrawalOrder", () => {
+      const both = sources({ rothBasis: 5000, brokerage: 5000 });
+      const parts = (order?: "roth_first" | "brokerage_first") =>
+        walkDiscretionaryDraw(
+          state({ discretionaryWithdrawalOrder: order }),
+          both,
+          10000,
+        ).map((s) => s.part);
+      expect(parts()).toEqual(["rothBasis", "brokerage"]);
+      expect(parts("roth_first")).toEqual(["rothBasis", "brokerage"]);
+      expect(parts("brokerage_first")).toEqual(["brokerage", "rothBasis"]);
     });
 
-    it("are IDENTICAL under roth_first vs brokerage_first -- the order setting changes draw sequence, never the capacity numbers", () => {
-      const inputs = {
-        ordinaryIncomeFloor: 0,
-        rothBasisAvailable: 20000,
-        rothAvailable: 20000,
-        brokerageAvailable: 50000,
-        brokerageBasisRatio: 0,
-      };
-      const rothFirst = rankWithdrawalTiers(baseInput(inputs));
-      const brokerageFirst = rankWithdrawalTiers(
-        baseInput({
-          ...inputs,
-          discretionaryWithdrawalOrder: "brokerage_first",
+    it("priced sources at one cost go Roth growth, brokerage, then HSA", () => {
+      // No 0% bracket and a 12% gains rate: an all-gain brokerage dollar
+      // costs 12%, the ordinary rate at 50,000.
+      const segments = walkDiscretionaryDraw(
+        state({
+          ltcgBrackets: {
+            MFJ: [
+              { threshold: 613700, rate: 0.12 },
+              { threshold: null, rate: 0.2 },
+            ],
+          },
         }),
+        sources({ rothGrowth: 1000, brokerage: 1000, hsa: 1000 }),
+        2500,
       );
-      expect(brokerageFirst.rothBasisCapacity).toBe(
-        rothFirst.rothBasisCapacity,
-      );
-      expect(brokerageFirst.brokerageZeroLtcgCapacity).toBe(
-        rothFirst.brokerageZeroLtcgCapacity,
-      );
+      expect(segments.map((s) => [s.part, s.amount])).toEqual([
+        ["rothGrowth", 1000],
+        ["brokerage", 1000],
+        ["hsa", 500],
+      ]);
     });
+  });
 
-    it("brokerageZeroLtcgCapacity is near-zero when a high ordinaryIncomeFloor crowds out the 0%-LTCG room -- the exact mechanism behind the live bug report", () => {
-      // Reproduces the confirmed root cause: a Traditional bracket-fill
-      // target high enough that ordinaryIncomeFloor alone meets or exceeds
-      // the 0%-LTCG ceiling leaves brokerage's free tier with ~$0 capacity,
-      // regardless of discretionaryWithdrawalOrder.
-      const { brokerageZeroLtcgCapacity } = rankWithdrawalTiers(
-        baseInput({
-          ordinaryIncomeFloor: 135000, // taxable (135000-32200=102800) already past the ~$98,900 0%-LTCG ceiling
-          standardDeduction: 32200,
-          rothBasisAvailable: 20000,
-          brokerageAvailable: 50000,
-          brokerageBasisRatio: 0,
-          discretionaryWithdrawalOrder: "brokerage_first",
+  it("with no ceiling on the floor (a conversion reserving the open top bracket) every source stays, at the top rates, all finite", () => {
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: Infinity, magi: Infinity }),
+      sources({ rothGrowth: 50000, brokerage: Infinity, hsa: 10000 }),
+      100000,
+    );
+    expect(of(segments)).toEqual([["brokerage", 100000, 0.238, true]]);
+    const rest = walkDiscretionaryDraw(
+      state({ ordinaryIncome: Infinity, magi: Infinity }),
+      sources({ rothGrowth: 50000, hsa: 10000 }),
+      100000,
+    );
+    expect(of(rest)).toEqual([
+      ["rothGrowth", 50000, 0.37, false],
+      ["hsa", 10000, 0.37, false],
+    ]);
+    for (const s of [...segments, ...rest]) {
+      expect(Number.isFinite(s.amount)).toBe(true);
+      expect(Number.isFinite(s.marginalCost)).toBe(true);
+    }
+  });
+
+  it("without a filing status brokerage comes last", () => {
+    const segments = walkDiscretionaryDraw(
+      state({ filingStatus: undefined }),
+      sources({ brokerage: 5000, hsa: 5000 }),
+      8000,
+    );
+    expect(segments.map((s) => [s.part, s.amount])).toEqual([
+      ["hsa", 5000],
+      ["brokerage", 3000],
+    ]);
+  });
+
+  it("the segments add up to the need", () => {
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: 60000, gains: 30000, magi: 245000 }),
+      sources({
+        rothBasis: 3000,
+        rothGrowth: 40000,
+        brokerage: 300000,
+        hsa: 80000,
+      }),
+      250000.37,
+    );
+    const total = segments.reduce((s, x) => s + x.amount, 0);
+    expect(total).toBeCloseTo(250000.37, 6);
+  });
+});
+
+/** Benefits of `gross` beside `other` income (MFJ: Pub 915's 32,000/44,000):
+ *  the walk's start with the taxable share already in ordinary income. */
+const withBenefits = (gross: number, other: number) =>
+  state({
+    ordinaryIncome: other + computeTaxableSS(gross, other, "MFJ"),
+    magi: other + computeTaxableSS(gross, other, "MFJ"),
+    socialSecurity: { gross, provisionalIncome: other + gross / 2 },
+  });
+
+describe("walkDiscretionaryDraw: the Social Security each dollar makes taxable", () => {
+  it("under the first threshold a dollar costs its rate; past it, 1.5 times the rate", () => {
+    // 20,000 of benefits beside 20,000: provisional income 30,000, nothing taxable.
+    // 2,000 reaches 32,000; then each dollar adds 1.50 of income until the 12%
+    // edge (23,850: 1,850 / 1.5 = 1,233.33), then 1.5 × 12%.
+    const segments = walkDiscretionaryDraw(
+      withBenefits(20000, 20000),
+      sources({ hsa: 50000 }),
+      4000,
+    );
+    expect(of(segments)).toEqual([
+      ["hsa", 2000, 0.1, false],
+      ["hsa", 1233.33, 0.15, false],
+      ["hsa", 766.67, 0.18, false],
+    ]);
+    // Income 20,000 → 25,000 (1,000 of it benefits): 385 + 138 = 523 of tax.
+    const tax = segments.reduce((s, x) => s + x.amount * x.marginalCost, 0);
+    expect(tax).toBeCloseTo(523, 6);
+  });
+
+  it("over the second threshold a dollar costs 1.85 times its rate, up to the 85% cap", () => {
+    // 30,000 of benefits beside 40,000: provisional 55,000, taxable 15,350.
+    // The cap (25,500 taxable) is at provisional 44,000 + 19,500 / 0.85 =
+    // 66,941.18: 11,941.18 dollars at 1.85 × 12%, then 12%.
+    const segments = walkDiscretionaryDraw(
+      withBenefits(30000, 40000),
+      sources({ hsa: 50000 }),
+      15000,
+    );
+    expect(of(segments)).toEqual([
+      ["hsa", 11941.18, 0.222, false],
+      ["hsa", 3058.82, 0.12, false],
+    ]);
+  });
+
+  it("a brokerage gain in the 0% band still costs the benefits it makes taxable", () => {
+    // 20,000 of benefits beside 30,000: provisional 40,000, income 34,000 (12%).
+    // An all-gain dollar is 0% gains but 0.5 of a dollar of taxable benefits
+    // (6%) to provisional 44,000, then 0.85 (10.2%).
+    const segments = walkDiscretionaryDraw(
+      withBenefits(20000, 30000),
+      sources({ brokerage: 50000, hsa: 50000 }),
+      5000,
+    );
+    expect(of(segments)).toEqual([
+      ["brokerage", 4000, 0.06, false],
+      ["brokerage", 1000, 0.102, false],
+    ]);
+  });
+
+  it("without a filing status the benefits aren't priced", () => {
+    const segments = walkDiscretionaryDraw(
+      { ...withBenefits(20000, 20000), filingStatus: undefined },
+      sources({ hsa: 50000 }),
+      3000,
+    );
+    expect(of(segments)).toEqual([["hsa", 3000, 0.1, false]]);
+  });
+});
+
+describe("walkDiscretionaryDraw: a hand-edited bracket table", () => {
+  // Settings › Tax brackets accepts rows in any order and rates that fall.
+  const falling = [
+    { threshold: 0, baseWithholding: 0, rate: 0 },
+    { threshold: 30000, baseWithholding: 0, rate: 0.3 },
+    { threshold: 50000, baseWithholding: 6000, rate: 0.2 },
+    { threshold: 130000, baseWithholding: 22000, rate: 0.4 },
+  ];
+  const unsorted = [
+    { threshold: 30000, baseWithholding: 0, rate: 0.1 },
+    { threshold: 0, baseWithholding: 0, rate: 0 },
+    { threshold: 130000, baseWithholding: 11540, rate: 0.22 },
+  ];
+  const walk = (overrides: Partial<DrawState>) =>
+    walkDiscretionaryDraw(
+      state({
+        ordinaryIncome: 60000,
+        magi: 60000,
+        standardDeduction: 30000,
+        brokerageBasisRatio: 0.5,
+        ...overrides,
+      }),
+      sources({ rothGrowth: 50000, hsa: 20000 }),
+      40000,
+    );
+  const drawsAll = (segments: ReturnType<typeof walk>) => {
+    for (const s of segments) {
+      expect(Number.isFinite(s.amount) && s.amount > 0).toBe(true);
+      expect(Number.isFinite(s.marginalCost)).toBe(true);
+    }
+    expect(segments.reduce((sum, s) => sum + s.amount, 0)).toBeCloseTo(
+      40000,
+      2,
+    );
+  };
+
+  it("draws the need from a table whose rates fall", () => {
+    drawsAll(walk({ taxBrackets: falling }));
+  });
+
+  it("draws the need from a table whose rows are out of order", () => {
+    drawsAll(walk({ taxBrackets: unsorted }));
+  });
+
+  it("draws the need from a falling-rate table with Social Security", () => {
+    drawsAll(
+      walk({
+        taxBrackets: falling,
+        socialSecurity: { gross: 40000, provisionalIncome: 50000 },
+      }),
+    );
+  });
+});
+
+describe("walkDiscretionaryDraw: a pro_rata Roth 401(k)", () => {
+  it("costs its taxable share of the ordinary rate, and reaches the edge at that share", () => {
+    // 40% of each dollar is taxed growth: 4.8% in the 12% bracket; the 22%
+    // edge 1,950 away is 4,875 dollars away; then 8.8%.
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: 95000, rothProRataTaxableShare: 0.4 }),
+      sources({ rothProRata: 10000, hsa: 10000 }),
+      6000,
+    );
+    expect(of(segments)).toEqual([
+      ["rothProRata", 4875, 0.048, false],
+      ["rothProRata", 1125, 0.088, false],
+    ]);
+  });
+
+  it("with no taxed growth it is free, after Roth basis and before brokerage", () => {
+    const segments = walkDiscretionaryDraw(
+      state({ ordinaryIncome: 20000 }),
+      sources({ rothBasis: 1000, rothProRata: 1000, brokerage: 1000 }),
+      3000,
+    );
+    expect(of(segments)).toEqual([
+      ["rothBasis", 1000, 0, false],
+      ["rothProRata", 1000, 0, false],
+      ["brokerage", 1000, 0, false],
+    ]);
+  });
+});
+
+describe("drawByMarginalCost", () => {
+  it("a source drawn short of its segment is closed, and the rest is walked again", () => {
+    const asked: string[] = [];
+    const out = drawByMarginalCost(
+      state(),
+      sources({ hsa: 10000, brokerage: 100000 }),
+      60000,
+      (segment) => {
+        asked.push(`${segment.part} ${Math.round(segment.amount)}`);
+        // the brokerage can give only 30,000 (an account cap)
+        return segment.part === "brokerage"
+          ? Math.min(segment.amount, 30000)
+          : segment.amount;
+      },
+    );
+    expect(asked).toEqual(["brokerage 48900", "hsa 10000"]);
+    expect(out.map((s) => [s.part, Math.round(s.drawn)])).toEqual([
+      ["brokerage", 30000],
+      ["hsa", 10000],
+    ]);
+  });
+});
+
+describe("freeDrawCapacities", () => {
+  it("brokerage's free room is the unused deduction plus the 0% bracket, in withdrawal dollars", () => {
+    expect(
+      freeDrawCapacities(
+        state({
+          ordinaryIncome: 20000,
+          standardDeduction: 30000,
+          brokerageBasisRatio: 0.5,
         }),
-      );
-      expect(brokerageZeroLtcgCapacity).toBe(0);
-    });
+        sources({ rothBasis: 4000, brokerage: 1_000_000 }),
+      ),
+    ).toEqual({ rothBasisCapacity: 4000, brokerageZeroLtcgCapacity: 217800 });
+  });
 
-    it("brokerageZeroLtcgCapacity is 0, not omitted, when there's no filingStatus to look up a real LTCG bracket", () => {
-      const { brokerageZeroLtcgCapacity, rothBasisCapacity } =
-        rankWithdrawalTiers(
-          baseInput({ filingStatus: undefined, rothBasisAvailable: 20000 }),
-        );
-      expect(brokerageZeroLtcgCapacity).toBe(0);
-      expect(rothBasisCapacity).toBe(20000);
-    });
+  it("brokerage's free room is 0 without a filing status", () => {
+    expect(
+      freeDrawCapacities(
+        state({ filingStatus: null }),
+        sources({ brokerage: 5000 }),
+      ).brokerageZeroLtcgCapacity,
+    ).toBe(0);
   });
 });
 
@@ -565,13 +538,13 @@ describe("deriveBasisRankingInputs", () => {
     const indAccounts = [
       {
         name: "Retirement Roth",
-        category: "roth401k",
+        category: "ira" as const,
         taxType: "taxFree",
         parentCategory: "Retirement",
       },
       {
         name: "Brokerage-parked Roth",
-        category: "roth401k",
+        category: "ira" as const,
         taxType: "taxFree",
         parentCategory: "Portfolio",
       },
@@ -597,7 +570,7 @@ describe("deriveBasisRankingInputs", () => {
     const indAccounts = [
       {
         name: "Traditional 401k",
-        category: "trad401k",
+        category: "401k" as const,
         taxType: "preTax",
         parentCategory: "Retirement",
       },
@@ -614,6 +587,42 @@ describe("deriveBasisRankingInputs", () => {
       indKey,
     });
     expect(result.rothBasisAvailable).toBe(0);
+  });
+
+  it("keeps a pro_rata Roth 401(k) out of the free basis: its balance, unqualified basis and qualified balance", () => {
+    const account = (name: string, category: "401k" | "ira", born: number) => ({
+      name,
+      category,
+      taxType: "taxFree",
+      parentCategory: "Retirement",
+      ownerBirthYear: born,
+    });
+    const result = deriveBasisRankingInputs({
+      balances,
+      indBasis: new Map([
+        ["young 401k", rothState(30000, 5000)],
+        ["old 401k", rothState(20000)],
+        ["young IRA", rothState(7000)],
+      ]),
+      indAccounts: [
+        account("young 401k", "401k", 1980),
+        account("old 401k", "401k", 1960),
+        account("young IRA", "ira", 1980),
+      ],
+      indKey: (ia) => ia.name,
+      indBalance: new Map([
+        ["young 401k", 100000],
+        ["old 401k", 60000],
+        ["young IRA", 9000],
+      ]),
+      year: 2026,
+    });
+    expect(result.rothProRata).toEqual({
+      balance: 160000,
+      basis: 35000,
+      qualifiedBalance: 60000,
+    });
+    expect(result.rothBasisAvailable).toBe(7000);
   });
 
   it("regression guard: without indAccts/indKey, the excluded account's basis wrongly leaks back in", () => {

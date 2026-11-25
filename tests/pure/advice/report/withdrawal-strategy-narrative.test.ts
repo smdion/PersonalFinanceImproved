@@ -59,29 +59,37 @@ describe("formatDiscretionaryTierBreakdown — 'why this rate' explanations (fou
     expect(result).toMatch(/0% capital-gains bracket/i);
   });
 
-  it("explains a nonzero Roth entry as growth taxed at the ordinary rate, distinct from tax-free contributions", () => {
+  it("explains a brokerage cost that rounds to 0¢ as untaxed, not as 0¢ of tax", () => {
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "brokerage", costRate: 0.0004, amount: 1000 },
+    ])!;
+    expect(result).toMatch(/0% capital-gains bracket/i);
+    expect(result).not.toMatch(/0¢/);
+  });
+
+  it("explains a nonzero Roth entry as tax per dollar on growth, distinct from tax-free contributions", () => {
     const result = formatDiscretionaryTierBreakdown([
       { source: "roth", costRate: 0.12, amount: 1000 },
     ])!;
-    expect(result).toMatch(
-      /Roth growth taxed at your 12\.0% ordinary income rate/i,
-    );
+    expect(result).toMatch(/about 12¢ of tax per dollar drawn/);
     expect(result).toMatch(/not your tax-free contributions/i);
   });
 
-  it("explains a nonzero HSA entry as a non-medical withdrawal taxed at the ordinary rate", () => {
+  it("explains a nonzero HSA entry as a non-medical withdrawal's tax per dollar", () => {
     const result = formatDiscretionaryTierBreakdown([
-      { source: "hsa", costRate: 0.22, amount: 1000 },
+      { source: "hsa", costRate: 0.222, amount: 1000 },
     ])!;
-    expect(result).toMatch(/22\.0% ordinary income rate/i);
+    expect(result).toMatch(/about 22\.2¢ of tax per dollar drawn/);
     expect(result).toMatch(/non-medical HSA withdrawal/i);
   });
 
-  it("labels a real LTCG-bracket rate as the capital-gains rate, not generic 'marginal tax'", () => {
+  it("states a brokerage entry's cost per dollar withdrawn, not a rate on its gains", () => {
     const result = formatDiscretionaryTierBreakdown([
-      { source: "brokerage", costRate: 0.2, amount: 1000 },
+      { source: "brokerage", costRate: 0.141, amount: 1000 },
     ])!;
-    expect(result).toMatch(/20\.0% long-term capital-gains rate/i);
+    expect(result).toMatch(
+      /about 14\.1¢ of tax per dollar drawn, on its long-term gains/,
+    );
   });
 
   it("labels an LTCG-plus-NIIT rate as including the Medicare surtax", () => {
@@ -94,7 +102,7 @@ describe("formatDiscretionaryTierBreakdown — 'why this rate' explanations (fou
       },
     ])!;
     expect(result).toMatch(/Medicare surtax/i);
-    expect(result).toMatch(/18\.8%/);
+    expect(result).toMatch(/18\.8¢/);
   });
 
   it("reads the surtax from the tier, not the number (rates are editable)", () => {
@@ -103,7 +111,7 @@ describe("formatDiscretionaryTierBreakdown — 'why this rate' explanations (fou
       { source: "brokerage", costRate: 0.188, amount: 1000 },
     ])!;
     expect(result).not.toMatch(/Medicare surtax/i);
-    expect(result).toMatch(/18\.8% long-term capital-gains rate/);
+    expect(result).toMatch(/about 18\.8¢ of tax per dollar drawn, on its/);
   });
 });
 

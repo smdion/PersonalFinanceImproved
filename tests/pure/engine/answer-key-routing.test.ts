@@ -560,9 +560,7 @@ describe("answer key: Bracket filling", () => {
     );
   });
 
-  xfail({
-    id: "strategies/G8 [WDR-05]",
-    todo: `v0.11 Strategies "RMD Spending re-inflates a typed budget" (ranking by cost per dollar, decision G5)`,
+  it("strategies/G8 [WDR-05] cost per dollar: the brokerage pays all 300,000, tax 3,425, HSA untouched", () => {
     // MFJ 2026, deduction 32,200, taxable Social Security 60,000; need
     // 300,000 from an HSA of 10,000 and a brokerage of 500,000 with basis
     // 375,000 (25% gain); target 12%. No Traditional, so the room goes
@@ -572,11 +570,7 @@ describe("answer key: Bracket filling", () => {
     // × 25% = 3.75¢ against the HSA's 12¢ (HSA draws are ordinary
     // income), so the brokerage pays all 300,000: gain 75,000, 3,900 over
     // the room at 15% = 585. Tax 2,840 + 585 = 3,425, HSA untouched.
-    // Today it ranks by rate (12% < 15%), draws the HSA's 10,000 first:
-    // ordinary taxable 37,800 → 4,040; gains (290,000 × 25%) 72,500, room
-    // 61,100, 11,400 × 15% = 1,710; tax 5,750 (verdict G8,
-    // `withdrawal-cost-ranking.ts:449,457,484`).
-    run: () => {
+    const run = () => {
       const h = { hsa: 10_000, brokerage: 500_000, basis: 375_000 };
       const { accountBalance } = holdings(h);
       const r = routeForMode(
@@ -596,9 +590,47 @@ describe("answer key: Bracket filling", () => {
         filingStatus: "MFJ",
       }).taxCost;
       return { tax, hsa: drawn(r.slots).hsa };
-    },
-    expected: { tax: 3_425, hsa: 0 },
-    today: { tax: 5_750, hsa: 10_000 },
+    };
+    cents(run(), { tax: 3_425, hsa: 0 });
+  });
+
+  it("strategies/BF-EDGE [WDR-05] a floor a cent either side of the 22% edge moves the draw by a cent", () => {
+    // MFJ 2026, target 12%, no Traditional: other ordinary income 132,999.99
+    // or 133,000.01 sits a cent under or over the 22% edge (100,800 +
+    // 32,200 = 133,000). Need 30,000 from an HSA of 50,000 and a brokerage
+    // of 200,000 that is all gain. Ordinary taxable is past the 0% gains top
+    // (98,900), so a brokerage dollar pays 15%; an HSA dollar pays the rate
+    // of the bracket it lands in. Under the edge only one cent of room is
+    // left at 12%: the HSA gives 0.01, then the brokerage 29,999.99 at 15%,
+    // ahead of the HSA's 22%. Over it, the brokerage gives all 30,000.
+    const h = { hsa: 50_000, brokerage: 200_000, basis: 0 };
+    const route = (otherIncome: number) => {
+      const { accountBalance } = holdings(h);
+      return drawn(
+        routeForMode(
+          30_000,
+          bracketConfig(),
+          accountBalance,
+          bracketInfo({ target: 0.12, otherIncome, basisRatio: 0 }),
+        ).slots,
+      );
+    };
+    const under = route(132_999.99);
+    const over = route(133_000.01);
+    cents(
+      {
+        underHsa: under.hsa,
+        underBrokerage: under.brokerage,
+        overHsa: over.hsa,
+        overBrokerage: over.brokerage,
+      },
+      {
+        underHsa: 0.01,
+        underBrokerage: 29_999.99,
+        overHsa: 0,
+        overBrokerage: 30_000,
+      },
+    );
   });
 });
 

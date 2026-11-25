@@ -6,6 +6,7 @@ import {
   type ReturnFilingStatus,
 } from "@/lib/config/filing-status";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
+import { roundToCents } from "@/lib/utils/math";
 
 /** Gross ordinary income against the standard deduction (undefined subtracts
  *  nothing): the ordinary taxable income gains stack on, the deduction left
@@ -62,22 +63,43 @@ export function getLtcgRate(
     .rate;
 }
 
-/** The LTCG rate on the next dollar above `taxableIncome` (a bracket's ceiling
- *  excluded): prices a slice of gains that starts there, at one rate. Not
- *  `getLtcgRate`'s question (where a dollar sits), so the two stay separate. */
-export function ltcgRateForNextDollar(
-  taxableIncome: number,
+/** The bracket (rate, ceiling) the next dollar of gains at taxable income
+ *  `position` enters, by table index in cents: a ceiling, or half a cent under
+ *  it, is in the bracket above (`getLtcgRate` asks where a dollar sits). */
+export function ltcgBracketAt(
+  position: number,
   filingStatus: ReturnFilingStatus,
   brackets: LtcgBracketTable,
-): number {
+): { rate: number; top: number } {
   const table = bracketsFor(brackets, filingStatus);
-  return (table.find((b) => taxableIncome < b.threshold) ?? table.at(-1)!).rate;
+  const at = roundToCents(Math.max(0, position));
+  const b =
+    table.find(
+      (r) => r.threshold === Infinity || roundToCents(r.threshold) > at,
+    ) ?? table.at(-1)!;
+  return { rate: b.rate, top: b.threshold };
 }
 
 /** Progressive LTCG tax: gains stack on ordinary taxable income across the
  *  brackets (MFJ 2026: $80,000 ordinary + $30,000 gains is $18,900 at 0% and
  *  $11,100 at 15%, $1,665). Rounded to cents. */
 export function computeLtcgTax(
+  ordinaryTaxableIncome: number,
+  capitalGains: number,
+  filingStatus: ReturnFilingStatus,
+  brackets: LtcgBracketTable,
+): number {
+  const tax = computeLtcgTaxUnrounded(
+    ordinaryTaxableIncome,
+    capitalGains,
+    filingStatus,
+    brackets,
+  );
+  return Math.round(tax * 100) / 100; // round to cents
+}
+
+/** `computeLtcgTax` before rounding, for comparing it with another level. */
+export function computeLtcgTaxUnrounded(
   ordinaryTaxableIncome: number,
   capitalGains: number,
   filingStatus: ReturnFilingStatus,
@@ -102,26 +124,7 @@ export function computeLtcgTax(
     floor += taxable;
   }
 
-  return Math.round(tax * 100) / 100; // round to cents
-}
-
-/** Gains room left before the stack rises above `targetRate`. LTCG brackets
- *  store each bracket's own ceiling (ordinary ones store the next floor), so
- *  `incomeCapForMarginalRate` can't stand in for this. */
-export function ltcgRoomForRate(
-  targetRate: number,
-  ordinaryTaxableIncome: number,
-  filingStatus: ReturnFilingStatus,
-  brackets: LtcgBracketTable,
-): number {
-  const table = bracketsFor(brackets, filingStatus);
-  for (const b of table) {
-    // The first bracket at or above targetRate: its own ceiling is the room.
-    if (b.rate >= targetRate) {
-      return Math.max(0, b.threshold - ordinaryTaxableIncome);
-    }
-  }
-  return Infinity;
+  return tax;
 }
 
 /** A year's long-term gains tax (Schedule D Tax Worksheet): less the unused

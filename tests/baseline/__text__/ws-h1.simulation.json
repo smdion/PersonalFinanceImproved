@@ -31,6 +31,10 @@
       {
        "category": "401k",
        "subType": "traditional"
+      },
+      {
+       "category": "ira",
+       "subType": "roth"
       }
      ],
      "projectionByYear": [
@@ -3185,12 +3189,12 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "403b"
+         "category": "ira"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
+         "category": "403b"
         },
         {
          "cappedByAccount": false,
@@ -3308,17 +3312,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -3436,17 +3440,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -3564,17 +3568,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -3692,17 +3696,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -3755,6 +3759,9 @@
         "withdrawalRoutingMode": "bracket_filling"
        },
        "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        },
         {
          "source": "roth"
         }
@@ -3820,17 +3827,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -6948,11 +6955,11 @@
        "category": "brokerage"
       },
       {
-       "category": "401k",
+       "category": "ira",
        "subType": "roth"
       },
       {
-       "category": "ira",
+       "category": "401k",
        "subType": "roth"
       }
      ],
@@ -9820,6 +9827,393 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        },
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
          "category": "401k"
         },
         {
@@ -10337,12 +10731,12 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
+         "category": "403b"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "403b"
+         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -10460,11 +10854,6 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "401k"
         },
         {
@@ -10475,386 +10864,7 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
         },
         {
          "cappedByAccount": false,
@@ -13732,7 +13742,7 @@
        "category": "brokerage"
       },
       {
-       "category": "401k",
+       "category": "ira",
        "subType": "roth"
       }
      ],
@@ -16809,6 +16819,1673 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        },
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "hsa"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "brokerage"
+        }
+       ],
+       "unmetNeedMaterial": false,
+       "withdrawalSized": false
+      },
+      {
+       "acaStatus": "not_checked",
+       "acaSubsidyPreserved": false,
+       "balanceByAccount": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "config": {
+        "avoidPenalizedWithdrawals": true,
+        "discretionaryWithdrawalOrder": "roth_first",
+        "qcdMaximize": false,
+        "rmdExcessHandling": "reinvest",
+        "rmdSmoothingEnabled": false,
+        "rothBracketOverlay": true,
+        "withdrawalOrder": [
+         "401k",
+         "403b",
+         "ira",
+         "brokerage",
+         "hsa"
+        ],
+        "withdrawalRoutingMode": "bracket_filling"
+       },
+       "discretionaryTierBreakdown": [
+        {
+         "source": "roth"
+        }
+       ],
+       "hasBudgetOverride": false,
+       "individualAccountBalances": [
+        {
+         "category": "401k",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "kind": "rule_of_55"
+          }
+         },
+         "name": "Avery 401k (Fidelity)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        },
+        {
+         "category": "ira",
+         "draw": {
+          "allowPenalizedWithdrawals": false,
+          "eligibilityLocked": false,
+          "reason": {
+           "gate": "age_59_half",
+           "kind": "age_reached"
+          }
+         },
+         "name": "Avery IRA (Vanguard)",
+         "ownerName": "Avery",
+         "parentCategory": "Retirement",
+         "roth": {
+          "basisUncertain": false
+         },
+         "taxType": "taxFree"
+        }
+       ],
+       "phase": "decumulation",
+       "preWithdrawalAcctBal": {
+        "401k": {
+         "structure": "roth_traditional"
+        },
+        "403b": {
+         "structure": "roth_traditional"
+        },
+        "brokerage": {
+         "structure": "basis_tracking"
+        },
+        "hsa": {
+         "structure": "single_bucket"
+        },
+        "ira": {
+         "structure": "roth_traditional"
+        }
+       },
+       "rmdOverrodeRouting": false,
+       "slots": [
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "401k"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
          "category": "403b"
         },
         {
@@ -18089,12 +19766,12 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
+         "category": "403b"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "403b"
+         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -18212,17 +19889,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -18340,17 +20017,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -18468,17 +20145,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -18596,17 +20273,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -18724,17 +20401,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -18852,17 +20529,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -18980,17 +20657,17 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "401k"
         },
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
          "category": "403b"
+        },
+        {
+         "cappedByAccount": false,
+         "cappedByTaxType": false,
+         "category": "ira"
         },
         {
          "cappedByAccount": false,
@@ -19108,11 +20785,6 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "401k"
         },
         {
@@ -19123,1666 +20795,7 @@
         {
          "cappedByAccount": false,
          "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
          "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "hsa"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "brokerage"
-        }
-       ],
-       "unmetNeedMaterial": false,
-       "withdrawalSized": false
-      },
-      {
-       "acaStatus": "not_checked",
-       "acaSubsidyPreserved": false,
-       "balanceByAccount": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "config": {
-        "avoidPenalizedWithdrawals": true,
-        "discretionaryWithdrawalOrder": "roth_first",
-        "qcdMaximize": false,
-        "rmdExcessHandling": "reinvest",
-        "rmdSmoothingEnabled": false,
-        "rothBracketOverlay": true,
-        "withdrawalOrder": [
-         "401k",
-         "403b",
-         "ira",
-         "brokerage",
-         "hsa"
-        ],
-        "withdrawalRoutingMode": "bracket_filling"
-       },
-       "discretionaryTierBreakdown": [
-        {
-         "source": "roth"
-        }
-       ],
-       "hasBudgetOverride": false,
-       "individualAccountBalances": [
-        {
-         "category": "401k",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "kind": "rule_of_55"
-          }
-         },
-         "name": "Avery 401k (Fidelity)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        },
-        {
-         "category": "ira",
-         "draw": {
-          "allowPenalizedWithdrawals": false,
-          "eligibilityLocked": false,
-          "reason": {
-           "gate": "age_59_half",
-           "kind": "age_reached"
-          }
-         },
-         "name": "Avery IRA (Vanguard)",
-         "ownerName": "Avery",
-         "parentCategory": "Retirement",
-         "roth": {
-          "basisUncertain": false
-         },
-         "taxType": "taxFree"
-        }
-       ],
-       "phase": "decumulation",
-       "preWithdrawalAcctBal": {
-        "401k": {
-         "structure": "roth_traditional"
-        },
-        "403b": {
-         "structure": "roth_traditional"
-        },
-        "brokerage": {
-         "structure": "basis_tracking"
-        },
-        "hsa": {
-         "structure": "single_bucket"
-        },
-        "ira": {
-         "structure": "roth_traditional"
-        }
-       },
-       "rmdOverrodeRouting": false,
-       "slots": [
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "ira"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "401k"
-        },
-        {
-         "cappedByAccount": false,
-         "cappedByTaxType": false,
-         "category": "403b"
         },
         {
          "cappedByAccount": false,
@@ -20829,6 +20842,10 @@
      {
       "category": "401k",
       "subType": "traditional"
+     },
+     {
+      "category": "ira",
+      "subType": "roth"
      }
     ],
     "projectionByYear": [
@@ -23880,12 +23897,12 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
-        "category": "403b"
+        "category": "ira"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
-        "category": "ira"
+        "category": "403b"
        },
        {
         "cappedByAccount": false,
@@ -24003,17 +24020,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -24131,17 +24148,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -24259,17 +24276,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -24387,17 +24404,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -24515,17 +24532,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -24643,17 +24660,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -24771,17 +24788,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -24899,17 +24916,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -25027,17 +25044,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -25155,17 +25172,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -25283,17 +25300,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -25411,17 +25428,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -25539,17 +25556,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -25667,17 +25684,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -25795,17 +25812,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -25923,17 +25940,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,
@@ -25986,6 +26003,9 @@
        "withdrawalRoutingMode": "bracket_filling"
       },
       "discretionaryTierBreakdown": [
+       {
+        "source": "roth"
+       },
        {
         "source": "roth"
        }
@@ -26051,17 +26071,17 @@
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
+        "category": "ira"
+       },
+       {
+        "cappedByAccount": false,
+        "cappedByTaxType": false,
         "category": "401k"
        },
        {
         "cappedByAccount": false,
         "cappedByTaxType": false,
         "category": "403b"
-       },
-       {
-        "cappedByAccount": false,
-        "cappedByTaxType": false,
-        "category": "ira"
        },
        {
         "cappedByAccount": false,

@@ -406,7 +406,7 @@ export type EngineDecumulationYear = {
     includesNiit?: true;
   }[];
   /** The two zero-cost tiers' capacity this year before ordering or drawing, visible even when
-   *  untouched (`RankedWithdrawalTiers`). bracket_filling only; undefined otherwise. */
+   *  untouched (`freeDrawCapacities`). bracket_filling only; undefined otherwise. */
   rothBasisCapacity?: number;
   brokerageZeroLtcgCapacity?: number;
   /** The need (a `withdrawalSized` year's: gross) less what was delivered, plus IRMAA on top

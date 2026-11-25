@@ -20,11 +20,13 @@ export {
 
 export type { /** @public */ WithholdingBracket } from "./tax-estimation";
 
-export { /** @public */ rankWithdrawalTiers } from "./withdrawal-cost-ranking";
-export type {
-  /** @public */ WithdrawalTier,
-  WithdrawalSourceKind,
-  /** @public */ RankWithdrawalTiersInput,
+export {
+  /** @public */ walkDiscretionaryDraw,
 } from "./withdrawal-cost-ranking";
+export type { /** @public */ DrawSegment } from "./withdrawal-cost-ranking";
+export type {
+  WithdrawalSourceKind,
+  /** @public */ DrawState,
+} from "./draw-position";
 
 export { gapUnmetNeedMaterial } from "./gap-year-draw";

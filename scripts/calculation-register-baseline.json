@@ -314,7 +314,6 @@
     "SIM-22",
     "TAX-23",
     "TAX-24",
-    "WDR-05",
     "WDR-19"
   ],
   "exportsWithoutRow": [
@@ -470,7 +469,6 @@
     "src/lib/pure/engine/rmd-enforcement.ts:rmdOwnerOf",
     "src/lib/pure/engine/tax-estimation.ts:marginalRateAboveTarget",
     "src/lib/pure/engine/tax-estimation.ts:taxableSSFor",
-    "src/lib/pure/engine/withdrawal-cost-ranking.ts:deriveBasisRankingInputs",
     "src/lib/pure/household/app-settings.ts:parseAppSettings",
     "src/lib/pure/household/household-income.ts:sumHouseholdIncome",
     "src/lib/pure/household/household-timeline.ts:planAgeLabel",

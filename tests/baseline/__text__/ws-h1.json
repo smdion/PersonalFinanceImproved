@@ -21,6 +21,10 @@
   {
    "category": "401k",
    "subType": "traditional"
+  },
+  {
+   "category": "ira",
+   "subType": "roth"
   }
  ],
  "projectionByYear": [
@@ -3072,12 +3076,12 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
-     "category": "403b"
+     "category": "ira"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
-     "category": "ira"
+     "category": "403b"
     },
     {
      "cappedByAccount": false,
@@ -3195,17 +3199,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -3323,17 +3327,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -3451,17 +3455,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -3579,17 +3583,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -3707,17 +3711,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -3835,17 +3839,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -3963,17 +3967,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -4091,17 +4095,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -4219,17 +4223,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -4347,17 +4351,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -4475,17 +4479,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -4603,17 +4607,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -4731,17 +4735,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -4859,17 +4863,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,
@@ -4922,6 +4926,9 @@
     "withdrawalRoutingMode": "bracket_filling"
    },
    "discretionaryTierBreakdown": [
+    {
+     "source": "roth"
+    },
     {
      "source": "roth"
     }
@@ -4987,17 +4994,17 @@
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
+     "category": "ira"
+    },
+    {
+     "cappedByAccount": false,
+     "cappedByTaxType": false,
      "category": "401k"
     },
     {
      "cappedByAccount": false,
      "cappedByTaxType": false,
      "category": "403b"
-    },
-    {
-     "cappedByAccount": false,
-     "cappedByTaxType": false,
-     "category": "ira"
     },
     {
      "cappedByAccount": false,

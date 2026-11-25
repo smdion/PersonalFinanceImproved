@@ -1,15 +1,36 @@
 import { describe, it, expect } from "vitest";
 import {
   getLtcgRate,
-  ltcgRateForNextDollar,
   computeLtcgTax,
-  ltcgRoomForRate,
+  ltcgBracketAt,
   ltcgStackBase,
 } from "@/lib/pure/tax/ltcg";
 import { shippedTaxTables } from "../../helpers/tax-data";
 
 /** The shipped 2026 LTCG brackets. */
 const LTCG = shippedTaxTables(2026).ltcgBrackets;
+type Table = Parameters<typeof ltcgBracketAt>[2];
+const ltcgRateForNextDollar = (
+  position: number,
+  status: Parameters<typeof ltcgBracketAt>[1],
+  table: Table,
+) => ltcgBracketAt(position, status, table).rate;
+/** Gains room above ordinary taxable income while each bracket's rate stays
+ *  within `target`, climbed bracket by bracket with `ltcgBracketAt`. */
+function ltcgRoomForRate(
+  target: number,
+  ordinary: number,
+  status: Parameters<typeof ltcgBracketAt>[1],
+  table: Table,
+): number {
+  let at = ordinary;
+  for (;;) {
+    const bracket = ltcgBracketAt(at, status, table);
+    if (bracket.rate > target) return Math.max(0, at - ordinary);
+    if (!Number.isFinite(bracket.top)) return Infinity;
+    at = bracket.top;
+  }
+}
 
 // LTCG brackets are denominated in taxable income, not gross ordinary
 // income. $120,100 gross with MFJ's $32,200 deduction is $87,900 taxable:
@@ -69,7 +90,7 @@ describe("ltcgStackBase", () => {
   });
 });
 
-describe("ltcgRoomForRate", () => {
+describe("ltcgBracketAt: room at a rate, climbed bracket by bracket", () => {
   it("MFJ: 0% headroom at $0 ordinary income is the 0% bracket's own ceiling ($98,900)", () => {
     expect(ltcgRoomForRate(0, 0, "MFJ", LTCG)).toBe(98900);
   });
@@ -122,7 +143,7 @@ describe("ltcgRoomForRate", () => {
 // getLtcgRate is where a dollar sits (a ceiling included); this is the
 // bracket the next dollar enters (a ceiling excluded, as computeLtcgTax
 // stacks), for a slice of gains starting exactly on a ceiling.
-describe("ltcgRateForNextDollar", () => {
+describe("ltcgBracketAt: the next dollar's rate", () => {
   it("MFJ: one dollar below the 0% ceiling ⇒ still 0%", () => {
     expect(ltcgRateForNextDollar(98899, "MFJ", LTCG)).toBe(0);
   });
