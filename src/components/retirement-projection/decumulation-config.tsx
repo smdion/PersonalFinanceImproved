@@ -20,6 +20,7 @@ import {
   WITHDRAWAL_ROUTING_MODE_LABELS,
   WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS,
   DEFAULT_WITHDRAWAL_ROUTING_MODE,
+  knownRoutingMode,
   type WithdrawalRoutingMode,
 } from "@/lib/config/withdrawal-routing";
 import { WithdrawalOrderEditor } from "@/components/retirement/withdrawal-order-editor";
@@ -126,18 +127,12 @@ export function DecumulationConfig({
     "fixed") as WithdrawalStrategyType;
   const strategyCfg = storedStrategyConfig(strategyKey);
   const isDynamic = strategyKey !== "fixed";
+  // A saved mode this version doesn't know runs as the default (setup notes).
+  const knownMode = knownRoutingMode(persistedWithdrawalRoutingMode);
   const persistedModeLabel =
-    persistedWithdrawalRoutingMode &&
-    persistedWithdrawalRoutingMode in WITHDRAWAL_ROUTING_MODE_LABELS
-      ? WITHDRAWAL_ROUTING_MODE_LABELS[
-          persistedWithdrawalRoutingMode as keyof typeof WITHDRAWAL_ROUTING_MODE_LABELS
-        ]
-      : null;
+    knownMode && WITHDRAWAL_ROUTING_MODE_LABELS[knownMode];
   const persistedMode: WithdrawalRoutingMode =
-    persistedWithdrawalRoutingMode &&
-    persistedWithdrawalRoutingMode in WITHDRAWAL_ROUTING_MODE_LABELS
-      ? (persistedWithdrawalRoutingMode as WithdrawalRoutingMode)
-      : DEFAULT_WITHDRAWAL_ROUTING_MODE;
+    knownMode ?? DEFAULT_WITHDRAWAL_ROUTING_MODE;
   // What this panel shows: the plan default until the user clicks a mode this session, then
   // their choice (the untouched `withdrawalRoutingMode` is a seed literal and could show the
   // wrong editor). Display only; what's sent is gated on `touched` in use-projection-queries.ts.

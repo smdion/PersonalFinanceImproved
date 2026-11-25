@@ -130,7 +130,7 @@
     "src/components/profiles/what-if/what-if-step.tsx": 59,
     "src/components/profiles/what-if/what-if-tab.tsx": 570,
     "src/components/retirement-projection/coast-fire-card.tsx": 397,
-    "src/components/retirement-projection/decumulation-config.tsx": 434,
+    "src/components/retirement-projection/decumulation-config.tsx": 429,
     "src/components/retirement-projection/index.tsx": 159,
     "src/components/retirement-projection/overrides/override-field-parts.tsx": 117,
     "src/components/retirement-projection/overrides/override-forms.tsx": 375,
@@ -198,7 +198,7 @@
     "src/components/retirement-projection/withdrawal-comparison-chart.tsx": 110,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 457,
     "src/components/retirement/assumptions-band.tsx": 404,
-    "src/components/retirement/sections/taxes.tsx": 536,
+    "src/components/retirement/sections/taxes.tsx": 527,
     "src/components/savings/api-sync-section.tsx": 588,
     "src/components/savings/contribution-grid.tsx": 473,
     "src/components/savings/extra-paycheck-growth.tsx": 231,
@@ -728,7 +728,7 @@
       "WhatIfTab": 529
     },
     "src/components/retirement-projection/decumulation-config.tsx": {
-      "DecumulationConfig": 332
+      "DecumulationConfig": 326
     },
     "src/components/retirement-projection/lump-sum-form.tsx": {
       "LumpSumForm": 155
@@ -798,7 +798,7 @@
       "StrategyParamsSection.renderField": 173
     },
     "src/components/retirement/sections/taxes.tsx": {
-      "TaxesSection": 468
+      "TaxesSection": 463
     },
     "src/components/savings/api-sync-section.tsx": {
       "ApiSyncSection": 166,

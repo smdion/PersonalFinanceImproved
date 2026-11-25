@@ -17,6 +17,14 @@ export type WithdrawalRoutingMode = (typeof WITHDRAWAL_ROUTING_MODES)[number];
 export const DEFAULT_WITHDRAWAL_ROUTING_MODE: WithdrawalRoutingMode =
   "bracket_filling";
 
+/** A stored mode this version knows, else null (a list match, so an
+ *  inherited key such as "constructor" is never one). */
+export function knownRoutingMode(
+  stored: unknown,
+): WithdrawalRoutingMode | null {
+  return WITHDRAWAL_ROUTING_MODES.find((mode) => mode === stored) ?? null;
+}
+
 export const WITHDRAWAL_ROUTING_MODE_LABELS: Record<
   WithdrawalRoutingMode,
   string

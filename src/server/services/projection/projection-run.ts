@@ -11,7 +11,7 @@ import {
 } from "@/lib/db/stored-strategy-key";
 import { readStoredValue } from "@/lib/db/stored-setting";
 import { readStoredShape, storedValueLog } from "@/lib/db/stored-shape";
-import { WITHDRAWAL_ROUTING_MODES } from "@/lib/config/withdrawal-routing";
+import { readStoredRoutingMode } from "@/lib/db/stored-routing-mode";
 import {
   accountCategoryEnum,
   getDefaultDecumulationOrder,
@@ -180,9 +180,9 @@ export async function resolveProjectionOverrides(
   return { accumulationOverrides, decumulationOverrides };
 }
 
-/** retirement_settings' withdrawal routing, as its writer stores it. */
+/** retirement_settings' withdrawal order and splits, as their writer stores
+ *  them (the mode has its own reader, `readStoredRoutingMode`). */
 const storedRouting = z.looseObject({
-  withdrawalRoutingMode: z.enum(WITHDRAWAL_ROUTING_MODES),
   withdrawalOrder: storedWithdrawalOrderSchema.nullish(),
   withdrawalSplits: storedWithdrawalSplitsSchema.nullish(),
 });
@@ -277,13 +277,16 @@ export function buildDecumulationDefaults(
     if (known.splitsNotShares) notes.push(SPLITS_NOT_SHARES_NOTE);
   }
   notes.push(...unknownStrategyNotes(settings.withdrawalStrategy));
+  const routingMode = readStoredRoutingMode(settings.withdrawalRoutingMode);
+  if (clientDefaults.withdrawalRoutingMode === undefined)
+    notes.push(...routingMode.notes);
   return {
     withdrawalRate: toNumber(settings.withdrawalRate),
     // The ONE place the routing is resolved, for every caller: a client
     // override (the Retirement page's touched Configure toggle) wins, else
     // the household's saved value; a NULL order or splits is the config's.
     withdrawalRoutingMode:
-      clientDefaults.withdrawalRoutingMode ?? saved.withdrawalRoutingMode,
+      clientDefaults.withdrawalRoutingMode ?? routingMode.value,
     withdrawalOrder:
       clientDefaults.withdrawalOrder ??
       saved.withdrawalOrder ??

@@ -36,12 +36,8 @@ import type {
 } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
 import { rothTargetOf } from "./helpers";
-import {
-  WITHDRAWAL_ROUTING_MODES,
-  WITHDRAWAL_ROUTING_MODE_LABELS,
-  WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS,
-  DEFAULT_WITHDRAWAL_ROUTING_MODE,
-} from "@/lib/config/withdrawal-routing";
+import { WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS } from "@/lib/config/withdrawal-routing";
+import { RoutingModeOptions } from "./routing-mode-options";
 
 type Props = {
   settings: Settings;
@@ -393,12 +389,7 @@ export function TaxesSection({
               disabled={!isEditable}
               className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {WITHDRAWAL_ROUTING_MODES.map((mode) => (
-                <option key={mode} value={mode}>
-                  {WITHDRAWAL_ROUTING_MODE_LABELS[mode]}
-                  {mode === DEFAULT_WITHDRAWAL_ROUTING_MODE ? " (default)" : ""}
-                </option>
-              ))}
+              <RoutingModeOptions stored={settings.withdrawalRoutingMode} />
             </select>
           </div>
         </div>

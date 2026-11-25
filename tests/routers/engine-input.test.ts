@@ -89,6 +89,53 @@ describe("prepareEngineInput", () => {
   });
 });
 
+describe("buildDecumulationDefaults, a saved routing mode this version doesn't know", () => {
+  it("runs it as Bracket Filling, as every page shows, with a setup note", () => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const notes: string[] = [];
+    const out = buildDecumulationDefaults(
+      { ...SETTINGS, withdrawalRoutingMode: "glide_path" },
+      NO_CLIENT,
+      RATES,
+      notes,
+    );
+    expect(out.withdrawalRoutingMode).toBe("bracket_filling");
+    expect(notes).toEqual([expect.stringMatching(/"glide_path"/)]);
+
+    // A mode the page sends (its Configure toggle) runs, with no note.
+    const sent: string[] = [];
+    const withClient = buildDecumulationDefaults(
+      { ...SETTINGS, withdrawalRoutingMode: "glide_path" },
+      { ...NO_CLIENT, withdrawalRoutingMode: "waterfall" },
+      RATES,
+      sent,
+    );
+    expect(withClient.withdrawalRoutingMode).toBe("waterfall");
+    expect(sent).toEqual([]);
+    vi.restoreAllMocks();
+  });
+
+  it("still uses the saved order and splits beside it", () => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const out = buildDecumulationDefaults(
+        {
+          ...SETTINGS,
+          withdrawalRoutingMode: "glide_path",
+          withdrawalOrder: ["ira", "401k"],
+          withdrawalSplits: { ira: 0.25, "401k": 0.75 },
+        },
+        NO_CLIENT,
+        RATES,
+      );
+      expect(out.withdrawalOrder).toEqual(["ira", "401k"]);
+      expect(out.withdrawalSplits).toMatchObject({ ira: 0.25, "401k": 0.75 });
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+});
+
 describe('the saved "Changes by year" with per-category fields', () => {
   it("applies a saved set that sets only some categories (a tax split, a withdrawal tax preference)", async () => {
     const ctx = await createTestCaller();

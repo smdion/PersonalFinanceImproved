@@ -1919,7 +1919,7 @@
   },
   "src/components/retirement-projection/decumulation-config.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 6
+      "count": 4
     },
     "max-lines-per-function": {
       "count": 1
