@@ -17,6 +17,7 @@ import {
 import {
   formatSyncResultToast,
   withUnreadableItems,
+  withUnwritableItems,
 } from "@/components/ui/sync-result-toast";
 import { setPrivacyMode, isPrivacyMode } from "@/lib/utils/privacy-mode";
 
@@ -337,6 +338,17 @@ describe("withUnreadableItems", () => {
     );
     expect(withUnreadableItems("Pushed 1 item to YNAB", [])).toBe(
       "Pushed 1 item to YNAB",
+    );
+  });
+});
+
+describe("withUnwritableItems", () => {
+  it("names the items a pull left out for saved amounts with no linked column", () => {
+    expect(withUnwritableItems("Pulled 1 item from Actual", ["Rent"])).toBe(
+      "Pulled 1 item from Actual — not pulled, saved amounts have no linked column: Rent",
+    );
+    expect(withUnwritableItems("Pulled 1 item from Actual", [])).toBe(
+      "Pulled 1 item from Actual",
     );
   });
 });

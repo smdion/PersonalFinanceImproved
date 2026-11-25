@@ -53,3 +53,13 @@ export function withUnreadableItems(
   if (names.length === 0) return message;
   return `${message} — not pushed, saved amount isn't a number: ${names.join(", ")}`;
 }
+
+/** A pull toast with the items it left out because their saved amounts have
+ *  no linked column, named after it (never written into another column). */
+export function withUnwritableItems(
+  message: string,
+  names: readonly string[] = [],
+): string {
+  if (names.length === 0) return message;
+  return `${message} — not pulled, saved amounts have no linked column: ${names.join(", ")}`;
+}

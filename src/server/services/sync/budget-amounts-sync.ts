@@ -89,6 +89,7 @@ export async function syncBudgetFromApi(ctx: { db: Db; scope: RequestScope }) {
   });
 
   let updated = 0;
+  const skippedUnwritable: string[] = []; // no stored linked column: named
   for (const item of items) {
     if (!item.apiCategoryId) continue;
     if (item.apiSyncDirection !== "pull" && item.apiSyncDirection !== "both")
@@ -102,10 +103,14 @@ export async function syncBudgetFromApi(ctx: { db: Db; scope: RequestScope }) {
     if (apiCat.goalTarget == null) continue;
 
     // As stored: a column this pull doesn't write keeps what it holds. Saved
-    // amounts that aren't a list, or none, have nowhere to write: skipped.
+    // amounts that aren't a list, or stop short of the linked column, have
+    // nowhere to write: skipped and named, never written into another column.
     const amounts = storedAmountList(item.amounts);
-    if (amounts === null || amounts.length === 0) continue;
-    amounts[Math.min(colIndex, amounts.length - 1)] = apiCat.goalTarget;
+    if (amounts === null || !(colIndex >= 0 && colIndex < amounts.length)) {
+      skippedUnwritable.push(item.subcategory);
+      continue;
+    }
+    amounts[colIndex] = apiCat.goalTarget;
 
     await ctx.db
       .update(schema.budgetItems)
@@ -122,7 +127,7 @@ export async function syncBudgetFromApi(ctx: { db: Db; scope: RequestScope }) {
     updated++;
   }
 
-  return { updated };
+  return { updated, skippedUnwritable };
 }
 
 export async function syncBudgetToApi(ctx: { db: Db; scope: RequestScope }) {

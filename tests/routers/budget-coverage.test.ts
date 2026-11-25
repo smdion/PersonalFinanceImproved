@@ -855,10 +855,11 @@ describe("budget router — syncBudgetFromApi", () => {
         sqlite: { exec: (sql: string) => void },
         itemIds: number[],
       ) => void,
+      service: "ynab" | "actual" = "ynab",
     ) {
       const { getActiveBudgetApi, cacheGet } = await import("@/lib/budget-api");
       (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-        "ynab",
+        service,
       );
       (cacheGet as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         data: { categories },
@@ -868,13 +869,13 @@ describe("budget router — syncBudgetFromApi", () => {
       try {
         const seed = seedStandardDataset(db);
         sqlite.exec(
-          `INSERT INTO api_connections (service, config, linked_profile_id, linked_column_index) VALUES ('ynab', '{}', ${seed.profileId}, ${linkedColumnIndex})`,
+          `INSERT INTO api_connections (service, config, linked_profile_id, linked_column_index) VALUES ('${service}', '{}', ${seed.profileId}, ${linkedColumnIndex})`,
         );
         setup(sqlite, seed.itemIds);
         for (const [i, c] of categories.entries()) {
           await caller.budget.linkToApi({
             budgetItemId: seed.itemIds[i]!,
-            service: "ynab",
+            service,
             apiCategoryId: c.id as string,
             apiCategoryName: "Linked",
             syncDirection: "pull",
@@ -940,6 +941,24 @@ describe("budget router — syncBudgetFromApi", () => {
       expect(result.updated).toBe(1);
       expect(amountsOf(itemIds[0]!)).toEqual(["100", 1500, 300]);
     });
+
+    it.each(["ynab", "actual"] as const)(
+      "%s: skips and names an item whose amounts stop short of the linked column, never writing another column",
+      async (service) => {
+        const { result, amountsOf, itemIds } = await pullWith(
+          [{ id: "c1", goalTarget: 1500 }],
+          2,
+          (sqlite, ids) =>
+            sqlite.exec(
+              `UPDATE budget_items SET amounts = '[100,200]' WHERE id = ${ids[0]}`,
+            ),
+          service,
+        );
+        expect(result.updated).toBe(0);
+        expect(result.skippedUnwritable).toEqual(["Rent"]);
+        expect(amountsOf(itemIds[0]!)).toEqual([100, 200]);
+      },
+    );
   });
 
   it("uses linked profile from apiConnections when configured", async () => {

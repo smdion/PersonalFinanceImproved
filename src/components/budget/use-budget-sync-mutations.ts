@@ -10,6 +10,7 @@ import { toast } from "@/lib/hooks/use-toast";
 import {
   formatSyncResultToast,
   withUnreadableItems,
+  withUnwritableItems,
 } from "@/components/ui/sync-result-toast";
 import { budgetApiServiceLabel } from "@/lib/config/display-labels";
 import { useInvalidateBudget } from "./use-invalidate-budget";
@@ -22,10 +23,13 @@ export function useBudgetSyncMutations() {
     onSuccess: (data) => {
       invalidateSummary();
       toast.success(
-        formatSyncResultToast(
-          data.updated,
-          "pull",
-          budgetApiServiceLabel(activeBudgetApi),
+        withUnwritableItems(
+          formatSyncResultToast(
+            data.updated,
+            "pull",
+            budgetApiServiceLabel(activeBudgetApi),
+          ),
+          data.skippedUnwritable,
         ),
       );
     },
