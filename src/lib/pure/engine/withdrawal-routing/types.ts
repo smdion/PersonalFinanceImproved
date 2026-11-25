@@ -39,6 +39,8 @@ export interface RouteBracketInfo {
   standardDeduction?: number;
   /** Which free source goes first. Undefined ⇒ "roth_first". */
   discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
+  /** The tax multiplier the walk prices with (`DrawState.taxMultiplier`). */
+  taxMultiplier?: number;
 }
 
 export type RouteResult = {

@@ -56,5 +56,6 @@ export function drawStart(
         },
       }),
     discretionaryWithdrawalOrder: bracketInfo.discretionaryWithdrawalOrder,
+    taxMultiplier: bracketInfo.taxMultiplier,
   };
 }

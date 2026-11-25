@@ -77,6 +77,7 @@ export function routeYearDraw(
       conversionsEnabled: taxRates.enableRothConversions,
       standardDeduction: grownStandardDeduction,
       discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
+      taxMultiplier: taxRates.taxMultiplier,
     },
     eligibility,
     nonRetirement,

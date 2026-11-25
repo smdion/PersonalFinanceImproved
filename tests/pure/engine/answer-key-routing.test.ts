@@ -632,6 +632,48 @@ describe("answer key: Bracket filling", () => {
       },
     );
   });
+
+  it("strategies/BF-K [WDR-05] at a tax multiplier of 3 the HSA (the 50% cap) goes before 20% gains scaled to 60%: HSA 50,000, brokerage 49,100, tax 450,000", () => {
+    // MFJ 2026, target 35%, multiplier 3 (D12.16; OD-3 Rec (a): the ranking
+    // uses the scaled rates). Need 900,000 from Traditional 2,000,000, an HSA
+    // of 50,000 and a brokerage of 500,000 that is all gain. Traditional fills
+    // to the 37% edge, gross 768,700 + 32,200 = 800,900, where the tax is
+    // 206,583.50: × 3 is over half of gross income, so ordinary tax is capped
+    // at 50% (MAX_EFFECTIVE_TAX_RATE) and an HSA dollar costs 50¢. A gain
+    // dollar (taxable income past 613,700) costs 20% × 3 = 60¢ stacked, at
+    // most 50¢ as ordinary income (line 25), plus the unscaled 3.8% NIIT:
+    // 53.8¢. So the HSA's 50,000 goes first, the brokerage gives 49,100.
+    // Tax: ordinary 850,900 × 50% = 425,450; gains min(3 × 20% × 49,100 =
+    // 29,460, 450,000 − 425,450 = 24,550) = 24,550; 450,000 in all (NIIT
+    // 3.8% × 49,100 = 1,865.80 on top, against 3,765.80 had the brokerage
+    // paid all 99,100 as the unscaled 37% vs 23.8% order would).
+    const h = { traditional: 2_000_000, hsa: 50_000, brokerage: 500_000 };
+    const { accountBalance } = holdings({ ...h, basis: 0 });
+    const r = routeForMode(900_000, bracketConfig(), accountBalance, {
+      ...bracketInfo({ target: 0.35, basisRatio: 0 }),
+      taxMultiplier: 3,
+    });
+    const tax = computeTaxFromSlots({
+      rothTaxableGrowth: 0,
+      penaltyCost: 0,
+      slots: r.slots,
+      taxableSS: 0,
+      balances: { afterTax: 500_000, afterTaxBasis: 0 },
+      brokerageBasisRatio: 0,
+      taxRates: { ...taxRates(0.35), taxMultiplier: 3 },
+      filingStatus: "MFJ",
+    }).taxCost;
+    const d = drawn(r.slots);
+    cents(
+      {
+        traditional: d.traditional,
+        hsa: d.hsa,
+        brokerage: d.brokerage,
+        tax,
+      },
+      { traditional: 800_900, hsa: 50_000, brokerage: 49_100, tax: 450_000 },
+    );
+  });
 });
 
 describe("answer key: the gross-up", () => {

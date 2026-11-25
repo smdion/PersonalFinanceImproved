@@ -7,6 +7,7 @@ import type { WithholdingBracket } from "./tax-estimation";
 import { estimateEffectiveTaxRate } from "./tax-estimation";
 import { computeLtcgTaxUnrounded, ltcgStackBase } from "@/lib/pure/tax/ltcg";
 import { roundToCents } from "../../utils/math";
+import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
 import {
   SS_TAX_TIER1_INCLUSION_RATE,
   SS_TAX_TIER2_INCLUSION_RATE,
@@ -44,6 +45,9 @@ export interface DrawState {
   socialSecurity?: { gross: number; provisionalIncome: number };
   /** Which free source goes first (0% gains still count toward MAGI). */
   discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
+  /** The tax multiplier: scales ordinary and gains tax, not the NIIT, as
+   *  computeTaxFromSlots does. Omitted ⇒ 1. */
+  taxMultiplier?: number;
 }
 
 /** A position or edge in whole cents (`roundToCents`), so a grown table's
@@ -65,7 +69,7 @@ export function ordinaryBracketAt(
     taxBrackets: brackets,
     standardDeduction: deduction,
   }: Pick<DrawState, "taxBrackets" | "standardDeduction">,
-): { rate: number; top: number } {
+): { rate: number; top: number; start: number; base: number } {
   // Rows start at their threshold plus the deduction's part the table leaves
   // out (`toOrdinaryBracketIncome`); under the first row nothing is taxed.
   const firstTaxed = brackets.find((b) => b.rate > 0);
@@ -73,39 +77,68 @@ export function ordinaryBracketAt(
     firstTaxed && deduction !== undefined
       ? Math.max(0, deduction - firstTaxed.threshold)
       : 0;
-  if (cents(income) < cents(untaxed)) return { rate: 0, top: untaxed };
+  if (cents(income) < cents(untaxed))
+    return { rate: 0, top: untaxed, start: 0, base: 0 };
   // The row in force is the latest start at or under `income` (the last such
   // row on a tie); the top is the nearest start above it, rows in any order.
   let rate = 0;
   let start = -Infinity;
+  let base = 0;
   let top = Infinity;
   for (const b of brackets) {
     const from = b.threshold + untaxed;
     if (cents(from) > cents(income)) top = Math.min(top, from);
-    else if (from >= start) [start, rate] = [from, b.rate];
+    else if (from >= start)
+      [start, rate, base] = [from, b.rate, b.baseWithholding];
   }
-  return { rate, top };
+  // `base` is the row's tax at its gross `start` (0 with no row in force).
+  return { rate, top, start: Number.isFinite(start) ? start : 0, base };
+}
+
+/** The next ordinary dollar's cost at gross `income` under the multiplier k:
+ *  k × its rate, or the 50% cap once k × the tax reaches half of gross income
+ *  (`estimateEffectiveTaxRate`); `top` is where either changes. */
+export function ordinaryCostAt(
+  income: number,
+  at: Pick<DrawState, "taxBrackets" | "standardDeduction" | "taxMultiplier">,
+): { rate: number; top: number } {
+  const k = at.taxMultiplier ?? 1;
+  const row = ordinaryBracketAt(income, at);
+  // In the row, k × tax − cap × income is a line; it is 0 at `cross`.
+  const slope = k * row.rate - MAX_EFFECTIVE_TAX_RATE;
+  const cross = (k * (row.rate * row.start - row.base)) / slope;
+  const past = cents(income) >= cents(cross);
+  const capped =
+    slope === 0 ? row.base >= row.rate * row.start : slope > 0 ? past : !past;
+  const edge = cents(cross) > cents(income) ? cross : Infinity;
+  return {
+    rate: capped ? MAX_EFFECTIVE_TAX_RATE : k * row.rate,
+    top: slope === 0 ? row.top : Math.min(row.top, edge),
+  };
 }
 
 /** The year's gains tax at `at` both ways Schedule D's worksheet line 25
- *  compares (`scheduleDGainsTax` takes the smaller): stacked on the gains
- *  table, and as ordinary income. Unrounded, so their gap rounds once. */
+ *  compares (`scaledGainsTax` takes the smaller), under the multiplier: stacked
+ *  on the gains table, and as ordinary income. Unrounded: their gap rounds once. */
 export function gainsTaxBothWays(
   at: DrawState,
   filingStatus: ReturnFilingStatus,
 ): { stacked: number; asOrdinary: number } {
   const { ordinaryIncome: o, gains: g, taxBrackets, standardDeduction } = at;
+  const k = at.taxMultiplier ?? 1;
   const base = ltcgStackBase(o, standardDeduction, g);
   const ordinaryTax = (income: number) =>
     income *
-    estimateEffectiveTaxRate(income, taxBrackets, 1, standardDeduction);
+    estimateEffectiveTaxRate(income, taxBrackets, k, standardDeduction);
   return {
-    stacked: computeLtcgTaxUnrounded(
-      base.ordinaryTaxable,
-      base.taxedGains,
-      filingStatus,
-      at.ltcgBrackets,
-    ),
+    stacked:
+      k *
+      computeLtcgTaxUnrounded(
+        base.ordinaryTaxable,
+        base.taxedGains,
+        filingStatus,
+        at.ltcgBrackets,
+      ),
     asOrdinary: ordinaryTax(o + g) - ordinaryTax(o),
   };
 }

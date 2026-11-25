@@ -23,7 +23,7 @@ import {
   gainShareOf,
   gainsTaxBothWays,
   gap,
-  ordinaryBracketAt,
+  ordinaryCostAt,
   socialSecurityInclusionAt,
 } from "./draw-position";
 import type {
@@ -174,8 +174,8 @@ function priceAt(at: DrawState, part: DrawPart) {
   if (move.ordinary === 0 && move.gains === 0)
     return { cost: 0, includesNiit: false, reach: Infinity };
   const { filingStatus, ltcgBrackets, standardDeduction: deduction } = at;
-  const { ordinaryIncome: o, gains: g, magi: m } = at;
-  const ordinary = ordinaryBracketAt(o, at);
+  const { ordinaryIncome: o, gains: g, magi: m, taxMultiplier: k = 1 } = at;
+  const ordinary = ordinaryCostAt(o, at);
   let reach = reachAt(gap(ordinary.top, o), move.ordinary);
   if (!filingStatus) {
     const cost = drawsGains(part)
@@ -197,9 +197,9 @@ function priceAt(at: DrawState, part: DrawPart) {
   const niitOn = cents(excess) >= 0;
   const magiBinds = niitOn && cents(excess) < cents(g);
   const pushed = gainsTaxed
-    ? topBracket.rate - (inDeduction ? 0 : bottom.rate)
+    ? k * (topBracket.rate - (inDeduction ? 0 : bottom.rate))
     : 0;
-  const gainsRate = cents(g) >= cents(unused) ? topBracket.rate : 0;
+  const gainsRate = cents(g) >= cents(unused) ? k * topBracket.rate : 0;
   const niit = niitOn ? NIIT_RATE * (magiBinds ? move.magi : move.gains) : 0;
   // The gains' top rises with ordinary income and gains alike.
   const rise = move.ordinary + move.gains;
@@ -216,7 +216,7 @@ function priceAt(at: DrawState, part: DrawPart) {
   reach = Math.min(reach, reachAt(inclusion.room, move.provisional));
   // Line 25: gains taxed as ordinary income when that costs less. `spread`
   // (cents) falls at `closing` per dollar until the two ways cross.
-  const above = ordinaryBracketAt(o + g, at);
+  const above = ordinaryCostAt(o + g, at);
   const asOrdinary = move.ordinary * (above.rate - ordinary.rate);
   const slopeAsOrdinary = asOrdinary + move.gains * above.rate;
   const stackedSlope = move.ordinary * pushed + move.gains * gainsRate;

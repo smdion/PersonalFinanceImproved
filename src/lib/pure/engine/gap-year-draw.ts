@@ -138,6 +138,7 @@ export function runGapYearDraw(
         conversionsEnabled: false,
         standardDeduction,
         discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
+        taxMultiplier: taxRates.taxMultiplier,
       },
       eligibility,
       nonRetirement,

@@ -167,6 +167,7 @@ function evaluateCost(
       // Passed as the real router passes it (same rule as above).
       standardDeduction: taxRates.standardDeduction,
       discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
+      taxMultiplier: taxRates.taxMultiplier,
     },
     eligibility,
     nonRetirement,

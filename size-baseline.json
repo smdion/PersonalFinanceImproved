@@ -303,7 +303,7 @@
     "src/lib/pure/engine/projection-year-handlers/tax-year-settlement.ts": 340,
     "src/lib/pure/engine/projection-year-handlers/year-cliffs.ts": 47,
     "src/lib/pure/engine/projection-year-handlers/year-deduction.ts": 57,
-    "src/lib/pure/engine/projection-year-handlers/year-draws.ts": 178,
+    "src/lib/pure/engine/projection-year-handlers/year-draws.ts": 179,
     "src/lib/pure/engine/projection-year-handlers/year-end-accounts.ts": 99,
     "src/lib/pure/engine/projection-year-handlers/year-end.ts": 88,
     "src/lib/pure/engine/projection-year-handlers/year-need.ts": 77,
@@ -322,9 +322,9 @@
     "src/lib/pure/engine/withdrawal-routing/index.ts": 270,
     "src/lib/pure/engine/withdrawal-routing/percentage.ts": 200,
     "src/lib/pure/engine/withdrawal-routing/roth-bracket-overlay.ts": 55,
-    "src/lib/pure/engine/withdrawal-routing/types.ts": 71,
+    "src/lib/pure/engine/withdrawal-routing/types.ts": 73,
     "src/lib/pure/engine/withdrawal-routing/waterfall.ts": 151,
-    "src/lib/pure/engine/withdrawal-solver.ts": 436,
+    "src/lib/pure/engine/withdrawal-solver.ts": 437,
     "src/lib/pure/household/compensation.ts": 322,
     "src/lib/pure/household/retirement-profile.ts": 65,
     "src/lib/pure/investments/finalize-year.ts": 169,
@@ -962,7 +962,7 @@
       "routePercentage": 189
     },
     "src/lib/pure/engine/gap-year-draw.ts": {
-      "runGapYearDraw": 217
+      "runGapYearDraw": 218
     },
     "src/lib/pure/engine/individual-accounts/contributions.ts": {
       "distributeContributions": 311
