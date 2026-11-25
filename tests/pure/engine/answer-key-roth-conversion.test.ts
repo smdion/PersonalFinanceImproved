@@ -30,6 +30,7 @@ import { repriceConversionYear } from "@/lib/pure/engine/projection-year-handler
 import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
 import type { WithholdingBracket } from "@/lib/pure/engine/tax-estimation";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
+import { getIrmaaCost } from "@/lib/config/irmaa-tables";
 import type { TaxBuckets } from "@/lib/pure/accounts/account-balances.types";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { getBasis } from "@/lib/pure/accounts/account-balance";
@@ -147,6 +148,53 @@ describe("answer key: the conversion amount and its tax", () => {
         brokerage: r.balances.afterTax,
       },
       { amount: 42_833.37, tax: 5_000, brokerage: 0 },
+    );
+  });
+
+  it("ret/RET10-7 [RET-10] an IRMAA-capped conversion stops at or under a grown tier's threshold, never half a cent over", () => {
+    // A grown threshold keeps its fractions: 206,000 × 1.025³ =
+    // 221,839.46875 (invented, MFJ, first tier 1,148.40). The tier starts
+    // above it (20 CFR 418.1115(c)), so MAGI may reach 221,839.46 and no
+    // more. Traditional draws 180,000: the 24% band's room (255,750) is
+    // capped at 221,839.46 − 180,000 = 41,839.46, MAGI 221,839.46, no
+    // surcharge two years on. The nearest cent, 41,839.47, would put MAGI
+    // over the threshold and charge the whole tier.
+    const tiers = [
+      { magiThreshold: 221_839.46875, annualSurcharge: 1_148.4 },
+      { magiThreshold: 280_000, annualSurcharge: 2_884.8 },
+    ];
+    const balances: TaxBuckets = {
+      preTax: 500_000,
+      taxFree: 0,
+      hsa: 0,
+      afterTax: 500_000,
+      afterTaxBasis: 500_000,
+    };
+    const r = performRothConversion({
+      enableRothConversions: true,
+      taxBrackets: mfjTable,
+      taxMultiplier: 1,
+      standardDeduction: 32_200,
+      rothConversionTarget: 0.24,
+      rothBracketTarget: undefined,
+      totalTraditionalWithdrawal: 180_000,
+      taxableSS: 0,
+      brokerageGainsPortion: 0,
+      rothTaxableGrowth: 0,
+      irmaaAwareRothConversions: true,
+      irmaaBrackets: { MFJ: tiers },
+      filingStatus: "MFJ",
+      balances,
+      accountBalance: accountBalancesFromTaxBuckets(balances),
+    });
+    const magi = 180_000 + r.rothConversionAmount;
+    cents(
+      {
+        amount: r.rothConversionAmount,
+        magi,
+        surcharge: getIrmaaCost(magi, "MFJ", { MFJ: tiers }),
+      },
+      { amount: 41_839.46, magi: 221_839.46, surcharge: 0 },
     );
   });
 
