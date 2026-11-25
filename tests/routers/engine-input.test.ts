@@ -167,6 +167,97 @@ describe("resolveProjectionOverrides", () => {
   });
 });
 
+describe("resolveProjectionOverrides, one refused part of a saved set", () => {
+  it("leaves out only the refused field, lump sum or row, names each, and runs the rest", async () => {
+    const ctx = await createTestCaller();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      // A newer Ledgr's mode, a preference value, a lump sum with a text
+      // amount, an element that isn't a row and a row whose year is text.
+      const stored = [
+        {
+          year: 2040,
+          withdrawalRoutingMode: "glide",
+          rothConversionTarget: 0.1,
+        },
+        { year: 2041, withdrawalTaxPreference: { "401k": "after_tax" } },
+        {
+          year: 2042,
+          lumpSums: [
+            { amount: "5000", targetAccount: "401k" },
+            { amount: 1000, targetAccount: "ira" },
+          ],
+        },
+        "2043",
+        { year: "2044", rothBracketTarget: 0.22 },
+        { year: 2045, rothBracketTarget: 0.12 },
+      ];
+      ctx.db
+        .insert(schema.projectionOverrides)
+        .values({
+          overrideType: "decumulation",
+          // The column's type holds rows only; this set is as stored.
+          overrides: JSON.parse(JSON.stringify(stored)),
+        })
+        .run();
+      const notes: string[] = [];
+      const read = await resolveProjectionOverrides(ctx.rawDb, {}, notes);
+      expect(read.decumulationOverrides).toEqual([
+        { year: 2040, rothConversionTarget: 0.1 },
+        { year: 2041 },
+        { year: 2042, lumpSums: [{ amount: 1000, targetAccount: "ira" }] },
+        { year: 2045, rothBracketTarget: 0.12 },
+      ]);
+      expect(notes).toEqual([
+        expect.stringMatching(/2040.*withdrawal routing mode.*"glide"/),
+        expect.stringMatching(/2041.*withdrawal tax preference/),
+        expect.stringMatching(
+          /lump sum of \$5,000 in Changes by year for 2042/,
+        ),
+        expect.stringMatching(/"2043"/),
+        expect.stringMatching(/"2044"/),
+      ]);
+    } finally {
+      vi.restoreAllMocks();
+      ctx.cleanup();
+    }
+  });
+});
+
+describe("resolveProjectionOverrides, one refused part of a saved accumulation set", () => {
+  it("leaves out a refused mode beside valid splits, and the whole row of a refused reset", async () => {
+    const ctx = await createTestCaller();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      ctx.db
+        .insert(schema.projectionOverrides)
+        .values({
+          overrideType: "accumulation",
+          overrides: [
+            { year: 2031, routingMode: "x", accountSplits: { "401k": 1 } },
+            // A reset row reverts and ignores the rest: never half of it.
+            { year: 2032, reset: "yes", contributionRate: 0.1 },
+            { year: 2033, contributionRate: 0.2 },
+          ],
+        })
+        .run();
+      const notes: string[] = [];
+      const read = await resolveProjectionOverrides(ctx.rawDb, {}, notes);
+      expect(read.accumulationOverrides).toEqual([
+        { year: 2031, accountSplits: { "401k": 1 } },
+        { year: 2033, contributionRate: 0.2 },
+      ]);
+      expect(notes).toEqual([
+        expect.stringMatching(/2031.*routing mode.*"x"/),
+        expect.stringMatching(/"reset":"yes".*its year, or its reset/),
+      ]);
+    } finally {
+      vi.restoreAllMocks();
+      ctx.cleanup();
+    }
+  });
+});
+
 describe("projectionOverrides.save", () => {
   it("refuses a set its kind's shape refuses, and stores a set as sent", async () => {
     const ctx = await createTestCaller();

@@ -26,6 +26,7 @@ import {
 import {
   CATEGORY_FIELDS,
   isRecord,
+  readableSavedRows,
   withKnownCategories,
   type CategoryDrops,
 } from "@/server/services/projection/saved-override-rows";
@@ -103,9 +104,9 @@ export const accumulationOverrideArraySchema = z.array(
 );
 
 /** The household's saved set of one kind, parsed after `withKnownCategories`
- *  (its drops in `drops`); a set its schema still refuses (the save path
- *  stores any records) is dropped, logged once (FALLBACKS). */
-async function savedOverrides<S extends z.ZodType>(
+ *  (its drops in `drops`); a set its schema still refuses is logged once and
+ *  read row by row, each refused part left out with a note (FALLBACKS). */
+async function savedOverrides<S extends z.ZodArray<z.ZodType>>(
   db: Db,
   overrideType: "accumulation" | "decumulation",
   shape: S,
@@ -117,20 +118,24 @@ async function savedOverrides<S extends z.ZodType>(
     .where(eq(schema.projectionOverrides.overrideType, overrideType));
   const stored: unknown = rows[0]?.overrides ?? [];
   const dropped: CategoryDrops = { notes: [], lumpSums: [] };
+  const known = Array.isArray(stored)
+    ? stored.map((row: unknown) =>
+        withKnownCategories(row, CATEGORY_FIELDS[overrideType], dropped),
+      )
+    : stored;
   const read = readStoredShape(
-    Array.isArray(stored)
-      ? stored.map((row: unknown) =>
-          withKnownCategories(row, CATEGORY_FIELDS[overrideType], dropped),
-        )
-      : stored,
+    known,
     shape,
     storedValueLog(`projection_overrides.${overrideType}`),
   );
-  if (!read.fits) return [];
+  const value = read.fits ? read.value : known;
+  if (!Array.isArray(value)) return [];
   drops.notes.push(...dropped.notes);
   drops.lumpSums.push(...dropped.lumpSums);
   // The parsed copy (unnamed keys stripped), as the engine has always had.
-  return shape.parse(read.value);
+  return shape.parse(
+    read.fits ? value : readableSavedRows(value, shape.element, drops.notes),
+  );
 }
 
 /** The "Changes by year" every projection runs with (relocation and the

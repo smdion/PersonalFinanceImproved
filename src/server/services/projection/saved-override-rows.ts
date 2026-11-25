@@ -1,5 +1,6 @@
 /** A saved "Changes by year" or Brokerage set as this version reads it (each
  *  account type it doesn't know dropped and named) and saves it (kept). */
+import type { z } from "zod/v4";
 import {
   isKnownCategory,
   PARENT_CATEGORY_VALUES,
@@ -206,6 +207,71 @@ function mergeInto(
       ...part.lumpSums,
     ];
   }
+}
+
+/** A stored value as a note quotes it: its JSON, cut at 40 characters. */
+const quoted = (value: unknown) => {
+  // String(): a value JSON has no form for stringifies to undefined.
+  const text = String(JSON.stringify(value));
+  return text.length > 40 ? `${text.slice(0, 39)}…` : text;
+};
+
+/** The notes for a part of a saved row this version can't read. */
+const refusedNotes = {
+  field: (year: string, field: string, value: unknown) =>
+    `Changes by year for ${year} saves its ${field.replace(/[A-Z]/g, (c) => ` ${c.toLowerCase()}`)} as ${quoted(value)}, which this version doesn't read, so the projection leaves that setting out. Update Ledgr or change that year.`,
+  lumpSum: (year: string, amount: unknown) => {
+    const n = typeof amount === "string" ? Number(amount) : amount;
+    const of =
+      typeof n === "number" && Number.isFinite(n) && amount !== ""
+        ? `of $${Math.round(n).toLocaleString("en-US")} `
+        : "";
+    return `A lump sum ${of}in Changes by year for ${year} isn't saved in a shape this version reads, so the projection leaves it out. Update Ledgr or change that lump sum.`;
+  },
+  row: (row: unknown) =>
+    `A saved Changes by year entry, ${quoted(row)}, isn't a row this version reads (its year, or its reset), so the projection leaves it out. Update Ledgr or change it.`,
+};
+
+/** A row's fields whose refusal drops the row: its year, and its reset (a
+ *  reset row reverts and ignores the rest, so the rest alone would differ). */
+const ROW_FIELDS = new Set(["year", "reset"]);
+
+/** A saved set's rows as `element` reads them, each refused part left out
+ *  and named in `notes`: a field, a lump sum, or a row (one that isn't a
+ *  record, or a `ROW_FIELDS` field refused). The rest of the set runs. */
+export function readableSavedRows(
+  rows: readonly unknown[],
+  element: z.ZodType,
+  notes: string[],
+): Record<string, unknown>[] {
+  return rows.flatMap((row) => {
+    const kept: Record<string, unknown> = isRecord(row) ? { ...row } : {};
+    const year = String(kept.year);
+    // Each pass drops one refused part, so this ends.
+    while (isRecord(row)) {
+      const issue = element.safeParse(kept).error?.issues[0];
+      if (!issue) return [kept];
+      const [field, index] = issue.path;
+      const { lumpSums } = kept;
+      const inLumpSums = field === "lumpSums" && typeof index === "number";
+      if (inLumpSums && Array.isArray(lumpSums)) {
+        const lumpSum: unknown = lumpSums[index];
+        notes.push(
+          refusedNotes.lumpSum(year, isRecord(lumpSum) ? lumpSum.amount : null),
+        );
+        kept.lumpSums = lumpSums.filter((_, i) => i !== index);
+      } else if (
+        typeof field === "string" &&
+        !ROW_FIELDS.has(field) &&
+        field in kept
+      ) {
+        notes.push(refusedNotes.field(year, field, kept[field]));
+        Reflect.deleteProperty(kept, field);
+      } else break;
+    }
+    notes.push(refusedNotes.row(row));
+    return [];
+  });
 }
 
 /** `saved`'s `fields` (each one it sets) with the `stored` row's entries for
