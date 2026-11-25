@@ -208,6 +208,19 @@ function mergeInto(
   }
 }
 
+/** `saved`'s `fields` (each one it sets) with the `stored` row's entries for
+ *  types this version doesn't know merged back, as a set's row keeps them. */
+export function withStoredUnknownEntries(
+  saved: Record<string, unknown>,
+  stored: Record<string, unknown>,
+  fields: readonly string[],
+): Record<string, unknown> {
+  const row = { ...saved };
+  const part = unknownPart(stored, fields);
+  if (part) mergeInto(row, part);
+  return row;
+}
+
 /** The set to store for an editor's `saved` set: each stored entry for an
  *  unknown type merged back into its year's row, each stored event to one
  *  kept; a stored row whose year `saved` lacks loses them, named in notes. */

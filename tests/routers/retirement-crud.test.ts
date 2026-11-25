@@ -248,6 +248,89 @@ describe("retirement.retirementSettings", () => {
       });
       expect(saved!.withdrawalOrder).toEqual(["brokerage", "401k"]);
     });
+
+    it("a save keeps the stored order's and splits' entries for types this version doesn't know; a reset drops them", async () => {
+      // A newer Ledgr's type, from a downgrade: the Taxes section reads
+      // and saves the known-only order and splits.
+      db.update(sqliteSchema.retirementSettings)
+        .set({
+          withdrawalOrder: ["solo401k", "401k", "ira", "brokerage", "hsa"],
+          withdrawalSplits: { solo401k: 0.2, "401k": 0.8 },
+        })
+        .where(eq(sqliteSchema.retirementSettings.personId, personId))
+        .run();
+      const saved = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        withdrawalOrder: ["ira", "401k", "brokerage", "hsa"],
+        withdrawalSplits: { "401k": 0.5, ira: 0.5 },
+      });
+      expect(saved!.withdrawalOrder).toEqual([
+        "solo401k",
+        "ira",
+        "401k",
+        "brokerage",
+        "hsa",
+      ]);
+      expect(saved!.withdrawalSplits).toMatchObject({
+        solo401k: 0.2,
+        "401k": 0.5,
+        ira: 0.5,
+      });
+
+      // A save that leaves the order out keeps it as stored.
+      const untouched = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        withdrawalSplits: { "401k": 1 },
+      });
+      expect(untouched!.withdrawalOrder).toEqual(saved!.withdrawalOrder);
+      expect(untouched!.withdrawalSplits).toMatchObject({
+        solo401k: 0.2,
+        "401k": 1,
+      });
+
+      // A known type the save leaves out stays out; only unknown ones return.
+      const narrowed = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        withdrawalOrder: ["ira", "brokerage"],
+        withdrawalSplits: { ira: 1 },
+      });
+      expect(narrowed!.withdrawalOrder).toEqual([
+        "solo401k",
+        "ira",
+        "brokerage",
+      ]);
+      expect(narrowed!.withdrawalSplits).toMatchObject({
+        solo401k: 0.2,
+        "401k": 0,
+        ira: 1,
+      });
+
+      const reset = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        withdrawalOrder: null,
+        withdrawalSplits: null,
+      });
+      expect(reset!.withdrawalOrder).toBeNull();
+      expect(reset!.withdrawalSplits).toBeNull();
+    });
+
+    it("a known-only save over a known-only stored row stores exactly what it sends", async () => {
+      const send = {
+        ...baseSettings(),
+        withdrawalOrder: ["401k", "ira", "brokerage"] as AccountCategory[],
+        withdrawalSplits: { "401k": 0.6, ira: 0.4 },
+      };
+      const first = await caller.retirement.retirementSettings.upsert(send);
+      const again = await caller.retirement.retirementSettings.upsert({
+        ...send,
+        withdrawalOrder: ["ira", "401k"],
+      });
+      expect(again!.withdrawalOrder).toStrictEqual(["ira", "401k"]);
+      expect(again!.withdrawalSplits).toStrictEqual(first!.withdrawalSplits);
+      expect(Object.keys(again!.withdrawalSplits!).sort()).toEqual(
+        Object.keys(first!.withdrawalSplits!).sort(),
+      );
+    });
   });
 
   // Regression: "Projection Through" is ONE household control (sections/timeline.tsx)

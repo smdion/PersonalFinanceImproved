@@ -1,4 +1,4 @@
-import type { Db } from "@/lib/db";
+import type { Db, DbOrTx } from "@/lib/db";
 import { HOUSEHOLD_SIZE_MAX } from "@/lib/config/aca-tables";
 import { returnFilingStatusSchema } from "@/lib/config/filing-status.schema";
 import { eq, ne, and, isNull } from "drizzle-orm";
@@ -23,6 +23,11 @@ import {
   lockFirstRetirementProfile,
 } from "@/server/services/profiles/first-retirement-profile";
 import { firstRow } from "@/lib/utils/first-row";
+import { lockedRow } from "@/server/data/lock-row";
+import {
+  isRecord,
+  withStoredUnknownEntries,
+} from "@/server/services/projection/saved-override-rows";
 import {
   DEFAULT_IRMAA_ON_TOP_OF_BUDGET,
   DEFAULT_ROTH_BRACKET_OVERLAY,
@@ -93,6 +98,42 @@ export const retirementSettingsInput = z.object({
   filingStatus: returnFilingStatusSchema.nullable().optional(),
 });
 
+type SavedRouting = Partial<
+  Pick<RetirementSettingsInsert, "withdrawalOrder" | "withdrawalSplits">
+>;
+
+/** The sent order and splits, each with the stored row's (read under its
+ *  lock) entries for types this version doesn't know merged back. An omitted
+ *  one is kept as stored; `null` (Reset to default) clears them with it. */
+async function withStoredRouting(
+  tx: DbOrTx,
+  sent: SavedRouting,
+  storedRow: { id: number } | undefined,
+): Promise<SavedRouting> {
+  const stored: SavedRouting =
+    (storedRow &&
+      (await lockedRow(tx, schema.retirementSettings, storedRow.id))) ??
+    {};
+  const fields = (["withdrawalOrder", "withdrawalSplits"] as const).filter(
+    (field) => sent[field] != null,
+  );
+  const { withdrawalOrder: order, withdrawalSplits: splits } =
+    withStoredUnknownEntries(sent, stored, fields);
+  // Only a sent one is a list or record here (another is left as sent).
+  return {
+    ...(Array.isArray(order) && {
+      withdrawalOrder: order.filter((e): e is string => typeof e === "string"),
+    }),
+    ...(isRecord(splits) && {
+      withdrawalSplits: Object.fromEntries(
+        Object.entries(splits).filter(
+          (e): e is [string, number] => typeof e[1] === "number",
+        ),
+      ),
+    }),
+  };
+}
+
 export async function upsertRetirementSettings(
   ctx: { db: Db; scope: { asOf: Date } },
   input: z.output<typeof retirementSettingsInput>,
@@ -161,6 +202,7 @@ export async function upsertRetirementSettings(
     } = input;
     const resolvedInput = {
       ...inputFields,
+      ...(await withStoredRouting(tx, inputFields, existing[0])),
       ...(rothBracketTarget === null
         ? { rothBracketOverlay: false }
         : { rothBracketTarget }),
