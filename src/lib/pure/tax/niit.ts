@@ -21,16 +21,16 @@ export function computeNiit(
   return Math.round(taxableAmount * NIIT_RATE * 100) / 100;
 }
 
-/** A decumulation draw's NIIT, as the withdrawal is sized for it: MAGI from
- *  the draw's own income, the year's conversions (priced later) left out.
- *  No filing status ⇒ none. */
+/** A draw's NIIT, as the withdrawal is sized for it: MAGI is the draw's own income plus
+ *  `wagesAndTaxableSS` (a gap year's wages, taxable benefits), the year's conversions (priced
+ *  later) left out. No filing status ⇒ none. */
 export function drawNiit(
   draw: {
     totalTraditionalWithdrawal: number;
     rothTaxableGrowth: number;
     brokerageGainsPortion: number;
   },
-  taxableSS: number,
+  wagesAndTaxableSS: number,
   filingStatus: ReturnFilingStatus | null | undefined,
 ): number {
   const magi = yearMagi(
@@ -40,7 +40,7 @@ export function drawNiit(
       rothTaxableGrowth: draw.rothTaxableGrowth,
       rothConversions: 0,
       realizedGains: draw.brokerageGainsPortion,
-      socialSecurity: { taxable: taxableSS },
+      socialSecurity: { taxable: wagesAndTaxableSS },
     },
     "niit",
   );
