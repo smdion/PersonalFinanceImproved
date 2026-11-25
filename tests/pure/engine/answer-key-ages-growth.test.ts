@@ -77,7 +77,12 @@ describe("answer key: a year's return on each balance", () => {
       afterTaxBasis: 50_000,
     };
     const accountBalance = accountBalancesFromTaxBuckets(balances);
-    applyGrowth({ effectiveReturn: r, balances, accountBalance });
+    applyGrowth({
+      effectiveReturn: r,
+      balances,
+      accountBalance,
+      partsBySlice: new Map(),
+    });
     const b = accountBalance.brokerage;
     return {
       ...balances,
@@ -136,6 +141,7 @@ describe("answer key: a year's return on each balance", () => {
       effectiveReturn: 0.0333,
       balances,
       accountBalance: accountBalancesFromTaxBuckets(balances),
+      partsBySlice: new Map(),
     });
     cents(balances.preTax, 106_770.89);
   });

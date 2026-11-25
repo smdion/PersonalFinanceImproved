@@ -31,6 +31,8 @@ import {
 } from "../accounts/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { inflowShares } from "./individual-accounts/part-weights";
+import { sliceKey } from "./category-slices";
+import type { CategorySide } from "../accounts/category-side";
 
 // ---------------------------------------------------------------------------
 // Withdrawal Deduction
@@ -108,29 +110,34 @@ export function deductWithdrawals(input: DeductWithdrawalsInput): void {
 
 /**
  * Ensure no negative balances across all balance systems; an emptied brokerage keeps no basis.
- * Mutates `balances` and `accountBalance` in place.
+ * Mutates `balances` and `accountBalance` in place; returns each category slice's raise.
  */
 export function clampBalances(
   balances: TaxBuckets,
   accountBalance: AccountBalances,
-): void {
+): Map<string, number> {
   balances.preTax = Math.max(0, balances.preTax);
   balances.taxFree = Math.max(0, balances.taxFree);
   balances.hsa = Math.max(0, balances.hsa);
   balances.afterTax = Math.max(0, balances.afterTax);
   if (balances.afterTax === 0) balances.afterTaxBasis = 0;
+  const raised = new Map<string, number>();
   for (const cat of getAllCategories()) {
     const balance = accountBalance[cat];
+    const floored = (side: CategorySide, value: number) => {
+      if (value < 0) raised.set(sliceKey(cat, side), -value);
+      return Math.max(0, value);
+    };
     if (balance.structure === "roth_traditional") {
-      setTraditional(balance, Math.max(0, balance.traditional));
-      setRoth(balance, Math.max(0, balance.roth));
-    } else if (balance.structure === "single_bucket") {
-      setBalance(balance, Math.max(0, balance.balance));
+      setTraditional(balance, floored("traditional", balance.traditional));
+      setRoth(balance, floored("roth", balance.roth));
     } else {
-      setBalance(balance, Math.max(0, balance.balance));
-      if (balance.balance === 0) setBasis(balance, 0);
+      setBalance(balance, floored("balance", balance.balance));
+      if (balance.structure === "basis_tracking" && balance.balance === 0)
+        setBasis(balance, 0);
     }
   }
+  return raised;
 }
 
 // ---------------------------------------------------------------------------

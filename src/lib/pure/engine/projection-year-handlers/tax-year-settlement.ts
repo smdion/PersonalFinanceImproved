@@ -3,14 +3,14 @@ import { roundToCents } from "../../../utils/math";
 import { ageInYear } from "../../../utils/date";
 import { isOverflowTarget, isPreTaxType } from "../../../config/account-types";
 import { soleBeneficiarySpouseAges } from "../../../config/rmd-tables";
-import { followDraws, followInflows } from "../brokerage-basis";
+import { followInflows } from "../brokerage-basis";
 import {
   clampBalances,
   deductWithdrawals,
   reinvestRmdExcess,
   trackDepletions,
 } from "../balance-deduction";
-import { clampIndividualBalances } from "../individual-accounts/reconcile";
+import { floorPartsAndSlices } from "../category-slices";
 import { performRothConversion } from "../roth-conversion";
 import { premiumYearHasEnrollee } from "../conversion-irmaa-cap";
 import { rmdOwnerOf } from "../rmd-enforcement";
@@ -175,7 +175,7 @@ export function settleYearDraws(
   const { afterTaxNeed, irmaa } = flow.need;
   const basisOut = taxFromSlots.brokerageBasisOut;
   deductWithdrawals({ slots, balances, accountBalance, basisOut });
-  clampBalances(balances, accountBalance);
+  const floorRaised = clampBalances(balances, accountBalance);
   // Lump sums (one-time, outside limits) are cash in: new basis in the
   // brokerage account they land in.
   followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
@@ -205,11 +205,7 @@ export function settleYearDraws(
       ),
   );
 
-  if (holdsAccounts) {
-    followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
-      clampIndividualBalances(indAccounts, indKey, indBalance),
-    );
-  }
+  if (holdsAccounts) floorPartsAndSlices(ctx, state, floorRaised);
 
   // Track per-account depletions
   trackDepletions(

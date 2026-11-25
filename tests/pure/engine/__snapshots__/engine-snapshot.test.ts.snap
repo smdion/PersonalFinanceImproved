@@ -2106,7 +2106,7 @@ exports[`engine snapshot parity > fixture 39: Individual account tracking throug
   ],
   "finalYear": {
     "age": 89,
-    "allAccountsBalance": 28676678.4,
+    "allAccountsBalance": 28676678.43,
   },
   "firstOverflowAge": 36,
   "firstOverflowAmount": 3129,
@@ -2773,7 +2773,7 @@ exports[`engine snapshot parity > fixture 52: 3+ individual accounts with unequa
   ],
   "finalYear": {
     "age": 89,
-    "allAccountsBalance": 32149076.15,
+    "allAccountsBalance": 32149074.79,
   },
   "firstOverflowAge": 36,
   "firstOverflowAmount": 3129,
@@ -2782,7 +2782,7 @@ exports[`engine snapshot parity > fixture 52: 3+ individual accounts with unequa
   "retirementDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "allAccountsBalance": 8220784.07,
+    "allAccountsBalance": 8220783.79,
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.62,
   },

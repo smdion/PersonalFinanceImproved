@@ -13,7 +13,7 @@ import { routeForMode } from "./withdrawal-routing";
 import { deriveBasisRankingInputs } from "./withdrawal-cost-ranking";
 import { computeTaxFromSlots } from "./tax-estimation";
 import { clampBalances, deductWithdrawals } from "./balance-deduction";
-import { clampIndividualBalances } from "./individual-accounts/reconcile";
+import { floorPartsAndSlices } from "./category-slices";
 import { depleteIndividualBasis } from "./individual-accounts/ledger";
 import { distributeWithdrawals } from "./individual-accounts/withdrawals";
 import { followDraws, retirementBrokerageBasisRatio } from "./brokerage-basis";
@@ -250,12 +250,8 @@ export function runGapYearDraw(
     accountBalance,
     basisOut: priced.brokerageBasisOut,
   });
-  clampBalances(balances, accountBalance);
-  if (holdsAccounts) {
-    followDraws(indAccounts, indKey, indBalance, brokBasis, () =>
-      clampIndividualBalances(indAccounts, indKey, indBalance),
-    );
-  }
+  const floorRaised = clampBalances(balances, accountBalance);
+  if (holdsAccounts) floorPartsAndSlices(ctx, state, floorRaised);
   const withdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));
   const accounts: GapYearAccounts = {
     withdrawal: taken.byKey,

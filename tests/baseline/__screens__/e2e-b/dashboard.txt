@@ -98,7 +98,7 @@ $12,000.00
 Total
 $40,000.00$50,100.00 w/ match
 Retirement
-$2,107,214.40
+$2,107,214.38
 Nest egg in 2046 (today's $, baseline — fixed returns)
 Run a simulation on the Retirement page to see the simulated range.
 Years to retirement20 yrs (2026 → 2046)

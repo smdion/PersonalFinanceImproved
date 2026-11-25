@@ -15,6 +15,8 @@ import {
   setRoth,
   setBalance,
 } from "../accounts/account-balance";
+import { sliceKey } from "./category-slices";
+import type { CategorySide } from "../accounts/category-side";
 
 // ---------------------------------------------------------------------------
 // Return rate lookup
@@ -48,6 +50,23 @@ interface GrowthInput {
   balances: TaxBuckets;
   /** Per-account balances (mutated in place). */
   accountBalance: AccountBalances;
+  /** Each category slice's account parts' growth (and floor raises), summed
+   *  (`sumBySlice`); empty on a run that holds no accounts. */
+  partsBySlice: ReadonlyMap<string, number>;
+}
+
+/** A category slice's balance after growth: plus its parts' summed growth
+ *  when it has parts, otherwise its own rounded product. */
+function grownSlice(
+  balance: number,
+  effectiveReturn: number,
+  fromParts: number | undefined,
+): number {
+  return roundToCents(
+    fromParts === undefined
+      ? balance * (1 + effectiveReturn)
+      : balance + fromParts,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -61,7 +80,7 @@ interface GrowthInput {
  * only market value grows.
  */
 export function applyGrowth(input: GrowthInput): void {
-  const { effectiveReturn, balances, accountBalance } = input;
+  const { effectiveReturn, balances, accountBalance, partsBySlice } = input;
 
   // Grow aggregate tax buckets
   balances.preTax = roundToCents(balances.preTax * (1 + effectiveReturn));
@@ -70,26 +89,14 @@ export function applyGrowth(input: GrowthInput): void {
   balances.afterTax = roundToCents(balances.afterTax * (1 + effectiveReturn));
   // Note: afterTaxBasis does NOT grow
 
-  // Grow per-account balances
+  // Grow each category slice; basis does NOT grow
   for (const cat of getAllCategories()) {
     const balance = accountBalance[cat];
+    const grown = (side: CategorySide, value: number) =>
+      grownSlice(value, effectiveReturn, partsBySlice.get(sliceKey(cat, side)));
     if (balance.structure === "roth_traditional") {
-      setTraditional(
-        balance,
-        roundToCents(balance.traditional * (1 + effectiveReturn)),
-      );
-      setRoth(balance, roundToCents(balance.roth * (1 + effectiveReturn)));
-    } else if (balance.structure === "single_bucket") {
-      setBalance(
-        balance,
-        roundToCents(balance.balance * (1 + effectiveReturn)),
-      );
-    } else {
-      // basis_tracking: only market value grows, basis does NOT grow
-      setBalance(
-        balance,
-        roundToCents(balance.balance * (1 + effectiveReturn)),
-      );
-    }
+      setTraditional(balance, grown("traditional", balance.traditional));
+      setRoth(balance, grown("roth", balance.roth));
+    } else setBalance(balance, grown("balance", balance.balance));
   }
 }
