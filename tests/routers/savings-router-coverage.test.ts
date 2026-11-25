@@ -1715,6 +1715,82 @@ describe("savings.extraPaycheckRouting", () => {
     expect(result).toEqual({ ok: true });
   });
 
+  /** The active Salary Profile's id and its stored entries. */
+  function activeSalaries() {
+    const id = Number(
+      db
+        .select()
+        .from(sqliteSchemaTables.appSettings)
+        .where(
+          eq(sqliteSchemaTables.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID),
+        )
+        .get()!.value,
+    );
+    const row = db
+      .select()
+      .from(sqliteSchemaTables.salaryProfiles)
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, id))
+      .get()!;
+    return { id, salaries: row.salaries };
+  }
+
+  /** Writes the job's stored routing as `change` makes it (a newer Ledgr's). */
+  function storeRouting(change: (r: Record<string, unknown>) => object) {
+    const { id, salaries } = activeSalaries();
+    const entry = salaries[String(jobId)]!;
+    // JSON round trip: the stored shape holds keys the type doesn't.
+    const next = JSON.parse(
+      JSON.stringify({
+        ...salaries,
+        [String(jobId)]: {
+          ...entry,
+          extraPaycheckRouting: change({ ...entry.extraPaycheckRouting }),
+        },
+      }),
+    );
+    db.update(sqliteSchemaTables.salaryProfiles)
+      .set({ salaries: next })
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, id))
+      .run();
+    return id;
+  }
+
+  it("a newer Ledgr's key in a stored rule keeps its place through a salary patch, and a routing-level one through a rules save", async () => {
+    const rule = (from: string, to: string | null) => ({
+      from,
+      to,
+      splits: [{ goalId, pct: 100 }],
+    });
+    await caller.savings.extraPaycheckRouting.save({
+      jobId,
+      rules: [rule("2025-01", "2025-06"), rule("2025-07", null)],
+    });
+    const id = storeRouting((r) => {
+      const rules = r.rules as Record<string, unknown>[];
+      return {
+        ...r,
+        sweep: "weekly",
+        rules: [rules[0], { ...rules[1], cap: 500 }],
+      };
+    });
+
+    await caller.salaryProfile.patchEntry({
+      id,
+      jobId,
+      fields: { salary: 120_000 },
+    });
+    const patched = getRouting(jobId) as { rules: Record<string, unknown>[] };
+    expect(patched.rules[0]).not.toHaveProperty("cap");
+    expect(patched.rules[1]).toMatchObject({ from: "2025-07", cap: 500 });
+    expect(patched).toMatchObject({ sweep: "weekly" });
+
+    await caller.savings.extraPaycheckRouting.save({
+      jobId,
+      rules: [rule("2025-01", null)],
+    });
+    expect(getRouting(jobId)).toMatchObject({ sweep: "weekly" });
+  });
+
   it("a raise on the active Salary Profile re-materializes the rule transactions", async () => {
     await caller.savings.extraPaycheckRouting.save({
       jobId,

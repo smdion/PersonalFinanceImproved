@@ -46,7 +46,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const createLocalAdmin = trpc.settings.createLocalAdmin.useMutation();
   const createPerson = trpc.people.create.useMutation();
   const createJob = trpc.jobs.create.useMutation();
-  const updateSalaryProfile = trpc.salaryProfile.update.useMutation();
+  const patchEntry = trpc.salaryProfile.patchEntry.useMutation();
   const completeOnboarding = trpc.settings.completeOnboarding.useMutation();
   const setTaxDataSyncEnabled =
     trpc.settings.taxDataSync.setEnabled.useMutation();
@@ -101,7 +101,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     createPerson,
     jobs,
     createJob,
-    updateSalaryProfile,
+    patchEntry,
     setTaxDataSyncEnabled,
     taxDataSync,
     completeOnboarding,

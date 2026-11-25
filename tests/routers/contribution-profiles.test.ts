@@ -1640,6 +1640,39 @@ describe("contributionProfiles coverage", () => {
       }
     });
 
+    it("reads past an entry's key from a newer Ledgr and keeps it on a patch", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const profileId = seedContribProfile(db, {
+          name: "Newer keys",
+          contributionActiveFields: {
+            contributionAccounts: {},
+            deductions: {
+              "1": { amountPerPeriod: "40", catchupRoute: "roth" },
+            },
+          },
+        });
+        const listed = await caller.contributionProfile.list();
+        expect(listed.map((p) => p.name)).toContain("Newer keys");
+
+        const updated =
+          await caller.contributionProfile.setDeductionActiveFields({
+            profileId,
+            deductionId: 1,
+            fields: { amountPerPeriod: "50" },
+          });
+        const saved = updated.contributionActiveFields as {
+          deductions?: Record<string, Record<string, unknown>>;
+        };
+        expect(saved.deductions?.["1"]).toEqual({
+          amountPerPeriod: "50",
+          catchupRoute: "roth",
+        });
+      } finally {
+        cleanup();
+      }
+    });
+
     it("throws for a non-existent profile", async () => {
       const { caller, cleanup } = await createTestCaller(adminSession);
       try {

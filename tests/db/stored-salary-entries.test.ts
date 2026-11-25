@@ -32,8 +32,19 @@ describe("checkSalaryEntries", () => {
     expect(events).toEqual([]);
   });
 
-  it("throws on an entry of another shape, naming the profile, and logs it once", () => {
+  it("reads past a key the entry's shape doesn't know (a newer Ledgr's), returning the entries as stored", () => {
     const salaries = withRetiredField();
+    const events = eventsDuring(() => {
+      expect(checkSalaryEntries({ id: 4, salaries }).salaries).toBe(salaries);
+    });
+    expect(events).toEqual([]);
+  });
+
+  it("throws on an entry of another shape, naming the profile, and logs it once", () => {
+    const salaries = {
+      ...withRetiredField(),
+      "4": Object.assign(salaryEntry(), { payPeriod: "quadweekly" }),
+    };
     const events = eventsDuring(() => {
       for (let i = 0; i < 2; i++)
         expect(() => checkSalaryEntries({ id: 4, salaries })).toThrow(

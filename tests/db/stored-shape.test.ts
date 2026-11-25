@@ -5,7 +5,11 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod/v4";
-import { passOnAsStored, readStoredShape } from "@/lib/db/stored-shape";
+import {
+  parseKeepingNewKeys,
+  passOnAsStored,
+  readStoredShape,
+} from "@/lib/db/stored-shape";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -72,5 +76,44 @@ describe("passOnAsStored", () => {
     expect(passOnAsStored(readStoredShape(refused, counts, logFor("p2")))).toBe(
       refused,
     );
+  });
+});
+
+describe("parseKeepingNewKeys", () => {
+  const entry = z
+    .object({
+      amount: z.number(),
+      label: z.string().default("none"),
+      routing: z.object({ on: z.boolean() }).strict().optional(),
+    })
+    .strict();
+
+  it("parses the known fields and keeps each new key where it was stored, nested too", () => {
+    const stored = { amount: 5, grants: 3, routing: { on: true, mode: "x" } };
+    expect(parseKeepingNewKeys(entry, stored)).toEqual({
+      success: true,
+      data: {
+        amount: 5,
+        label: "none",
+        grants: 3,
+        routing: { on: true, mode: "x" },
+      },
+    });
+    // The stored value is untouched.
+    expect(stored).toEqual({
+      amount: 5,
+      grants: 3,
+      routing: { on: true, mode: "x" },
+    });
+  });
+
+  it("still refuses a known field's bad value, beside a new key or not", () => {
+    for (const value of [{ amount: "5", grants: 3 }, { amount: "5" }]) {
+      const read = parseKeepingNewKeys(entry, value);
+      expect(read.success).toBe(false);
+      expect(!read.success && read.issues.map((i) => i.path)).toEqual([
+        ["amount"],
+      ]);
+    }
   });
 });

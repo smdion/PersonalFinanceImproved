@@ -17,6 +17,7 @@ import {
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
 import { activeProfileId } from "@/server/data/active-profile";
 import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
+import { parseKeepingNewKeys } from "@/lib/db/stored-shape";
 import { computeJobNetPayPerCheck } from "@/server/services/paycheck/job-net-pay";
 import {
   createProfile,
@@ -277,14 +278,14 @@ export const salaryProfileRouter = createTRPCRouter({
         for (const field of input.unset ?? []) delete mergedEntry[field];
         Object.assign(mergedEntry, input.fields);
 
-        const parsed = salaryEntrySchema.safeParse(mergedEntry);
+        const parsed = parseKeepingNewKeys(salaryEntrySchema, mergedEntry);
         if (!parsed.success) {
           // Message only, no `cause` — trpc.ts's errorFormatter attaches a
           // `data.zodError` for any BAD_REQUEST caused by a ZodError, and
           // friendlyMutationError prefers that over this message.
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Invalid salary entry after patch: ${parsed.error.issues[0]?.message}`,
+            message: `Invalid salary entry after patch: ${parsed.issues[0]?.message}`,
           });
         }
 

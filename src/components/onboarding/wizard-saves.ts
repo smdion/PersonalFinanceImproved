@@ -1,7 +1,4 @@
-import {
-  BLANK_SALARY_ENTRY,
-  type SalaryEntry,
-} from "@/lib/db/shapes/salary-entry-defaults";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/shapes/salary-entry-defaults";
 import { type SetStateAction, type Dispatch } from "react";
 import { trpc } from "@/lib/trpc";
 import { calendarDateOf } from "@/lib/utils/calendar-date";
@@ -17,7 +14,7 @@ export function finishSetup(
   jobs: JobDraft[],
   createJob: ReturnType<typeof trpc.jobs.create.useMutation>,
   utils: ReturnType<typeof trpc.useUtils>,
-  updateSalaryProfile: ReturnType<typeof trpc.salaryProfile.update.useMutation>,
+  patchEntry: ReturnType<typeof trpc.salaryProfile.patchEntry.useMutation>,
   setTaxDataSyncEnabled: ReturnType<
     typeof trpc.settings.taxDataSync.setEnabled.useMutation
   >,
@@ -67,24 +64,19 @@ export function finishSetup(
         const w4Box = w4BoxSetting(
           settings.map((r) => ({ key: r.key, value: r.value })),
         );
-        if (baseline) {
-          const salaries = { ...baseline.salaries } as Record<
-            string,
-            SalaryEntry
-          >;
-          for (const [jobId, entry] of Object.entries(jobEntries)) {
-            salaries[jobId] = {
-              ...BLANK_SALARY_ENTRY,
-              salary: entry.salary,
-              payPeriod: entry.payPeriod,
-              ...(w4Box ? { w4FilingStatus: w4Box } : {}),
-            };
-          }
-          await updateSalaryProfile.mutateAsync({
-            id: baseline.id,
-            salaries,
-          });
-        }
+        // One entry each: the profile's other entries stay as stored.
+        if (baseline)
+          for (const [jobId, entry] of Object.entries(jobEntries))
+            await patchEntry.mutateAsync({
+              id: baseline.id,
+              jobId: Number(jobId),
+              fields: {
+                ...BLANK_SALARY_ENTRY,
+                salary: entry.salary,
+                payPeriod: entry.payPeriod,
+                ...(w4Box ? { w4FilingStatus: w4Box } : {}),
+              },
+            });
       }
 
       await setTaxDataSyncEnabled.mutateAsync({ enabled: taxDataSync });

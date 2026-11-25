@@ -195,26 +195,26 @@ export const relocationScenarioParamsSchema = z.object({
 // ── extra-paycheck routing (nested inside a salary entry) ───────
 
 /** One split target inside an ExtraPaycheckRule/Override. */
-const extraPaycheckSplitSchema = z.object({
+const extraPaycheckSplitSchema = z.strictObject({
   goalId: z.number().int(),
   pct: z.number(),
 });
 
 /** One date-ranged rule directing an extra paycheck to one or more goals. */
-const extraPaycheckRuleSchema = z.object({
+const extraPaycheckRuleSchema = z.strictObject({
   from: z.string(),
   to: z.string().nullable(),
   splits: z.array(extraPaycheckSplitSchema),
 });
 
 /** A one-time per-month override that takes precedence over its rule. */
-const extraPaycheckOverrideSchema = z.object({
+const extraPaycheckOverrideSchema = z.strictObject({
   month: z.string(),
   splits: z.array(extraPaycheckSplitSchema),
 });
 
 /** Per-year growth entry for projecting future extra-paycheck net pay. */
-const yearlyGrowthEntrySchema = z.object({
+const yearlyGrowthEntrySchema = z.strictObject({
   type: z.enum(["pct", "dollar"]),
   value: z.number(),
 });

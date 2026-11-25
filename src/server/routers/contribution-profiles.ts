@@ -23,6 +23,7 @@ import {
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { readContributionActiveFields } from "@/lib/db/stored-active-fields";
+import { parseKeepingNewKeys } from "@/lib/db/stored-shape";
 import { loadLiveContribData } from "@/server/services/contributions/live-data";
 import { resolveProfile } from "@/server/services/contributions/profile";
 import { getIncompleteContribAccountIds } from "@/lib/pure/contributions/profile-fields";
@@ -135,12 +136,12 @@ async function patchProfileSubEntry<T extends Record<string, unknown>>(
   Object.assign(patched, fields);
   const mergedEntry = prepare ? await prepare(patched, old) : patched;
 
-  const parsed = entrySchema.safeParse(mergedEntry);
+  const parsed = parseKeepingNewKeys(entrySchema, mergedEntry);
   if (!parsed.success) {
     // Message only, no `cause` — see salary-profiles.ts patchEntry.
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: `Invalid ${errorLabel} after patch: ${parsed.error.issues[0]?.message}`,
+      message: `Invalid ${errorLabel} after patch: ${parsed.issues[0]?.message}`,
     });
   }
 

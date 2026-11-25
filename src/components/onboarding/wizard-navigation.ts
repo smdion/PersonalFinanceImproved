@@ -23,7 +23,7 @@ export function wizardNavigation(
   createPerson: ReturnType<typeof trpc.people.create.useMutation>,
   jobs: JobDraft[],
   createJob: ReturnType<typeof trpc.jobs.create.useMutation>,
-  updateSalaryProfile: ReturnType<typeof trpc.salaryProfile.update.useMutation>,
+  patchEntry: ReturnType<typeof trpc.salaryProfile.patchEntry.useMutation>,
   setTaxDataSyncEnabled: ReturnType<
     typeof trpc.settings.taxDataSync.setEnabled.useMutation
   >,
@@ -72,7 +72,7 @@ export function wizardNavigation(
     jobs,
     createJob,
     utils,
-    updateSalaryProfile,
+    patchEntry,
     setTaxDataSyncEnabled,
     taxDataSync,
     completeOnboarding,

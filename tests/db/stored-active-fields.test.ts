@@ -29,14 +29,38 @@ describe("readContributionActiveFields", () => {
     });
   });
 
+  it("reads past a key the shape doesn't know (a newer Ledgr's), returning the entry as stored, without a warning", () => {
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    const entry = {
+      contributionValue: "5",
+      contributionMethod: "fixed_annual",
+      catchupRoute: "roth",
+    };
+    const read = readContributionActiveFields(
+      { contributionAccounts: { "9": entry }, newerBucket: {} },
+      3,
+    );
+    expect(read.contributionAccounts["9"]).toBe(entry);
+    expect(logged).not.toHaveBeenCalled();
+  });
+
+  it("still refuses a value without its method beside a key the shape doesn't know", () => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const entry = { contributionValue: "5", catchupRoute: "roth" };
+    expect(() =>
+      readContributionActiveFields({ contributionAccounts: { "9": entry } }, 7),
+    ).toThrow("Contribution Profile 7");
+  });
+
   it.each([
     ["a value outside a closed set", { employerMatchType: "retired_kind" }],
     [
-      "a key outside the shape",
+      "a key outside the shape beside a refused value",
       {
         contributionValue: "5",
         contributionMethod: "fixed_annual",
         legacyField: 1,
+        isActive: "yes",
       },
     ],
     ["a value without its method", { contributionValue: "5" }],

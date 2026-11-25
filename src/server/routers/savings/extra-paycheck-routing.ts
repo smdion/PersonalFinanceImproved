@@ -189,6 +189,10 @@ export const extraPaycheckRoutingProcedures = {
           input.jobId,
           input.rules.length > 0
             ? {
+                // A newer Ledgr's routing key stays (setEnabled, saveGrowth
+                // too); a pause doesn't, as before (saving rules resumes).
+                ...existing,
+                enabled: undefined,
                 rules: input.rules,
                 overrides: existingOverrides,
                 baseNetPayPerCheck,

@@ -643,6 +643,38 @@ describe("salaryProfile router", () => {
       }
     });
 
+    it("reads past an entry's key from a newer Ledgr and keeps it on a patch", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const jobId = seedJob(db, personId, { annualSalary: "100000" });
+        // A newer Ledgr's entry: one key this version doesn't know.
+        const newer = { ...entry({ salary: 150000 }), stockGrants: 3 };
+        const profileId = seedSalaryProfile(db, {
+          name: "Newer keys",
+          salaries: { [String(jobId)]: newer },
+        });
+        const listed = await caller.salaryProfile.list();
+        expect(
+          listed.find((p: { name: string }) => p.name === "Newer keys")!
+            .pinnedSalaryTotal,
+        ).toBe(150000);
+
+        const updated = await caller.salaryProfile.patchEntry({
+          id: profileId,
+          jobId,
+          fields: { salary: 175000 },
+        });
+        expect(
+          (updated.salaries as Record<string, Record<string, unknown>>)[
+            String(jobId)
+          ],
+        ).toMatchObject({ salary: 175000, stockGrants: 3 });
+      } finally {
+        cleanup();
+      }
+    });
+
     it("creates a brand-new entry when patching a job with no existing entry", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {

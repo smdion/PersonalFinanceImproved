@@ -136,16 +136,21 @@ describe("OnboardingWizard smoke", () => {
       { personId: 41, employerName: "Northwind Clinic" },
       { personId: 42, employerName: "Harbor Schools" },
     ]);
-    // Salaries go into the baseline Salary Profile, one entry per new job.
-    expect(mutationCalls("salaryProfile.update")).toEqual([
+    // Salaries go into the baseline Salary Profile, one entry per new job,
+    // each its own patch (the profile's other entries stay as stored).
+    expect(mutationCalls("salaryProfile.patchEntry")).toEqual([
       {
         id: 1,
-        salaries: {
-          "51": expect.objectContaining({ salary: 98000 }),
-          "52": expect.objectContaining({ salary: 71000 }),
-        },
+        jobId: 51,
+        fields: expect.objectContaining({ salary: 98000 }),
+      },
+      {
+        id: 1,
+        jobId: 52,
+        fields: expect.objectContaining({ salary: 71000 }),
       },
     ]);
+    expect(mutationCalls("salaryProfile.update")).toEqual([]);
     expect(mutationCalls("settings.taxDataSync.setEnabled")).toEqual([
       { enabled: true },
     ]);
@@ -169,12 +174,11 @@ describe("OnboardingWizard smoke", () => {
     next(); // Income
     fireEvent.click(screen.getByRole("button", { name: /dashboard/i }));
     await waitFor(() => expect(onComplete).toHaveBeenCalled());
-    expect(mutationCalls("salaryProfile.update")).toEqual([
+    expect(mutationCalls("salaryProfile.patchEntry")).toEqual([
       {
         id: 1,
-        salaries: {
-          "51": expect.objectContaining({ w4FilingStatus: "Single" }),
-        },
+        jobId: 51,
+        fields: expect.objectContaining({ w4FilingStatus: "Single" }),
       },
     ]);
   });
