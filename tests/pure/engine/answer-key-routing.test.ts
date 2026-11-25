@@ -50,6 +50,11 @@ import {
 } from "../fixtures/engine-fixtures";
 import { readTaxData, shippedTaxTables } from "../../helpers/tax-data";
 import { acct, household } from "../fixtures/two-person-household";
+import {
+  ledgerInput,
+  type LedgerAccount,
+  type LedgerHousehold,
+} from "../../fixtures/engine-ledgers/load";
 
 // ---------------------------------------------------------------------------
 // Inputs
@@ -672,6 +677,150 @@ describe("answer key: Bracket filling", () => {
         tax,
       },
       { traditional: 800_900, hsa: 50_000, brokerage: 49_100, tax: 450_000 },
+    );
+  });
+
+  // BF-K through whole engine years, so the multiplier has to reach the walk
+  // from each place that builds its bracket input: the real year
+  // (year-draws), the gross-up's estimate (withdrawal-solver) and the gap
+  // year (gap-year-draw). Without it the walk compares the unscaled 37%
+  // with 20% + 3.8% and draws the brokerage first. MFJ, both born 1960 (66
+  // in 2026), no Social Security, multiplier 3, bracket filling at 35%,
+  // 0% return and inflation. A holds an HSA of 50,000 and a brokerage of
+  // 500,000 that is all gain. Deduction 32,200 + 2 × 1,650 (65+, married)
+  // = 35,500; the senior deduction is gone (MAGI far past 250,000).
+  const kHousehold = (o: {
+    spending: number;
+    traditional?: number;
+    wages?: number;
+  }): LedgerHousehold => {
+    const job = (end: string, salary: number) => [
+      { employer: "E", start: "2000-01-01", end, salary, salaryGrowth: "0" },
+    ];
+    const person = (id: "A" | "B", jobs: ReturnType<typeof job> | []) => ({
+      id,
+      primary: id === "A",
+      birthDate: "1960-01-15",
+      ssAnnualToday: 0,
+      ssStartAge: 67,
+      jobs,
+    });
+    const own = (id: string, a: Omit<LedgerAccount, "id" | "owner">) => ({
+      id,
+      owner: "A",
+      ...a,
+    });
+    const accounts: LedgerAccount[] = [
+      ...(o.traditional
+        ? [
+            own("A-ira", {
+              category: "ira",
+              tax: "traditional",
+              parent: "Retirement",
+              balance: o.traditional,
+            }),
+          ]
+        : []),
+      own("A-brokerage", {
+        category: "brokerage",
+        tax: "brokerage",
+        parent: "Retirement",
+        balance: 500_000,
+        basis: 0,
+      }),
+      own("A-hsa", {
+        category: "hsa",
+        tax: "hsa",
+        parent: "Retirement",
+        balance: 50_000,
+      }),
+    ];
+    return {
+      filingStatus: "MFJ",
+      inflation: "0",
+      limitGrowth: "0",
+      taxMultiplier: 3,
+      spendingStrategy: "fixed",
+      withdrawalRouting: "bracket_filling",
+      lumpSums: [],
+      // With wages, A's $0 job ended in 2020 marks A retired, so B's
+      // working years are gap years.
+      people: o.wages
+        ? [
+            person("A", job("2020-12-31", 0)),
+            person("B", job("2030-12-31", o.wages)),
+          ]
+        : [person("A", []), person("B", [])],
+      accounts,
+      contributions: [],
+      returnRates: [{ fromAge: 0, rate: "0" }],
+      annualSpendingToday: o.spending,
+      waterfall: accounts.map((a) => a.id),
+      endYear: 2028,
+    };
+  };
+
+  it("strategies/BF-K:year [WDR-05] a retired year at a multiplier of 3 draws the HSA before the gains: W 904,200, HSA 50,000, brokerage 50,000, tax 454,000", () => {
+    // Traditional IRA 2,000,000, retired. Traditional fills to the 37%
+    // edge: 768,700 + 35,500 = 804,200, where 3 × 206,583.50 is past half
+    // of gross income, so ordinary tax is capped at 50% and an HSA dollar
+    // costs 50¢ against a gain's 53.8¢ (BF-K). With G drawn from the
+    // brokerage after the whole HSA: W = 854,200 + G; tax = 50% × W (the
+    // gains' 60% stacked is held to 50% as ordinary) + 3.8% NIIT × G;
+    // spending W − tax = 427,100 + 0.462 G. Spending 450,200 → G = 50,000:
+    // W 904,200, tax 452,100 + 1,900 = 454,000.
+    const row = runOneYear(
+      ledgerInput(kHousehold({ spending: 450_200, traditional: 2_000_000 }), {
+        rothBracketTarget: 0.35,
+      }),
+      2026,
+    );
+    if (row.phase !== "decumulation") throw new Error("2026 isn't retired");
+    const d = drawn(row.slots);
+    cents(
+      {
+        withdrawal: row.totalWithdrawal,
+        traditional: d.traditional,
+        hsa: d.hsa,
+        brokerage: d.brokerage,
+        tax: row.taxCost,
+      },
+      {
+        withdrawal: 904_200,
+        traditional: 804_200,
+        hsa: 50_000,
+        brokerage: 50_000,
+        tax: 454_000,
+      },
+    );
+  });
+
+  it("strategies/BF-K:gap [WDR-05] a gap year at a multiplier of 3 draws the HSA before the gains, its tax 50% of the draw", () => {
+    // B works on at 700,000. Taxable wages 700,000 − 35,500 = 664,500, tax
+    // 116,896 + 35% × 152,050 = 170,113.50; × 3 = 510,340.50 is past half
+    // of 700,000, so ordinary tax is capped at 50%: an HSA dollar costs
+    // 50¢. A gain dollar sits past 613,700 at 20% × 3 = 60¢, at most 50¢
+    // as ordinary, plus 3.8% NIIT (MAGI past 250,000): 53.8¢. So a draw
+    // under the HSA's 50,000 comes all from the HSA, taxed at 50%.
+    // Pay after its tax: 700,000 − 350,000 − 11,439 Social Security −
+    // 10,150 Medicare = 328,411, so spending 343,411 leaves a 15,000 need
+    // for the draw (the draw's size isn't checked here).
+    const row = runOneYear(
+      ledgerInput(kHousehold({ spending: 343_411, wages: 700_000 }), {
+        rothBracketTarget: 0.35,
+      }),
+      2026,
+    );
+    const gap = row.phase === "accumulation" ? row.gapDraw : undefined;
+    if (!gap || gap.withdrawal <= 0) throw new Error("2026 isn't a gap year");
+    const d = drawn(gap.slots);
+    cents(
+      {
+        hsaShare: d.hsa / gap.withdrawal,
+        brokerage: d.brokerage,
+        taxRate: gap.taxCost / gap.withdrawal,
+      },
+      { hsaShare: 1, brokerage: 0, taxRate: 0.5 },
     );
   });
 });
