@@ -10,6 +10,7 @@ import { roundToCents, sumBy } from "../../utils/math";
 import { SHORTFALL_MATERIALITY } from "../../constants";
 import { resolveDecumulationConfig } from "./override-resolution";
 import { routeForMode } from "./withdrawal-routing";
+import { conversionRoutingInputs } from "./conversion-room";
 import { searchGrossUp } from "./gross-up-search";
 import { scopedBalances } from "./balance-utils";
 import { deriveBasisRankingInputs } from "./withdrawal-cost-ranking";
@@ -121,6 +122,7 @@ export function runGapYearDraw(
     indBalance: holdsAccounts ? indBalance : undefined,
     year,
   });
+  const conversionSource = [balances, accountBalance, nonRetirement] as const;
 
   const route = (target: number) =>
     routeForMode(
@@ -131,14 +133,14 @@ export function runGapYearDraw(
         taxBrackets,
         rothBracketTarget:
           config.rothBracketTarget ?? taxRates.rothBracketTarget,
-        conversionTarget: taxRates.rothConversionTarget,
+        ...conversionRoutingInputs(config, taxRates, conversionSource),
         // Income already in the year, under the draw.
         taxableSS: incomeAlone,
         ssIncome: { gross: figures.ssIncome, otherIncome: wages },
         filingStatus,
         ltcgBrackets,
         ...rankingInputs,
-        conversionsEnabled: false,
+        conversionsEnabled: false, // a gap year doesn't convert
         standardDeduction,
         discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
         taxMultiplier: taxRates.taxMultiplier,

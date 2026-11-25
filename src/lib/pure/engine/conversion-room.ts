@@ -34,7 +34,7 @@ export function conversionRoutingInputs(
     rothConversionTarget?: number;
     rothBracketTarget?: number;
   },
-  source: Parameters<typeof convertiblePreTax>,
+  source: Readonly<Parameters<typeof convertiblePreTax>>,
 ) {
   return {
     conversionTarget:

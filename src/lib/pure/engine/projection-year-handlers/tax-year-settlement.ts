@@ -292,7 +292,7 @@ export function yearRothConversion(
     taxMultiplier: taxRates.taxMultiplier,
     standardDeduction: grownStandardDeduction,
     rothConversionTarget: config.rothConversionTarget,
-    // The fallback with no rothConversionTarget: the routing reservation's chain
+    // The fallback with no year's target: conversionRoutingInputs' resolved target
     // (engine-snapshot fixtures 31/41/54/55/61 pin its order).
     rothBracketTarget: resolvedConversionTarget,
     totalTraditionalWithdrawal,
