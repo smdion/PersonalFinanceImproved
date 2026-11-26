@@ -220,34 +220,35 @@ describe("brokerage goals integration", () => {
     expect(bgResult.goals).toHaveLength(2);
     // Explicit value assertions — this fixture previously relied on
     // toMatchSnapshot() alone for its financial content, matching the T13
-    // convention engine-snapshot.test.ts uses.
+    // convention engine-snapshot.test.ts uses. Goals draw only the Portfolio
+    // brokerage; overflow saving lands in the Retirement brokerage.
     const downPayment = bgResult.goals.find((g) => g.id === 1)!;
     expect(downPayment.funded).toBe(false);
-    expect(downPayment.actualWithdrawal).toBe(40530.78);
-    expect(downPayment.shortfall).toBe(9469.22);
+    expect(downPayment.actualWithdrawal).toBe(15894.57);
+    expect(downPayment.shortfall).toBe(34105.43);
     expect(headline(bgResult)).toEqual({
       goals: [
         {
-          actualWithdrawal: 40530.78,
+          actualWithdrawal: 15894.57,
           funded: false,
           id: 1,
           name: "Down payment",
-          projectedBalance: 40530.78,
-          shortfall: 9469.22,
+          projectedBalance: 40530.76,
+          shortfall: 34105.43,
           targetAmount: 50000,
           targetYear: 2030,
-          taxCost: 2283.22,
+          taxCost: 1313.05,
         },
         {
           actualWithdrawal: 25000,
           funded: true,
           id: 2,
           name: "Car fund",
-          projectedBalance: 51142.88,
+          projectedBalance: 51142.87,
           shortfall: 0,
           targetAmount: 25000,
           targetYear: 2028,
-          taxCost: 1494.99,
+          taxCost: 1821.13,
         },
       ],
       warnings: [],
@@ -257,17 +258,17 @@ describe("brokerage goals integration", () => {
           year: 2028,
           contribution: 4047.22,
           overflow: 4047.22,
-          growth: 3345.8,
-          endBalance: 26142.88,
-          endBasis: 15720.65,
+          growth: 3345.79,
+          endBalance: 26142.87,
+          endBasis: 17894.94,
           goalWithdrawals: [
             {
               amount: 25000,
-              basisPortion: 15033.4,
-              gainsPortion: 9966.6,
+              basisPortion: 12859.11,
+              gainsPortion: 12140.89,
               goalId: 2,
               name: "Car fund",
-              taxCost: 1494.99,
+              taxCost: 1821.13,
             },
           ],
           individualAccounts: [],
@@ -276,17 +277,17 @@ describe("brokerage goals integration", () => {
           year: 2030,
           contribution: 5050.76,
           overflow: 5050.76,
-          growth: 2651.55,
-          endBalance: 0,
-          endBasis: 0,
+          growth: 2651.54,
+          endBalance: 24636.19,
+          endBasis: 20342.74,
           goalWithdrawals: [
             {
-              amount: 40530.78,
-              basisPortion: 25309.34,
-              gainsPortion: 15221.44,
+              amount: 15894.57,
+              basisPortion: 7140.89,
+              gainsPortion: 8753.68,
               goalId: 1,
               name: "Down payment",
-              taxCost: 2283.22,
+              taxCost: 1313.05,
             },
           ],
           individualAccounts: [],
@@ -304,9 +305,9 @@ describe("brokerage goals integration", () => {
         year: 2079,
         contribution: 0,
         overflow: 0,
-        growth: 118647.02,
-        endBalance: 1813604.45,
-        endBasis: 110117.97,
+        growth: 163017.39,
+        endBalance: 2491837.2,
+        endBasis: 130460.71,
       },
     });
   });
@@ -354,18 +355,20 @@ describe("brokerage goals integration", () => {
     // With 50% contribution rate at $300k, overflow should appear
     const hasOverflow = bgResult.projectionByYear.some((y) => y.overflow > 0);
     expect(hasOverflow).toBe(true);
+    // The overflow is Retirement saving: the goal draws only what the
+    // Portfolio brokerage holds.
     expect(headline(bgResult)).toEqual({
       goals: [
         {
-          actualWithdrawal: 50000,
-          funded: true,
+          actualWithdrawal: 44517.07,
+          funded: false,
           id: 1,
           name: "Down payment",
-          projectedBalance: 957078.4,
-          shortfall: 0,
+          projectedBalance: 957078.38,
+          shortfall: 5482.93,
           targetAmount: 50000,
           targetYear: 2030,
-          taxCost: 1656.13,
+          taxCost: 3677.56,
         },
       ],
       warnings: [],
@@ -375,17 +378,17 @@ describe("brokerage goals integration", () => {
           year: 2030,
           contribution: 135469.09,
           overflow: 135469.09,
-          growth: 62612.61,
-          endBalance: 907078.4,
-          endBasis: 706779.72,
+          growth: 62612.6,
+          endBalance: 912561.31,
+          endBasis: 725738.85,
           goalWithdrawals: [
             {
-              amount: 50000,
-              basisPortion: 38959.13,
-              gainsPortion: 11040.87,
+              amount: 44517.07,
+              basisPortion: 20000,
+              gainsPortion: 24517.07,
               goalId: 1,
               name: "Down payment",
-              taxCost: 1656.13,
+              taxCost: 3677.56,
             },
           ],
           individualAccounts: [],
@@ -403,9 +406,9 @@ describe("brokerage goals integration", () => {
         year: 2079,
         contribution: 0,
         overflow: 0,
-        growth: 5630277.01,
-        endBalance: 86062805.73,
-        endBasis: 5441121.41,
+        growth: 5640151.86,
+        endBalance: 86213749.93,
+        endBasis: 5460080.54,
       },
     });
   });
@@ -452,11 +455,11 @@ describe("brokerage goals integration", () => {
           funded: true,
           id: 1,
           name: "Vacation home",
-          projectedBalance: 284306.15,
+          projectedBalance: 284306.14,
           shortfall: 0,
           targetAmount: 100000,
           targetYear: 2035,
-          taxCost: 5285.77,
+          taxCost: 5655.5,
         },
       ],
       warnings: [],
@@ -466,17 +469,17 @@ describe("brokerage goals integration", () => {
           year: 2035,
           contribution: 27975.85,
           overflow: 7975.85,
-          growth: 18599.47,
-          endBalance: 184306.15,
-          endBasis: 119359.46,
+          growth: 18599.46,
+          endBalance: 184306.14,
+          endBasis: 121824.33,
           goalWithdrawals: [
             {
               amount: 100000,
-              basisPortion: 64761.52,
-              gainsPortion: 35238.48,
+              basisPortion: 62296.65,
+              gainsPortion: 37703.35,
               goalId: 1,
               name: "Vacation home",
-              taxCost: 5285.77,
+              taxCost: 5655.5,
             },
           ],
           individualAccounts: [],
@@ -496,7 +499,7 @@ describe("brokerage goals integration", () => {
         overflow: 0,
         growth: 734496.34,
         endBalance: 12450158.27,
-        endBasis: 955699.19,
+        endBasis: 958164.06,
       },
     });
   });

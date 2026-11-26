@@ -155,8 +155,8 @@ export function buildProjectionContext(
 
   const declared = openingParts(input);
   const holdsRealAccount = declared.some(hasRealAccount);
-  const ledgerRuns = holdsRealAccount;
-  const indAccounts = ledgerRuns ? declared : [];
+  const ledgerRuns = true;
+  const indAccounts = declared;
   const indKey = makeIndKey();
   const indParentCat = new Map<string, string>();
   for (const ia of indAccounts) {

@@ -161,7 +161,7 @@ export type ProjectionContext = {
 
   // Individual account setup
   /** The per-part ledger runs; without it `indAccounts` is empty and the run
-   *  takes the household path. Today it runs exactly when `holdsRealAccount`. */
+   *  takes the household path. It runs on every run, synthetic parts too. */
   ledgerRuns: boolean;
   /** Some part belongs to a real account (`hasRealAccount`). Reads that need
    *  an owner or an entered account (QCDs, per-owner RMDs, eligibility, rows). */
