@@ -162,10 +162,6 @@ export function settleYearDraws(
   flow: Omit<DecumulationFlow, "conversion">,
 ) {
   const { indAccounts, indKey, ledgerRuns } = ctx;
-  // Each account's draw (distributeYearDraws) lands with the deduction below.
-  for (const [k, v] of flow.drawn.ledger.indBalance) state.indBalance.set(k, v);
-  for (const [k, v] of flow.drawn.ledger.brokBasis) state.brokBasis.set(k, v);
-  for (const [k, v] of flow.drawn.ledger.indBasis) state.indBasis.set(k, v);
   const { balances, accountBalance, indBalance, brokBasis } = state;
   const { depletionTracked, accountDepletions } = state;
   const { config, year, age } = thisYear;
@@ -176,6 +172,10 @@ export function settleYearDraws(
   const out = taxFromSlots.brokerageBasisOut;
   const basisOut = categoryBasis(flow.drawn.basisSold, out);
   deductWithdrawals({ slots, balances, accountBalance, basisOut });
+  // Each account's draw (distributeYearDraws) lands after the deduction reads.
+  for (const [k, v] of flow.drawn.ledger.indBalance) state.indBalance.set(k, v);
+  for (const [k, v] of flow.drawn.ledger.brokBasis) state.brokBasis.set(k, v);
+  for (const [k, v] of flow.drawn.ledger.indBasis) state.indBasis.set(k, v);
   const floorRaised = clampBalances(balances, accountBalance);
   // Lump sums (one-time, outside limits) are cash in: new basis in the
   // brokerage account they land in.

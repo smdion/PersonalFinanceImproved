@@ -26,7 +26,7 @@ import {
   setBalance,
   setBasis,
   addBalance,
-  addBasis,
+  getBasis,
 } from "../accounts/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { inflowShares } from "./individual-accounts/part-weights";
@@ -163,6 +163,9 @@ export function reinvestRmdExcess(
   partKey?: IndKeyFn,
   partBasis?: BrokerageBasis,
 ): number {
+  // The category's basis is read before its accounts take theirs in.
+  const category = getAllCategories().find(isOverflowTarget);
+  const categoryBasisBefore = category ? getBasis(accountBalance[category]) : 0;
   const credit = () =>
     creditRmdExcess(
       mode,
@@ -187,10 +190,10 @@ export function reinvestRmdExcess(
         )
       : { result: credit(), added: undefined };
   if (mode === "reinvest" && excess > 0) {
-    const category = getAllCategories().find(isOverflowTarget);
     const basisIn = category ? categoryBasis(added, excess)(category) : excess;
     balances.afterTaxBasis = roundToCents(balances.afterTaxBasis + basisIn);
-    if (category) addBasis(accountBalance[category], basisIn);
+    if (category)
+      setBasis(accountBalance[category], categoryBasisBefore + basisIn);
   }
   return excess;
 }

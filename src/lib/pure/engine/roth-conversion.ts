@@ -215,12 +215,12 @@ export function performRothConversion(
   // Move balance: Traditional → Roth
   balances.preTax = roundToCents(balances.preTax - conversion);
   balances.taxFree = roundToCents(balances.taxFree + conversion);
-  // Pay tax from brokerage
-  balances.afterTax = roundToCents(balances.afterTax - taxCostOfConversion);
-  // The tax sells brokerage at average cost (parts: by the basis they sell, below)
+  // The tax comes from brokerage, sold at average cost (parts: by the basis they sell, below)
+  const afterTax = roundToCents(balances.afterTax - taxCostOfConversion);
+  balances.afterTax = afterTax;
   const sold = basisOut(
     taxCostOfConversion,
-    safeDivide(balances.afterTaxBasis, balances.afterTax + taxCostOfConversion),
+    safeDivide(balances.afterTaxBasis, afterTax + taxCostOfConversion),
   );
   if (!hasIndTracking && balances.afterTaxBasis > 0)
     balances.afterTaxBasis = roundToCents(
