@@ -229,6 +229,57 @@ describe("buildSpecToAccountMapping", () => {
 describe("distributeWithdrawals", () => {
   const indKey = makeIndKey();
 
+  // The rounded shares overshoot the slot by a cent here: the parts still
+  // take exactly what the slot asks, the first part giving the cent back.
+  it.each([
+    {
+      label: "a brokerage slot over four parts",
+      category: "brokerage" as const,
+      taxType: "afterTax" as const,
+      balances: [100594.65, 100587.89, 50295.64, 50295.63],
+      slot: { withdrawal: 28975.84 },
+      largestTakes: 9658.93,
+    },
+    {
+      label: "a Traditional slot over two parts",
+      category: "401k" as const,
+      taxType: "preTax" as const,
+      balances: [1000, 1000],
+      slot: { withdrawal: 100.01, traditionalWithdrawal: 100.01 },
+      largestTakes: 50,
+    },
+  ])(
+    "$label takes exactly the slot's amount when its rounded shares overshoot",
+    ({ category, taxType, balances, slot, largestTakes }) => {
+      const accounts = balances.map((startingBalance, i) =>
+        makeIndividualAccount({
+          name: `Part ${i + 1}`,
+          category,
+          taxType,
+          startingBalance,
+        }),
+      );
+      const indBal = new Map(
+        accounts.map((ia, i) => [indKey(ia), balances[i]!]),
+      );
+      const { decumulationIndWithdrawal: drawn } = distributeWithdrawals(
+        [makeDecumulationSlot(category, slot)],
+        accounts,
+        indKey,
+        indBal,
+      );
+      const cents = (x: number) => Math.round(x * 100);
+      const total = accounts.reduce((s, ia) => s + drawn.get(indKey(ia))!, 0);
+      expect(cents(total)).toBe(cents(slot.withdrawal));
+      accounts.forEach((ia, i) =>
+        expect(cents(balances[i]! - indBal.get(indKey(ia))!)).toBe(
+          cents(drawn.get(indKey(ia))!),
+        ),
+      );
+      expect(drawn.get(indKey(accounts[0]!))).toBe(largestTakes);
+    },
+  );
+
   it("distributes proportionally by balance for single-bucket", () => {
     const accounts: IndividualAccountInput[] = [
       makeIndividualAccount({

@@ -288,7 +288,8 @@ function distributeProportionally(
   if (total <= 0) return amount;
 
   let distributed = 0;
-  for (const ia of accounts) {
+  const drawn = accounts.map(() => 0);
+  for (const [i, ia] of accounts.entries()) {
     const k = indKey(ia);
     const r = room(k);
     if (r <= 0) continue;
@@ -296,19 +297,21 @@ function distributeProportionally(
     if (withdrawal <= 0) continue;
     indBalance.set(k, roundToCents((indBalance.get(k) ?? 0) - withdrawal));
     withdrawalMap.set(k, (withdrawalMap.get(k) ?? 0) + withdrawal);
+    drawn[i] = withdrawal;
     distributed += withdrawal;
   }
 
-  // Re-route rounding residual through the group in the same order, until
-  // it's placed or the group's capacity is exhausted.
+  // The rounding residual, in order: cents short to room, cents over back.
   let remaining = roundToCents(amount - distributed);
-  for (const ia of accounts) {
-    if (remaining <= 0) break;
+  for (const [i, ia] of accounts.entries()) {
+    if (remaining === 0) break;
     const k = indKey(ia);
-    const r = room(k);
-    if (r <= 0) continue;
-    const draw = roundToCents(Math.min(remaining, r));
-    if (draw <= 0) continue;
+    const draw = roundToCents(
+      remaining > 0
+        ? Math.min(remaining, room(k))
+        : Math.max(remaining, -drawn[i]!),
+    );
+    if (draw === 0) continue;
     indBalance.set(k, roundToCents((indBalance.get(k) ?? 0) - draw));
     withdrawalMap.set(k, (withdrawalMap.get(k) ?? 0) + draw);
     remaining = roundToCents(remaining - draw);
