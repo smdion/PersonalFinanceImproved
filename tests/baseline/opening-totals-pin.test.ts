@@ -16,7 +16,7 @@ import { seedHousehold } from "./seed";
 import { HOUSEHOLDS } from "./households";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
-import { openingTotals } from "@/lib/pure/engine/opening-state";
+import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import { roundToCents } from "@/lib/utils/math";
 
 /** The router baseline's clock (router-suite.ts). */

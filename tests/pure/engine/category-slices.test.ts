@@ -119,7 +119,7 @@ import {
 } from "@/lib/pure/accounts/account-balance";
 import { clampBalances } from "@/lib/pure/engine/balance-deduction";
 import { floorPartsAndSlices } from "@/lib/pure/engine/category-slices";
-import { openingTotals } from "@/lib/pure/engine/opening-state";
+import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import { growYear } from "@/lib/pure/engine/projection-year-handlers/year-growth";
 import type {
   ProjectionContext,

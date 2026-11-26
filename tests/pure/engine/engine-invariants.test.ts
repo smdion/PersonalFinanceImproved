@@ -39,7 +39,7 @@ import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { onePerson } from "../../fixtures/engine-people";
 import { engineInput, type FixtureInput } from "../fixtures/engine-input";
-import { openingTotals } from "@/lib/pure/engine/opening-state";
+import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import { withAccountId, withAccountIds } from "../fixtures/engine-input";
 
 // ---------------------------------------------------------------------------

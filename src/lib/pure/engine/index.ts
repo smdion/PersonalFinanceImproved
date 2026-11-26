@@ -2,11 +2,8 @@
  *  values from here, and types and input schemas from `./types` (module map:
  *  ARCHITECTURE.md). `@public`: documented in DESIGN.md, kept for knip. */
 export { calculateProjection } from "./projection";
-export {
-  isRetirementBrokerage,
-  openingParts,
-  syntheticOpeningParts,
-} from "./opening-state";
+export { isRetirementBrokerage } from "./opening-state";
+export { openingParts, syntheticOpeningParts } from "./opening-parts";
 export { lumpSumParts, resolveLumpSums, runLumpSums } from "./lump-sum-targets";
 export type { ResolvedLumpSums } from "./lump-sum-targets";
 export { projectionPriceLevel } from "./price-level";

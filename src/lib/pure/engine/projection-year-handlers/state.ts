@@ -4,7 +4,7 @@
 import { seedBrokerageBasis } from "../brokerage-basis";
 import type { ProjectionInput } from "../types/projection-result";
 import { isPreTaxType, isTaxFreeBucket } from "../../../config/account-types";
-import { openingTotals } from "../opening-state";
+import { openingTotals } from "../opening-parts";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { initialCrossYearState } from "../spending-strategy";
 import {

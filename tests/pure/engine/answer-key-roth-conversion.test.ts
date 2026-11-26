@@ -35,7 +35,7 @@ import type { TaxBuckets } from "@/lib/pure/accounts/account-balances.types";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { getBasis } from "@/lib/pure/accounts/account-balance";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
-import { openingTotals } from "@/lib/pure/engine/opening-state";
+import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import { makeIndividualAccount } from "../fixtures/engine-fixtures";
 
 const y2026 = readTaxData().years["2026"]!;

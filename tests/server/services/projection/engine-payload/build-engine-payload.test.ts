@@ -34,7 +34,7 @@ import { fetchRetirementData } from "@/server/services/projection/engine-payload
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import type { Db } from "@/lib/db";
-import { openingTotals } from "@/lib/pure/engine/opening-state";
+import { openingTotals } from "@/lib/pure/engine/opening-parts";
 
 async function getSchema() {
   return await import("@/lib/db/schema");

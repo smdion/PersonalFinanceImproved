@@ -27,7 +27,7 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "@/lib/db/schema-sqlite";
 import { buildEnginePayload } from "@/server/services/projection/engine-payload/build-engine-payload";
 import { fetchRetirementData } from "@/server/services/projection/engine-payload/load";
-import { openingTotals } from "@/lib/pure/engine/opening-state";
+import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import {
   accumulationOverrideArraySchema,
   prepareEngineInput,

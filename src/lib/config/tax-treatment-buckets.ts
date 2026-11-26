@@ -54,6 +54,10 @@ export const ROTH_SPLIT_PARTS: Readonly<
   roth: TAX_TREATMENT_TO_TAX_TYPE.tax_free,
 };
 
+/** The two tax parts of an account type that `supportsRothSplit`. */
+export const SPLIT_TAX_TYPES: readonly PortfolioTaxType[] =
+  Object.values(ROTH_SPLIT_PARTS);
+
 /** The tax type of the part money on `side` lands in: in a Roth-capable
  *  account, that side's (Traditional unless Roth); otherwise the category's. */
 export function taxTypeOnSide(

@@ -14,10 +14,8 @@ import {
   makeAccumulationDefaults,
 } from "../fixtures/engine-fixtures";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
-import {
-  declareOpeningParts,
-  openingTotals,
-} from "@/lib/pure/engine/opening-state";
+import { declareOpeningParts } from "@/lib/pure/engine/opening-state";
+import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { shippedTaxTables } from "../../helpers/tax-data";
 

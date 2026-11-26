@@ -8,12 +8,12 @@ import {
   paysInto,
 } from "../fixtures/engine-fixtures";
 import { withAccountId } from "../fixtures/engine-input";
+import { declareOpeningParts } from "@/lib/pure/engine/opening-state";
 import {
-  declareOpeningParts,
   openingParts,
   openingTotals,
   syntheticOpeningParts,
-} from "@/lib/pure/engine/opening-state";
+} from "@/lib/pure/engine/opening-parts";
 import type { AccountBalances } from "@/lib/pure/accounts/account-balances.types";
 import { accountIdKeyOf } from "@/lib/pure/accounts/account-part";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";

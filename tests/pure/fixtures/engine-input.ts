@@ -6,7 +6,7 @@ import type {
   TaxBuckets,
 } from "@/lib/pure/accounts/account-balances.types";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
-import { syntheticOpeningParts } from "@/lib/pure/engine/opening-state";
+import { syntheticOpeningParts } from "@/lib/pure/engine/opening-parts";
 import { seedBrokerageBasis } from "@/lib/pure/engine/brokerage-basis";
 import { accountIdKeyOf, isHeldPart } from "@/lib/pure/accounts/account-part";
 import { isRetirementMoney } from "@/lib/config/account-types";
