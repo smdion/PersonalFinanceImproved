@@ -19,11 +19,11 @@ vi.mock(
       ...actual,
       settle: (...args: Parameters<typeof actual.settle>) => {
         const [, state, point] = args;
+        actual.settle(...args);
         const b = actual.taxBucketsOf(state.accountBalance);
         let gap = b.preTax + b.taxFree + b.hsa + b.afterTax;
         for (const held of state.indBalance.values()) gap -= held;
         points.push({ point, gap: Math.round(gap * 100) });
-        actual.settle(...args);
       },
     };
   },

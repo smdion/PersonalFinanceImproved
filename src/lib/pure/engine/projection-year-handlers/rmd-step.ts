@@ -5,7 +5,6 @@ import {
   isQcdEligible,
   isRetirementMoney,
 } from "../../../config/account-types";
-import { addTraditional } from "../../accounts/account-balance";
 import { isHeldPart } from "../../accounts/account-part";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { debitByBalance } from "../individual-accounts/debit-by-balance";
@@ -22,7 +21,8 @@ import type {
 } from "./types";
 
 /** Each owner's QCD this year, debited from that owner's own
- *  Retirement-parented IRAs and from the aggregate trackers. */
+ *  Retirement-parented IRAs; the settled point after it gives the
+ *  categories and tax buckets. */
 export function qcdStep(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
@@ -31,7 +31,7 @@ export function qcdStep(
 ) {
   const { holdsRealAccount, indAccounts, indKey } = ctx;
   const { decumulationDefaults } = ctx.input;
-  const { indBalance, balances, accountBalance } = state;
+  const { indBalance } = state;
   // A QCD satisfies part of an owner's RMD tax-free, so it runs before the
   // tax estimate. Eligibility is the QCD age (AGE_RULES.qcd, 70½ by birth
   // month), not the RMD start age: every person, one included.
@@ -70,10 +70,6 @@ export function qcdStep(
     );
     totalQcd = totalQcdAmount(qcdByPerson);
     if (totalQcd > 0) {
-      // Both aggregate tracks, from the category QCDs come from (config).
-      balances.preTax = roundToCents(balances.preTax - totalQcd);
-      const qcdCategory = ctx.ACCOUNT_CATEGORIES.find(isQcdEligible)!;
-      addTraditional(accountBalance[qcdCategory], -totalQcd);
       // A QCD leaves one owner's own Retirement-parented IRAs, by balance,
       // never pooled over every IRA in the category.
       for (const { personId, qcdAmount } of qcdByPerson) {
