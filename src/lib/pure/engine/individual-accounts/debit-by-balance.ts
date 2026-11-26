@@ -4,9 +4,9 @@ import type { IndividualAccountInput } from "../../accounts/account-balances.typ
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { roundToCents } from "../../../utils/math";
 
-/** Takes `amount` from `accounts` by balance (the first takes the cents the
- *  shares leave; cents they overshoot go back, in order, to parts that gave);
- *  none when they hold nothing. */
+/** Takes `amount` from `accounts` by balance (the rounding residual in order:
+ *  cents short from the parts' balance left, cents over back to parts that
+ *  gave); none when they hold nothing. */
 export function debitByBalance(
   { balances, keyOf }: { balances: Map<string, number>; keyOf: IndKeyFn },
   accounts: readonly IndividualAccountInput[],
@@ -27,18 +27,17 @@ export function debitByBalance(
     distributed += capped;
     return capped;
   });
-  const remainder = roundToCents(amount - distributed);
-  if (remainder > 0.005 && accounts.length > 0) {
-    const key = keyOf(accounts[0]!);
-    const balance = Math.max(0, balances.get(key) ?? 0);
-    balances.set(key, roundToCents(Math.max(0, balance - remainder)));
-  }
-  let over = -remainder;
+  let remaining = roundToCents(amount - distributed);
   accounts.forEach((ia, i) => {
-    const back = roundToCents(Math.min(Math.max(0, over), gave[i]!));
-    if (back <= 0) return;
     const key = keyOf(ia);
-    balances.set(key, roundToCents(balances.get(key)! + back));
-    over = roundToCents(over - back);
+    const balance = balances.get(key)!;
+    const take = roundToCents(
+      remaining > 0
+        ? Math.min(remaining, balance)
+        : Math.max(remaining, -gave[i]!),
+    );
+    if (take === 0) return;
+    balances.set(key, roundToCents(balance - take));
+    remaining = roundToCents(remaining - take);
   });
 }

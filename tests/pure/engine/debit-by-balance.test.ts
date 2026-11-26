@@ -29,7 +29,8 @@ vi.mock(
   },
 );
 
-// Each owner's QCD is $100.01, so its shares over two equal IRAs round up.
+// Each owner's QCD is the case's amount, so its rounded shares miss it.
+const qcd = vi.hoisted(() => ({ amount: 0 }));
 vi.mock("@/lib/pure/engine/qcd", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/pure/engine/qcd")>();
   return {
@@ -37,7 +38,7 @@ vi.mock("@/lib/pure/engine/qcd", async (importOriginal) => {
     computeQcdAmounts: (...args: Parameters<typeof actual.computeQcdAmounts>) =>
       actual
         .computeQcdAmounts(...args)
-        .map((person) => ({ ...person, qcdAmount: 100.01 })),
+        .map((person) => ({ ...person, qcdAmount: qcd.amount })),
   };
 });
 
@@ -101,48 +102,76 @@ describe("debitByBalance", () => {
     },
   );
 
-  it("a conversion's Roth parts take what their Traditional parts gave", () => {
-    const { accounts, balanceMap, traditional, roth, sum } = iraParts([
-      0, 1000, 1000,
-    ]);
-    debitConvertedParts(
-      { accounts, balances: balanceMap, keyOf: indKey, basis: new Map() },
-      new Map<AccountCategory, number>([["ira", 100.01]]),
-    );
-    expect(cents(sum(traditional))).toBe(cents(2000 - 100.01));
-    expect(cents(sum(roth))).toBe(cents(100.01));
-    expect(balanceMap.get(indKey(roth[0]!))).toBe(0);
+  // $100 in thirds is 99.99: the cent left comes from the first part with
+  // money, never the $0 part, where it would be lost.
+  it("a $0 part first leaves the cents short to the next part with money", () => {
+    const balances = [0, 1000, 1000, 1000];
+    const { balanceMap, traditional, sum } = iraParts(balances);
+    debitByBalance({ balances: balanceMap, keyOf: indKey }, traditional, 100);
+    expect(cents(sum(traditional))).toBe(cents(3000 - 100));
+    expect(
+      traditional.map((ia, i) =>
+        Number((balances[i]! - balanceMap.get(indKey(ia))!).toFixed(2)),
+      ),
+    ).toEqual([0, 33.34, 33.33, 33.33]);
   });
+
+  it.each([
+    { balances: [0, 1000, 1000], amount: 100.01 },
+    { balances: [0, 1000, 1000, 1000], amount: 100 },
+  ])(
+    "a conversion's Roth parts take what their Traditional parts gave ($amount)",
+    ({ balances, amount }) => {
+      const { accounts, balanceMap, traditional, roth, sum } =
+        iraParts(balances);
+      const held = balances.reduce((s, b) => s + b, 0);
+      debitConvertedParts(
+        { accounts, balances: balanceMap, keyOf: indKey, basis: new Map() },
+        new Map<AccountCategory, number>([["ira", amount]]),
+      );
+      expect(cents(sum(traditional))).toBe(cents(held - amount));
+      expect(cents(sum(roth))).toBe(cents(amount));
+      expect(balanceMap.get(indKey(roth[0]!))).toBe(0);
+    },
+  );
 });
 
 describe("a QCD over an owner's IRA parts", () => {
-  it("leaves the categories' and parts' money gap unmoved", () => {
-    points.length = 0;
-    calculateProjection(
-      household(
-        [
-          acct("Ann IRA 1", "ira", 250000, 1),
-          acct("Ann IRA 2", "ira", 250000, 1),
-          acct("Bo 401k", "401k", 500000, 2),
-        ],
-        {
-          annualExpenses: 1000,
-          decumulationAnnualExpenses: 1000,
-          socialSecurityEntries: [1, 2].map((personId) => ({
-            personId,
-            personName: personId === 1 ? "Ann" : "Bo",
-            birthYear: personId === 1 ? 1948 : 1950,
-            startAge: 70,
-            annualAmount: 0,
-          })),
-          perPersonBirthYears: [1948, 1950],
-          projectionEndYear: 2045,
-        },
-        { qcdMaximize: true },
-      ),
-    );
-    const qcd = points.filter((p) => p.point === "decumulation.qcd");
-    expect(qcd.length).toBeGreaterThan(10);
-    expect(qcd.map((p) => p.gap).filter((gap) => gap !== 0)).toEqual([]);
-  });
+  it.each([
+    { label: "overshoot", amount: 100.01, ira: [250000, 250000] },
+    { label: "fall short", amount: 100, ira: [0, 250000, 250000, 250000] },
+  ])(
+    "whose shares $label leaves the categories' and parts' money gap unmoved",
+    ({ amount, ira }) => {
+      qcd.amount = amount;
+      points.length = 0;
+      calculateProjection(
+        household(
+          [
+            ...ira.map((balance, i) =>
+              acct(`Ann IRA ${i + 1}`, "ira", balance, 1),
+            ),
+            acct("Bo 401k", "401k", 500000, 2),
+          ],
+          {
+            annualExpenses: 1000,
+            decumulationAnnualExpenses: 1000,
+            socialSecurityEntries: [1, 2].map((personId) => ({
+              personId,
+              personName: personId === 1 ? "Ann" : "Bo",
+              birthYear: personId === 1 ? 1948 : 1950,
+              startAge: 70,
+              annualAmount: 0,
+            })),
+            perPersonBirthYears: [1948, 1950],
+            projectionEndYear: 2045,
+          },
+          { qcdMaximize: true },
+        ),
+      );
+      const atQcd = points.filter((p) => p.point === "decumulation.qcd");
+      expect(atQcd.length).toBeGreaterThan(10);
+      expect(atQcd.map((p) => p.gap).filter((gap) => gap !== 0)).toEqual([]);
+    },
+  );
 });
