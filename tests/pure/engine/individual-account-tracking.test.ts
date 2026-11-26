@@ -1408,7 +1408,8 @@ describe("distributeContributions", () => {
     specToAccount.set(specKeyOf(specs[0]!), [indKey(brokA)]);
 
     const result = distributeContributions({
-      slots: [],
+      // The brokerage slot carries the year's overflow.
+      slots: [makeAccumulationSlot("brokerage", { employeeContrib: 5000 })],
       contributionSpecs: specs,
       indAccounts: accounts,
       indKey,

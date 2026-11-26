@@ -76,10 +76,15 @@ export function distributeContributions(
     limitGrowthRate,
     yearIndex: y,
     proRate,
-    overflowToBrokerage,
     rampAmount,
     employerMatchByParentCat,
   } = input;
+  // The year's overflow rides in its slot: the parts take no more than it holds.
+  const overflowToBrokerage = Math.min(
+    input.overflowToBrokerage,
+    sumBy(slots, (s) => (isOverflowTarget(s.category) ? s.employeeContrib : 0)),
+  );
+  const ledger = { ...input, overflowToBrokerage };
 
   const indContributions = new Map<string, number>();
   const indMatch = new Map<string, number>();
@@ -155,7 +160,7 @@ export function distributeContributions(
       }
 
       if (scalingSpecs.length === 0)
-        unclaimedRest(input, slot, allSpecs, remaining, indContributions);
+        unclaimedRest(ledger, slot, allSpecs, remaining, indContributions);
       else if (remaining > 0) {
         const keys = scalingSpecs.map(specKeyOf);
         const rawTotal = sumBy(keys, (sk) => specRaw.get(sk) ?? 0);
@@ -175,7 +180,7 @@ export function distributeContributions(
       }
     };
 
-    if (catSpecs.length === 0) unclaimedSlot(input, slot, indContributions);
+    if (catSpecs.length === 0) unclaimedSlot(ledger, slot, indContributions);
     else if (bs === "roth_traditional") {
       for (const [taxTreatment, slotAmount] of [
         ["pre_tax", slot.traditionalContrib],
@@ -188,16 +193,11 @@ export function distributeContributions(
         else toOtherPart(catSpecs, taxTreatment, slotAmount);
       }
     } else {
-      // The overflow target's slot also carries this year's IRS overflow,
-      // which Step 4 routes, so only the specs' own contributions are
-      // spread here.
+      // The overflow target's slot also carries the overflow Step 4 routes: the specs take the rest.
       distributeSpecs(
         catSpecs,
         isOverflowTarget(slot.category)
-          ? Math.max(
-              0,
-              roundToCents(slot.employeeContrib - overflowToBrokerage),
-            )
+          ? roundToCents(slot.employeeContrib - overflowToBrokerage)
           : slot.employeeContrib,
       );
     }

@@ -159,7 +159,10 @@ describe("a spread places its whole amount", () => {
   it("the overflow with no spec: $100 over three joint brokerages is $100", () => {
     const parts = threeParts("brokerage", "afterTax", "Retirement");
     const { indOverflow } = distributeContributions(
-      input(parts, { overflowToBrokerage: 100 }),
+      input(parts, {
+        slots: [makeAccumulationSlot("brokerage", { employeeContrib: 100 })],
+        overflowToBrokerage: 100,
+      }),
     );
     const placed = parts.map((p) => indOverflow.get(indKey(p)));
     expect(placed).toEqual(THIRDS);
@@ -179,6 +182,7 @@ describe("a spread places its whole amount", () => {
         specs.map((s, i) => [specKeyOf(s), [indKey(parts[i]!)]]),
       ),
       accountsWithSpecs: new Set(parts.map((p) => indKey(p))),
+      slots: [makeAccumulationSlot("brokerage", { employeeContrib: 100 })],
       overflowToBrokerage: 100,
     });
     const { indOverflow } = distributeContributions(run);
