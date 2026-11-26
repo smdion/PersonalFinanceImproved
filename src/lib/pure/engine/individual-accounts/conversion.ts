@@ -13,7 +13,7 @@ import type { AccountBalance } from "../../../config/account-types.types";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { roundToCents } from "../../../utils/math";
 import {
-  followDrawsSold,
+  followDrawsSoldOnCopies,
   takeBasisOut,
   type BrokerageBasis,
 } from "../brokerage-basis";
@@ -80,8 +80,13 @@ export function payConversionTaxFromParts(
   totals: { balances: TaxBuckets; category: AccountBalance },
 ): void {
   const { accounts, keyOf, balances, basis } = parts;
-  const { sold } = followDrawsSold(accounts, keyOf, balances, basis, () =>
-    debitByBalance(parts, retirementParts(parts, category), tax),
+  const drawn = followDrawsSoldOnCopies(accounts, keyOf, balances, basis, (b) =>
+    debitByBalance(
+      { balances: b, keyOf },
+      retirementParts(parts, category),
+      tax,
+    ),
   );
-  takeBasisOut(totals.balances, totals.category, sold.get(category) ?? 0);
+  takeBasisOut(totals.balances, totals.category, drawn.sold.get(category) ?? 0);
+  drawn.land();
 }

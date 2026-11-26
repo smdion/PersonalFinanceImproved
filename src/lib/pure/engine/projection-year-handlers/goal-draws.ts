@@ -1,6 +1,6 @@
 import {
   categoryBasis,
-  followDrawsSold,
+  followDrawsSoldOnCopies,
   groupBasisRatio,
   sellAtCost,
   takeBasisOut,
@@ -48,6 +48,7 @@ export function brokerageGoalDraws(
   OVERFLOW_CATEGORY: ProjectionContext["OVERFLOW_CATEGORY"],
 ) {
   const yearGoals = brokerageGoalsByYear.get(year) ?? [];
+  const ledger = [indAccounts, indKey, indBalance, brokBasis] as const;
   const goalWithdrawals: EngineAccumulationYear["brokerageGoalWithdrawals"] =
     [];
   for (const goal of yearGoals) {
@@ -100,12 +101,13 @@ export function brokerageGoalDraws(
     balances.afterTax = roundToCents(balances.afterTax - drawAmount);
     addBalance(accountBalance[OVERFLOW_CATEGORY], -drawAmount);
     const drawn = ledgerRuns
-      ? followDrawsSold(indAccounts, indKey, indBalance, brokBasis, () =>
-          distributeGoalWithdrawal(drawAmount, indAccounts, indKey, indBalance),
+      ? followDrawsSoldOnCopies(...ledger, (p) =>
+          distributeGoalWithdrawal(drawAmount, indAccounts, indKey, p),
         )
       : undefined;
     const out = categoryBasis(drawn?.sold, basisOut)(OVERFLOW_CATEGORY);
     takeBasisOut(balances, accountBalance[OVERFLOW_CATEGORY], out);
+    drawn?.land();
     goalWithdrawals.push({
       goalId: goal.id,
       name: goal.name,

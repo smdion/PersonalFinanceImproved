@@ -7,6 +7,7 @@ import {
   basisOut,
   categoryBasis,
   followDrawsSold,
+  followDrawsSoldOnCopies,
   followInflowsAdded,
   seedBrokerageBasis,
   sellAtCost,
@@ -82,6 +83,40 @@ describe("followDrawsSold and takeBasisOut", () => {
     expect(result).toBe("drawn");
     expect(sold.get("brokerage")).toBe(2200);
     expect(accts.map((a) => basis.get(indKey(a)))).toEqual([10800, 9000]);
+  });
+
+  it("on copies, the accounts' maps hold until the draw lands in them", () => {
+    // The same draw as above: A $30,000 at $12,000 sells $3,000, B $10,000 at $10,000 sells $1,000.
+    const accts = [brokerage("A", 0), brokerage("B", 0)];
+    const [a, b] = accts.map((acct) => indKey(acct)) as [string, string];
+    const indBal = new Map([
+      [a, 30000],
+      [b, 10000],
+    ]);
+    const basis = new Map([
+      [a, 12000],
+      [b, 10000],
+    ]);
+    const drawn = followDrawsSoldOnCopies(
+      accts,
+      indKey,
+      indBal,
+      basis,
+      (copy) => {
+        copy.set(a, 27000);
+        copy.set(b, 9000);
+        return "drawn";
+      },
+    );
+    expect(drawn.result).toBe("drawn");
+    expect(drawn.sold.get("brokerage")).toBe(2200);
+    expect([...indBal.values(), ...basis.values()]).toEqual([
+      30000, 10000, 12000, 10000,
+    ]);
+    drawn.land();
+    expect([...indBal.values(), ...basis.values()]).toEqual([
+      27000, 9000, 10800, 9000,
+    ]);
   });
 
   it("money in: each category's basis added is the sum of its accounts' rises", () => {

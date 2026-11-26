@@ -49,6 +49,8 @@ type Run = {
   ctx: any;
   state: any;
   inDraws: number;
+  /** inside a real draw taken on copies of the run's own maps */
+  onCopies: number;
   /** slice (`<category>:<side>`) → its parts' keys */
   sliceKeys: Map<string, string[]>;
   /** category → its parts' keys */
@@ -106,6 +108,7 @@ function startRun(ctx: any): Run {
     ctx,
     state: undefined,
     inDraws: 0,
+    onCopies: 0,
     sliceKeys: new Map(),
     categoryKeys: new Map(),
   };
@@ -416,6 +419,27 @@ export function reconcileModule(m: any) {
 export function brokerageBasisModule(m: any) {
   return {
     ...m,
+    followDrawsSoldOnCopies: (
+      parts: any[],
+      partKey: any,
+      partBalance: Map<string, number>,
+      basis: Map<string, number>,
+      mutate: (drawn: Map<string, number>) => unknown,
+    ) => {
+      const run = ownMap(partBalance);
+      if (run) run.onCopies++;
+      try {
+        return m.followDrawsSoldOnCopies(
+          parts,
+          partKey,
+          partBalance,
+          basis,
+          mutate,
+        );
+      } finally {
+        if (run) run.onCopies--;
+      }
+    },
     followReconciliation: (
       parts: any[],
       partKey: any,
@@ -504,7 +528,7 @@ export function brokerageBasisModule(m: any) {
 }
 
 /** The year's draws: `distributeWithdrawals` counts only inside them (or a
- *  gap year's take on the run's own map). */
+ *  gap year's take, on copies of the run's own maps). */
 export function yearDrawsModule(m: any) {
   return {
     ...m,
@@ -552,7 +576,9 @@ export function withdrawalsModule(m: any) {
       const real =
         !!run?.state &&
         proof.trial === 0 &&
-        (run.inDraws > 0 || partBalance === run.state.indBalance);
+        (run.inDraws > 0 ||
+          run.onCopies > 0 ||
+          partBalance === run.state.indBalance);
       const out = m.distributeWithdrawals(
         slots,
         parts,

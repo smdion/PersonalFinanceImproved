@@ -21,7 +21,7 @@ import { depleteIndividualBasis } from "./individual-accounts/ledger";
 import { distributeWithdrawals } from "./individual-accounts/withdrawals";
 import {
   categoryBasis,
-  followDrawsSold,
+  followDrawsSoldOnCopies,
   retirementBrokerageBasisRatio,
 } from "./brokerage-basis";
 import {
@@ -247,18 +247,19 @@ export function runGapYearDraw(
   const pool = scopedBalances(balances, nonRetirement).allAccountsBalance;
   const { slots, warnings } = searchGrossUp(need, pool, first, evaluate).e;
 
-  const { result: taken, sold } = followDrawsSold(
+  const { result: taken, ...drawn } = followDrawsSoldOnCopies(
     indAccounts,
     indKey,
     indBalance,
     brokBasis,
-    () => shareOut(slots, indBalance, indBasis),
+    (parts) => shareOut(slots, parts, indBasis),
   );
   const settled = price(slots, taken.rothGrowth, taken.penalty);
   const { priced, cost } = settled;
   const out = priced.brokerageBasisOut;
-  const basisOut = categoryBasis(ledgerRuns ? sold : undefined, out);
+  const basisOut = categoryBasis(ledgerRuns ? drawn.sold : undefined, out);
   deductWithdrawals({ slots, balances, accountBalance, basisOut });
+  drawn.land();
   const floorRaised = clampBalances(balances, accountBalance);
   if (ledgerRuns) floorPartsAndSlices(ctx, state, floorRaised);
   const withdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));

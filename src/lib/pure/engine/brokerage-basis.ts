@@ -187,6 +187,32 @@ export function followDrawsSold<T>(
   return { result, sold: fall };
 }
 
+/** `followDrawsSold` on copies of `balances` and `basis`, so the tax buckets
+ *  and categories are read before the accounts move; `land` then writes the
+ *  copies into the same maps. */
+export function followDrawsSoldOnCopies<T>(
+  accounts: readonly IndividualAccountInput[],
+  keyOf: IndKeyFn,
+  balances: Map<string, number>,
+  basis: BrokerageBasis,
+  mutate: (drawn: Map<string, number>) => T,
+): { result: T; sold: Map<AccountCategory, number>; land: () => void } {
+  const drawn = new Map(balances);
+  const drawnBasis = new Map(basis);
+  const { result, sold } = followDrawsSold(
+    accounts,
+    keyOf,
+    drawn,
+    drawnBasis,
+    () => mutate(drawn),
+  );
+  const land = () => {
+    for (const [k, v] of drawn) balances.set(k, v);
+    for (const [k, v] of drawnBasis) basis.set(k, v);
+  };
+  return { result, sold, land };
+}
+
 /** `followInflows`, also returning the basis each category's accounts took
  *  in, to the cent: what the category and the tax buckets take in with them. */
 export function followInflowsAdded<T>(
