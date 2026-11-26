@@ -29,9 +29,9 @@ export function settleYearTax(
 
   const settled = { ...flow, priced, parts };
   const settle = settleYearDraws(ctx, state, thisYear, settled);
-  settleAt(state, "decumulation.draws");
+  settleAt(ctx, state, "decumulation.draws");
   const conversion = yearRothConversion(ctx, state, thisYear, settled);
-  settleAt(state, "decumulation.conversion");
+  settleAt(ctx, state, "decumulation.conversion");
   const repriced = repriceConversionYear(ctx, thisYear, {
     rmd,
     priced,

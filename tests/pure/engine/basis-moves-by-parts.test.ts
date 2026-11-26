@@ -17,7 +17,7 @@ vi.mock(
     return {
       ...actual,
       settle: (...args: Parameters<typeof actual.settle>) => {
-        const [state, point] = args;
+        const [, state, point] = args;
         actual.settle(...args);
         let basis = 0;
         for (const balance of Object.values(state.accountBalance))

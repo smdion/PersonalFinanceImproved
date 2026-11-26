@@ -47,10 +47,10 @@ export function growYearToRows(
     flow.drawn;
   // The Portfolio contributions, reported only, are the last flow before
   // growth: nothing writes between them and here.
-  settle(state, "decumulation.portfolioContributions");
+  settle(ctx, state, "decumulation.portfolioContributions");
   // Apply growth, to each account (negatives at 0) and the totals
   const individualGrowth = growYear(ctx, state, returnRate, true);
-  settle(state, "decumulation.growth");
+  settle(ctx, state, "decumulation.growth");
 
   // Update RMD tracking: year-end Traditional balance (after growth) for next year's RMD
   state.priorYearEndTradBalance = balances.preTax;
@@ -111,6 +111,6 @@ export function growYearToRows(
         individualBalance,
       ),
   );
-  settle(state, "decumulation.beforeReconcile");
+  settle(ctx, state, "decumulation.beforeReconcile");
   return { individualYearBalances };
 }

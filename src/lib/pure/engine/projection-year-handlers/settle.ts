@@ -3,13 +3,22 @@ import type {
   AccountBalances,
   TaxBuckets,
 } from "../../accounts/account-balances.types";
+import type { AccountBalance } from "../../../config/account-types.types";
 import { getAllCategories } from "../../../config/account-types";
 import {
   emptyTaxBucketMap,
   taxTypeOnSide,
 } from "../../../config/tax-treatment-buckets";
 import { roundToCents } from "../../../utils/math";
-import type { ProjectionLoopState } from "./types";
+import {
+  setBalance,
+  setBasis,
+  setRoth,
+  setTraditional,
+} from "../../accounts/account-balance";
+import type { CategorySide } from "../../accounts/category-side";
+import { sliceKey, sumBySlice } from "../category-slices";
+import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** A flow's end, where every track (tax buckets, categories, account parts
  *  and their basis) has taken that flow's writes, in each year's order. */
@@ -46,8 +55,47 @@ export function taxBucketsOf(accountBalance: AccountBalances): TaxBuckets {
   return buckets;
 }
 
-/** Called once at each settled point of every year: the tax buckets are
- *  refreshed from the categories, so each is the sum of their cents. */
-export function settle(state: ProjectionLoopState, _point: SettledPoint) {
+/** Called once at each settled point of every year: the views refreshed from
+ *  the account parts (`refreshViews`). */
+export function settle(
+  ctx: ProjectionContext,
+  state: ProjectionLoopState,
+  _point: SettledPoint,
+) {
+  refreshViews(ctx, state);
+}
+
+/** Each category side with account parts refreshed from them, then the tax
+ *  buckets from the categories, so each track is the sum of the cents below
+ *  it. */
+export function refreshViews(
+  ctx: ProjectionContext,
+  state: ProjectionLoopState,
+) {
+  slicesFromParts(ctx, state);
   Object.assign(state.balances, taxBucketsOf(state.accountBalance));
+}
+
+/** Each category side with parts set to their balances' sum, and a
+ *  basis-tracking category's basis to theirs, to the cent; a side with no
+ *  part keeps its money. */
+function slicesFromParts(ctx: ProjectionContext, state: ProjectionLoopState) {
+  const { indAccounts: parts, indKey: partKey } = ctx;
+  const money = sumBySlice(parts, partKey, state.indBalance);
+  const basis = sumBySlice(parts, partKey, state.brokBasis);
+  for (const category of getAllCategories()) {
+    const balance = state.accountBalance[category];
+    const refresh = (
+      side: CategorySide,
+      sums: ReadonlyMap<string, number>,
+      write: (target: AccountBalance, value: number) => void,
+    ) => {
+      const sum = sums.get(sliceKey(category, side));
+      if (sum !== undefined) write(balance, roundToCents(sum));
+    };
+    refresh("traditional", money, setTraditional);
+    refresh("roth", money, setRoth);
+    refresh("balance", money, setBalance);
+    refresh("balance", basis, setBasis);
+  }
 }

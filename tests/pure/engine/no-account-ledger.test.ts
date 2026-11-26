@@ -23,7 +23,7 @@ vi.mock(
     return {
       ...actual,
       settle: (...args: Parameters<typeof actual.settle>) => {
-        const [state, point] = args;
+        const [, state, point] = args;
         actual.settle(...args);
         let categories = 0;
         let basis = 0;

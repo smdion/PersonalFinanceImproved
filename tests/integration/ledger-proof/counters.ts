@@ -272,10 +272,10 @@ export function stateModule(
 export function settleModule(m: any) {
   return {
     ...m,
-    settle: (state: any, point: string) => {
+    settle: (ctx: any, state: any, point: string) => {
       const run = own(state);
       if (run) sample(run, point, m.taxBucketsOf);
-      m.settle(state, point);
+      m.settle(ctx, state, point);
     },
   };
 }

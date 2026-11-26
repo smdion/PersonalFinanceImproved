@@ -26,7 +26,7 @@ vi.mock(
     return {
       ...actual,
       settle: (...args: Parameters<typeof actual.settle>) => {
-        const [state, point] = args;
+        const [, state, point] = args;
         actual.settle(...args);
         calls.push({
           point,
@@ -45,9 +45,19 @@ import { calculateProjection } from "@/lib/pure/engine";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
-import { makeAccumulationDefaults } from "../fixtures/engine-fixtures";
+import {
+  makeAccumulationDefaults,
+  makeIndividualAccount,
+} from "../fixtures/engine-fixtures";
 import { onePerson } from "../../fixtures/engine-people";
 import { engineInput } from "../fixtures/engine-input";
+import { accountIdKeyOf } from "@/lib/pure/accounts/account-part";
+import { openingTotals } from "@/lib/pure/engine/opening-parts";
+import { refreshViews } from "@/lib/pure/engine/projection-year-handlers/settle";
+import type {
+  ProjectionContext,
+  ProjectionLoopState,
+} from "@/lib/pure/engine/projection-year-handlers/types";
 
 const AS_OF = new Date("2025-01-01");
 
@@ -214,6 +224,80 @@ describe("settle", () => {
         );
     });
     expect(drifted).toEqual([]);
+  });
+
+  it("refreshViews: a slice with parts equals the rounded sum of its parts, basis included; a slice with none is untouched", () => {
+    const owner = {
+      ownerName: "Alice",
+      ownerPersonId: 1,
+      parentCategory: "Retirement",
+    };
+    const part = (
+      name: string,
+      category: "401k" | "brokerage",
+      taxType: "preTax" | "taxFree" | "afterTax",
+    ) =>
+      makeIndividualAccount({
+        name,
+        category,
+        taxType,
+        startingBalance: 100,
+        ...owner,
+      });
+    const parts = [
+      part("Traditional A", "401k", "preTax"),
+      part("Traditional B", "401k", "preTax"),
+      part("Roth", "401k", "taxFree"),
+      part("Brokerage A", "brokerage", "afterTax"),
+      part("Brokerage B", "brokerage", "afterTax"),
+    ];
+    const { balances, accountBalance } = openingTotals(parts);
+    // The slices sit apart from their parts, off the cent grid.
+    Object.assign(accountBalance["401k"], { traditional: 7, roth: 0.1 + 0.2 });
+    Object.assign(accountBalance.brokerage, { balance: 9, basis: 3 });
+    // The IRA has no part.
+    Object.assign(accountBalance.ira, {
+      traditional: 1234.5600000001,
+      roth: 0,
+    });
+    const held = [100.004, 50.003, 25.006, 10.001, 20.002];
+    const basisHeld = [4.004, 5.003];
+    const indBalance = new Map(
+      parts.map((p, i) => [accountIdKeyOf(p), held[i]!]),
+    );
+    const brokBasis = new Map(
+      parts.slice(3).map((p, i) => [accountIdKeyOf(p), basisHeld[i]!]),
+    );
+    const run = { indAccounts: parts, indKey: accountIdKeyOf };
+    const loop = {
+      balances,
+      accountBalance,
+      indBalance,
+      brokBasis,
+      projectionByYear: [],
+    };
+
+    refreshViews(
+      // eslint-disable-next-line no-restricted-syntax -- only the fields refreshViews reads
+      run as unknown as ProjectionContext,
+      // eslint-disable-next-line no-restricted-syntax -- only the fields refreshViews reads
+      loop as unknown as ProjectionLoopState,
+    );
+
+    expect(accountBalance["401k"]).toMatchObject({
+      traditional: 150.01,
+      roth: 25.01,
+    });
+    expect(accountBalance.brokerage).toMatchObject({
+      balance: 30,
+      basis: 9.01,
+    });
+    expect(accountBalance.ira).toMatchObject({
+      traditional: 1234.5600000001,
+      roth: 0,
+    });
+    expect(balances.afterTax).toBe(30);
+    expect(balances.afterTaxBasis).toBe(9.01);
   });
 });
 

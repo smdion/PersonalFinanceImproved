@@ -14,6 +14,6 @@ export function yearRmdAndQcd(
 ) {
   const owed = rmdIncomeByOwner(ctx, state, year);
   const qcd = qcdStep(ctx, state, year, config);
-  settle(state, "decumulation.qcd");
+  settle(ctx, state, "decumulation.qcd");
   return { owed, qcd };
 }
