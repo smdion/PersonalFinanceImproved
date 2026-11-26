@@ -91,6 +91,7 @@ export function runWorkingYearFlows(
     limitGrowthRate,
     yearIndex,
     proRate,
+    sized.useRealContributions,
     overflowToBrokerage,
     rampAmount,
     activeEmployerMatchByParentCategory,

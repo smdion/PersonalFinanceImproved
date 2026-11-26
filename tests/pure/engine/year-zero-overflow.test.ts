@@ -88,6 +88,7 @@ describe("a year-0 brokerage slot below the year's overflow", () => {
       limitGrowthRate: 0,
       yearIndex: 0,
       proRate: 0.5,
+      useRealContributions: false,
       overflowToBrokerage: 300,
       rampAmount: 0,
     });

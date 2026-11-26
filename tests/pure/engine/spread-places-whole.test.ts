@@ -85,6 +85,7 @@ function input(
     limitGrowthRate: 0,
     yearIndex: 0,
     proRate: 1,
+    useRealContributions: false,
     overflowToBrokerage: 0,
     rampAmount: 0,
     ...overrides,
@@ -382,6 +383,71 @@ describe("a spread places its whole amount", () => {
       const placed = [ann, bo].map((p) => indContributions.get(indKey(p)) ?? 0);
       expect(placed.every((amount) => amount >= 0)).toBe(true);
       expect(cents(total(indContributions))).toBe(337500);
+    },
+  );
+
+  // The same household on the paycheck path: year 0's slot is each spec's
+  // base amount for the months less its cut, so each spec weighs what it
+  // has left, whatever the override does to the projected salary.
+  it.each([
+    ["Bo's 6%", 0.06, 3375, 1500],
+    ["Bo's 12%", 0.12, 4875, 3000],
+  ])(
+    "year 0 from the paycheck, beside %s: each spec takes what it has left, Ann 1,875 and Bo his own",
+    (_bo, boRate, slotAmount, boLeft) => {
+      const ann = makeIndividualAccount({
+        name: "Ann 401k",
+        parentCategory: "Retirement",
+        startingBalance: 0,
+      });
+      const bo = makeIndividualAccount({
+        name: "Bo 401k",
+        parentCategory: "Retirement",
+        startingBalance: 0,
+      });
+      const specs = [
+        makeContributionSpec({
+          name: "Ann 401k",
+          contributionAccountId: 1,
+          account: paysInto(ann),
+          taxTreatment: "pre_tax",
+          value: 0.1,
+          salaryFraction: 100_000 / 150_000,
+          baseAnnual: 10_000,
+          leftThisYear: 1875,
+        }),
+        makeContributionSpec({
+          name: "Bo 401k",
+          contributionAccountId: 2,
+          account: paysInto(bo),
+          taxTreatment: "pre_tax",
+          value: boRate,
+          salaryFraction: 50_000 / 150_000,
+          baseAnnual: 50_000 * boRate,
+        }),
+      ];
+      const { indContributions } = distributeContributions(
+        input([ann, bo], {
+          slots: [
+            makeAccumulationSlot("401k", {
+              employeeContrib: slotAmount,
+              traditionalContrib: slotAmount,
+            }),
+          ],
+          contributionSpecs: specs,
+          specToAccount: new Map([
+            [specKeyOf(specs[0]!), [indKey(ann)]],
+            [specKeyOf(specs[1]!), [indKey(bo)]],
+          ]),
+          accountsWithSpecs: new Set([indKey(ann), indKey(bo)]),
+          projectedSalary: 60_000,
+          currentSalary: 150_000,
+          proRate: 0.5,
+          useRealContributions: true,
+        }),
+      );
+      expect(indContributions.get(indKey(ann))).toBe(1875);
+      expect(indContributions.get(indKey(bo))).toBe(boLeft);
     },
   );
 

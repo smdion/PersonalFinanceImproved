@@ -40,6 +40,7 @@ interface DistributeContributionsInput {
   limitGrowthRate: number;
   yearIndex: number;
   proRate: number;
+  useRealContributions: boolean;
   overflowToBrokerage: number;
   rampAmount: number;
   employerMatchByParentCat?: Map<AccountCategory, Map<string, number>>;
@@ -100,16 +101,19 @@ export function distributeContributions(
     const sk = specKeyOf(spec);
     const accountName = specToAccount.get(sk);
     if (!accountName) continue;
+    // Year 0 from the paycheck: the slot's own basis, each spec's money left.
     const projected = roundToCents(
       Math.max(
         0,
-        projectSpecAmount(spec, {
-          projectedSalary,
-          salaryBase: currentSalary,
-          limitGrowthFactor: lgf,
-          personPay,
-          proRate,
-        }) - (y === 0 ? yearZeroCut(spec, proRate) : 0),
+        y === 0 && input.useRealContributions
+          ? spec.baseAnnual * proRate - yearZeroCut(spec, proRate)
+          : projectSpecAmount(spec, {
+              projectedSalary,
+              salaryBase: currentSalary,
+              limitGrowthFactor: lgf,
+              personPay,
+              proRate,
+            }) - (y === 0 ? yearZeroCut(spec, proRate) : 0),
       ),
     );
     specRaw.set(sk, projected);
@@ -117,8 +121,7 @@ export function distributeContributions(
   }
 
   // --- Step 2: Distribute slot totals to individual accounts using spec weights ---
-  // Fixed-amount specs first (capped at the slot), the rest by the scaling specs' weights;
-  // with none, the rest is money no spec claims (unclaimedRest).
+  // Fixed-amount specs first (capped at the slot), the rest by scaling specs' weights, else unclaimedRest.
   const toOtherPart = otherParts(input, specAccount, specRaw, indContributions);
   for (const slot of slots) {
     const bs = getAccountTypeConfig(slot.category).balanceStructure;

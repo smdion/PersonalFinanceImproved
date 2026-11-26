@@ -1260,6 +1260,7 @@ describe("distributeContributions", () => {
       limitGrowthRate: 0.03,
       yearIndex: 0,
       proRate: 1,
+      useRealContributions: false,
       overflowToBrokerage: 0,
       rampAmount: 0,
       ...overrides,
@@ -1368,6 +1369,7 @@ describe("distributeContributions", () => {
       limitGrowthRate: 0.03,
       yearIndex: 0,
       proRate: 1,
+      useRealContributions: false,
       overflowToBrokerage: 0,
       rampAmount: 0,
     });
@@ -1422,6 +1424,7 @@ describe("distributeContributions", () => {
       limitGrowthRate: 0.03,
       yearIndex: 0,
       proRate: 1,
+      useRealContributions: false,
       overflowToBrokerage: 5000,
       rampAmount: 0,
     });
@@ -1469,6 +1472,7 @@ describe("distributeContributions", () => {
       limitGrowthRate: 0.03,
       yearIndex: 1,
       proRate: 1,
+      useRealContributions: false,
       overflowToBrokerage: 0,
       rampAmount: 3000,
     });
@@ -1518,6 +1522,7 @@ describe("distributeContributions", () => {
       limitGrowthRate: 0.03,
       yearIndex: 0,
       proRate: 1,
+      useRealContributions: false,
       overflowToBrokerage: 0,
       rampAmount: 0,
     });
@@ -1574,6 +1579,7 @@ describe("distributeContributions", () => {
       limitGrowthRate: 0.03,
       yearIndex: 0,
       proRate: 0.5,
+      useRealContributions: false,
       overflowToBrokerage: 0,
       rampAmount: 0,
     });
@@ -1626,6 +1632,7 @@ describe("distributeContributions", () => {
       limitGrowthRate: 0.03,
       yearIndex: 1,
       proRate: 0.5,
+      useRealContributions: false,
       overflowToBrokerage: 0,
       rampAmount: 0,
     });
@@ -1672,6 +1679,7 @@ describe("distributeContributions", () => {
       limitGrowthRate: 0.03,
       yearIndex: 0,
       proRate: 0.5,
+      useRealContributions: false,
       overflowToBrokerage: 0,
       rampAmount: 0,
     });
@@ -1695,6 +1703,7 @@ describe("distributeContributions", () => {
       limitGrowthRate: 0.03,
       yearIndex: 0,
       proRate: 1,
+      useRealContributions: false,
       overflowToBrokerage: 0,
       rampAmount: 0,
     });

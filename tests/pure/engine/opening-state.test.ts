@@ -543,6 +543,7 @@ describe("declareOpeningParts", () => {
       limitGrowthRate: 0,
       yearIndex: 1,
       proRate: 1,
+      useRealContributions: false,
       overflowToBrokerage: 0,
       rampAmount: 0,
     });

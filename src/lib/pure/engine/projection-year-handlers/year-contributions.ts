@@ -123,6 +123,7 @@ export function sizeYearContributions(
   const gapNeed = setup.gapYear ? needOf(slots, rampAmount) : null;
 
   return {
+    useRealContributions: Boolean(useRealContributions),
     proRate,
     lateYearCut,
     targetContribution,
