@@ -276,6 +276,8 @@ export async function buildEnginePayload(
     ownershipByPerson,
     accountBreakdownByCategory,
     inputWarnings,
+    accountNoteAt,
+    addAccountNotes,
     personNameById,
     birthYearByPersonId,
     individualAccounts,
@@ -523,7 +525,7 @@ export async function buildEnginePayload(
     );
   profileSwitches.push(...activeAgeSteps);
   profileSwitches.sort((a, b) => a.year - b.year);
-  inputWarnings.push(...unlinkedSpecsNote(contributionSpecs, profileSwitches));
+  addAccountNotes(unlinkedSpecsNote(contributionSpecs, profileSwitches));
   // A switch row's salary goes after the plain rows, so it wins a year both set.
   perPersonSalaryOverrides.push(...perPersonSalaryAdds);
   dbSalaryOverrides.push(...householdSalaryAdds);
@@ -688,7 +690,7 @@ export async function buildEnginePayload(
       priority: g.priority,
     })),
     individualAccounts: openingParts(individualAccounts, portfolioByAccount),
-    ...(inputWarnings.length > 0 ? { inputWarnings } : {}),
+    ...(inputWarnings.length > 0 ? { inputWarnings, accountNoteAt } : {}),
     annualExpenses: annualExpensesVal,
     expenseEndings,
     // Always passed: retirement starts from the Retirement budget, and the

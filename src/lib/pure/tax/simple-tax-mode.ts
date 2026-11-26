@@ -79,9 +79,19 @@ export function toSimpleTaxMode(
   // The ramp is Portfolio savings when it lands in a Portfolio brokerage
   // (the engine's rule); otherwise retirement money.
   const hasPortfolioBrokerage = rampIsPortfolioSaving(indAccounts);
+  // The notes describing the household's accounts don't apply to the pot.
+  const { accountNoteAt, ...rest } = input;
+  const accountNotes = new Set(accountNoteAt);
 
   return {
-    ...input,
+    ...rest,
+    ...(input.inputWarnings
+      ? {
+          inputWarnings: input.inputWarnings.filter(
+            (_, i) => !accountNotes.has(i),
+          ),
+        }
+      : {}),
     accumulationDefaults: {
       ...input.accumulationDefaults,
       accountSplits: parts.defaults.accountSplits,

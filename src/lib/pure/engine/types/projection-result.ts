@@ -32,6 +32,8 @@ import type { ReturnFilingStatus } from "@/lib/config/filing-status";
 export type ProjectionInput = {
   /** Notes from building this input (shown with the result's warnings). */
   inputWarnings?: string[];
+  /** Where in `inputWarnings` the notes describing the accounts sit. */
+  accountNoteAt?: number[];
   // --- Defaults (from Projection Assumptions) ---
   accumulationDefaults: AccumulationDefaults;
   decumulationDefaults: DecumulationDefaults;

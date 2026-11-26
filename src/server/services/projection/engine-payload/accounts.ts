@@ -22,6 +22,32 @@ import { buildIndividualAccounts } from "./individual-accounts";
 import type { RetirementData } from "./load";
 import type { perPersonSettingsFor } from "./settings-for";
 
+/** Brokerages holding money with no cost basis: the projection taxes every
+ *  dollar drawn from them as a gain — say so (0 also means "not entered"). */
+function missingBasisWarnings(
+  accountBreakdownByCategory: ReturnType<
+    typeof computeTaxBucketBreakdown
+  >["accountBreakdownByCategory"],
+): string[] {
+  return [
+    ...new Set(
+      findMissingCostBasis(
+        Object.entries(accountBreakdownByCategory).flatMap(
+          ([category, accounts]) =>
+            accounts
+              .filter((a) => a.costBasis != null)
+              .map((a) => ({
+                category,
+                name: a.name,
+                balance: a.amount,
+                costBasis: a.costBasis!,
+              })),
+        ),
+      ).map((a) => missingCostBasisWarning(a.name)),
+    ),
+  ];
+}
+
 /**
  * The starting portfolio: balances by tax bucket and by account, where
  * reinvested RMD money goes, the input warnings, and each account the
@@ -80,25 +106,7 @@ export function startingAccounts(
     ),
     perfAccounts,
   });
-  // Brokerages holding money with no cost basis: the projection taxes every
-  // dollar drawn from them as a gain — say so (0 also means "not entered").
-  const basisWarnings = [
-    ...new Set(
-      findMissingCostBasis(
-        Object.entries(accountBreakdownByCategory).flatMap(
-          ([category, accounts]) =>
-            accounts
-              .filter((a) => a.costBasis != null)
-              .map((a) => ({
-                category,
-                name: a.name,
-                balance: a.amount,
-                costBasis: a.costBasis!,
-              })),
-        ),
-      ).map((a) => missingCostBasisWarning(a.name)),
-    ),
-  ];
+  const basisWarnings = missingBasisWarnings(accountBreakdownByCategory);
   const viewingFallbackProfile =
     activeProfileId !== opts.retirementProfileId &&
     retirementProfileIsFallback(allAppSettings, retProfiles);
@@ -111,12 +119,20 @@ export function startingAccounts(
       : []),
     ...(rmdTarget.warning ? [rmdTarget.warning] : []),
     ...basisWarnings,
-    ...unlinkedRowsWarning(accountBreakdownByCategory),
+  ];
+  // Notes that describe the household's accounts, and where each sits in the
+  // list (Simple mode, which has no accounts, leaves them out).
+  const accountNoteAt: number[] = [];
+  const addAccountNotes = (notes: readonly string[]) => {
+    for (const note of notes) accountNoteAt.push(inputWarnings.push(note) - 1);
+  };
+  addAccountNotes(unlinkedRowsWarning(accountBreakdownByCategory));
+  inputWarnings.push(
     ...(snapshotData ? rebookedRowsWarning(snapshotData.accounts, people) : []),
     ...unknownTypeRows(snapshotData?.accounts ?? [], people).map(
       unknownTypeNote,
     ),
-  ];
+  );
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
   const performanceAccountsById = new Map(perfAccounts.map((p) => [p.id, p]));
   for (const account of data.unknownTypeContributions)
@@ -172,6 +188,8 @@ export function startingAccounts(
     ownershipByPerson,
     accountBreakdownByCategory,
     inputWarnings,
+    accountNoteAt,
+    addAccountNotes,
     personNameById,
     birthYearByPersonId,
     individualAccounts,

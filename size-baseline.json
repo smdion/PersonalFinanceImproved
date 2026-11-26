@@ -314,7 +314,7 @@
     "src/lib/pure/engine/types/accumulation.ts": 121,
     "src/lib/pure/engine/types/contribution-spec.ts": 88,
     "src/lib/pure/engine/types/decumulation.ts": 224,
-    "src/lib/pure/engine/types/projection-result.ts": 568,
+    "src/lib/pure/engine/types/projection-result.ts": 570,
     "src/lib/pure/engine/types/routing.ts": 81,
     "src/lib/pure/engine/withdrawal-cost-ranking.ts": 348,
     "src/lib/pure/engine/withdrawal-routing/bracket-filling.ts": 450,
@@ -420,7 +420,7 @@
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 207,
     "src/server/services/projection/coast-fire.ts": 284,
-    "src/server/services/projection/engine-payload/build-engine-payload.ts": 808,
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": 810,
     "src/server/services/projection/engine-payload/load.ts": 146,
     "src/server/services/projection/engine-payload/profile-switches.ts": 443,
     "src/server/services/projection/projection-cache.ts": 183,
@@ -1058,7 +1058,7 @@
       "computeCoastFireSimulation": 227
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 729
+      "buildEnginePayload": 731
     },
     "src/server/services/projection/engine-payload/profile-switches.ts": {
       "buildProfileSwitches": 275

@@ -1284,5 +1284,12 @@ describe("buildEnginePayload — a snapshot row linked to no account", () => {
     expect(await noteOf()).toEqual([
       expect.stringMatching(/^1 snapshot row isn't linked to an account/),
     ]);
+    // The note is marked as one describing the accounts (Simple leaves it out).
+    const data = await fetchRetirementData(appDb, {});
+    const input = (await buildEnginePayload(appDb, data, { asOf: new Date() }))!
+      .baseEngineInput;
+    expect(
+      (input.accountNoteAt ?? []).map((i) => input.inputWarnings![i]),
+    ).toEqual(await noteOf());
   });
 });
