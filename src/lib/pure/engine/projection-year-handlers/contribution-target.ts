@@ -5,6 +5,7 @@ import {
   isPortfolioParent,
 } from "../../../config/account-types";
 import { roundToCents, sumBy, safeDivide } from "../../../utils/math";
+import { yearZeroCut } from "../contribution-projection";
 import type { resolveAccumulationConfig } from "../override-resolution";
 import { contributionStateForYear } from "@/lib/pure/contributions/contribution-state";
 import type {
@@ -34,19 +35,12 @@ export function yearZeroBasis(
   // Pro-rate year 0 contributions/match based on months remaining in the year
   const proRate = yearIndex === 0 ? firstYearFraction : 1;
 
-  // Year 0 counts what's left this year: a part-year job's (leftThisYear), or an over-limit row
-  // paid at its configured rate so far, max(0, capped − configured × elapsed). The cut per
-  // category comes off the pro-rated (negative: more is left than the months give).
+  // Year 0 counts what's left this year: each spec's cut (yearZeroCut), summed per
+  // category, comes off the pro-rated amount.
   const lateYearCut = buildCategoryRecord(() => 0);
   if (yearIndex === 0)
-    for (const s of contributionSpecs ?? []) {
-      const left =
-        s.leftThisYear ??
-        (s.configuredAnnual === undefined
-          ? s.baseAnnual * proRate
-          : Math.max(0, s.baseAnnual - s.configuredAnnual * (1 - proRate)));
-      lateYearCut[s.category] += s.baseAnnual * proRate - left;
-    }
+    for (const s of contributionSpecs ?? [])
+      lateYearCut[s.category] += yearZeroCut(s, proRate);
   const totalLateYearCut = sumBy(Object.values(lateYearCut), (v) => v);
 
   return { useRealContributions, proRate, lateYearCut, totalLateYearCut };

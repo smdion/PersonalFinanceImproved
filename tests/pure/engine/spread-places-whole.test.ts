@@ -289,7 +289,7 @@ describe("a spread places its whole amount", () => {
     expect(cents(total(placed))).toBe(100030);
   });
 
-  it("year 0's money beyond the months left, past a fixed-amount spec, lands on the category's Retirement parts by balance", () => {
+  it("year 0's money beyond the months left stays on the fixed-amount spec's own part, not the category's other Retirement parts", () => {
     const ann = makeIndividualAccount({
       name: "Ann 401k",
       parentCategory: "Retirement",
@@ -300,8 +300,8 @@ describe("a spread places its whole amount", () => {
       parentCategory: "Retirement",
       startingBalance: 1000,
     });
-    // $2,000 a year, half a year left: the spec's $1,000; the slot $1,400.
-    // The $400 left splits by the balances after the spec's credit, 3:1.
+    // $2,000 a year, half a year left: the months give $1,000, but $1,400
+    // is left this year, and the slot holds $1,400.
     const placed = oneSpecRun(
       [ann, bo],
       ann,
@@ -309,14 +309,115 @@ describe("a spread places its whole amount", () => {
         taxTreatment: "pre_tax",
         method: "fixed_monthly",
         baseAnnual: 2000,
+        leftThisYear: 1400,
         contributionScaling: "fixed_amount",
         parentCategory: "Retirement",
       },
       ["401k", { employeeContrib: 1400, traditionalContrib: 1400 }],
       { proRate: 0.5 },
     );
-    expect(placed.get(indKey(ann))).toBe(1300);
-    expect(placed.get(indKey(bo))).toBe(100);
+    expect(placed.get(indKey(ann))).toBe(1400);
+    expect(placed.get(indKey(bo))).toBeUndefined();
+  });
+
+  // Pay $150k ($100k / $50k), a $60k year-0 override, half a year left.
+  // Ann's 10% job ends with 3 of 16 checks left ($1,875): her $2,000 less
+  // her $3,125 cut would be −$1,125. The slot is $3,375.
+  it.each([
+    ["Bo's 6% ($600)", 0.06],
+    ["Bo's 12% ($1,200)", 0.12],
+  ])(
+    "year 0's cut beyond a scaling spec's own amount takes it to zero, never below, beside %s: no part goes negative and the slot is placed whole",
+    (_bo, boRate) => {
+      const ann = makeIndividualAccount({
+        name: "Ann 401k",
+        parentCategory: "Retirement",
+        startingBalance: 0,
+      });
+      const bo = makeIndividualAccount({
+        name: "Bo 401k",
+        parentCategory: "Retirement",
+        startingBalance: 0,
+      });
+      const specs = [
+        makeContributionSpec({
+          name: "Ann 401k",
+          contributionAccountId: 1,
+          account: paysInto(ann),
+          taxTreatment: "pre_tax",
+          value: 0.1,
+          salaryFraction: 100_000 / 150_000,
+          baseAnnual: 10_000,
+          leftThisYear: 1875,
+        }),
+        makeContributionSpec({
+          name: "Bo 401k",
+          contributionAccountId: 2,
+          account: paysInto(bo),
+          taxTreatment: "pre_tax",
+          value: boRate,
+          salaryFraction: 50_000 / 150_000,
+          baseAnnual: 50_000 * boRate,
+        }),
+      ];
+      const { indContributions } = distributeContributions(
+        input([ann, bo], {
+          slots: [
+            makeAccumulationSlot("401k", {
+              employeeContrib: 3375,
+              traditionalContrib: 3375,
+            }),
+          ],
+          contributionSpecs: specs,
+          specToAccount: new Map([
+            [specKeyOf(specs[0]!), [indKey(ann)]],
+            [specKeyOf(specs[1]!), [indKey(bo)]],
+          ]),
+          accountsWithSpecs: new Set([indKey(ann), indKey(bo)]),
+          projectedSalary: 60_000,
+          currentSalary: 150_000,
+          proRate: 0.5,
+        }),
+      );
+      const placed = [ann, bo].map((p) => indContributions.get(indKey(p)) ?? 0);
+      expect(placed.every((amount) => amount >= 0)).toBe(true);
+      expect(cents(total(indContributions))).toBe(337500);
+    },
+  );
+
+  it("a fixed Portfolio spec with more left this year than the months give keeps it on its own part", () => {
+    const taxable = makeIndividualAccount({
+      name: "Taxable",
+      category: "brokerage",
+      taxType: "afterTax",
+      parentCategory: "Portfolio",
+      startingBalance: 5000,
+    });
+    const retirement = makeIndividualAccount({
+      name: "Retirement brokerage",
+      category: "brokerage",
+      taxType: "afterTax",
+      parentCategory: "Retirement",
+      startingBalance: 0,
+    });
+    // The months give $1,000 of $2,000; $1,400 is left, so the cut is −$400.
+    const placed = oneSpecRun(
+      [taxable, retirement],
+      taxable,
+      {
+        category: "brokerage",
+        taxTreatment: "after_tax",
+        method: "fixed_monthly",
+        baseAnnual: 2000,
+        leftThisYear: 1400,
+        contributionScaling: "fixed_amount",
+        parentCategory: "Portfolio",
+      },
+      ["brokerage", { employeeContrib: 1400 }],
+      { proRate: 0.5 },
+    );
+    expect(placed.get(indKey(taxable))).toBe(1400);
+    expect(placed.get(indKey(retirement))).toBeUndefined();
   });
 
   it("a tax type no spec carries: $100 over three spec accounts' other parts is $100", () => {

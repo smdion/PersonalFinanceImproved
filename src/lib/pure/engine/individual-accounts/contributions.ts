@@ -11,7 +11,7 @@ import {
   getAllCategories,
   isRetirementMoney,
 } from "../../../config/account-types";
-import { projectSpecAmount } from "../contribution-projection";
+import { projectSpecAmount, yearZeroCut } from "../contribution-projection";
 import { taxTypeOnSide } from "../../../config/tax-treatment-buckets";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { rampBrokerages } from "@/lib/pure/accounts/brokerage-ramp";
@@ -101,13 +101,16 @@ export function distributeContributions(
     const accountName = specToAccount.get(sk);
     if (!accountName) continue;
     const projected = roundToCents(
-      projectSpecAmount(spec, {
-        projectedSalary,
-        salaryBase: currentSalary,
-        limitGrowthFactor: lgf,
-        personPay,
-        proRate,
-      }),
+      Math.max(
+        0,
+        projectSpecAmount(spec, {
+          projectedSalary,
+          salaryBase: currentSalary,
+          limitGrowthFactor: lgf,
+          personPay,
+          proRate,
+        }) - (y === 0 ? yearZeroCut(spec, proRate) : 0),
+      ),
     );
     specRaw.set(sk, projected);
     specAccount.set(sk, accountName);

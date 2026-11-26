@@ -282,7 +282,7 @@
     "src/lib/pure/debts/mortgage.ts": 387,
     "src/lib/pure/engine/aca-check.ts": 72,
     "src/lib/pure/engine/contribution-routing.ts": 615,
-    "src/lib/pure/engine/individual-accounts/contributions.ts": 362,
+    "src/lib/pure/engine/individual-accounts/contributions.ts": 365,
     "src/lib/pure/engine/individual-accounts/ledger.ts": 139,
     "src/lib/pure/engine/individual-accounts/reconcile.ts": 253,
     "src/lib/pure/engine/individual-accounts/withdrawals.ts": 321,
@@ -290,7 +290,7 @@
     "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": 143,
     "src/lib/pure/engine/projection-year-handlers/contribution-credits.ts": 207,
     "src/lib/pure/engine/projection-year-handlers/contribution-slots.ts": 236,
-    "src/lib/pure/engine/projection-year-handlers/contribution-target.ts": 182,
+    "src/lib/pure/engine/projection-year-handlers/contribution-target.ts": 176,
     "src/lib/pure/engine/projection-year-handlers/decumulation-income.ts": 67,
     "src/lib/pure/engine/projection-year-handlers/decumulation-row.ts": 155,
     "src/lib/pure/engine/projection-year-handlers/decumulation-year.ts": 150,
@@ -965,7 +965,7 @@
       "runGapYearDraw": 220
     },
     "src/lib/pure/engine/individual-accounts/contributions.ts": {
-      "distributeContributions": 302
+      "distributeContributions": 305
     },
     "src/lib/pure/engine/projection-year-handlers/context.ts": {
       "buildProjectionContext": 182

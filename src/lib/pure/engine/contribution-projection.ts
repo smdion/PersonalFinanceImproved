@@ -24,6 +24,24 @@ interface ProjectSpecAmountParams {
   proRate?: number;
 }
 
+/** Year 0's cut to a spec's pro-rated amount: the months' share less what's left
+ *  (`leftThisYear`, or an over-limit row's max(0, capped − configured × elapsed));
+ *  negative when more is left than the months give. */
+export function yearZeroCut(
+  spec: Pick<
+    ContributionSpec,
+    "baseAnnual" | "leftThisYear" | "configuredAnnual"
+  >,
+  proRate: number,
+): number {
+  const left =
+    spec.leftThisYear ??
+    (spec.configuredAnnual === undefined
+      ? spec.baseAnnual * proRate
+      : Math.max(0, spec.baseAnnual - spec.configuredAnnual * (1 - proRate)));
+  return spec.baseAnnual * proRate - left;
+}
+
 /**
  * A contribution spec's raw dollar amount for the year, unrounded: callers round where needed
  * (contribution-routing.ts's Roth-fraction ratio needs the raw float).
