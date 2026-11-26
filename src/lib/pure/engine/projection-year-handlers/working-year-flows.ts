@@ -35,11 +35,10 @@ export function runWorkingYearFlows(
     indAccounts: individualAccounts,
     indKey: individualKey,
     indParentCat: individualParentCategory,
-    brokerageGoalsByYear,
     firstYearFraction,
     OVERFLOW_CATEGORY,
   } = ctx;
-  const { currentSalary, limitGrowthRate, decumulationDefaults } = ctx.input;
+  const { currentSalary, limitGrowthRate } = ctx.input;
   const {
     balances,
     accountBalance,
@@ -113,18 +112,10 @@ export function runWorkingYearFlows(
   settle(ctx, state, "accumulation.growth");
 
   const { goalWithdrawals } = brokerageGoalDraws(
-    brokerageGoalsByYear,
+    ctx,
+    state,
     year,
-    balances,
-    ledgerRuns,
-    individualAccounts,
-    individualKey,
-    individualBalance,
     routeWarnings,
-    brokerageBasis,
-    decumulationDefaults,
-    accountBalance,
-    OVERFLOW_CATEGORY,
   );
   settle(ctx, state, "accumulation.goalDraws");
   // Nothing writes between the goal draws and the year's close, whose

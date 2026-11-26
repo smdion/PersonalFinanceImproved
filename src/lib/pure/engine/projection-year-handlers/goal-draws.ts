@@ -1,13 +1,10 @@
 import {
-  categoryBasis,
   followDrawsSoldOnCopies,
   groupBasisRatio,
   sellAtCost,
-  takeBasisOut,
 } from "../brokerage-basis";
 import type { EngineAccumulationYear } from "../types/projection-result";
 import { roundToCents } from "../../../utils/math";
-import { addBalance } from "../../accounts/account-balance";
 import { DEFAULT_TAX_RATE_BROKERAGE } from "../../../constants";
 import {
   distributeGoalWithdrawal,
@@ -16,6 +13,7 @@ import {
 } from "../individual-accounts/withdrawals";
 import { runGapYearDraw } from "../gap-year-draw";
 import type { GapYearNeed } from "../gap-year-need";
+import { refreshViews } from "./settle";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** A gap year's spending, drawn from the accounts before growth. */
@@ -32,21 +30,17 @@ export function yearGapDraw(
   return { gapRun, gapDraw };
 }
 
-/** Each brokerage goal's draw this working year, from Portfolio money. */
+/** Each brokerage goal's draw this working year, from Portfolio money: it
+ *  moves the accounts, and the next goal reads the refreshed totals. */
 export function brokerageGoalDraws(
-  brokerageGoalsByYear: ProjectionContext["brokerageGoalsByYear"],
+  ctx: ProjectionContext,
+  state: ProjectionLoopState,
   year: number,
-  balances: ProjectionLoopState["balances"],
-  ledgerRuns: boolean,
-  indAccounts: ProjectionContext["indAccounts"],
-  indKey: ProjectionContext["indKey"],
-  indBalance: ProjectionLoopState["indBalance"],
   routeWarnings: string[],
-  brokBasis: ProjectionLoopState["brokBasis"],
-  decumulationDefaults: ProjectionContext["input"]["decumulationDefaults"],
-  accountBalance: ProjectionLoopState["accountBalance"],
-  OVERFLOW_CATEGORY: ProjectionContext["OVERFLOW_CATEGORY"],
 ) {
+  const { brokerageGoalsByYear, ledgerRuns, indAccounts, indKey } = ctx;
+  const { decumulationDefaults } = ctx.input;
+  const { balances, indBalance, brokBasis } = state;
   const yearGoals = brokerageGoalsByYear.get(year) ?? [];
   const ledger = [indAccounts, indKey, indBalance, brokBasis] as const;
   const goalWithdrawals: EngineAccumulationYear["brokerageGoalWithdrawals"] =
@@ -89,25 +83,19 @@ export function brokerageGoalDraws(
           )
         : undefined) ??
       (balances.afterTax > 0 ? balances.afterTaxBasis / balances.afterTax : 0);
-    const { basisOut, basisPortion, gainsPortion } = sellAtCost(
-      drawAmount,
-      basisRatio,
-    );
+    const { basisPortion, gainsPortion } = sellAtCost(drawAmount, basisRatio);
     const taxCost = roundToCents(
       gainsPortion *
         (decumulationDefaults.distributionTaxRates?.brokerage ??
           DEFAULT_TAX_RATE_BROKERAGE),
     );
-    balances.afterTax = roundToCents(balances.afterTax - drawAmount);
-    addBalance(accountBalance[OVERFLOW_CATEGORY], -drawAmount);
     const drawn = ledgerRuns
       ? followDrawsSoldOnCopies(...ledger, (p) =>
           distributeGoalWithdrawal(drawAmount, indAccounts, indKey, p),
         )
       : undefined;
-    const out = categoryBasis(drawn?.sold, basisOut)(OVERFLOW_CATEGORY);
-    takeBasisOut(balances, accountBalance[OVERFLOW_CATEGORY], out);
     drawn?.land();
+    refreshViews(ctx, state);
     goalWithdrawals.push({
       goalId: goal.id,
       name: goal.name,
