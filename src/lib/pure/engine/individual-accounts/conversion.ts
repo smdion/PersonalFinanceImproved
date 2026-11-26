@@ -18,6 +18,7 @@ import {
   type BrokerageBasis,
 } from "../brokerage-basis";
 import { ROTH_SPLIT_PARTS } from "../../../config/tax-treatment-buckets";
+import { debitByBalance } from "./debit-by-balance";
 
 /** The account parts a conversion moves money on, their balances and each
  *  brokerage part's basis. */
@@ -27,35 +28,6 @@ export type ConversionParts = {
   keyOf: IndKeyFn;
   basis: BrokerageBasis;
 };
-
-/** Takes `amount` from `accounts` by balance (the first absorbs the rounding
- *  remainder); none when they hold nothing. */
-function debitByBalance(
-  { balances, keyOf }: ConversionParts,
-  accounts: readonly IndividualAccountInput[],
-  amount: number,
-): void {
-  const total = accounts.reduce(
-    (s, ia) => s + Math.max(0, balances.get(keyOf(ia)) ?? 0),
-    0,
-  );
-  if (total <= 0) return;
-  let distributed = 0;
-  for (const ia of accounts) {
-    const key = keyOf(ia);
-    const balance = Math.max(0, balances.get(key) ?? 0);
-    const share = roundToCents(amount * (balance / total));
-    const capped = Math.min(share, balance);
-    balances.set(key, roundToCents(balance - capped));
-    distributed += capped;
-  }
-  const remainder = roundToCents(amount - distributed);
-  if (remainder > 0.005 && accounts.length > 0) {
-    const key = keyOf(accounts[0]!);
-    const balance = Math.max(0, balances.get(key) ?? 0);
-    balances.set(key, roundToCents(Math.max(0, balance - remainder)));
-  }
-}
 
 /** A category's Retirement-parented account parts. */
 function retirementParts(

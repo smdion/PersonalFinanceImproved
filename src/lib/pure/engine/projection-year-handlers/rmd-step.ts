@@ -8,6 +8,7 @@ import {
 import { addTraditional } from "../../accounts/account-balance";
 import { isHeldPart } from "../../accounts/account-part";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
+import { debitByBalance } from "../individual-accounts/debit-by-balance";
 import { reachesAgeRule } from "@/lib/pure/household/age";
 import { enforceOwnerRmds, enforceRmd, rmdOwnerOf } from "../rmd-enforcement";
 import { getRmdFactor } from "../../../config/rmd-tables";
@@ -84,28 +85,11 @@ export function qcdStep(
             isPreTaxType(ia.taxType) &&
             isRetirementMoney(ia.parentCategory),
         );
-        const personIraTotal = personIraAccounts.reduce(
-          (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
-          0,
+        debitByBalance(
+          { balances: indBalance, keyOf: indKey },
+          personIraAccounts,
+          qcdAmount,
         );
-        if (personIraTotal <= 0) continue;
-        let distributed = 0;
-        for (const ia of personIraAccounts) {
-          const k = indKey(ia);
-          const balance = Math.max(0, indBalance.get(k) ?? 0);
-          const share = roundToCents(qcdAmount * (balance / personIraTotal));
-          const capped = Math.min(share, balance);
-          indBalance.set(k, roundToCents(balance - capped));
-          distributed += capped;
-        }
-        // Rounding remainder mop-up, as Roth conversion's tradAccounts loop.
-        const remainder = roundToCents(qcdAmount - distributed);
-        if (remainder > 0.005 && personIraAccounts.length > 0) {
-          const first = personIraAccounts[0]!;
-          const k = indKey(first);
-          const balance = Math.max(0, indBalance.get(k) ?? 0);
-          indBalance.set(k, roundToCents(Math.max(0, balance - remainder)));
-        }
       }
     }
   }
