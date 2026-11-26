@@ -37,7 +37,6 @@ export function runAccumulationYear(
     perPersonSalaryOverrides,
     budgetOverrideMap,
     sortedAccOverrides,
-    ledgerRuns,
     indAccounts,
     indKey,
     indParentCat,
@@ -72,8 +71,7 @@ export function runAccumulationYear(
   const { gapDraw, effectiveReturn, goalWithdrawals } = flows;
   const { indYearBalances, allAccountsBalance, retirementBalance } =
     closeYearAccounts(
-      ledgerRuns,
-      ctx.holdsRealAccount,
+      ctx,
       indAccounts,
       indKey,
       indBalance,

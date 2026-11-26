@@ -11,8 +11,7 @@ import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** The year's per-account rows, then the accounts reconciled. */
 export function closeYearAccounts(
-  ledgerRuns: boolean,
-  holdsRealAccount: boolean,
+  ctx: Pick<ProjectionContext, "ledgerRuns" | "holdsRealAccount">,
   indAccounts: ProjectionContext["indAccounts"],
   indKey: ProjectionContext["indKey"],
   indBalance: ProjectionLoopState["indBalance"],
@@ -30,6 +29,7 @@ export function closeYearAccounts(
   balances: ProjectionLoopState["balances"],
   accountBalance: ProjectionLoopState["accountBalance"],
 ) {
+  const { ledgerRuns, holdsRealAccount } = ctx;
   const indYearBalances: IndividualAccountYearBalance[] = holdsRealAccount
     ? buildIndividualYearBalances(
         indAccounts,
