@@ -3972,11 +3972,6 @@
       "count": 12
     }
   },
-  "src/lib/pure/engine/growth-application.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 1
-    }
-  },
   "src/lib/pure/engine/individual-accounts/contributions.ts": {
     "max-lines-per-function": {
       "count": 1

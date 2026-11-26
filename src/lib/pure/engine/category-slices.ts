@@ -1,6 +1,6 @@
 /** A category's slices (its Traditional and Roth sides, else its one balance)
- *  on a run that holds accounts: a slice's growth and floor raise are its
- *  parts' cents summed, so it keeps its difference from its parts. */
+ *  on a run that holds accounts: a floor raises a slice by its parts' cents
+ *  summed; `settle` sets each slice to its parts' sum. */
 import type {
   AccountBalances,
   IndividualAccountInput,

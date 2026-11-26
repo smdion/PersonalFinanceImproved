@@ -43,7 +43,7 @@ projection-year-handlers/    one year of work
   lump-sum.ts                one-time lump sums (both phases)
   stated-need.ts             the first decumulation year's stated need
   settle.ts                  settle: called once at each settled point, where a flow's writes have all landed
-  year-growth.ts             growYear: the year's growth, each account part first, then the totals
+  year-growth.ts             growYear: the year's growth on the account parts; the settled point gives the totals
   helpers.ts, types.ts
 individual-accounts/         the per-account ledger: ledger, spec-accounts, contributions, other-tax-part, withdrawals, reconcile
 withdrawal-routing/          one year's withdrawal by mode: waterfall, percentage, bracket filling
@@ -109,7 +109,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 | `balance-deduction.ts`  | Deducts withdrawals, clamps negatives, reinvests unspent RMD money, tracks depletion, cleans dust.                           |
 | `balance-utils.ts`      | Cloning, bucket ↔ account conversions, `scopedBalances` (retirement vs all-accounts balance), penalty/exclusion subtraction. |
 | `brokerage-basis.ts`    | Cost basis per brokerage account (draws, inflows, reconciliation, the Retirement-group ratio) and `syncAggregateBasis`.      |
-| `growth-application.ts` | Applies the year's return to every balance structure; basis doesn't grow.                                                    |
+| `growth-application.ts` | The return rate at an age, from the plan's rate breakpoints.                                                                 |
 
 **Spending strategies** — `spending-strategy.ts` dispatches by strategy key (`STRATEGY_DISPATCH`); each strategy is its own module in `spending-strategies/`, a pure `(params, input) → result`, and their shared types are `types/spending-strategy.ts`:
 

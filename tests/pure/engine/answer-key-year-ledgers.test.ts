@@ -8,7 +8,7 @@
  * growth being the year's return on what the account holds when growth is
  * applied. ARCHITECTURE.md § One year sets that order: a working year
  * credits the year's contributions, then grows (`distributeYearContributions`
- * before `applyGrowth`); a retirement year takes the draws, then grows
+ * before `growYear`); a retirement year takes the draws, then grows
  * (`settleYearDraws` before `closeDecumulationYear`). Basis is what was
  * paid in (IRC 1012): contributions add to it, growth doesn't, a draw at
  * full basis takes its own amount. Every figure is worked by hand first,

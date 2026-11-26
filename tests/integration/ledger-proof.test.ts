@@ -2,12 +2,13 @@
  * The ledger proof: on every run below, the three tracks (A, the tax
  * buckets; B, the categories; C, the account parts) agree to the cent at the
  * seed and at every settled point (D1: A against B at the seed; D2: B against
- * its parts; D3: a category's basis against its parts'), each year-end
- * correction writes nothing (the reconcile, the surplus handoff, the basis
- * sync), every draw and every conversion's debit and tax land on parts, no
- * money sits in a slice or basis category without parts, every run holds a
- * ledger, and the overwrites of A at `settle` and of B at growth stay within
- * one rounding per part. The counters are `ledger-proof/counters.ts`,
+ * its parts, except at a point whose flow moves only the parts; D3: a
+ * category's basis against its parts'), each year-end correction writes
+ * nothing (the reconcile, the surplus handoff, the basis sync), every draw
+ * and every conversion's debit and tax land on parts, no money sits in a
+ * slice or basis category without parts, every run holds a ledger, and the
+ * overwrites of A at `settle` and of B at a floor stay within one rounding
+ * per part. The counters are `ledger-proof/counters.ts`,
  * wrapped around the engine's own functions here; a failure names its first
  * site.
  *
@@ -57,9 +58,9 @@ vi.mock("@/lib/pure/engine/projection-year-handlers/settle", async (original) =>
   (await import("./ledger-proof/counters")).settleModule(await original()),
 );
 vi.mock(
-  "@/lib/pure/engine/projection-year-handlers/year-growth",
+  "@/lib/pure/engine/projection-year-handlers/contribution-credits",
   async (original) =>
-    (await import("./ledger-proof/counters")).yearGrowthModule(
+    (await import("./ledger-proof/counters")).contributionCreditsModule(
       await original(),
     ),
 );
@@ -358,7 +359,7 @@ describe("the synthetic second overflow target", () => {
 });
 
 describe("the proof can fail", () => {
-  it("a part $0.50 off its category after growth is a D2 hit, named by its site", async () => {
+  it("a part $0.50 off its category after contributions is a D2 hit, named by its site", async () => {
     const control = await projectAll([twoEarners()]);
     expect(failures(control)).toEqual([]);
     const damaged = await measure(() => calculateProjection(twoEarners()), {
@@ -367,7 +368,7 @@ describe("the proof can fail", () => {
     const d2 = failures(damaged).filter((f) => f.startsWith("d2 "));
     expect(d2).toHaveLength(1);
     expect(d2[0]).toMatch(
-      /^d2 \[held\] \d+ hits, first y-index 0 accumulation\.growth 401k:traditional/,
+      /^d2 \[held\] \d+ hits, first y-index 0 accumulation\.contributions 401k:traditional/,
     );
   });
 

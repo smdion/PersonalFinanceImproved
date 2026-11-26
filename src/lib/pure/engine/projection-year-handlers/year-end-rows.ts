@@ -48,7 +48,7 @@ export function growYearToRows(
   // The Portfolio contributions, reported only, are the last flow before
   // growth: nothing writes between them and here.
   settle(ctx, state, "decumulation.portfolioContributions");
-  // Apply growth, to each account (negatives at 0) and the totals
+  // Growth on each account (negatives at 0); the settle gives the totals
   const individualGrowth = growYear(ctx, state, returnRate, true);
   settle(ctx, state, "decumulation.growth");
 

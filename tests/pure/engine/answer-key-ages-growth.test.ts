@@ -21,9 +21,16 @@ import {
   ageOnDate,
   countReachingAgeRule,
 } from "@/lib/pure/household/age";
-import { applyGrowth } from "@/lib/pure/engine/growth-application";
-import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
-import type { TaxBuckets } from "@/lib/pure/accounts/account-balances.types";
+import { growYear } from "@/lib/pure/engine/projection-year-handlers/year-growth";
+import { refreshViews } from "@/lib/pure/engine/projection-year-handlers/settle";
+import { openingTotals } from "@/lib/pure/engine/opening-parts";
+import type {
+  ProjectionContext,
+  ProjectionLoopState,
+} from "@/lib/pure/engine/projection-year-handlers/types";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
+import { accountIdKeyOf } from "@/lib/pure/accounts/account-part";
+import { makeIndividualAccount } from "../fixtures/engine-fixtures";
 
 const utc = (iso: string) => new Date(`${iso}T12:00:00Z`);
 
@@ -66,23 +73,51 @@ describe("answer key: ages", () => {
 });
 
 describe("answer key: a year's return on each balance", () => {
+  const part = (
+    category: IndividualAccountInput["category"],
+    taxType: IndividualAccountInput["taxType"],
+    startingBalance: number,
+    startingBasis?: number,
+  ) =>
+    makeIndividualAccount({
+      name: `${category} ${taxType}`,
+      category,
+      taxType,
+      startingBalance,
+      startingBasis,
+    });
   /** 100,000 Traditional, 40,000 Roth, 10,000 HSA, a 80,000 brokerage
-   *  with 50,000 basis, grown at `r`. */
-  function grow(r: number) {
-    const balances: TaxBuckets = {
-      preTax: 100_000,
-      taxFree: 40_000,
-      hsa: 10_000,
-      afterTax: 80_000,
-      afterTaxBasis: 50_000,
+   *  with 50,000 basis, each one account, grown at `r`; the year's settled
+   *  point then gives the categories and the tax buckets their accounts' sums. */
+  function grow(
+    r: number,
+    parts = [
+      part("401k", "preTax", 100_000),
+      part("401k", "taxFree", 40_000),
+      part("hsa", "hsa", 10_000),
+      part("brokerage", "afterTax", 80_000, 50_000),
+    ],
+  ) {
+    const { balances, accountBalance } = openingTotals(parts);
+    const keyed = (value: (p: IndividualAccountInput) => number | undefined) =>
+      new Map(parts.map((p) => [accountIdKeyOf(p), value(p) ?? 0]));
+    const run = {
+      ledgerRuns: true,
+      indAccounts: parts,
+      indKey: accountIdKeyOf,
     };
-    const accountBalance = accountBalancesFromTaxBuckets(balances);
-    applyGrowth({
-      effectiveReturn: r,
+    const loop = {
       balances,
       accountBalance,
-      partsBySlice: new Map(),
-    });
+      indBalance: keyed((p) => p.startingBalance),
+      brokBasis: keyed((p) => p.startingBasis),
+    };
+    // eslint-disable-next-line no-restricted-syntax -- only the fields growYear and refreshViews read
+    const ctx = run as unknown as ProjectionContext;
+    // eslint-disable-next-line no-restricted-syntax -- only the fields growYear and refreshViews read
+    const state = loop as unknown as ProjectionLoopState;
+    growYear(ctx, state, r, false);
+    refreshViews(ctx, state);
     const b = accountBalance.brokerage;
     return {
       ...balances,
@@ -130,19 +165,7 @@ describe("answer key: a year's return on each balance", () => {
       hsa: 10_333,
       afterTax: 82_664,
     });
-    const balances: TaxBuckets = {
-      preTax: once.preTax,
-      taxFree: 0,
-      hsa: 0,
-      afterTax: 0,
-      afterTaxBasis: 0,
-    };
-    applyGrowth({
-      effectiveReturn: 0.0333,
-      balances,
-      accountBalance: accountBalancesFromTaxBuckets(balances),
-      partsBySlice: new Map(),
-    });
-    cents(balances.preTax, 106_770.89);
+    const twice = grow(0.0333, [part("401k", "preTax", once.preTax)]);
+    cents(twice.preTax, 106_770.89);
   });
 });

@@ -1,13 +1,14 @@
 /**
  * On a run that holds accounts, a category slice moves with its parts' cents:
- * across each year's growth and each floor after a run's draws, and through
- * the floors of a two-sided category and of a slice already apart from its
- * parts, each slice keeps its difference from its parts' sum (D2) to the cent.
+ * at each year's growth point it holds its parts' sum; across each floor
+ * after a run's draws, and through the floors of a two-sided category and of
+ * a slice already apart from its parts, each slice keeps its difference from
+ * its parts' sum (D2) to the cent.
  */
 import { describe, it, expect, vi } from "vitest";
 
 type SliceGap = Map<string, number>;
-type Grown = { year: number; before: SliceGap; after: SliceGap };
+type Grown = { year: number; after: SliceGap };
 const grown = vi.hoisted(() => [] as Grown[]);
 const gaps = vi.hoisted(
   () =>
@@ -80,29 +81,24 @@ vi.mock("@/lib/pure/engine/category-slices", async (importOriginal) => {
   };
 });
 vi.mock(
-  "@/lib/pure/engine/projection-year-handlers/year-growth",
+  "@/lib/pure/engine/projection-year-handlers/settle",
   async (importOriginal) => {
     const actual =
       await importOriginal<
-        typeof import("@/lib/pure/engine/projection-year-handlers/year-growth")
+        typeof import("@/lib/pure/engine/projection-year-handlers/settle")
       >();
     return {
       ...actual,
-      growYear: (...args: Parameters<typeof actual.growYear>) => {
-        const [ctx, state] = args;
-        const gapNow = () =>
-          gaps(ctx.indAccounts, ctx.indKey, state.indBalance, {
-            ...state.accountBalance,
-          });
-        const before = gapNow();
-        const result = actual.growYear(...args);
-        if (ctx.ledgerRuns)
+      settle: (...args: Parameters<typeof actual.settle>) => {
+        const [ctx, state, point] = args;
+        actual.settle(...args);
+        if (ctx.ledgerRuns && point.endsWith(".growth"))
           grown.push({
             year: state.projectionByYear.length,
-            before,
-            after: gapNow(),
+            after: gaps(ctx.indAccounts, ctx.indKey, state.indBalance, {
+              ...state.accountBalance,
+            }),
           });
-        return result;
       },
     };
   },
@@ -121,6 +117,7 @@ import { clampBalances } from "@/lib/pure/engine/balance-deduction";
 import { floorPartsAndSlices } from "@/lib/pure/engine/category-slices";
 import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import { growYear } from "@/lib/pure/engine/projection-year-handlers/year-growth";
+import { refreshViews } from "@/lib/pure/engine/projection-year-handlers/settle";
 import type {
   ProjectionContext,
   ProjectionLoopState,
@@ -295,26 +292,24 @@ function heldRun(parts: IndividualAccountInput[], partBalance: number[]) {
 }
 
 describe("category slices on a run that holds accounts", () => {
-  it("keep their difference from their parts across every year's growth", () => {
+  it("hold their parts' cents at every year's growth point", () => {
     grown.length = 0;
     calculateProjection(makeInput());
     expect(grown.length).toBeGreaterThan(5);
-    const moved = grown.flatMap(({ year, before, after }) =>
+    const apart = grown.flatMap(({ year, after }) =>
       [...after]
-        .filter(([slice, cents]) => cents !== before.get(slice))
-        .map(
-          ([slice, cents]) =>
-            `${year} ${slice}: ${before.get(slice)}¢ -> ${cents}¢`,
-        ),
+        .filter(([, cents]) => cents !== 0)
+        .map(([slice, cents]) => `${year} ${slice}: ${cents}¢`),
     );
-    expect(moved).toEqual([]);
+    expect(apart).toEqual([]);
   });
 
-  it("take their parts' floor raises before decumulation growth", () => {
+  it("take their parts' growth and floor raises at decumulation growth's settled point", () => {
     const a = brokeragePart("A", 100.02);
     const b = brokeragePart("B", -0.03);
     const { ctx, state } = heldRun([a, b], [100.02, -0.03]);
     growYear(ctx, state, 0.05, true);
+    refreshViews(ctx, state);
     // parts: 100.02 grows 5.00 to 105.02; −0.03 floors to 0; the slice: 99.99 + 0.03 + 5.00
     expect(state.indBalance.get(accountIdKeyOf(a))).toBe(105.02);
     expect(state.indBalance.get(accountIdKeyOf(b))).toBe(0);

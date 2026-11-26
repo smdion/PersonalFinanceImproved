@@ -26,6 +26,9 @@ const EPS = 1e-6;
 const toCents = (x: number) => Math.round(x * 100) || 0;
 const round2 = (x: number) => Math.round(x * 100) / 100;
 const TAX_BUCKETS = Object.keys(emptyTaxBucketMap());
+/** Settled points whose flow moves only the parts: the refresh there gives
+ *  B its parts' sum, so D2 and D3 sampled before it measure the flow itself. */
+const PARTS_ONLY = new Set(["accumulation.growth", "decumulation.growth"]);
 
 export type RunClass = "held" | "synthetic" | "noLedger" | "bo1";
 
@@ -63,7 +66,7 @@ const proof = {
   trial: 0,
   /** The class every run started now takes (the synthetic-category run). */
   forcedClass: undefined as RunClass | undefined,
-  /** Writes $0.50 onto one part after the year's growth. */
+  /** Writes $0.50 onto one part after the year's contributions. */
   damagePart: false,
   scope: emptyTally(),
   total: emptyTally(),
@@ -188,32 +191,16 @@ function sample(
   const A = run.state.balances;
   const view = taxBucketsOf(run.state.accountBalance);
   const slices = sliceView(run);
-  // At growth, B grows by its parts' rounded products: one rounding per part
-  // holding money in the bucket (with no parts, per category side holding).
-  const holding: Record<string, number> = {};
-  for (const e of slices.values())
-    holding[e.bucket] =
-      (holding[e.bucket] ?? 0) +
-      (ledger(run) ? e.hold : Math.abs(e.B) >= CENT ? 1 : 0);
-  const growth = point.endsWith(".growth");
   const basis = A.afterTaxBasis - view.afterTaxBasis!;
   for (const bucket of TAX_BUCKETS) {
     const d = A[bucket] - view[bucket]!;
     if (point === "seed")
       observe(run, "seed.d1", d, `${where} ${bucket}`, CENT);
-    else if (growth)
-      observe(
-        run,
-        "ra.overwrite",
-        d,
-        `${where} ${bucket} (${holding[bucket] ?? 0} holding)`,
-        CENT * ((holding[bucket] ?? 0) + 1),
-      );
     else observe(run, "ra.overwrite", d, `${where} ${bucket}`, 0.02);
   }
   if (point === "seed") observe(run, "seed.d1", basis, `${where} basis`, CENT);
   else observe(run, "ra.overwrite", basis, `${where} basis`, 0.02);
-  if (!ledger(run)) return;
+  if (!ledger(run) || PARTS_ONLY.has(point)) return;
   for (const [slice, e] of slices) {
     if (e.parts === 0) {
       observe(run, "d2.noPart", e.B, `${where} ${slice}`);
@@ -280,56 +267,22 @@ export function settleModule(m: any) {
   };
 }
 
-/** `growYear`: B's growth (its parts' rounded products) against its own
- *  rounded product, the parts' floor raises, and D2 unchanged across it. */
-export function yearGrowthModule(m: any) {
+/** `distributeYearContributions`: the damage case writes onto one part after
+ *  the year's contributions, before their settled point. */
+export function contributionCreditsModule(m: any) {
   return {
     ...m,
-    growYear: (ctx: any, state: any, rate: number, clampNegative: boolean) => {
-      const run = own(state);
-      if (!run || !ledger(run))
-        return m.growYear(ctx, state, rate, clampNegative);
-      const pre = sliceView(run);
-      const out = m.growYear(ctx, state, rate, clampNegative);
-      const first = [...pre].find(([, e]) => e.parts > 0)?.[0];
-      if (proof.damagePart && first) {
-        const key = run.sliceKeys.get(first)![0]!;
-        state.indBalance.set(
-          key,
-          round2((state.indBalance.get(key) ?? 0) + 0.5),
-        );
-      }
-      const post = sliceView(run);
-      const point = clampNegative
-        ? "decumulation.growth"
-        : "accumulation.growth";
-      for (const [slice, b] of pre) {
-        if (b.parts === 0) continue;
-        const a = post.get(slice)!;
-        const raise = clampNegative ? b.negative : 0;
-        const ownGrowth = round2(b.B * (1 + rate)) - b.B;
-        const where = `${at(run, point)} ${slice}`;
-        observe(
-          run,
-          "rb.growth",
-          a.B - b.B - ownGrowth - raise,
-          `${where} (B ${b.B.toFixed(2)}, ${b.hold} holding)`,
-          CENT * (b.hold + 1),
-        );
-        if (raise > 0)
-          observe(
-            run,
-            "rb.floor",
-            raise,
-            `${where} parts' raise`,
-            0.01 * b.parts,
+    distributeYearContributions: (...args: any[]) => {
+      const out = m.distributeYearContributions(...args);
+      const run = ownMap(args[4]);
+      if (run && proof.damagePart) {
+        const first = [...sliceView(run)].find(([, e]) => e.parts > 0)?.[0];
+        const key = first && run.sliceKeys.get(first)![0]!;
+        if (key)
+          run.state.indBalance.set(
+            key,
+            round2((run.state.indBalance.get(key) ?? 0) + 0.5),
           );
-        observe(
-          run,
-          "rb.identity",
-          toCents(a.B - a.C) / 100 - toCents(b.B - b.C) / 100,
-          where,
-        );
       }
       return out;
     },
@@ -754,7 +707,7 @@ export const STOPS = [
   "rb.identity",
 ] as const;
 /** Counters judged by their bound: `over` is the stop. */
-export const BOUNDED = ["ra.overwrite", "rb.growth", "rb.floor"] as const;
+export const BOUNDED = ["ra.overwrite", "rb.floor"] as const;
 /** The synthetic-category run is judged on its ledger only (D2, D3). */
 const BO1_JUDGED = new Set<string>(["d2", "d3", "d2.noPart", "d3.noPart"]);
 

@@ -1,6 +1,6 @@
 /**
- * Within each flow the account parts land last: when growth, a draw's
- * deduction or a basis take-out reads the categories, the parts still hold
+ * Within each flow the account parts land last: when a draw's deduction or
+ * a basis take-out reads the categories, the parts still hold
  * what the categories hold (each slice and each basis category against its
  * parts' sum, to the cent). The parts then land in the run's own maps.
  */
@@ -85,19 +85,6 @@ vi.mock(
     };
   },
 );
-vi.mock("@/lib/pure/engine/growth-application", async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("@/lib/pure/engine/growth-application")
-    >();
-  return {
-    ...actual,
-    applyGrowth: (...args: Parameters<typeof actual.applyGrowth>) => {
-      enter("growth", "balance");
-      return actual.applyGrowth(...args);
-    },
-  };
-});
 vi.mock("@/lib/pure/engine/balance-deduction", async (importOriginal) => {
   const actual =
     await importOriginal<
@@ -152,9 +139,9 @@ const sample = <T>(arbitrary: fc.Arbitrary<T>) =>
   fc.sample(arbitrary, { seed: 1, numRuns: 4 });
 
 describe("the account parts land after the categories are read", () => {
-  it("in a gap year's draw, its growth and the retirement years' draws", () => {
+  it("in a gap year's draw and the retirement years' draws", () => {
     const { entries, apart } = readsAtEntry([couple()]);
-    expect(entries).toEqual(new Set(["growth", "deduction", "basis out"]));
+    expect(entries).toEqual(new Set(["deduction", "basis out"]));
     expect(apart).toEqual([]);
   });
 
@@ -165,7 +152,7 @@ describe("the account parts land after the categories are read", () => {
       ),
       ...sample(arbitraryRmdInput()).map(withAccountsAndSpecs),
     ]);
-    expect(entries).toEqual(new Set(["growth", "deduction", "basis out"]));
+    expect(entries).toEqual(new Set(["deduction", "basis out"]));
     expect(apart).toEqual([]);
   });
 });
