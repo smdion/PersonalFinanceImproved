@@ -37,11 +37,8 @@ function slotTaxParts(
   return [[config.taxBucketKey, employee]];
 }
 
-/**
- * A slot's employee money that no spec in its category claims, by tax part:
- * the run's Retirement-parented parts of each slice take it by weight
- * (`creditByWeight`). Credits contributions too.
- */
+/** A slot's employee money that no spec in its category claims, each tax
+ *  part's on its slice (`unclaimedMoney`). */
 export function unclaimedSlot(
   ledger: Ledger,
   slot: AccumulationSlot,
@@ -50,16 +47,27 @@ export function unclaimedSlot(
   for (const [taxType, amount] of slotTaxParts(
     slot,
     ledger.overflowToBrokerage,
-  )) {
-    const parts = ledger.indAccounts.filter(
-      (ia) =>
-        ia.category === slot.category &&
-        ia.taxType === taxType &&
-        isRetirementMoney(
-          ledger.indParentCat.get(ledger.indKey(ia)) ?? ia.parentCategory,
-        ),
-    );
-    if (amount === 0 || parts.length === 0) continue;
-    creditByWeight(ledger, parts, amount, [contributions, ledger.indBalance]);
-  }
+  ))
+    unclaimedMoney(ledger, slot.category, taxType, amount, contributions);
+}
+
+/** One slice's money no spec claims: its Retirement-parented parts take it
+ *  by weight (`creditByWeight`). Credits contributions too. */
+function unclaimedMoney(
+  ledger: Ledger,
+  category: AccumulationSlot["category"],
+  taxType: string,
+  amount: number,
+  contributions: Map<string, number>,
+): void {
+  const parts = ledger.indAccounts.filter(
+    (ia) =>
+      ia.category === category &&
+      ia.taxType === taxType &&
+      isRetirementMoney(
+        ledger.indParentCat.get(ledger.indKey(ia)) ?? ia.parentCategory,
+      ),
+  );
+  if (amount === 0 || parts.length === 0) return;
+  creditByWeight(ledger, parts, amount, [contributions, ledger.indBalance]);
 }
