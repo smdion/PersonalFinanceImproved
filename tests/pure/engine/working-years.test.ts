@@ -253,7 +253,11 @@ describe("working years from job dates", () => {
       makeInput({
         contributionSpecs: [
           spec(1, { salaryFraction: 1 }),
-          spec(0, { personId: null, category: "brokerage" as AccountCategory }),
+          spec(0, {
+            personId: null,
+            category: "brokerage" as AccountCategory,
+            taxTreatment: "after_tax",
+          }),
         ],
         workingYearsByPerson: { 1: { start: null, end: 2026 } },
       }),
