@@ -4,9 +4,11 @@ import { acct, household } from "../fixtures/two-person-household";
 import { onePerson } from "../../fixtures/engine-people";
 import {
   makeAccumulationDefaults,
+  makeAccumulationSlot,
   makeContributionSpec,
   paysInto,
 } from "../fixtures/engine-fixtures";
+import { distributeContributions } from "@/lib/pure/engine/individual-accounts/contributions";
 import { withAccountId } from "../fixtures/engine-input";
 import { declareOpeningParts } from "@/lib/pure/engine/opening-state";
 import {
@@ -497,6 +499,55 @@ describe("declareOpeningParts", () => {
     expect(
       named.filter((p) => p.origin === "projected").map((p) => p.name),
     ).toEqual(["Retirement 401k (projected)", "Retirement 401k (projected)"]);
+  });
+
+  it("a match's category with a held $0 Portfolio part and the declared $0 Retirement part: the match splits equally between them", () => {
+    const portfolio401k = withAccountId({
+      name: "Ann 401k",
+      category: "401k" as const,
+      taxType: "preTax" as const,
+      startingBalance: 0,
+      parentCategory: "Portfolio",
+    });
+    // Year 0's 401(k) amount, with specs throughout, declares the $0 part.
+    const parts = declareOpeningParts(
+      [ira, portfolio401k],
+      saving(
+        {
+          contributionSpecs: [iraSpec()],
+          employerMatchRateByCategory: { ...zeroes, "401k": 0.04 },
+          baseYearContributions: { ...zeroes, "401k": 1200 },
+        },
+        0,
+      ),
+    );
+    const declared = parts.find(
+      (p) => p.origin === "projected" && p.category === "401k",
+    )!;
+    expect(declared.taxType).toBe("preTax");
+    const { indMatch } = distributeContributions({
+      slots: [makeAccumulationSlot("401k", { employerMatch: 100 })],
+      contributionSpecs: [],
+      indAccounts: parts,
+      indKey: accountIdKeyOf,
+      indBalance: new Map(
+        parts.map((p) => [accountIdKeyOf(p), p.startingBalance]),
+      ),
+      indParentCat: new Map(
+        parts.map((p) => [accountIdKeyOf(p), p.parentCategory ?? ""]),
+      ),
+      specToAccount: new Map(),
+      accountsWithSpecs: new Set(),
+      projectedSalary: 100000,
+      currentSalary: 100000,
+      limitGrowthRate: 0,
+      yearIndex: 1,
+      proRate: 1,
+      overflowToBrokerage: 0,
+      rampAmount: 0,
+    });
+    expect(indMatch.get(accountIdKeyOf(portfolio401k))).toBe(50);
+    expect(indMatch.get(accountIdKeyOf(declared))).toBe(50);
   });
 
   it("an account with no parent is retirement money, so no projected brokerage is added", () => {
