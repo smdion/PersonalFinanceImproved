@@ -20,7 +20,7 @@ import { otherParts } from "./other-tax-part";
 import { creditWhole, equalShares, inflowShares } from "./part-weights";
 import { placeWhole } from "@/lib/pure/accounts/place-whole";
 import { creditSpecParts, onSpecParts, type SpecParts } from "./spec-accounts";
-import { unclaimedSlot } from "./own-part-credits";
+import { unclaimedRest, unclaimedSlot } from "./own-part-credits";
 
 interface DistributeContributionsInput {
   slots: AccumulationSlot[];
@@ -109,7 +109,8 @@ export function distributeContributions(
   }
 
   // --- Step 2: Distribute slot totals to individual accounts using spec weights ---
-  // Fixed-amount specs first (capped at the slot), the rest by the scaling specs' weights.
+  // Fixed-amount specs first (capped at the slot), the rest by the scaling specs' weights;
+  // with none, the rest is money no spec claims (unclaimedRest).
   const toOtherPart = otherParts(input, specAccount, specRaw, indContributions);
   for (const slot of slots) {
     const bs = getAccountTypeConfig(slot.category).balanceStructure;
@@ -153,7 +154,9 @@ export function distributeContributions(
         remaining -= portion;
       }
 
-      if (scalingSpecs.length > 0 && remaining > 0) {
+      if (scalingSpecs.length === 0)
+        unclaimedRest(input, slot, allSpecs, remaining, indContributions);
+      else if (remaining > 0) {
         const keys = scalingSpecs.map(specKeyOf);
         const rawTotal = sumBy(keys, (sk) => specRaw.get(sk) ?? 0);
         const paid = keys.filter((sk) => specAccount.has(sk));
@@ -325,18 +328,10 @@ export function distributeContributions(
   // --- Step 5: Track intentional contributions for source breakdown ---
   for (const spec of contributionSpecs) {
     if (!isOverflowTarget(spec.category)) continue;
-    const accountName = specToAccount.get(specKeyOf(spec));
+    const sk = specKeyOf(spec);
+    const accountName = specAccount.get(sk);
     if (!accountName) continue;
-    const projected = roundToCents(
-      projectSpecAmount(spec, {
-        projectedSalary,
-        salaryBase: currentSalary,
-        limitGrowthFactor: lgf,
-        personPay,
-        proRate,
-      }),
-    );
-    creditSpecParts(input, accountName, projected, [indIntentional]);
+    creditSpecParts(input, accountName, specRaw.get(sk)!, [indIntentional]);
   }
 
   // --- Step 6: Distribute ramp to brokerage accounts ---

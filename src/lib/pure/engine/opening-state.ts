@@ -79,7 +79,7 @@ function withProjectedParts(
   for (const slice of lumpSumSlices(flows))
     if (!parts.some((ia) => takesSlice(ia, slice)))
       parts.push(projectedPart(slice));
-  for (const slice of noSpecSlices(flows))
+  for (const slice of unclaimedSlices(flows))
     if (
       !parts.some(
         (ia) => takesSlice(ia, slice) && isRetirementMoney(ia.parentCategory),
@@ -157,11 +157,11 @@ function refuseSharedKeys(
 const positive = (v: number | undefined) => v != null && v > 0;
 
 /**
- * Where a stretch with no contribution specs saves: each category
- * routing or year 0's amounts can fill, as Retirement money, when the opening
- * profile or a profile switch saves with no specs.
+ * Where money no spec claims can land, as Retirement money: each category a
+ * stretch's specs or year 0's amounts fill, in any stretch, and each one
+ * routing fills when a stretch saves with no specs.
  */
-function noSpecSlices(flows: OpeningFlows): Slice[] {
+function unclaimedSlices(flows: OpeningFlows): Slice[] {
   const opening = {
     contributionSpecs: flows.contributionSpecs ?? [],
     contributionRate: flows.accumulationDefaults.contributionRate,
@@ -172,22 +172,26 @@ function noSpecSlices(flows: OpeningFlows): Slice[] {
   const rated = flows.accumulationOverrides.some((o) =>
     positive(o.contributionRate),
   );
-  const categories = getAllCategories().filter(
-    (c) =>
-      isOverflowTarget(c) ||
-      routings.some(
-        (r) => r.accountOrder?.includes(c) || positive(r.accountSplits?.[c]),
-      ) ||
-      stretches.some((s) => positive(s.baseYearContributions?.[c])),
-  );
-  const saves = stretches.some(
+  const routes = stretches.some(
     (s) =>
       s.contributionSpecs.length === 0 &&
       (rated ||
         s.contributionRate > 0 ||
         Object.values(s.baseYearContributions ?? {}).some((v) => v > 0)),
   );
-  if (!saves) return [];
+  const categories = getAllCategories().filter(
+    (c) =>
+      isOverflowTarget(c) ||
+      (routes &&
+        routings.some(
+          (r) => r.accountOrder?.includes(c) || positive(r.accountSplits?.[c]),
+        )) ||
+      stretches.some(
+        (s) =>
+          positive(s.baseYearContributions?.[c]) ||
+          s.contributionSpecs.some((spec) => spec.category === c),
+      ),
+  );
   return categories.map((category) => ({
     category,
     taxType: taxTypeOnSide(category, "traditional"),

@@ -6,9 +6,11 @@ import {
   isRetirementMoney,
 } from "../../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../../config/tax-treatment-buckets";
+import { HALF_CENT } from "../../../constants";
 import { roundToCents } from "../../../utils/math";
 import type { IndKeyFn } from "../../accounts/account-part";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
+import type { ContributionSpec } from "../types/contribution-spec";
 import type { AccumulationSlot } from "../types/routing";
 import { creditByWeight } from "./part-weights";
 
@@ -49,6 +51,30 @@ export function unclaimedSlot(
     ledger.overflowToBrokerage,
   ))
     unclaimedMoney(ledger, slot.category, taxType, amount, contributions);
+}
+
+/** What a slot's specs (`specs`, of one tax treatment) leave unplaced is
+ *  money no spec claims: on its slice, as `unclaimedSlot` places it. */
+export function unclaimedRest(
+  ledger: Ledger,
+  slot: AccumulationSlot,
+  specs: readonly Pick<ContributionSpec, "taxTreatment">[],
+  amount: number,
+  contributions: Map<string, number>,
+): void {
+  if (amount < HALF_CENT) return;
+  const config = getAccountTypeConfig(slot.category);
+  const taxType =
+    config.balanceStructure === "roth_traditional"
+      ? TAX_TREATMENT_TO_TAX_TYPE[specs[0]!.taxTreatment]
+      : config.taxBucketKey;
+  unclaimedMoney(
+    ledger,
+    slot.category,
+    taxType,
+    roundToCents(amount),
+    contributions,
+  );
 }
 
 /** One slice's money no spec claims: its Retirement-parented parts take it

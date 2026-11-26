@@ -282,7 +282,7 @@
     "src/lib/pure/debts/mortgage.ts": 387,
     "src/lib/pure/engine/aca-check.ts": 72,
     "src/lib/pure/engine/contribution-routing.ts": 615,
-    "src/lib/pure/engine/individual-accounts/contributions.ts": 367,
+    "src/lib/pure/engine/individual-accounts/contributions.ts": 362,
     "src/lib/pure/engine/individual-accounts/ledger.ts": 139,
     "src/lib/pure/engine/individual-accounts/reconcile.ts": 253,
     "src/lib/pure/engine/individual-accounts/withdrawals.ts": 321,
@@ -965,7 +965,7 @@
       "runGapYearDraw": 220
     },
     "src/lib/pure/engine/individual-accounts/contributions.ts": {
-      "distributeContributions": 307
+      "distributeContributions": 302
     },
     "src/lib/pure/engine/projection-year-handlers/context.ts": {
       "buildProjectionContext": 182

@@ -413,6 +413,42 @@ describe("declareOpeningParts", () => {
     expect(declareOpeningParts([ira], switchTo(0))).toHaveLength(3);
   });
 
+  /** The projected parts' category, tax type and parent. */
+  const projected = (parts: IndividualAccountInput[]) =>
+    parts
+      .filter((p) => p.origin === "projected")
+      .map((p) => [p.category, p.taxType, p.parentCategory]);
+
+  it("year 0's amount in a category no spec pays, with specs throughout, declares a projected Retirement part there", () => {
+    const parts = declareOpeningParts(
+      [ira],
+      saving(
+        {
+          contributionSpecs: [iraSpec()],
+          baseYearContributions: { ...zeroes, hsa: 1200 },
+        },
+        0,
+      ),
+    );
+    expect(projected(parts)).toEqual([
+      ["brokerage", "afterTax", "Retirement"],
+      ["hsa", "hsa", "Retirement"],
+    ]);
+  });
+
+  it("a spec's category with only Portfolio parts declares a projected Retirement part of its slice, both tax parts", () => {
+    const portfolioIra = { ...ira, parentCategory: "Portfolio" };
+    const parts = declareOpeningParts(
+      [portfolioIra],
+      saving({ contributionSpecs: [iraSpec(paysInto(portfolioIra))] }, 0),
+    );
+    expect(projected(parts)).toEqual([
+      ["brokerage", "afterTax", "Retirement"],
+      ["ira", "preTax", "Retirement"],
+      ["ira", "taxFree", "Retirement"],
+    ]);
+  });
+
   // An employer match reaches its category's Traditional side in any
   // stretch, specs or not.
   const matching = (
@@ -444,7 +480,8 @@ describe("declareOpeningParts", () => {
   it("a match a part of its category takes, of any parent when the match names none, declares none", () => {
     const portfolio401k = { ...roth401k, parentCategory: "Portfolio" };
     const held = [retirementBrokerage, portfolio401k];
-    // The spec pays the 401(k) held, so it declares none.
+    // The spec pays the 401(k) held; the match adds nothing to what the
+    // same flows with no match declare.
     const spec = makeContributionSpec({
       contributionAccountId: 1,
       personId: 1,
@@ -452,7 +489,7 @@ describe("declareOpeningParts", () => {
     });
     expect(
       declareOpeningParts(held, matching({ "401k": 0.04 }, undefined, spec)),
-    ).toEqual(declareOpeningParts(held, NO_FLOWS));
+    ).toEqual(declareOpeningParts(held, matching({}, undefined, spec)));
     const named = declareOpeningParts(
       held,
       matching({ "401k": 0.04 }, [["Retirement", 4000]], spec),

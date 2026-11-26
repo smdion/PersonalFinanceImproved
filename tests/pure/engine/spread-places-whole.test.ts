@@ -232,6 +232,89 @@ describe("a spread places its whole amount", () => {
     expect(indContributions.get(indKey(parts[2]!))).toBeUndefined();
   });
 
+  /** One spec paying `paid`, its run over `parts` and the slot `slot`. */
+  function oneSpecRun(
+    parts: IndividualAccountInput[],
+    paid: IndividualAccountInput,
+    spec: Partial<ContributionSpec>,
+    slot: Parameters<typeof makeAccumulationSlot>,
+    overrides: Partial<Parameters<typeof distributeContributions>[0]> = {},
+  ) {
+    const [only] = specsFor([paid], spec);
+    return distributeContributions(
+      input(parts, {
+        slots: [makeAccumulationSlot(...slot)],
+        contributionSpecs: [only!],
+        specToAccount: new Map([[specKeyOf(only!), [indKey(paid)]]]),
+        accountsWithSpecs: new Set([indKey(paid)]),
+        ...overrides,
+      }),
+    ).indContributions;
+  }
+
+  it("a slot its specs leave short: a $0.30 IRS spill beside a Portfolio brokerage spec lands on the Retirement brokerage, so $1,000.30 is placed", () => {
+    const taxable = makeIndividualAccount({
+      name: "Taxable",
+      category: "brokerage",
+      taxType: "afterTax",
+      parentCategory: "Portfolio",
+      startingBalance: 5000,
+    });
+    const retirement = makeIndividualAccount({
+      name: "Retirement brokerage",
+      category: "brokerage",
+      taxType: "afterTax",
+      parentCategory: "Retirement",
+      startingBalance: 0,
+    });
+    // The spill is under the $1 overflow tolerance, so it stays in the slot.
+    const placed = oneSpecRun(
+      [taxable, retirement],
+      taxable,
+      {
+        category: "brokerage",
+        taxTreatment: "after_tax",
+        method: "fixed_monthly",
+        baseAnnual: 1000,
+        parentCategory: "Portfolio",
+      },
+      ["brokerage", { employeeContrib: 1000.3 }],
+    );
+    expect(placed.get(indKey(taxable))).toBe(1000);
+    expect(placed.get(indKey(retirement))).toBe(0.3);
+    expect(cents(total(placed))).toBe(100030);
+  });
+
+  it("year 0's money beyond the months left, past a fixed-amount spec, lands on the category's Retirement parts by balance", () => {
+    const ann = makeIndividualAccount({
+      name: "Ann 401k",
+      parentCategory: "Retirement",
+      startingBalance: 2000,
+    });
+    const bo = makeIndividualAccount({
+      name: "Bo 401k",
+      parentCategory: "Retirement",
+      startingBalance: 1000,
+    });
+    // $2,000 a year, half a year left: the spec's $1,000; the slot $1,400.
+    // The $400 left splits by the balances after the spec's credit, 3:1.
+    const placed = oneSpecRun(
+      [ann, bo],
+      ann,
+      {
+        taxTreatment: "pre_tax",
+        method: "fixed_monthly",
+        baseAnnual: 2000,
+        contributionScaling: "fixed_amount",
+        parentCategory: "Retirement",
+      },
+      ["401k", { employeeContrib: 1400, traditionalContrib: 1400 }],
+      { proRate: 0.5 },
+    );
+    expect(placed.get(indKey(ann))).toBe(1300);
+    expect(placed.get(indKey(bo))).toBe(100);
+  });
+
   it("a tax type no spec carries: $100 over three spec accounts' other parts is $100", () => {
     const roth = threeParts("401k", "taxFree", "Retirement");
     const trad = threeParts("401k", "preTax", "Retirement");
