@@ -23,10 +23,10 @@ import { roundToCents } from "@/lib/utils/math";
 import { acct, household } from "../fixtures/two-person-household";
 import {
   makeAccumulationDefaults,
-  makeContributionSpec,
   paysInto,
 } from "../fixtures/engine-fixtures";
 import { withAccountId } from "../fixtures/engine-input";
+import { matchWithoutPool } from "../fixtures/match-without-pool";
 
 const FILE = path.join(__dirname, "__pins__", "unreached-paths.json");
 const WRITE = process.env.LEDGR_BASELINE_WRITE === "1";
@@ -670,37 +670,7 @@ describe("a match whose pool has no part (spreadMatch over none)", () => {
   // Unreached: the opening state declares each match's slice, so the pool
   // is never empty. A 401(k) match where no one holds a 401(k), with and
   // without specs, lands whole on parts every year.
-  const input = (specs: boolean) =>
-    household([acct("Ann IRA", "ira", 200000, 1)], {
-      currentAge: 50,
-      birthYear: 1976,
-      perPersonBirthYears: [1976],
-      socialSecurityEntries: undefined,
-      retirementYear: 2036,
-      projectionEndYear: 2030,
-      currentSalary: 100000,
-      employerMatchRateByCategory: {
-        "401k": 0.04,
-        "403b": 0,
-        hsa: 0,
-        ira: 0,
-        brokerage: 0,
-      },
-      accumulationDefaults: makeAccumulationDefaults({ contributionRate: 0.1 }),
-      ...(specs
-        ? {
-            contributionSpecs: [
-              makeContributionSpec({
-                category: "ira",
-                name: "Ann IRA",
-                taxTreatment: "pre_tax",
-                contributionAccountId: 1,
-                account: paysInto(withAccountId(acct("Ann IRA", "ira", 0, 1))),
-              }),
-            ],
-          }
-        : {}),
-    });
+  const input = matchWithoutPool;
 
   it.each([false, true])(
     "specs %s: every match dollar lands on a part",

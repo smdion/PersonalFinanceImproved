@@ -82,13 +82,11 @@ import {
   ACCOUNT_TYPE_CONFIG,
   DEFAULT_WITHDRAWAL_SPLITS,
   accountCategoryEnum,
-  buildCategoryRecord,
   earlyAccessRuleOf,
   getAllCategories,
   getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
 import { calculateProjection } from "@/lib/pure/engine";
-import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { decumulationOverrideArraySchema } from "@/lib/pure/engine/types";
 import { computeTaxBucketBreakdown } from "@/lib/pure/accounts/tax-buckets/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/accounts/tax-buckets/tax-bucket-analysis";
@@ -98,8 +96,11 @@ import { accountIdKeyOf } from "@/lib/pure/accounts/account-part";
 import { buildBuckets } from "@/app/(dashboard)/tax-buckets/tax-buckets-grouping";
 import { categoryChartHex } from "@/lib/utils/colors";
 import { accountDisplayName } from "@/lib/utils/format";
-import { engineHouseholdFixture } from "../fixtures/answer-key-household";
-import { engineInput } from "../pure/fixtures/engine-input";
+import {
+  SYNTHETIC_CATEGORY,
+  twoYearHousehold,
+  withSyntheticCategory,
+} from "../fixtures/synthetic-category";
 import {
   DOLLAR_BASIS_VALUES,
   PAY_PERIOD_VALUES,
@@ -1785,25 +1786,6 @@ describe("RULES.md violations sweep — positive controls", () => {
 // time, so a list derived when its module loads would miss it too: a fix
 // derives at call time (or this test re-evaluates the modules).
 
-const SYNTHETIC_CATEGORY = "synthetic-test-category";
-
-/** A brokerage-like entry with its own label and chart colours. */
-const SYNTHETIC_ENTRY = {
-  ...ACCOUNT_TYPE_CONFIG.brokerage,
-  displayLabel: "Synthetic Plan",
-  chartHex: { standard: "#123456", roth: "#654321" },
-};
-
-function withSyntheticCategory<T>(fn: () => T): T {
-  const config = ACCOUNT_TYPE_CONFIG as Record<string, unknown>;
-  config[SYNTHETIC_CATEGORY] = { ...SYNTHETIC_ENTRY };
-  try {
-    return fn();
-  } finally {
-    delete config[SYNTHETIC_CATEGORY];
-  }
-}
-
 describe("one config entry adds an account type", () => {
   it("the category rules here cover a category added to the config", () => {
     withSyntheticCategory(() => {
@@ -2268,44 +2250,6 @@ function scanModuleLoadLists(): string[] {
     }
   }
   return found.sort();
-}
-
-/** A household working in 2026 and retired in 2027, with all its money in
- *  the synthetic category: contributions and withdrawals both go there. */
-function twoYearHousehold(): ProjectionInput {
-  const input = engineHouseholdFixture({
-    status: "Single",
-    people: [{ birthYear: 1961, job: { salary: 100_000, lastYear: 2026 } }],
-    spending: 40_000,
-    // The end year itself isn't run (RULES Known Gaps), so 2028 gives two.
-    endYear: 2028,
-  });
-  const only = () => {
-    const record = buildCategoryRecord(() => 0);
-    Reflect.set(record, SYNTHETIC_CATEGORY, 1);
-    return record;
-  };
-  input.accumulationDefaults = makeAccumulationDefaults({
-    contributionRate: 0.1,
-    routingMode: "percentage",
-    accountSplits: only(),
-    taxSplits: {},
-  });
-  input.decumulationDefaults.withdrawalOrder = [];
-  Reflect.set(
-    input.decumulationDefaults.withdrawalOrder,
-    0,
-    SYNTHETIC_CATEGORY,
-  );
-  input.decumulationDefaults.withdrawalSplits = only();
-  Reflect.set(input.startingAccountBalances, SYNTHETIC_CATEGORY, {
-    structure: "basis_tracking",
-    balance: 500_000,
-    basis: 500_000,
-  });
-  input.startingBalances.afterTax += 500_000;
-  input.startingBalances.afterTaxBasis += 500_000;
-  return engineInput(input);
 }
 
 // ── UI structure known lists (owner Q4, v0.10.4) ────────────────────

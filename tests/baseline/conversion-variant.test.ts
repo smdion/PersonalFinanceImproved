@@ -19,7 +19,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { createTestCaller } from "../routers/setup";
 import { HOUSEHOLDS } from "./households";
-import type { Household } from "./seed";
+import { conversionVariant } from "./households-converting";
 import { seedHousehold } from "./seed";
 import { BASELINE_NOW, REGENERATE } from "./router-suite";
 import { PROCEDURES, callProcedure } from "./procedures";
@@ -30,37 +30,6 @@ import { flatten, numberTree } from "./numbers";
 
 const KEY = "e2e-dc";
 const FILE = path.join(PIN_DIRS.sync, "conversion", `${KEY}.json`);
-
-/** e2e-d with a larger IRA: Sam holds Traditional and Roth parts, Alex a
- *  Traditional part only (Alex's Roth part is declared at $0). It converts
- *  to the 12% bracket, and RMD smoothing may raise that to 24%. */
-function conversionVariant(base: Household): Household {
-  return {
-    ...base,
-    key: KEY,
-    source: `${base.key} converting, with a larger IRA`,
-    accounts: base.accounts.map((a) =>
-      a.perf.accountType === "ira"
-        ? {
-            ...a,
-            snapshot: [
-              { ...a.snapshot[0]!, amount: "1600000" },
-              a.snapshot[1]!,
-              { ...a.snapshot[2]!, amount: "1000000" },
-            ],
-          }
-        : a,
-    ),
-    returnRates: [[0, "0.06"]],
-    settings: {
-      ...base.settings,
-      returnAfterRetirement: "0.05",
-      enableRothConversions: true,
-      rmdSmoothingEnabled: true,
-      rmdSmoothingMaxBracketTarget: "0.24",
-    },
-  };
-}
 
 const projection = PROCEDURES.find(
   (p) => p.path === "projection.computeProjection",
