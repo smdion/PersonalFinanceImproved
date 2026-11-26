@@ -63,8 +63,10 @@ const keysOf = (parts: IndividualAccountInput[]) =>
   parts.map((p) => accountIdKeyOf(p));
 
 describe("declareOpeningParts", () => {
-  it("a run with no accounts declares nothing", () => {
-    expect(declareOpeningParts([], NO_FLOWS)).toEqual([]);
+  it("a run with no parts declares only the projected Retirement brokerage", () => {
+    expect(
+      declareOpeningParts([], NO_FLOWS).map((p) => [p.name, p.origin]),
+    ).toEqual([[PROJECTED_RETIREMENT_BROKERAGE_LABEL, "projected"]]);
   });
 
   it("refuses two parts with one key, which would share one balance", () => {
@@ -122,9 +124,14 @@ describe("declareOpeningParts", () => {
     ).toThrow(/holds money/);
   });
 
-  it("parts with no real account are left as given", () => {
+  it("synthetic Retirement parts holding money take every slice: nothing is projected", () => {
     const pot = syntheticOpeningParts(
-      buildCategoryRecord((c) => zeroBalance(c)),
+      buildCategoryRecord((c) =>
+        c === "brokerage"
+          ? { structure: "basis_tracking", balance: 5000, basis: 4000 }
+          : zeroBalance(c),
+      ),
+      () => "Retirement",
     );
     expect(declareOpeningParts(pot, NO_FLOWS)).toEqual(pot);
     const simpleSpec = makeContributionSpec({
@@ -135,8 +142,26 @@ describe("declareOpeningParts", () => {
       declareOpeningParts(pot, {
         ...NO_FLOWS,
         contributionSpecs: [simpleSpec],
+        accumulationOverrides: [
+          {
+            year: 2030,
+            lumpSums: [{ amount: 1000, targetAccount: "ira", taxType: "roth" }],
+          },
+        ],
       }),
     ).toEqual(pot);
+  });
+
+  it("a synthetic run with Portfolio brokerage money gains the projected Retirement brokerage", () => {
+    const pot = syntheticOpeningParts(
+      buildCategoryRecord((c) => zeroBalance(c)),
+      (c) => (c === "brokerage" ? "Portfolio" : "Retirement"),
+    );
+    const parts = declareOpeningParts(pot, NO_FLOWS);
+    expect(parts.slice(0, pot.length)).toEqual(pot);
+    expect(parts.slice(pot.length).map((p) => [p.name, p.origin])).toEqual([
+      [PROJECTED_RETIREMENT_BROKERAGE_LABEL, "projected"],
+    ]);
   });
 
   it("a contribution with no part declares its own $0 part, real, then its other tax part", () => {
@@ -146,7 +171,10 @@ describe("declareOpeningParts", () => {
       account: { kind: "unlinked" },
     });
     const parts = declareOpeningParts(
-      syntheticOpeningParts(buildCategoryRecord((c) => zeroBalance(c))),
+      syntheticOpeningParts(
+        buildCategoryRecord((c) => zeroBalance(c)),
+        () => "Retirement",
+      ),
       { ...NO_FLOWS, contributionSpecs: [unlinked] },
     );
     expect(parts.filter((p) => p.origin === "synthetic")).toEqual([]);
@@ -580,12 +608,20 @@ describe("the starting money as parts", () => {
     brokerage: { structure: "basis_tracking", balance: 30000, basis: 12000 },
   };
 
-  it("synthetic parts hold each category's money in its tax parts, as Retirement money", () => {
-    const parts = syntheticOpeningParts(byCategory);
+  it("synthetic parts hold each category's money in its tax parts, as its parent's money", () => {
+    const parts = syntheticOpeningParts(byCategory, (c) =>
+      c === "brokerage" ? "Portfolio" : "Retirement",
+    );
     const of = (category: string, taxType: string) =>
       parts.find((p) => p.category === category && p.taxType === taxType);
     expect(parts.every((p) => p.origin === "synthetic")).toBe(true);
-    expect(parts.every((p) => p.parentCategory === "Retirement")).toBe(true);
+    expect(
+      parts.every(
+        (p) =>
+          p.parentCategory ===
+          (p.category === "brokerage" ? "Portfolio" : "Retirement"),
+      ),
+    ).toBe(true);
     expect(of("401k", "preTax")?.startingBalance).toBe(100000);
     expect(of("401k", "taxFree")?.startingBalance).toBe(50000);
     expect(of("hsa", "hsa")?.startingBalance).toBe(20000);
@@ -597,7 +633,7 @@ describe("the starting money as parts", () => {
 
   it("the parts' totals are the money they were built from", () => {
     const { accountBalance, balances } = openingTotals(
-      syntheticOpeningParts(byCategory),
+      syntheticOpeningParts(byCategory, () => "Retirement"),
     );
     expect(accountBalance).toEqual(byCategory);
     expect(balances).toEqual({
@@ -631,10 +667,10 @@ describe("the starting money as parts", () => {
     ).toThrow(/Ann 401k.*"afterTax".*"preTax"/);
   });
 
-  it("the opening parts are the held accounts, or synthetic parts when none is held", () => {
+  it("the opening parts are the held accounts, or synthetic Retirement parts when none is held", () => {
     expect(openingParts([roth401k], byCategory)).toEqual([roth401k]);
     expect(openingParts([], byCategory)).toEqual(
-      syntheticOpeningParts(byCategory),
+      syntheticOpeningParts(byCategory, () => "Retirement"),
     );
   });
 });

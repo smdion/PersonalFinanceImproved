@@ -9,6 +9,7 @@ index.ts                     public API (the only entry point)
 projection.ts                orchestrator: builds context + state, runs the year loop
 input-validation.ts          validateEngineInputs: balance checks, rate clamps, setup warnings
 opening-state.ts             declareOpeningParts: every account part a flow can target, at the start
+opening-parts.ts             the run's opening money: its parts (held, else synthetic) and their totals
 lump-sum-targets.ts          the part each lump sum lands on (the one name match)
 projection-year-handlers/    one year of work
   context.ts                 immutable run context (buildProjectionContext)

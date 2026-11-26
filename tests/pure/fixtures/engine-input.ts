@@ -9,7 +9,12 @@ import type { ProjectionInput } from "@/lib/pure/engine/types";
 import { syntheticOpeningParts } from "@/lib/pure/engine/opening-parts";
 import { seedBrokerageBasis } from "@/lib/pure/engine/brokerage-basis";
 import { accountIdKeyOf, isHeldPart } from "@/lib/pure/accounts/account-part";
-import { isRetirementMoney } from "@/lib/config/account-types";
+import {
+  isRetirementMoney,
+  type AccountCategory,
+  type ParentCategory,
+} from "@/lib/config/account-types";
+import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 
 /** Starting money as fixtures write it: the tax buckets and the
  *  per-category balances, with accounts optional. */
@@ -17,6 +22,9 @@ type StartingMoney = {
   startingBalances: TaxBuckets;
   startingAccountBalances: AccountBalances;
   individualAccounts?: IndividualAccountInput[];
+  /** With no held account, whose money each category's synthetic parts
+   *  hold (default Retirement): a goal fixture's brokerage is Portfolio's. */
+  syntheticParents?: Partial<Record<AccountCategory, ParentCategory>>;
 };
 
 /**
@@ -74,6 +82,7 @@ export function engineInput(fixture: StartingMoney) {
     startingBalances,
     startingAccountBalances,
     individualAccounts,
+    syntheticParents,
     ...rest
   } = fixture;
   // Parts that are all synthetic are already the starting money (an engine
@@ -86,7 +95,10 @@ export function engineInput(fixture: StartingMoney) {
   if (!individualAccounts?.some(isHeldPart))
     return {
       ...rest,
-      individualAccounts: syntheticOpeningParts(startingAccountBalances),
+      individualAccounts: syntheticOpeningParts(
+        startingAccountBalances,
+        (category) => syntheticParents?.[category] ?? PERF_CATEGORY_RETIREMENT,
+      ),
     };
   const parts = withAccountIds(individualAccounts);
   const basis = seedBrokerageBasis(

@@ -199,6 +199,7 @@ describe("brokerage goals integration", () => {
     ];
 
     const input = makeInput({
+      syntheticParents: { brokerage: "Portfolio" },
       brokerageGoals: goals.map((g) => ({
         id: g.id,
         name: g.name,
@@ -333,6 +334,7 @@ describe("brokerage goals integration", () => {
         },
       }),
       currentSalary: 300000,
+      syntheticParents: { brokerage: "Portfolio" },
       brokerageGoals: goals.map((g) => ({
         id: g.id,
         name: g.name,
@@ -421,6 +423,7 @@ describe("brokerage goals integration", () => {
 
     const input = makeInput({
       brokerageContributionRamp: 2000,
+      syntheticParents: { brokerage: "Portfolio" },
       brokerageGoals: goals.map((g) => ({
         id: g.id,
         name: g.name,

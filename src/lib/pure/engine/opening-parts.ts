@@ -4,6 +4,8 @@ import {
   buildCategoryRecord,
   isTaxFreeBucket,
   zeroBalance,
+  type AccountCategory,
+  type ParentCategory,
 } from "../../config/account-types";
 import type { PortfolioTaxType } from "../../config/enum-values";
 import { PERF_CATEGORY_RETIREMENT } from "../../config/display-labels";
@@ -21,10 +23,12 @@ import type {
 
 /**
  * Parts with no real account behind them, holding the given per-category
- * balances: each category's tax parts, Retirement money with no owner.
+ * balances: each category's tax parts, with no owner, its money parented by
+ * `parentOf` (one parent per category: the synthetic key has none).
  */
 export function syntheticOpeningParts(
   byCategory: AccountBalances,
+  parentOf: (category: AccountCategory) => ParentCategory,
 ): IndividualAccountInput[] {
   return getEngineCategories().flatMap((category) => {
     const balance = byCategory[category];
@@ -39,7 +43,7 @@ export function syntheticOpeningParts(
       taxType,
       startingBalance: money,
       ...(basis != null ? { startingBasis: basis } : {}),
-      parentCategory: PERF_CATEGORY_RETIREMENT,
+      parentCategory: parentOf(category),
       origin: "synthetic" as const,
     });
     if (balance.structure === "roth_traditional")
@@ -56,12 +60,14 @@ export function syntheticOpeningParts(
 }
 
 /** The run's opening parts: the held accounts, or with none (nothing entered
- *  yet) synthetic parts holding the per-category money. */
+ *  yet) synthetic parts holding the per-category money as Retirement money. */
 export function openingParts(
   held: IndividualAccountInput[],
   byCategory: AccountBalances,
 ): IndividualAccountInput[] {
-  return held.length > 0 ? held : syntheticOpeningParts(byCategory);
+  return held.length > 0
+    ? held
+    : syntheticOpeningParts(byCategory, () => PERF_CATEGORY_RETIREMENT);
 }
 
 /** The tax buckets and per-category balances the parts hold, by the payload's

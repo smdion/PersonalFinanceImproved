@@ -9,6 +9,7 @@ import {
   isRetirementMoney,
   zeroBalance,
 } from "../../config/account-types";
+import { PERF_CATEGORY_RETIREMENT } from "../../config/display-labels";
 import { roundToCents } from "../../utils/math";
 import { rampIsPortfolioSaving } from "../accounts/brokerage-ramp";
 import {
@@ -147,6 +148,7 @@ export function toSimpleTaxMode(
             }
           : zeroBalance(cat),
       ),
+      () => PERF_CATEGORY_RETIREMENT,
     ),
   };
 }

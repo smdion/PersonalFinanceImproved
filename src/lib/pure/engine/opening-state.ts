@@ -1,7 +1,7 @@
 /**
  * The ledger's opening state: every account part a flow can target is
  * declared before the first year, so no flow meets money with no part to
- * land on. A run with no accounts is left as it is.
+ * land on. A run with no real account starts from its synthetic parts.
  */
 import {
   getAccountTypeConfig,
@@ -43,9 +43,9 @@ type Slice = Pick<
   "category" | "taxType" | "parentCategory"
 >;
 
-/** Held and spec parts (none real: held, as given), projected parts for a
- *  missing Retirement brokerage and each untaken slice, then $0 sibling tax
- *  parts. Throws on a mixed run (`refuseMixedRun`) or a shared key. */
+/** Held and spec parts (none real: the synthetic run's parts as given), then
+ *  their projected parts (`withProjectedParts`). Throws on a mixed run
+ *  (`refuseMixedRun`) or a shared key. */
 export function declareOpeningParts(
   held: readonly IndividualAccountInput[],
   flows: OpeningFlows,
@@ -54,8 +54,17 @@ export function declareOpeningParts(
     held.filter((ia) => ia.origin !== "synthetic"),
     flows,
   );
-  if (!parts.some(hasRealAccount)) return [...held];
+  if (!parts.some(hasRealAccount)) return withProjectedParts([...held], flows);
   refuseMixedRun(held, flows);
+  return withProjectedParts(parts, flows);
+}
+
+/** The parts, projected parts for a missing Retirement brokerage and each
+ *  untaken slice, then $0 sibling tax parts. */
+function withProjectedParts(
+  parts: IndividualAccountInput[],
+  flows: OpeningFlows,
+): IndividualAccountInput[] {
   const overflowCategory = getAllCategories().find(isOverflowTarget)!;
   if (
     !parts.some((ia) => isRetirementBrokerage(ia.category, ia.parentCategory))
