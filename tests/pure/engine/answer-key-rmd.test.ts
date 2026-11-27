@@ -72,8 +72,9 @@ import {
 import { reinvestRmdExcess } from "@/lib/pure/engine/balance-deduction";
 import {
   makeAccountBalances,
-  makeTaxBuckets,
+  makeIndividualAccount,
 } from "../fixtures/engine-fixtures";
+import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import { computeQcdAmounts, totalQcdAmount } from "@/lib/pure/engine/qcd";
 import type {
   AccountBalances,
@@ -718,18 +719,29 @@ describe("answer key: the RMD excess is what the RMD added (D1)", () => {
     cents(rmd.rmdAmount, 4_065.04);
     cents(rmd.rmdAdded, 0.01);
     cents(rmd.totalWithdrawal, 63_588.66);
-    const buckets = makeTaxBuckets({ afterTax: 0, afterTaxBasis: 0 });
+    // An empty Retirement brokerage takes it.
+    const brokerage = makeIndividualAccount({
+      name: "Brokerage",
+      category: "brokerage",
+      taxType: "afterTax",
+      startingBalance: 0,
+      parentCategory: "Retirement",
+    });
+    const indKey = makeIndKey();
+    const indBalance = new Map([[indKey(brokerage), 0]]);
     const excess = reinvestRmdExcess(
       "reinvest",
       rmd.rmdAdded,
       rmd.totalWithdrawal,
       50_000,
       10_000,
-      buckets,
-      makeAccountBalances({ afterTax: 0, afterTaxBasis: 0 }),
+      [brokerage],
+      indBalance,
+      indKey,
+      new Map(),
     );
     cents(excess, 0.01);
-    cents(buckets.afterTax, 0.01);
+    cents(indBalance.get(indKey(brokerage))!, 0.01);
   });
 });
 

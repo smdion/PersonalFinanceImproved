@@ -3914,7 +3914,7 @@
   },
   "src/lib/pure/engine/balance-deduction.ts": {
     "ratchet/no-abbreviation": {
-      "count": 10
+      "count": 8
     }
   },
   "src/lib/pure/engine/balance-utils.ts": {

@@ -15,12 +15,10 @@ import { searchGrossUp } from "./gross-up-search";
 import { scopedBalances } from "./balance-utils";
 import { deriveBasisRankingInputs } from "./withdrawal-cost-ranking";
 import { computeTaxFromSlots } from "./tax-estimation";
-import { clampBalances, deductWithdrawals } from "./balance-deduction";
-import { floorPartsAndSlices } from "./category-slices";
+import { floorParts } from "./category-slices";
 import { depleteIndividualBasis } from "./individual-accounts/ledger";
 import { distributeWithdrawals } from "./individual-accounts/withdrawals";
 import {
-  categoryBasis,
   followDrawsSoldOnCopies,
   retirementBrokerageBasisRatio,
 } from "./brokerage-basis";
@@ -255,13 +253,9 @@ export function runGapYearDraw(
     (parts) => shareOut(slots, parts, indBasis),
   );
   const settled = price(slots, taken.rothGrowth, taken.penalty);
-  const { priced, cost } = settled;
-  const out = priced.brokerageBasisOut;
-  const basisOut = categoryBasis(ledgerRuns ? drawn.sold : undefined, out);
-  deductWithdrawals({ slots, balances, accountBalance, basisOut });
+  const { cost } = settled;
   drawn.land();
-  const floorRaised = clampBalances(balances, accountBalance);
-  if (ledgerRuns) floorPartsAndSlices(ctx, state, floorRaised);
+  if (ledgerRuns) floorParts(ctx, state);
   const withdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));
   const accounts: GapYearAccounts = {
     withdrawal: taken.byKey,

@@ -29,6 +29,7 @@ const TAX_BUCKETS = Object.keys(emptyTaxBucketMap());
 /** Settled points whose flow moves only the parts: the refresh there gives
  *  B its parts' sum, so D2 and D3 sampled before it measure the flow itself. */
 const PARTS_ONLY = new Set([
+  "accumulation.gapDraw",
   "accumulation.growth",
   "decumulation.growth",
   "decumulation.qcd",
@@ -288,40 +289,6 @@ export function contributionCreditsModule(m: any) {
             key,
             round2((run.state.indBalance.get(key) ?? 0) + 0.5),
           );
-      }
-      return out;
-    },
-  };
-}
-
-/** `floorPartsAndSlices`: B's move is the parts' raises less B's own. */
-export function categorySlicesModule(m: any) {
-  return {
-    ...m,
-    floorPartsAndSlices: (
-      ctx: any,
-      state: any,
-      ownRaises: Map<string, number>,
-    ) => {
-      const run = own(state);
-      if (!run || !ledger(run))
-        return m.floorPartsAndSlices(ctx, state, ownRaises);
-      const pre = sliceView(run);
-      const out = m.floorPartsAndSlices(ctx, state, ownRaises);
-      const post = sliceView(run);
-      for (const [slice, b] of pre) {
-        if (b.parts === 0) continue;
-        const a = post.get(slice)!;
-        const [category, side] = slice.split(":");
-        const ownRaise = ownRaises.get(m.sliceKey(category, side)) ?? 0;
-        const where = `${at(run, "floor")} ${slice}`;
-        observe(run, "rb.floor", a.B - b.B, where, 0.01 * b.parts);
-        observe(
-          run,
-          "rb.identity",
-          toCents(a.B - a.C) / 100 - toCents(b.B - ownRaise - b.C) / 100,
-          where,
-        );
       }
       return out;
     },
@@ -703,10 +670,9 @@ export const STOPS = [
   "unplaced.convTax",
   "conv.taxSkip",
   "conv.mopUp",
-  "rb.identity",
 ] as const;
 /** Counters judged by their bound: `over` is the stop. */
-export const BOUNDED = ["ra.overwrite", "rb.floor"] as const;
+export const BOUNDED = ["ra.overwrite"] as const;
 /** The synthetic-category run is judged on its ledger only (D2, D3). */
 const BO1_JUDGED = new Set<string>(["d2", "d3", "d2.noPart", "d3.noPart"]);
 

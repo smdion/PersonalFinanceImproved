@@ -106,7 +106,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 
 | Module                  | Role                                                                                                                         |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `balance-deduction.ts`  | Deducts withdrawals, clamps negatives, reinvests unspent RMD money, tracks depletion, cleans dust.                           |
+| `balance-deduction.ts`  | Reinvests unspent RMD money on the accounts, tracks depletion, cleans dust.                                                  |
 | `balance-utils.ts`      | Cloning, bucket ↔ account conversions, `scopedBalances` (retirement vs all-accounts balance), penalty/exclusion subtraction. |
 | `brokerage-basis.ts`    | Cost basis per brokerage account (draws, inflows, reconciliation, the Retirement-group ratio) and `syncAggregateBasis`.      |
 | `growth-application.ts` | The return rate at an age, from the plan's rate breakpoints.                                                                 |
@@ -149,7 +149,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 7. `enforceYearRmd` (`rmd-step.ts`) — each RMD enforced on the routed draw
 8. `distributeYearDraws` (`year-draws.ts`) — the draw followed to each account (Roth split, early-withdrawal penalty), worked out on copies of the per-account maps
 9. `priceYearTax`, `pricedYearParts` (`tax-year-settlement.ts`) — the year's tax priced from the post-RMD totals (an RMD can add Traditional to the routed draw), and the draw's cost (`drawCost`, `draw-cost.ts`: tax with its NIIT, penalty, Social Security's surplus credit; the solver sizes with the same function); when the RMD added money (`rmdAdded > 0`, the row's `rmdOverrodeRouting`), the reported gross-up factor is recomputed from them
-10. `settleYearDraws` — the accounts' draws from stage 8 landed with `deductWithdrawals`, `clampBalances`, lump sums, `reinvestRmdExcess` (what the RMD added, capped at the draw past the need, the year-start IRMAA charge it leaves out (`irmaaOutsideNeed`) and the draw's net cost; or spent), `trackDepletions`
+10. `settleYearDraws` — the accounts' draws from stage 8 landed, lump sums, `reinvestRmdExcess` (what the RMD added, capped at the draw past the need, the year-start IRMAA charge it leaves out (`irmaaOutsideNeed`) and the draw's net cost; or spent), `floorParts`, `refreshViews`, `trackDepletions`
 11. `yearRothConversion` — `computeRmdSmoothingTargets`, `performRothConversion`; `repriceConversionYear` (`conversion-year-reprice.ts`) re-prices the year's tax after it
 12. `yearCliffChecks` (`year-cliffs.ts`) — records the year's tax year for later IRMAA years (`recordIrmaaTaxYear`; a working year records its wages, `workingYearIncome`, in `runWorkingYearFlows`); the year's IRMAA charge (the year-start one, else `settleIrmaaCharge` from this year's own MAGI; `checkHouseholdIrmaa`, per person `checkIrmaa` × people 65+) and its warnings; `checkAca`
 13. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine), whether it's material, and the IRMAA paid on top

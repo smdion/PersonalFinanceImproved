@@ -435,7 +435,6 @@
     "src/lib/pure/debts/debt-rules.ts:carPaymentShare",
     "src/lib/pure/debts/debt-rules.ts:firstFullSalary",
     "src/lib/pure/debts/mortgage-balance.ts:getActiveMortgageLoan",
-    "src/lib/pure/engine/balance-deduction.ts:clampBalances",
     "src/lib/pure/engine/balance-utils.ts:cloneAccountBalances",
     "src/lib/pure/engine/balance-utils.ts:subtractExcluded",
     "src/lib/pure/engine/balance-utils.ts:subtractPenaltyExposed",

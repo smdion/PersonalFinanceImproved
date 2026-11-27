@@ -7,8 +7,8 @@
  * nothing (the reconcile, the surplus handoff, the basis sync), every draw
  * and every conversion's debit and tax land on parts, no money sits in a
  * slice or basis category without parts, every run holds a ledger, and the
- * overwrites of A at `settle` and of B at a floor stay within one rounding
- * per part. The counters are `ledger-proof/counters.ts`,
+ * overwrite of A at `settle` stays within a cent or two a bucket. The
+ * counters are `ledger-proof/counters.ts`,
  * wrapped around the engine's own functions here; a failure names its first
  * site.
  *
@@ -63,11 +63,6 @@ vi.mock(
     (await import("./ledger-proof/counters")).contributionCreditsModule(
       await original(),
     ),
-);
-vi.mock("@/lib/pure/engine/category-slices", async (original) =>
-  (await import("./ledger-proof/counters")).categorySlicesModule(
-    await original(),
-  ),
 );
 vi.mock("@/lib/pure/engine/individual-accounts/reconcile", async (original) =>
   (await import("./ledger-proof/counters")).reconcileModule(await original()),

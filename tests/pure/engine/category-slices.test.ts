@@ -1,9 +1,8 @@
 /**
- * On a run that holds accounts, a category slice moves with its parts' cents:
- * at each year's growth point it holds its parts' sum; across each floor
- * after a run's draws, and through the floors of a two-sided category and of
- * a slice already apart from its parts, each slice keeps its difference from
- * its parts' sum (D2) to the cent.
+ * On a run that holds accounts, a category slice holds its parts' cents: at
+ * each year's growth point and each year's draws point (after the parts'
+ * floor), each slice is its parts' sum, both sides of a two-sided category
+ * included.
  */
 import { describe, it, expect, vi } from "vitest";
 
@@ -44,42 +43,7 @@ const gaps = vi.hoisted(
       return cents;
     },
 );
-type Floored = { before: SliceGap; after: SliceGap };
-const floored = vi.hoisted(() => [] as Floored[]);
-vi.mock("@/lib/pure/engine/category-slices", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@/lib/pure/engine/category-slices")>();
-  return {
-    ...actual,
-    floorPartsAndSlices: (
-      ...args: Parameters<typeof actual.floorPartsAndSlices>
-    ) => {
-      const [ctx, state, ownRaises] = args;
-      const gapNow = () =>
-        gaps(ctx.indAccounts, ctx.indKey, state.indBalance, {
-          ...state.accountBalance,
-        });
-      // D2 before the floor: each slice less the raise its own clamp gave it
-      const held = new Set(
-        ctx.indAccounts.map((part) =>
-          state.accountBalance[part.category].structure !== "roth_traditional"
-            ? `${part.category}:balance`
-            : `${part.category}:${part.taxType === "taxFree" ? "roth" : "traditional"}`,
-        ),
-      );
-      const onlyHeld = (gap: SliceGap) =>
-        new Map([...gap].filter(([slice]) => held.has(slice)));
-      const before = gapNow();
-      for (const [slice, raise] of ownRaises)
-        before.set(slice, (before.get(slice) ?? 0) - Math.round(raise * 100));
-      actual.floorPartsAndSlices(...args);
-      floored.push({
-        before: onlyHeld(before),
-        after: onlyHeld(gapNow()),
-      });
-    },
-  };
-});
+const floored = vi.hoisted(() => [] as Grown[]);
 vi.mock(
   "@/lib/pure/engine/projection-year-handlers/settle",
   async (importOriginal) => {
@@ -92,8 +56,13 @@ vi.mock(
       settle: (...args: Parameters<typeof actual.settle>) => {
         const [ctx, state, point] = args;
         actual.settle(...args);
-        if (ctx.ledgerRuns && point.endsWith(".growth"))
-          grown.push({
+        const at = point.endsWith(".growth")
+          ? grown
+          : point === "decumulation.draws"
+            ? floored
+            : undefined;
+        if (ctx.ledgerRuns && at)
+          at.push({
             year: state.projectionByYear.length,
             after: gaps(ctx.indAccounts, ctx.indKey, state.indBalance, {
               ...state.accountBalance,
@@ -113,8 +82,7 @@ import {
   getTotalBalance,
   getTraditionalBalance,
 } from "@/lib/pure/accounts/account-balance";
-import { clampBalances } from "@/lib/pure/engine/balance-deduction";
-import { floorPartsAndSlices } from "@/lib/pure/engine/category-slices";
+import { floorParts } from "@/lib/pure/engine/category-slices";
 import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import { growYear } from "@/lib/pure/engine/projection-year-handlers/year-growth";
 import { refreshViews } from "@/lib/pure/engine/projection-year-handlers/settle";
@@ -284,9 +252,9 @@ function heldRun(parts: IndividualAccountInput[], partBalance: number[]) {
     projectionByYear: [],
   };
   return {
-    // eslint-disable-next-line no-restricted-syntax -- only the fields growYear and floorPartsAndSlices read
+    // eslint-disable-next-line no-restricted-syntax -- only the fields growYear, floorParts and refreshViews read
     ctx: runFields as unknown as ProjectionContext,
-    // eslint-disable-next-line no-restricted-syntax -- only the fields growYear and floorPartsAndSlices read
+    // eslint-disable-next-line no-restricted-syntax -- only the fields growYear, floorParts and refreshViews read
     state: stateFields as unknown as ProjectionLoopState,
   };
 }
@@ -316,18 +284,18 @@ describe("category slices on a run that holds accounts", () => {
     expect(getTotalBalance(state.accountBalance.brokerage)).toBe(105.02);
   });
 
-  it("take their parts' floor raises in place of their own after a draw", () => {
+  it("take their parts' floor raises after a draw, at the draws' refresh", () => {
     const a = brokeragePart("A", 0.02);
     const b = brokeragePart("B", -0.03);
     const { ctx, state } = heldRun([a, b], [0.02, -0.03]);
-    // the slice is −0.01: its own floor raises it 0.01, its parts' raise them 0.03
-    const ownRaises = clampBalances(state.balances, state.accountBalance);
-    floorPartsAndSlices(ctx, state, ownRaises);
+    // the parts floor to 0.02 and 0; the slice is their sum
+    floorParts(ctx, state);
+    refreshViews(ctx, state);
     expect(state.indBalance.get(accountIdKeyOf(b))).toBe(0);
     expect(getTotalBalance(state.accountBalance.brokerage)).toBe(0.02);
   });
 
-  it("floor each side of a two-sided category by its own parts' raises", () => {
+  it("floor each side of a two-sided category by its own parts", () => {
     const part = (
       name: string,
       taxType: IndividualAccountInput["taxType"],
@@ -346,38 +314,23 @@ describe("category slices on a run that holds accounts", () => {
       part("Roth 401k", "taxFree", -0.05),
     ];
     const { ctx, state } = heldRun(parts, [0.02, -0.03, -0.05]);
-    // traditional −0.01: its own floor raises it 0.01, its parts' 0.03; Roth −0.05: 0.05 either way
-    const ownRaises = clampBalances(state.balances, state.accountBalance);
-    floorPartsAndSlices(ctx, state, ownRaises);
+    // traditional parts floor to 0.02 and 0; the Roth part to 0
+    floorParts(ctx, state);
+    refreshViews(ctx, state);
     expect(getTraditionalBalance(state.accountBalance["401k"])).toBe(0.02);
     expect(getRothBalance(state.accountBalance["401k"])).toBe(0);
   });
 
-  it("keep a slice's difference from its parts through the floor", () => {
-    // the slice holds 0.01, a cent under its parts' 0.02; the parts' raise moves both by 0.03
-    const a = brokeragePart("A", 0.04);
-    const b = brokeragePart("B", -0.03);
-    const { ctx, state } = heldRun([a, b], [0.05, -0.03]);
-    const ownRaises = clampBalances(state.balances, state.accountBalance);
-    floorPartsAndSlices(ctx, state, ownRaises);
-    expect(state.indBalance.get(accountIdKeyOf(a))).toBe(0.05);
-    expect(state.indBalance.get(accountIdKeyOf(b))).toBe(0);
-    expect(getTotalBalance(state.accountBalance.brokerage)).toBe(0.04);
-  });
-
-  it("keep their difference from their parts across every floor after a run's draws", () => {
+  it("hold their parts' cents at every year's draws point", () => {
     floored.length = 0;
     calculateProjection(makeInput(150000, 30));
-    // every decumulation year floors after its draws
+    // every decumulation year settles its draws
     expect(floored.length).toBeGreaterThan(20);
-    const moved = floored.flatMap(({ before, after }, i) =>
+    const apart = floored.flatMap(({ year, after }) =>
       [...after]
-        .filter(([slice, cents]) => cents !== before.get(slice))
-        .map(
-          ([slice, cents]) =>
-            `floor ${i} ${slice}: ${before.get(slice)}¢ -> ${cents}¢`,
-        ),
+        .filter(([, cents]) => cents !== 0)
+        .map(([slice, cents]) => `${year} ${slice}: ${cents}¢`),
     );
-    expect(moved).toEqual([]);
+    expect(apart).toEqual([]);
   });
 });

@@ -114,7 +114,7 @@ function partSlices(ctx: ProjectionContext): PartSlice[] {
   return slices;
 }
 
-/** The parts' amounts in `byPart` summed in the parts' order (`sumBySlice`). */
+/** The parts' amounts in `byPart` summed in the parts' order. */
 function sumOf(keys: readonly string[], byPart: ReadonlyMap<string, number>) {
   let sum = 0;
   for (const key of keys) sum += byPart.get(key) ?? 0;

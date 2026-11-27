@@ -3,14 +3,9 @@ import { roundToCents } from "../../../utils/math";
 import { ageInYear } from "../../../utils/date";
 import { isOverflowTarget, isPreTaxType } from "../../../config/account-types";
 import { soleBeneficiarySpouseAges } from "../../../config/rmd-tables";
-import { categoryBasis, followInflows } from "../brokerage-basis";
-import {
-  clampBalances,
-  deductWithdrawals,
-  reinvestRmdExcess,
-  trackDepletions,
-} from "../balance-deduction";
-import { floorPartsAndSlices } from "../category-slices";
+import { followInflows } from "../brokerage-basis";
+import { reinvestRmdExcess, trackDepletions } from "../balance-deduction";
+import { floorParts } from "../category-slices";
 import { performRothConversion } from "../roth-conversion";
 import { premiumYearHasEnrollee } from "../conversion-irmaa-cap";
 import { rmdOwnerOf } from "../rmd-enforcement";
@@ -20,6 +15,7 @@ import { drawCost, surplusCreditFor } from "../draw-cost";
 import { applyLumpSums } from "./lump-sum";
 import { perOwnerRmds } from "./helpers";
 import { irmaaOutsideNeed } from "./irmaa-charge";
+import { refreshViews } from "./settle";
 import type { yearNeed } from "./year-need";
 import type { distributeYearDraws, routeYearDraw } from "./year-draws";
 import type { enforceYearRmd } from "./rmd-step";
@@ -153,8 +149,9 @@ export function pricedYearParts(
   };
 }
 
-/** The year's draws settled: deducted, lump sums in, the RMD excess reinvested
- *  or spent (UD-04: at most what the RMD added), depletions tracked. */
+/** The year's draws settled: landed on the accounts, lump sums in, the RMD
+ *  excess reinvested or spent (UD-04: at most what the RMD added), the
+ *  accounts floored, the categories refreshed, depletions tracked. */
 export function settleYearDraws(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
@@ -162,21 +159,16 @@ export function settleYearDraws(
   flow: Omit<DecumulationFlow, "conversion">,
 ) {
   const { indAccounts, indKey, ledgerRuns } = ctx;
-  const { balances, accountBalance, indBalance, brokBasis } = state;
+  const { accountBalance, indBalance, brokBasis } = state;
   const { depletionTracked, accountDepletions } = state;
   const { config, year, age } = thisYear;
-  const { slots } = flow.route;
-  const { taxFromSlots, cost } = flow.priced;
+  const { cost } = flow.priced;
   const { rmdAdded, totalWithdrawal } = flow.rmd;
   const { afterTaxNeed, irmaa } = flow.need;
-  const out = taxFromSlots.brokerageBasisOut;
-  const basisOut = categoryBasis(flow.drawn.basisSold, out);
-  deductWithdrawals({ slots, balances, accountBalance, basisOut });
-  // Each account's draw (distributeYearDraws) lands after the deduction reads.
+  // Each account's draw (distributeYearDraws, on copies) lands.
   for (const [k, v] of flow.drawn.ledger.indBalance) state.indBalance.set(k, v);
   for (const [k, v] of flow.drawn.ledger.brokBasis) state.brokBasis.set(k, v);
   for (const [k, v] of flow.drawn.ledger.indBasis) state.indBasis.set(k, v);
-  const floorRaised = clampBalances(balances, accountBalance);
   // Lump sums (one-time, outside limits) are cash in: new basis in the
   // brokerage account they land in.
   followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
@@ -192,15 +184,15 @@ export function settleYearDraws(
     totalWithdrawal,
     afterTaxNeed + irmaaOutsideNeed(irmaa, state),
     cost.netCost,
-    balances,
-    accountBalance,
-    ledgerRuns ? indAccounts : undefined,
-    ledgerRuns ? indBalance : undefined,
-    ledgerRuns ? indKey : undefined,
-    ledgerRuns ? brokBasis : undefined,
+    indAccounts,
+    indBalance,
+    indKey,
+    brokBasis,
   );
 
-  if (ledgerRuns) floorPartsAndSlices(ctx, state, floorRaised);
+  if (ledgerRuns) floorParts(ctx, state);
+  // The categories from the parts before the depletions read them.
+  refreshViews(ctx, state);
 
   // Track per-account depletions
   trackDepletions(
