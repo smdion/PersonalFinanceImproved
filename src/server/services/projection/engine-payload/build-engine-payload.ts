@@ -28,6 +28,7 @@ import {
 } from "@/lib/pure/household/compensation";
 import { buildProfileContribData } from "@/lib/pure/contributions/profile-contrib-data";
 import { unlinkedSpecsNote } from "@/lib/pure/contributions/unlinked-specs";
+import { negativeMatchNotes } from "@/server/services/contributions/negative-match-notes";
 import { getPrimaryPerson } from "@/lib/pure/household/primary-person";
 import { openingParts } from "@/lib/pure/engine";
 import { toNumber } from "@/lib/utils/numbers";
@@ -384,6 +385,7 @@ export async function buildEnginePayload(
   const { switchProfileMap, switchSalaryProfileMap, switchWarnings } =
     await loadSwitchProfiles(db, profileSwitchOverrides);
   inputWarnings.push(...switchWarnings, ...missingLimitsWarning, ...rateNotes);
+  inputWarnings.push(...negativeMatchNotes(data, switchProfileMap.values()));
 
   // Budget overrides from DB (stored as monthly, engine expects monthly too)
   const dbBudgetOverrides = budgetOverrideRows

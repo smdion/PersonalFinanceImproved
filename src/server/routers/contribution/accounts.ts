@@ -26,6 +26,7 @@ import {
   type AccountOwnership,
 } from "@/lib/config/enum-values";
 import { zDecimal, zFraction } from "@/lib/utils/zod-fields";
+import { zMatchFigure } from "@/lib/db/shapes/match-write";
 import { dropContributionActiveFields } from "@/server/data/delete-references";
 import {
   accountMatchWrite,
@@ -46,9 +47,9 @@ export const contributionAccountInput = z.object({
   parentCategory: z.enum(parentCategoryEnum()).default("Retirement"),
   taxTreatment: z.enum(TAX_TREATMENT_VALUES),
   employerMatchType: z.enum(EMPLOYER_MATCH_TYPE_VALUES),
-  employerMatchValue: zDecimal.nullable().optional(),
+  employerMatchValue: zMatchFigure.nullable().optional(),
   // A percent match as a fraction (0.5 = 50%); the value follows it.
-  employerMatchRate: zDecimal.nullable().optional(),
+  employerMatchRate: zMatchFigure.nullable().optional(),
   // A fraction of pay (0.06 = 6%); the form converts the percent typed.
   employerMaxMatchPct: zFraction.nullable().optional(),
   employerMatchTaxTreatment: z

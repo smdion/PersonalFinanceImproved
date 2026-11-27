@@ -1043,6 +1043,62 @@ describe("buildEnginePayload — spousal 'worker has filed' gate, mismatched bir
   });
 });
 
+describe("buildEnginePayload — an employer match saved below 0", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
+  let cleanup: () => void;
+  let contributionProfileId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    appDb = ctx.rawDb;
+    cleanup = ctx.cleanup;
+    const personId = await seedPerson(db, "Alex", "1985-06-15");
+    await markPrimary(db, personId);
+    await seedRetirementSettings(db, personId);
+    const jobId = seedJob(db, personId, { annualSalary: "150000" });
+    const profileId = await insertBudgetProfile(db, "Main Budget");
+    await insertBudgetItem(db, profileId, "Essentials", "Rent", [3000]);
+    const perfAcctId = seedPerformanceAccount(db, {
+      parentCategory: "Retirement",
+      accountType: "401k",
+      ownerPersonId: personId,
+    });
+    seedSnapshot(db, "2025-06-15", [
+      { performanceAccountId: perfAcctId, amount: "250000", taxType: "preTax" },
+    ]);
+    const contribAcctId = await seedContributionAccount(
+      db,
+      personId,
+      jobId,
+      perfAcctId,
+      { employerMatchType: "dollar_match", employerMatchValue: "-1500" },
+    );
+    contributionProfileId = await seedContributionProfileForAccounts(db, [
+      contribAcctId,
+    ]);
+  });
+
+  afterAll(() => cleanup());
+
+  it("reads it as no match, and names the account in the setup notes", async () => {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const payload = await buildEnginePayload(appDb, data, {
+      asOf: new Date(),
+      contributionProfileId,
+    });
+    expect(payload!.employerMatchByCategory["401k"]).toBe(0);
+    const notes = (payload!.baseEngineInput.inputWarnings ?? []).filter((w) =>
+      w.includes("is below 0, which no employer pays"),
+    );
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toMatch(
+      /^Alex .*'s employer match in the Contribution Profile "Test Contrib Profile"/,
+    );
+  });
+});
+
 describe("buildEnginePayload — job dates bound the years worked", () => {
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let appDb: Db;

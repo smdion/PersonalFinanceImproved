@@ -261,7 +261,7 @@
     "src/lib/pure/contributions/accumulation-order.ts": 28,
     "src/lib/pure/contributions/cap-pass.ts": 181,
     "src/lib/pure/contributions/category-totals.ts": 146,
-    "src/lib/pure/contributions/contribution-amount.ts": 74,
+    "src/lib/pure/contributions/contribution-amount.ts": 77,
     "src/lib/pure/contributions/contribution-caps.ts": 561,
     "src/lib/pure/contributions/contribution-caps.types.ts": 45,
     "src/lib/pure/contributions/contribution-order.ts": 83,
@@ -362,7 +362,7 @@
     "src/server/data/snapshots.ts": 103,
     "src/server/routers/assets.ts": 264,
     "src/server/routers/budget/index.ts": 21,
-    "src/server/routers/contribution-profiles.ts": 534,
+    "src/server/routers/contribution-profiles.ts": 536,
     "src/server/routers/demo.ts": 65,
     "src/server/routers/milestones.ts": 50,
     "src/server/routers/net-worth/comparison.ts": 240,
@@ -420,7 +420,7 @@
     "src/server/services/profiles/retirement-year.ts": 51,
     "src/server/services/profiles/salary-profile.ts": 207,
     "src/server/services/projection/coast-fire.ts": 284,
-    "src/server/services/projection/engine-payload/build-engine-payload.ts": 810,
+    "src/server/services/projection/engine-payload/build-engine-payload.ts": 812,
     "src/server/services/projection/engine-payload/load.ts": 146,
     "src/server/services/projection/engine-payload/profile-switches.ts": 443,
     "src/server/services/projection/projection-cache.ts": 183,
@@ -1055,7 +1055,7 @@
       "computeCoastFireSimulation": 227
     },
     "src/server/services/projection/engine-payload/build-engine-payload.ts": {
-      "buildEnginePayload": 731
+      "buildEnginePayload": 732
     },
     "src/server/services/projection/engine-payload/profile-switches.ts": {
       "buildProfileSwitches": 275

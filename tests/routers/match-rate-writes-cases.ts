@@ -419,6 +419,52 @@ export function matchRateWriteCases(h: () => MatchRateDb): void {
         employerMatchRate: "3",
       });
     });
+
+    it("refuses a match below 0 on a create, an update and a patch, and edits an entry stored below it", async () => {
+      const a = await percentAccount("50");
+      await expect(
+        profileWith(a, { employerMatchValue: "-40" }),
+      ).rejects.toThrow(/can't be below 0/);
+      const p = await profileWith(a, { employerMatchValue: "40" });
+      await expect(
+        h().caller.contributionProfile.update({
+          id: p,
+          contributionActiveFields: {
+            contributionAccounts: {
+              [a]: { ...(await entries(p))[a], employerMatchRate: "-0.4" },
+            },
+            deductions: {},
+          },
+        }),
+      ).rejects.toThrow(/can't be below 0/);
+      await expect(
+        patch(p, a, { employerMaxMatchPct: "-0.06" }),
+      ).rejects.toThrow(/can't be below 0/);
+      const stored = await entries(p);
+      stored[a] = { ...stored[a], employerMatchRate: "-0.4" };
+      await h().setFields(p, { contributionAccounts: stored, deductions: {} });
+      await patch(p, a, {
+        contributionValue: "7",
+        contributionMethod: "percent_of_salary",
+      });
+      expect((await entries(p))[a]).toMatchObject({
+        contributionValue: "7",
+        employerMatchRate: "-0.4",
+      });
+    });
+  });
+
+  it("refuses an account's flat or percent match below 0", async () => {
+    await expect(percentAccount("-50")).rejects.toThrow(/can't be below 0/);
+    await expect(
+      h().caller.contribution.accounts.create({
+        ...account,
+        personId: h().personId,
+        jobId: h().jobId,
+        employerMatchType: "dollar_match",
+        employerMatchValue: "-1500",
+      }),
+    ).rejects.toThrow(/can't be below 0/);
   });
 
   // One meaning for clearing: an account's match clears with a null rate;

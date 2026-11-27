@@ -31,11 +31,13 @@ import { isJointPercentRow } from "@/lib/pure/contributions/row-pay";
 import { aggregateContributionsByCategory } from "@/lib/pure/contributions/category-totals";
 import { contributionAccountName } from "@/server/services/contributions/account-name";
 import {
-  contributionActiveFieldsSchema,
   contribAccountActiveFieldsSchema,
-  contribAccountActiveFieldsPatchSchema,
   deductionActiveFieldsSchema,
 } from "@/lib/db/shapes/json-schemas";
+import {
+  contributionActiveFieldsWriteSchema,
+  contributionAccountFieldsPatchWriteSchema,
+} from "@/lib/db/shapes/match-write";
 import type { Db } from "@/lib/db";
 import {
   activeFieldsWithMatchRates,
@@ -51,9 +53,9 @@ import {
 import { loadContributionProfileDetail } from "@/server/services/contributions/profile-detail";
 
 // ── Active-field shape validation (write-only — reads tolerate unexpected fields) ──
-// Schemas imported from @/lib/db/shapes/json-schemas as centralized schemas.
+// Shapes from @/lib/db/shapes (json-schemas; match-write for the match's writes).
 
-const ContributionActiveFieldsSchema = contributionActiveFieldsSchema;
+const ContributionActiveFieldsSchema = contributionActiveFieldsWriteSchema;
 type Entry = Record<string, unknown>;
 
 /**
@@ -441,7 +443,7 @@ export const contributionProfileRouter = createTRPCRouter({
       z.object({
         profileId: z.number(),
         accountId: z.number(),
-        fields: contribAccountActiveFieldsPatchSchema,
+        fields: contributionAccountFieldsPatchWriteSchema,
         unset: z.array(z.string()).optional(),
       }),
     )

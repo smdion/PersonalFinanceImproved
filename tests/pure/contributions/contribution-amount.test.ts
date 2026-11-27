@@ -81,6 +81,34 @@ describe("parseEmployerMatch", () => {
     expect(parseEmployerMatch(null, 50, 0.06)).toEqual({ kind: "none" });
     expect(parseEmployerMatch("none", 50, 0.06)).toEqual({ kind: "none" });
   });
+
+  it("reads a flat match saved below $0 as no match", () => {
+    expect(parseEmployerMatch("dollar_match", -1500, 0)).toEqual({
+      kind: "none",
+    });
+    expect(parseEmployerMatch("fixed_annual", -0.01, 0)).toEqual({
+      kind: "none",
+    });
+  });
+
+  it("reads a percent match saved below 0 as no match, by its rate or its percent", () => {
+    const rate = fractionFromPercent(-50);
+    expect(
+      parseEmployerMatch("percent_of_contribution", 50, 0.06, rate),
+    ).toEqual({ kind: "none" });
+    expect(parseEmployerMatch("percent_of_contribution", -50, 0.06)).toEqual({
+      kind: "none",
+    });
+    // A stored rate is what is read: a leftover value doesn't decide.
+    expect(
+      parseEmployerMatch(
+        "percent_of_contribution",
+        -50,
+        0.06,
+        fractionFromPercent(50),
+      ),
+    ).toMatchObject({ kind: "percent_of_contribution" });
+  });
 });
 
 describe("the match figure a form shows and stores", () => {

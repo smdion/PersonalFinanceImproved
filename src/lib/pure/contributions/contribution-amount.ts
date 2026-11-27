@@ -47,8 +47,8 @@ export type EmployerMatch =
     }
   | { readonly kind: "flat"; readonly perYear: number };
 
-/** A row's match terms: its rate (else its whole percent value), the cap of
- *  pay a fraction (0: no cap). An unset type (null) is no match. */
+/** A row's match terms: its rate (else its whole percent), the cap of pay a
+ *  fraction (0: no cap). No type, or a rate or dollars below 0: no match. */
 export function parseEmployerMatch(
   storedType: EmployerMatchType | null,
   value: number,
@@ -56,18 +56,21 @@ export function parseEmployerMatch(
   rate: Fraction | null = null,
 ): EmployerMatch {
   const type = storedType ?? "none";
+  const percentRate = rate ?? fractionFromPercent(value);
   switch (type) {
     case "none":
       return { kind: "none" };
     case "percent_of_contribution":
-      return {
-        kind: "percent_of_contribution",
-        rate: rate ?? fractionFromPercent(value),
-        capOfPay: storedCeiling(maxMatchPercent),
-      };
+      return percentRate < 0
+        ? { kind: "none" }
+        : {
+            kind: "percent_of_contribution",
+            rate: percentRate,
+            capOfPay: storedCeiling(maxMatchPercent),
+          };
     case "dollar_match":
     case "fixed_annual":
-      return { kind: "flat", perYear: value };
+      return value < 0 ? { kind: "none" } : { kind: "flat", perYear: value };
     default:
       return assertNever(type);
   }
