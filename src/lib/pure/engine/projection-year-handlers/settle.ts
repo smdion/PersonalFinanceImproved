@@ -68,9 +68,9 @@ export function settle(
   refreshViews(ctx, state);
 }
 
-/** Each category side with account parts refreshed from them, then the tax
- *  buckets from the categories, so each track is the sum of the cents below
- *  it. */
+/** Each category side refreshed from its account parts ($0 with none), then
+ *  the tax buckets from the categories, so each track is the sum of the
+ *  cents below it. */
 export function refreshViews(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
@@ -79,7 +79,7 @@ export function refreshViews(
   Object.assign(state.balances, taxBucketsOf(state.accountBalance));
 }
 
-/** A category side with parts, and its parts' keys in the parts' order. */
+/** A category side, and its parts' keys in the parts' order (none: $0). */
 type PartSlice = {
   category: AccountCategory;
   side: CategorySide;
@@ -91,8 +91,9 @@ const SIDE_WRITES: Record<
   (target: AccountBalance, value: number) => void
 > = { traditional: setTraditional, roth: setRoth, balance: setBalance };
 
-/** Each run's sides with parts, in the categories' order, built once from
- *  its parts (fixed for the run) rather than at every settled point. */
+/** Each run's category sides with their parts, in the categories' order,
+ *  built once from its parts (fixed for the run) rather than at every
+ *  settled point. */
 const partSlicesOf = new WeakMap<object, PartSlice[]>();
 
 function partSlices(ctx: ProjectionContext): PartSlice[] {
@@ -106,10 +107,12 @@ function partSlices(ctx: ProjectionContext): PartSlice[] {
   }
   const slices: PartSlice[] = [];
   for (const category of getAllCategories())
-    for (const side of ["traditional", "roth", "balance"] as const) {
-      const keys = keysBySlice.get(sliceKey(category, side));
-      if (keys) slices.push({ category, side, keys });
-    }
+    for (const side of ["traditional", "roth", "balance"] as const)
+      slices.push({
+        category,
+        side,
+        keys: keysBySlice.get(sliceKey(category, side)) ?? [],
+      });
   partSlicesOf.set(ctx.indAccounts, slices);
   return slices;
 }
@@ -121,9 +124,9 @@ function sumOf(keys: readonly string[], byPart: ReadonlyMap<string, number>) {
   return sum;
 }
 
-/** Each category side with parts set to their balances' sum, and a
+/** Each category side set to its parts' balances summed, and a
  *  basis-tracking category's basis to theirs, to the cent; a side with no
- *  part keeps its money. */
+ *  part holds $0. */
 function slicesFromParts(ctx: ProjectionContext, state: ProjectionLoopState) {
   for (const { category, side, keys } of partSlices(ctx)) {
     const balance = state.accountBalance[category];

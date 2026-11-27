@@ -226,7 +226,7 @@ describe("settle", () => {
     expect(drifted).toEqual([]);
   });
 
-  it("refreshViews: a slice with parts equals the rounded sum of its parts, basis included; a slice with none is untouched", () => {
+  it("refreshViews: a slice with parts equals the rounded sum of its parts, basis included; a slice with none holds $0", () => {
     const owner = {
       ownerName: "Alice",
       ownerPersonId: 1,
@@ -292,10 +292,7 @@ describe("settle", () => {
       balance: 30,
       basis: 9.01,
     });
-    expect(accountBalance.ira).toMatchObject({
-      traditional: 1234.5600000001,
-      roth: 0,
-    });
+    expect(accountBalance.ira).toMatchObject({ traditional: 0, roth: 0 });
     expect(balances.afterTax).toBe(30);
     expect(balances.afterTaxBasis).toBe(9.01);
   });
