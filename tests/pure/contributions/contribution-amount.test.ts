@@ -91,12 +91,16 @@ describe("parseEmployerMatch", () => {
     });
   });
 
-  it("reads a percent match saved below 0 as no match, by its rate or its percent", () => {
+  it("reads a percent match saved below 0 as no match, by its rate, its percent or its ceiling", () => {
     const rate = fractionFromPercent(-50);
     expect(
       parseEmployerMatch("percent_of_contribution", 50, 0.06, rate),
     ).toEqual({ kind: "none" });
     expect(parseEmployerMatch("percent_of_contribution", -50, 0.06)).toEqual({
+      kind: "none",
+    });
+    // A ceiling below 0 is no match too, never an uncapped one.
+    expect(parseEmployerMatch("percent_of_contribution", 50, -0.06)).toEqual({
       kind: "none",
     });
     // A stored rate is what is read: a leftover value doesn't decide.

@@ -48,7 +48,7 @@ export type EmployerMatch =
   | { readonly kind: "flat"; readonly perYear: number };
 
 /** A row's match terms: its rate (else its whole percent), the cap of pay a
- *  fraction (0: no cap). No type, or a rate or dollars below 0: no match. */
+ *  fraction (0: no cap). No type, or a rate, dollars or cap below 0: none. */
 export function parseEmployerMatch(
   storedType: EmployerMatchType | null,
   value: number,
@@ -61,7 +61,7 @@ export function parseEmployerMatch(
     case "none":
       return { kind: "none" };
     case "percent_of_contribution":
-      return percentRate < 0
+      return percentRate < 0 || maxMatchPercent < 0
         ? { kind: "none" }
         : {
             kind: "percent_of_contribution",

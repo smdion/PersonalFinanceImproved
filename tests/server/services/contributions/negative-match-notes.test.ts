@@ -22,6 +22,9 @@ describe("an employer match saved below 0", () => {
     expect(hasNegativeMatch({ ...terms, employerMatchRate: "-0.5" })).toBe(
       true,
     );
+    expect(hasNegativeMatch({ ...terms, employerMaxMatchPct: "-0.06" })).toBe(
+      true,
+    );
     expect(
       hasNegativeMatch({
         ...terms,
