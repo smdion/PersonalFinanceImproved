@@ -5,7 +5,7 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import type { RothSplitSide } from "@/lib/config/tax-treatment-buckets";
 
 /**
- * A one-time dollar-amount injection or withdrawal in a specific year.
+ * A one-time dollar amount added in a specific year (above $0: lumpSumSchema).
  * NOT sticky-forward — only applied in the exact override year.
  * Bypasses IRS contribution limits (models rollovers, inheritances, etc.).
  */
