@@ -4,7 +4,10 @@ import type {
   TaxBuckets,
 } from "../../accounts/account-balances.types";
 import type { AccountBalance } from "../../../config/account-types.types";
-import { getAllCategories } from "../../../config/account-types";
+import {
+  getAllCategories,
+  type AccountCategory,
+} from "../../../config/account-types";
 import {
   emptyTaxBucketMap,
   taxTypeOnSide,
@@ -16,8 +19,8 @@ import {
   setRoth,
   setTraditional,
 } from "../../accounts/account-balance";
-import type { CategorySide } from "../../accounts/category-side";
-import { sliceKey, sumBySlice } from "../category-slices";
+import { categorySide, type CategorySide } from "../../accounts/category-side";
+import { sliceKey } from "../category-slices";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /** A flow's end, where every track (tax buckets, categories, account parts
@@ -76,26 +79,56 @@ export function refreshViews(
   Object.assign(state.balances, taxBucketsOf(state.accountBalance));
 }
 
+/** A category side with parts, and its parts' keys in the parts' order. */
+type PartSlice = {
+  category: AccountCategory;
+  side: CategorySide;
+  keys: string[];
+};
+
+const SIDE_WRITES: Record<
+  CategorySide,
+  (target: AccountBalance, value: number) => void
+> = { traditional: setTraditional, roth: setRoth, balance: setBalance };
+
+/** Each run's sides with parts, in the categories' order, built once from
+ *  its parts (fixed for the run) rather than at every settled point. */
+const partSlicesOf = new WeakMap<object, PartSlice[]>();
+
+function partSlices(ctx: ProjectionContext): PartSlice[] {
+  const built = partSlicesOf.get(ctx.indAccounts);
+  if (built) return built;
+  const keysBySlice = new Map<string, string[]>();
+  for (const part of ctx.indAccounts) {
+    const side = categorySide(part.category, part.taxType);
+    const keys = keysBySlice.get(sliceKey(part.category, side)) ?? [];
+    keysBySlice.set(sliceKey(part.category, side), [...keys, ctx.indKey(part)]);
+  }
+  const slices: PartSlice[] = [];
+  for (const category of getAllCategories())
+    for (const side of ["traditional", "roth", "balance"] as const) {
+      const keys = keysBySlice.get(sliceKey(category, side));
+      if (keys) slices.push({ category, side, keys });
+    }
+  partSlicesOf.set(ctx.indAccounts, slices);
+  return slices;
+}
+
+/** The parts' amounts in `byPart` summed in the parts' order (`sumBySlice`). */
+function sumOf(keys: readonly string[], byPart: ReadonlyMap<string, number>) {
+  let sum = 0;
+  for (const key of keys) sum += byPart.get(key) ?? 0;
+  return sum;
+}
+
 /** Each category side with parts set to their balances' sum, and a
  *  basis-tracking category's basis to theirs, to the cent; a side with no
  *  part keeps its money. */
 function slicesFromParts(ctx: ProjectionContext, state: ProjectionLoopState) {
-  const { indAccounts: parts, indKey: partKey } = ctx;
-  const money = sumBySlice(parts, partKey, state.indBalance);
-  const basis = sumBySlice(parts, partKey, state.brokBasis);
-  for (const category of getAllCategories()) {
+  for (const { category, side, keys } of partSlices(ctx)) {
     const balance = state.accountBalance[category];
-    const refresh = (
-      side: CategorySide,
-      sums: ReadonlyMap<string, number>,
-      write: (target: AccountBalance, value: number) => void,
-    ) => {
-      const sum = sums.get(sliceKey(category, side));
-      if (sum !== undefined) write(balance, roundToCents(sum));
-    };
-    refresh("traditional", money, setTraditional);
-    refresh("roth", money, setRoth);
-    refresh("balance", money, setBalance);
-    refresh("balance", basis, setBasis);
+    SIDE_WRITES[side](balance, roundToCents(sumOf(keys, state.indBalance)));
+    if (side === "balance")
+      setBasis(balance, roundToCents(sumOf(keys, state.brokBasis)));
   }
 }

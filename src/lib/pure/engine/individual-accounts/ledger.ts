@@ -60,7 +60,7 @@ export function specKeyOf(spec: { contributionAccountId: number }): string {
 
 /**
  * Apply growth to individual account balances.
- * Mutates `indBalance` in place. Returns per-account growth amounts.
+ * Lands each grown part in `landed` (`indBalance`). Returns per-account growth.
  */
 export function applyIndividualGrowth(
   indAccounts: IndividualAccountInput[],
@@ -68,16 +68,16 @@ export function applyIndividualGrowth(
   indBalance: Map<string, number>,
   effectiveReturn: number,
   clampNegative: boolean = false,
+  landed: Map<string, number> = indBalance,
 ): Map<string, number> {
   const growthMap = new Map<string, number>();
   for (const ia of indAccounts) {
     const k = indKey(ia);
-    const prevBalance = clampNegative
-      ? Math.max(0, indBalance.get(k) ?? 0)
-      : (indBalance.get(k) ?? 0);
+    const held = (landed.has(k) ? landed : indBalance).get(k) ?? 0;
+    const prevBalance = clampNegative ? Math.max(0, held) : held;
     const growth = roundToCents(prevBalance * effectiveReturn);
     growthMap.set(k, growth);
-    indBalance.set(k, roundToCents(prevBalance + growth));
+    landed.set(k, roundToCents(prevBalance + growth));
   }
   return growthMap;
 }
