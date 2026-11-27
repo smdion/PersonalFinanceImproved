@@ -4032,7 +4032,7 @@
   },
   "src/lib/pure/engine/projection-year-handlers/contribution-credits.ts": {
     "ratchet/no-abbreviation": {
-      "count": 17
+      "count": 15
     },
     "ratchet/no-unregistered-fallback": {
       "count": 2

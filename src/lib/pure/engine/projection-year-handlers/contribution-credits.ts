@@ -1,16 +1,7 @@
 import { followInflows } from "../brokerage-basis";
 import type { AccumulationSlot } from "../types/routing";
 import { roundToCents, sumBy, safeDivide } from "../../../utils/math";
-import {
-  getAccountTypeConfig,
-  isOverflowTarget,
-} from "../../../config/account-types";
-import {
-  addTraditional,
-  addRoth,
-  addBalance,
-  addBasis,
-} from "../../accounts/account-balance";
+import { isOverflowTarget } from "../../../config/account-types";
 import { OVERFLOW_TOLERANCE } from "../../../constants";
 import type { resolveAccumulationConfig } from "../override-resolution";
 import { distributeContributions } from "../individual-accounts/contributions";
@@ -85,59 +76,16 @@ export function yearContributionTotals(
   };
 }
 
-/** The slots, the brokerage ramp and the lump sums credited to the balances. */
-export function creditYearContributions(
-  slots: AccumulationSlot[],
-  balances: ProjectionLoopState["balances"],
-  accountBalance: ProjectionLoopState["accountBalance"],
-  rampAmount: number,
-  OVERFLOW_CATEGORY: ProjectionContext["OVERFLOW_CATEGORY"],
-  indAccounts: ProjectionContext["indAccounts"],
-  indKey: ProjectionContext["indKey"],
-  indBalance: ProjectionLoopState["indBalance"],
-  brokBasis: ProjectionLoopState["brokBasis"],
+/** The year's lump sums (one-time injections, not subject to IRS limits)
+ *  credited to their account parts: cash in, so new basis in a brokerage
+ *  account. The contributions' parts follow in distributeYearContributions. */
+export function creditYearLumpSums(
   config: ReturnType<typeof resolveAccumulationConfig>,
   ctx: ProjectionContext,
   state: ProjectionLoopState,
 ) {
-  // Buckets and categories here; the parts in distributeYearContributions.
-  for (const slot of slots) {
-    const bs = getAccountTypeConfig(slot.category).balanceStructure;
-    if (bs === "roth_traditional") {
-      balances.preTax += slot.traditionalContrib + slot.employerMatch;
-      balances.taxFree += slot.rothContrib;
-      addTraditional(
-        accountBalance[slot.category],
-        slot.traditionalContrib + slot.employerMatch,
-      );
-      addRoth(accountBalance[slot.category], slot.rothContrib);
-    } else if (bs === "single_bucket") {
-      balances.hsa += slot.employeeContrib + slot.employerMatch;
-      addBalance(
-        accountBalance[slot.category],
-        slot.employeeContrib + slot.employerMatch,
-      );
-    } else {
-      // basis_tracking (brokerage) -- track both balance and cost basis
-      const brokerageContribution = slot.employeeContrib + slot.employerMatch;
-      balances.afterTax += brokerageContribution;
-      balances.afterTaxBasis += brokerageContribution;
-      addBalance(accountBalance[slot.category], brokerageContribution);
-      addBasis(accountBalance[slot.category], brokerageContribution);
-    }
-  }
-
-  // The brokerage contribution ramp, sized with the year's contributions.
-  if (rampAmount > 0) {
-    balances.afterTax += rampAmount;
-    balances.afterTaxBasis += rampAmount;
-    addBalance(accountBalance[OVERFLOW_CATEGORY], rampAmount);
-    addBasis(accountBalance[OVERFLOW_CATEGORY], rampAmount);
-  }
-
-  // Apply lump sums (one-time injections, NOT subject to IRS limits)
-  // Lump sums are cash in: new basis in the brokerage account they land in.
-  followInflows(indAccounts, indKey, indBalance, brokBasis, () =>
+  const { indAccounts, indKey } = ctx;
+  followInflows(indAccounts, indKey, state.indBalance, state.brokBasis, () =>
     applyLumpSums(config.lumpSums, ctx, state),
   );
 }

@@ -8,7 +8,7 @@ import type {
 import { brokerageGoalDraws, yearGapDraw } from "./goal-draws";
 import type { sizeYearContributions } from "./year-contributions";
 import {
-  creditYearContributions,
+  creditYearLumpSums,
   distributeYearContributions,
 } from "./contribution-credits";
 import { recordIrmaaTaxYear } from "./irmaa-lookback";
@@ -36,12 +36,9 @@ export function runWorkingYearFlows(
     indKey: individualKey,
     indParentCat: individualParentCategory,
     firstYearFraction,
-    OVERFLOW_CATEGORY,
   } = ctx;
   const { currentSalary, limitGrowthRate } = ctx.input;
   const {
-    balances,
-    accountBalance,
     activeEmployerMatchByParentCat: activeEmployerMatchByParentCategory,
     indBalance: individualBalance,
     indBasis: individualBasis,
@@ -53,20 +50,7 @@ export function runWorkingYearFlows(
   const { overflowToBrokerage, contributionSpecs, gapNeed, routeWarnings } =
     sized;
 
-  creditYearContributions(
-    slots,
-    balances,
-    accountBalance,
-    rampAmount,
-    OVERFLOW_CATEGORY,
-    individualAccounts,
-    individualKey,
-    individualBalance,
-    brokerageBasis,
-    config,
-    ctx,
-    state,
-  );
+  creditYearLumpSums(config, ctx, state);
   const {
     indContributions: individualContributions,
     indMatch: individualMatch,

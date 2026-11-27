@@ -29,6 +29,7 @@ const TAX_BUCKETS = Object.keys(emptyTaxBucketMap());
 /** Settled points whose flow moves only the parts: the refresh there gives
  *  B its parts' sum, so D2 and D3 sampled before it measure the flow itself. */
 const PARTS_ONLY = new Set([
+  "accumulation.contributions",
   "accumulation.gapDraw",
   "accumulation.growth",
   "decumulation.growth",
@@ -73,7 +74,7 @@ const proof = {
   trial: 0,
   /** The class every run started now takes (the synthetic-category run). */
   forcedClass: undefined as RunClass | undefined,
-  /** Writes $0.50 onto one part after the year's contributions. */
+  /** Writes $0.50 onto one part after a retirement year's Portfolio contributions. */
   damagePart: false,
   scope: emptyTally(),
   total: emptyTally(),
@@ -274,14 +275,19 @@ export function settleModule(m: any) {
   };
 }
 
-/** `distributeYearContributions`: the damage case writes onto one part after
- *  the year's contributions, before their settled point. */
-export function contributionCreditsModule(m: any) {
+/** `decumulationPortfolioContributions` (reported only, no flow writes
+ *  there): the damage case writes onto one part after it, before its
+ *  settled point. */
+export function portfolioContributionsModule(m: any) {
   return {
     ...m,
-    distributeYearContributions: (...args: any[]) => {
-      const out = m.distributeYearContributions(...args);
-      const run = ownMap(args[4]);
+    decumulationPortfolioContributions: (
+      ctx: any,
+      state: any,
+      ...rest: any[]
+    ) => {
+      const out = m.decumulationPortfolioContributions(ctx, state, ...rest);
+      const run = own(state);
       if (run && proof.damagePart) {
         const first = [...sliceView(run)].find(([, e]) => e.parts > 0)?.[0];
         const key = first && run.sliceKeys.get(first)![0]!;

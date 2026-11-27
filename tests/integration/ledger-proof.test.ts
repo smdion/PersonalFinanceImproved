@@ -58,9 +58,9 @@ vi.mock("@/lib/pure/engine/projection-year-handlers/settle", async (original) =>
   (await import("./ledger-proof/counters")).settleModule(await original()),
 );
 vi.mock(
-  "@/lib/pure/engine/projection-year-handlers/contribution-credits",
+  "@/lib/pure/engine/projection-year-handlers/portfolio-contributions",
   async (original) =>
-    (await import("./ledger-proof/counters")).contributionCreditsModule(
+    (await import("./ledger-proof/counters")).portfolioContributionsModule(
       await original(),
     ),
 );
@@ -354,7 +354,7 @@ describe("the synthetic second overflow target", () => {
 });
 
 describe("the proof can fail", () => {
-  it("a part $0.50 off its category after contributions is a D2 hit, named by its site", async () => {
+  it("a part $0.50 off its category after a retirement year's Portfolio contributions is a D2 hit, named by its site", async () => {
     const control = await projectAll([twoEarners()]);
     expect(failures(control)).toEqual([]);
     const damaged = await measure(() => calculateProjection(twoEarners()), {
@@ -363,7 +363,7 @@ describe("the proof can fail", () => {
     const d2 = failures(damaged).filter((f) => f.startsWith("d2 "));
     expect(d2).toHaveLength(1);
     expect(d2[0]).toMatch(
-      /^d2 \[held\] \d+ hits, first y-index 0 accumulation\.contributions 401k:traditional/,
+      /^d2 \[held\] \d+ hits, first y-index \d+ decumulation\.portfolioContributions 401k:traditional/,
     );
   });
 

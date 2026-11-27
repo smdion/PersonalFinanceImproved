@@ -117,51 +117,30 @@ function apply(
 // ---------------------------------------------------------------------------
 
 describe("applyLumpSums", () => {
-  it("adds traditional 401k lump sum to preTax bucket", () => {
-    const state = makeState();
-    const ls: LumpSum[] = [
-      { amount: 50000, targetAccount: "401k", taxType: "traditional" },
-    ];
-    apply(ls, [], state);
-    expect(state.balances.preTax).toBe(50000);
-    expect(
-      (state.accountBalance["401k"] as { traditional: number }).traditional,
-    ).toBe(50000);
-  });
-
-  it("adds Roth 401k lump sum to taxFree bucket", () => {
-    const state = makeState();
-    const ls: LumpSum[] = [
-      { amount: 30000, targetAccount: "401k", taxType: "roth" },
-    ];
-    apply(ls, [], state);
-    expect(state.balances.taxFree).toBe(30000);
-    expect((state.accountBalance["401k"] as { roth: number }).roth).toBe(30000);
-  });
-
-  it("adds HSA lump sum to hsa bucket (single_bucket)", () => {
-    const state = makeState();
-    const ls: LumpSum[] = [{ amount: 5000, targetAccount: "hsa" }];
-    apply(ls, [], state);
-    expect(state.balances.hsa).toBe(5000);
-    expect((state.accountBalance["hsa"] as { balance: number }).balance).toBe(
-      5000,
-    );
-  });
-
-  it("adds brokerage lump sum to afterTax bucket with basis (basis_tracking)", () => {
-    const state = makeState();
-    const ls: LumpSum[] = [{ amount: 20000, targetAccount: "brokerage" }];
-    apply(ls, [], state);
-    expect(state.balances.afterTax).toBe(20000);
-    expect(state.balances.afterTaxBasis).toBe(20000);
-    const brok = state.accountBalance["brokerage"] as {
-      balance: number;
-      basis: number;
-    };
-    expect(brok.balance).toBe(20000);
-    expect(brok.basis).toBe(20000);
-  });
+  it.each([
+    ["a Traditional 401(k)", "401k", "preTax", "traditional", 50000],
+    ["a Roth 401(k)", "401k", "taxFree", "roth", 30000],
+    ["an HSA", "hsa", "hsa", undefined, 5000],
+    ["a brokerage", "brokerage", "afterTax", undefined, 20000],
+  ] as const)(
+    "%s lump sum lands on that side's part; the buckets and categories are the settled point's",
+    (_, category, taxType, side, amount) => {
+      const held = part("account", category, taxType, 1);
+      const other = part("another account", "ira", "preTax", 2);
+      const indBalance = new Map([
+        [indKey(held), 0],
+        [indKey(other), 0],
+      ]);
+      const state = makeState({ indBalance });
+      apply(
+        [{ amount, targetAccount: category, taxType: side }],
+        [held, other],
+        state,
+      );
+      expect(indBalance.get(indKey(held))).toBe(amount);
+      expect(state.balances).toEqual(makeState().balances);
+    },
+  );
 
   it("updates indBal when some part is held and its target is that part", () => {
     const indAccounts = [part("myBrokerage", "brokerage", "afterTax", 1)];
