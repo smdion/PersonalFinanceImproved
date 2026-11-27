@@ -14,28 +14,37 @@ export function convertAcrossCategories(
   conversion: number,
   nonRetirement: NonRetirementExclusion | undefined,
 ): Map<AccountCategory, number> {
-  const tradAccounts: { category: AccountCategory; balance: number }[] = [];
+  const tradAccounts: {
+    category: AccountCategory;
+    balance: number;
+    traditional: number;
+    roth: number;
+  }[] = [];
   for (const category of getAllCategories()) {
     const balance = accountBalance[category];
     if (balance.structure !== "roth_traditional") continue;
     const weight = nonRetirement
       ? Math.max(0, balance.traditional - nonRetirement.trad[category])
       : balance.traditional;
-    if (weight > 0) tradAccounts.push({ category, balance: weight });
+    if (weight > 0)
+      tradAccounts.push({
+        category,
+        balance: weight,
+        traditional: balance.traditional,
+        roth: balance.roth,
+      });
   }
   const totalTradBalance = tradAccounts.reduce((s, a) => s + a.balance, 0);
   const categoryShare = new Map<AccountCategory, number>();
   if (totalTradBalance > 0) {
     let distributed = 0;
     for (const account of tradAccounts) {
-      const balance = accountBalance[account.category];
-      if (balance.structure !== "roth_traditional") continue;
       const share = roundToCents(
         conversion * (account.balance / totalTradBalance),
       );
-      const capped = Math.min(share, balance.traditional);
-      setTraditional(balance, roundToCents(balance.traditional - capped));
-      setRoth(balance, roundToCents(balance.roth + capped));
+      const capped = Math.min(share, account.traditional);
+      account.traditional = roundToCents(account.traditional - capped);
+      account.roth = roundToCents(account.roth + capped);
       categoryShare.set(
         account.category,
         (categoryShare.get(account.category) ?? 0) + capped,
@@ -46,19 +55,17 @@ export function convertAcrossCategories(
     if (distributed < conversion - 0.01 && tradAccounts.length > 0) {
       const remainder = roundToCents(conversion - distributed);
       const firstAccount = tradAccounts[0]!;
-      const firstBalance = accountBalance[firstAccount.category];
-      if (firstBalance.structure === "roth_traditional") {
-        const extra = Math.min(remainder, firstBalance.traditional);
-        setTraditional(
-          firstBalance,
-          roundToCents(firstBalance.traditional - extra),
-        );
-        setRoth(firstBalance, roundToCents(firstBalance.roth + extra));
-        categoryShare.set(
-          firstAccount.category,
-          (categoryShare.get(firstAccount.category) ?? 0) + extra,
-        );
-      }
+      const extra = Math.min(remainder, firstAccount.traditional);
+      firstAccount.traditional = roundToCents(firstAccount.traditional - extra);
+      firstAccount.roth = roundToCents(firstAccount.roth + extra);
+      categoryShare.set(
+        firstAccount.category,
+        (categoryShare.get(firstAccount.category) ?? 0) + extra,
+      );
+    }
+    for (const account of tradAccounts) {
+      setTraditional(accountBalance[account.category], account.traditional);
+      setRoth(accountBalance[account.category], account.roth);
     }
   }
   return categoryShare;
