@@ -5,7 +5,7 @@
  * its parts, except at a point whose flow moves only the parts; D3: a
  * category's basis against its parts'), each year-end correction writes
  * nothing (the reconcile, the surplus handoff, the basis sync), every draw
- * and every conversion's debit and tax land on parts, no money sits in a
+ * lands on parts, no part is ever below $0, no money sits in a
  * slice or basis category without parts, every run holds a ledger, and the
  * overwrite of A at `settle` stays within a cent or two a bucket. The
  * counters are `ledger-proof/counters.ts`,
@@ -365,6 +365,15 @@ describe("the proof can fail", () => {
     expect(d2[0]).toMatch(
       /^d2 \[held\] \d+ hits, first y-index \d+ decumulation\.portfolioContributions 401k:traditional/,
     );
+  });
+
+  it("a part set to −$1 in the opening state is a neg.part hit at the seed", async () => {
+    const damaged = await measure(() => calculateProjection(twoEarners()), {
+      negativePart: true,
+    });
+    const negative = failures(damaged).filter((f) => f.startsWith("neg.part "));
+    expect(negative).toHaveLength(1);
+    expect(negative[0]).toMatch(/^neg\.part \[held\] \d+ hits, first .*seed/);
   });
 
   it("every counter was exercised, so no wrapper is left unused", () => {

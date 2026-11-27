@@ -76,6 +76,8 @@ const proof = {
   forcedClass: undefined as RunClass | undefined,
   /** Writes $0.50 onto one part after a retirement year's Portfolio contributions. */
   damagePart: false,
+  /** Sets one part to −$1 in the opening state, before the seed is sampled. */
+  negativePart: false,
   scope: emptyTally(),
   total: emptyTally(),
 };
@@ -208,7 +210,11 @@ function sample(
   }
   if (point === "seed") observe(run, "seed.d1", basis, `${where} basis`, CENT);
   else observe(run, "ra.overwrite", basis, `${where} basis`, 0.02);
-  if (!ledger(run) || PARTS_ONLY.has(point)) return;
+  if (!ledger(run)) return;
+  // No part is ever below $0: the opening state covers one saved there.
+  for (const [key, v] of run.state.indBalance as Map<string, number>)
+    observe(run, "neg.part", Math.min(0, v), `${where} ${key}`);
+  if (PARTS_ONLY.has(point)) return;
   for (const [slice, e] of slices) {
     if (e.parts === 0) {
       observe(run, "d2.noPart", e.B, `${where} ${slice}`);
@@ -257,6 +263,8 @@ export function stateModule(
       proof.current = run;
       const state = m.buildProjectionState(input, ctx);
       run.state = state;
+      const [first] = state.indBalance.keys();
+      if (proof.negativePart && first) state.indBalance.set(first, -1);
       sample(run, "seed", taxBucketsOf);
       return state;
     },
@@ -572,8 +580,8 @@ export function withdrawalsModule(m: any) {
   };
 }
 
-/** The conversion's debit and its tax, each against what the parts gave
- *  (and the remainder past the capped shares, and a tax no part paid). */
+/** The conversion's debit: the remainder past the capped shares. A debit or
+ *  tax from parts holding nothing throws (`debitByBalance`). */
 export function conversionModule(m: any) {
   const retirementParts = (parts: any, category: string) =>
     parts.accounts.filter(
@@ -586,13 +594,11 @@ export function conversionModule(m: any) {
       const run = ownMap(parts.balances);
       if (!run) return m.debitConvertedParts(parts, categoryShare);
       const where = at(run, "conversion");
-      const traditional = new Map<string, any[]>();
       for (const [category, amount] of categoryShare) {
         if (amount <= 0) continue;
         const list = retirementParts(parts, category).filter((p: any) =>
           isPreTaxType(p.taxType),
         );
-        traditional.set(category, list);
         const held = list.map((p: any) =>
           Math.max(0, parts.balances.get(parts.keyOf(p)) ?? 0),
         );
@@ -612,48 +618,7 @@ export function conversionModule(m: any) {
           );
         }
       }
-      const keys = [...traditional.values()].flat().map((p) => parts.keyOf(p));
-      const before = snapshot(parts.balances, keys);
-      const out = m.debitConvertedParts(parts, categoryShare);
-      for (const [category, list] of traditional) {
-        const placed = list.reduce(
-          (s: number, p: any) =>
-            s +
-            (before.get(parts.keyOf(p))! -
-              (parts.balances.get(parts.keyOf(p)) ?? 0)),
-          0,
-        );
-        observe(
-          run,
-          "unplaced.conv",
-          Math.max(0, categoryShare.get(category)! - placed),
-          `${where} ${category}`,
-        );
-      }
-      return out;
-    },
-    payConversionTaxFromParts: (parts: any, category: string, tax: number) => {
-      const run = ownMap(parts.balances);
-      if (!run) return m.payConversionTaxFromParts(parts, category, tax);
-      const list = retirementParts(parts, category);
-      const before = snapshot(
-        parts.balances,
-        list.map((p: any) => parts.keyOf(p)),
-      );
-      const out = m.payConversionTaxFromParts(parts, category, tax);
-      const placed = [...before].reduce(
-        (s, [k, v]) => s + v - (parts.balances.get(k) ?? 0),
-        0,
-      );
-      const where = `${at(run, "conversion tax")} ${category} (tax ${tax})`;
-      observe(run, "unplaced.convTax", Math.max(0, tax - placed), where);
-      observe(
-        run,
-        "conv.taxSkip",
-        tax > CENT && placed < CENT ? tax : 0,
-        where,
-      );
-      return out;
+      return m.debitConvertedParts(parts, categoryShare);
     },
   };
 }
@@ -673,10 +638,8 @@ export const STOPS = [
   "sync.writeA",
   "sync.writeB",
   "unplaced.draw",
-  "unplaced.conv",
-  "unplaced.convTax",
-  "conv.taxSkip",
   "conv.mopUp",
+  "neg.part",
 ] as const;
 /** Counters judged by their bound: `over` is the stop. */
 export const BOUNDED = ["ra.overwrite"] as const;
@@ -686,16 +649,22 @@ const BO1_JUDGED = new Set<string>(["d2", "d3", "d2.noPart", "d3.noPart"]);
 /** Runs `fn` with fresh scope counters and returns them. */
 export async function measure(
   fn: () => unknown,
-  options: { forcedClass?: RunClass; damagePart?: boolean } = {},
+  options: {
+    forcedClass?: RunClass;
+    damagePart?: boolean;
+    negativePart?: boolean;
+  } = {},
 ): Promise<Tally> {
   proof.scope = emptyTally();
   proof.forcedClass = options.forcedClass;
   proof.damagePart = options.damagePart ?? false;
+  proof.negativePart = options.negativePart ?? false;
   try {
     await fn();
   } finally {
     proof.forcedClass = undefined;
     proof.damagePart = false;
+    proof.negativePart = false;
     proof.current = undefined;
   }
   return proof.scope;

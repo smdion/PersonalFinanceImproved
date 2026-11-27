@@ -8,6 +8,7 @@ import type {
 } from "./types/projection-result";
 import { roundToCents } from "../../utils/math";
 import { validateEngineInputs } from "./input-validation";
+import { coverNegativeParts, type UncoveredPart } from "./opening-cover";
 import { resolveDecumulationConfig } from "./override-resolution";
 import { buildProjectionContext } from "./projection-year-handlers/context";
 import { resolveLumpSums } from "./lump-sum-targets";
@@ -20,9 +21,21 @@ import { runDecumulationYear } from "./projection-year-handlers/decumulation-yea
 // Main engine
 // ---------------------------------------------------------------------------
 
-export function calculateProjection(input: ProjectionInput): ProjectionResult {
+/** The note for an account's money below $0 that its own kind of account
+ *  couldn't cover. */
+function uncoveredPartNote({ name, amount }: UncoveredPart): string {
+  return `${name} is saved below $0, and the other accounts of its type in the same Retirement or Portfolio group can't cover $${amount.toFixed(2)} of it, so the projection counts that $${amount.toFixed(2)} as $0.`;
+}
+
+export function calculateProjection(
+  givenInput: ProjectionInput,
+): ProjectionResult {
   const warnings: string[] = [];
-  const validated = validateEngineInputs(input, warnings);
+  const validated = validateEngineInputs(givenInput, warnings);
+  // Every reader of the opening money reads it covered (no part below $0).
+  const opening = coverNegativeParts(givenInput.individualAccounts);
+  const input = { ...givenInput, individualAccounts: opening.parts };
+  warnings.push(...opening.uncovered.map(uncoveredPartNote));
 
   // Warn if percentage mode is selected but no withdrawal splits are configured
   if (
