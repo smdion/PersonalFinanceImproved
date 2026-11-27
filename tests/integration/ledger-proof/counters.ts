@@ -34,6 +34,7 @@ const PARTS_ONLY = new Set([
   "decumulation.growth",
   "decumulation.qcd",
   "decumulation.conversion",
+  "decumulation.beforeReconcile",
 ]);
 
 export type RunClass = "held" | "synthetic" | "noLedger" | "bo1";

@@ -15,12 +15,6 @@ import {
   isOverflowTarget,
   isRetirementMoney,
 } from "../../config/account-types";
-import {
-  setTraditional,
-  setRoth,
-  setBalance,
-  setBasis,
-} from "../accounts/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { inflowShares } from "./individual-accounts/part-weights";
 import { placeWhole } from "@/lib/pure/accounts/place-whole";
@@ -173,13 +167,12 @@ export function trackDepletions(
 // ---------------------------------------------------------------------------
 
 /**
- * Zero out rounding dust when total portfolio is effectively depleted (< $1).
- * Mutates `balances`, `accountBalance`, and `indBalance` in place.
+ * Zero every account part when the total portfolio is effectively depleted
+ * (< $1); the settled point after it gives the categories and buckets.
  * Returns true if dust was cleaned.
  */
 export function cleanupDust(
   balances: TaxBuckets,
-  accountBalance: AccountBalances,
   indAccounts: IndividualAccountInput[],
   indKey: IndKeyFn,
   indBalance: Map<string, number>,
@@ -187,24 +180,6 @@ export function cleanupDust(
   const rawEndBalance =
     balances.preTax + balances.taxFree + balances.hsa + balances.afterTax;
   if (rawEndBalance >= 1) return false;
-
-  balances.preTax = 0;
-  balances.taxFree = 0;
-  balances.hsa = 0;
-  balances.afterTax = 0;
-  balances.afterTaxBasis = 0;
-  for (const cat of getAllCategories()) {
-    const balance = accountBalance[cat];
-    if (balance.structure === "roth_traditional") {
-      setTraditional(balance, 0);
-      setRoth(balance, 0);
-    } else if (balance.structure === "basis_tracking") {
-      setBalance(balance, 0);
-      setBasis(balance, 0);
-    } else {
-      setBalance(balance, 0);
-    }
-  }
   for (const ia of indAccounts) indBalance.set(indKey(ia), 0);
   return true;
 }

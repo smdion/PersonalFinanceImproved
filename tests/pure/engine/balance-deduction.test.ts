@@ -332,7 +332,7 @@ describe("cleanupDust (pins current behavior)", () => {
   const indKey = makeIndKey();
   const accts = [makeIndividualAccount({ name: "IRA", category: "ira" })];
 
-  it("zeroes everything when the buckets total under $1", () => {
+  it("zeroes every account part when the buckets total under $1", () => {
     const balances: TaxBuckets = {
       preTax: 0.4,
       taxFree: 0.3,
@@ -340,21 +340,10 @@ describe("cleanupDust (pins current behavior)", () => {
       afterTax: 0.09,
       afterTaxBasis: 0.05,
     };
-    const { accountBalance } = start();
     const indBal = new Map([[indKey(accts[0]!), 0.4]]);
-    expect(cleanupDust(balances, accountBalance, accts, indKey, indBal)).toBe(
-      true,
-    );
-    expect(balances).toEqual({
-      preTax: 0,
-      taxFree: 0,
-      hsa: 0,
-      afterTax: 0,
-      afterTaxBasis: 0,
-    });
-    // Per-account balances are zeroed from the bucket total alone.
-    expect(accountBalance["401k"]).toMatchObject({ traditional: 0, roth: 0 });
-    expect(accountBalance.brokerage).toMatchObject({ balance: 0, basis: 0 });
+    expect(cleanupDust(balances, accts, indKey, indBal)).toBe(true);
+    // The parts are zeroed from the bucket total alone; the settled point
+    // after it gives the categories and buckets.
     expect(indBal.get(indKey(accts[0]!))).toBe(0);
   });
 
@@ -366,11 +355,8 @@ describe("cleanupDust (pins current behavior)", () => {
       afterTax: 0,
       afterTaxBasis: 0,
     };
-    const { accountBalance } = start();
-    expect(
-      cleanupDust(balances, accountBalance, accts, indKey, new Map()),
-    ).toBe(false);
-    expect(balances.preTax).toBe(0.5);
-    expect(accountBalance["401k"]).toMatchObject({ traditional: 300000 });
+    const indBal = new Map([[indKey(accts[0]!), 0.5]]);
+    expect(cleanupDust(balances, accts, indKey, indBal)).toBe(false);
+    expect(indBal.get(indKey(accts[0]!))).toBe(0.5);
   });
 });

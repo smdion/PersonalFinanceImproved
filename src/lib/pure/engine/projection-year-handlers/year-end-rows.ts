@@ -33,7 +33,7 @@ export function growYearToRows(
     indKey: individualKey,
     indParentCat: individualParentCategory,
   } = ctx;
-  const { balances, accountBalance, spendingState } = state;
+  const { balances, spendingState } = state;
   const {
     indBalance: individualBalance,
     indBasis: individualBasis,
@@ -105,7 +105,6 @@ export function growYearToRows(
     () =>
       cleanupDust(
         balances,
-        accountBalance,
         individualAccounts,
         individualKey,
         individualBalance,
