@@ -18,6 +18,10 @@ import { declareOpeningParts } from "@/lib/pure/engine/opening-state";
 import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { shippedTaxTables } from "../../helpers/tax-data";
+import {
+  conversionParts,
+  settleConversion,
+} from "../fixtures/conversion-parts";
 
 /** No lump sums or other flows reach a slice the parts don't cover. */
 const NO_FLOWS = {
@@ -37,10 +41,15 @@ const NO_FLOWS = {
 // performRothConversion
 // ---------------------------------------------------------------------------
 
+/** A conversion's input; with no `parts` given, one Retirement-parented
+ *  account per bucket's money (`conversionParts`). */
 function makeRothInput(
   overrides: Partial<RothConversionInput> = {},
 ): RothConversionInput {
+  const balances = overrides.balances ?? makeTaxBuckets();
+  const accountBalance = overrides.accountBalance ?? makeAccountBalances();
   return {
+    parts: overrides.parts ?? conversionParts(balances, accountBalance),
     enableRothConversions: true,
     taxBrackets: TEST_BRACKETS,
     taxMultiplier: 1.0,
@@ -52,14 +61,14 @@ function makeRothInput(
     brokerageGainsPortion: 5000,
     filingStatus: "MFJ",
     irmaaBrackets: shippedTaxTables().irmaaBrackets,
-    balances: makeTaxBuckets(),
-    accountBalance: makeAccountBalances(),
     ...overrides,
+    balances,
+    accountBalance,
   };
 }
 
 describe("performRothConversion", () => {
-  it("with no parts, the tax sells brokerage at average cost on the aggregate and the category alike", () => {
+  it("the tax sells the brokerage account at its own cost, and the settled point gives the aggregate and the category that basis", () => {
     // $100,000 held at $150,000 cost (ratio 1.5): each $1 of tax takes $1.50 of basis.
     const balances = makeTaxBuckets({
       afterTax: 100000,
@@ -69,9 +78,9 @@ describe("performRothConversion", () => {
       afterTax: 100000,
       afterTaxBasis: 150000,
     });
-    const tax = performRothConversion(
-      makeRothInput({ balances, accountBalance }),
-    ).rothConversionTaxCost;
+    const input = makeRothInput({ balances, accountBalance });
+    const tax = performRothConversion(input).rothConversionTaxCost;
+    settleConversion(input);
     expect(tax).toBeGreaterThan(0);
     const basis = Math.round((150000 - tax * 1.5) * 100) / 100;
     expect(balances.afterTaxBasis).toBe(basis);
@@ -128,9 +137,9 @@ describe("performRothConversion", () => {
     // preTax balance = 500000 (default), so capped at conversionRoom
     const balances = makeTaxBuckets();
     const accountBalance = makeAccountBalances();
-    const result = performRothConversion(
-      makeRothInput({ balances, accountBalance }),
-    );
+    const input = makeRothInput({ balances, accountBalance });
+    const result = performRothConversion(input);
+    settleConversion(input);
     expect(result.rothConversionAmount).toBeCloseTo(151550, 0);
     expect(result.rothConversionTaxCost).toBeGreaterThan(0);
     // Traditional balance should decrease
@@ -187,9 +196,9 @@ describe("performRothConversion", () => {
       afterTax: 1,
       afterTaxBasis: 0,
     });
-    const result = performRothConversion(
-      makeRothInput({ balances, accountBalance }),
-    );
+    const input = makeRothInput({ balances, accountBalance });
+    const result = performRothConversion(input);
+    settleConversion(input);
     expect(result.rothConversionAmount).toBe(8.37);
     expect(result.rothConversionTaxCost).toBe(1);
     expect(balances.afterTax).toBe(0);
@@ -811,37 +820,14 @@ describe("performRothConversion (nonRetirement scope)", () => {
     expect(result.rothConversionTaxCost).toBe(500);
   });
 
-  it("byte-identical to the prior behavior when nonRetirement (and ind* data) are omitted entirely -- the real call site's actual fallback shape", () => {
-    // decumulation-year.ts always computes nonRetirement and
-    // indAccounts/indBalance/indKey together, gated on the same
-    // ledgerRuns check (see its own comment) -- so the real
-    // "not tracking individual accounts" fallback is ALL of these omitted
-    // together, not nonRetirement alone.
-    const balancesA = makeTaxBuckets();
-    const acctBalA = makeAccountBalances();
-    const balancesB = makeTaxBuckets();
-    const acctBalB = makeAccountBalances();
-    const resultA = performRothConversion(
-      makeRothInput({ balances: balancesA, accountBalance: acctBalA }),
-    );
-    const resultB = performRothConversion(
-      makeRothInput({ balances: balancesB, accountBalance: acctBalB }),
-    );
-    expect(resultA.rothConversionAmount).toBe(resultB.rothConversionAmount);
-    expect(resultA.rothConversionTaxCost).toBe(resultB.rothConversionTaxCost);
-  });
-
-  it("still caps the amount from nonRetirement alone even without indAccts/indBal/indKey -- capping doesn't require per-account debit capability", () => {
+  it("caps the amount by nonRetirement's Traditional exclusion alone", () => {
+    // The parts (conversionParts) hold the 500,000 in one 401(k); the
+    // exclusion's 400,000 leaves 100,000 to convert.
     const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
     const accountBalance = makeAccountBalances({
       preTax: 500000,
       afterTax: 300000,
     });
-    accountBalance["401k"] = {
-      structure: "roth_traditional",
-      traditional: 500000,
-      roth: 0,
-    };
     const result = performRothConversion(
       makeRothInput({
         balances,

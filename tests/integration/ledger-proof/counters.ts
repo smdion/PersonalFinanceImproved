@@ -28,7 +28,12 @@ const round2 = (x: number) => Math.round(x * 100) / 100;
 const TAX_BUCKETS = Object.keys(emptyTaxBucketMap());
 /** Settled points whose flow moves only the parts: the refresh there gives
  *  B its parts' sum, so D2 and D3 sampled before it measure the flow itself. */
-const PARTS_ONLY = new Set(["accumulation.growth", "decumulation.growth"]);
+const PARTS_ONLY = new Set([
+  "accumulation.growth",
+  "decumulation.growth",
+  "decumulation.qcd",
+  "decumulation.conversion",
+]);
 
 export type RunClass = "held" | "synthetic" | "noLedger" | "bo1";
 
@@ -653,21 +658,15 @@ export function conversionModule(m: any) {
       }
       return out;
     },
-    payConversionTaxFromParts: (
-      parts: any,
-      category: string,
-      tax: number,
-      totals: any,
-    ) => {
+    payConversionTaxFromParts: (parts: any, category: string, tax: number) => {
       const run = ownMap(parts.balances);
-      if (!run)
-        return m.payConversionTaxFromParts(parts, category, tax, totals);
+      if (!run) return m.payConversionTaxFromParts(parts, category, tax);
       const list = retirementParts(parts, category);
       const before = snapshot(
         parts.balances,
         list.map((p: any) => parts.keyOf(p)),
       );
-      const out = m.payConversionTaxFromParts(parts, category, tax, totals);
+      const out = m.payConversionTaxFromParts(parts, category, tax);
       const placed = [...before].reduce(
         (s, [k, v]) => s + v - (parts.balances.get(k) ?? 0),
         0,

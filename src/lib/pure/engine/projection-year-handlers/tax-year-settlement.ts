@@ -222,7 +222,7 @@ export function yearRothConversion(
   thisYear: DecumulationYear,
   flow: Pick<DecumulationFlow, "need" | "route" | "rmd" | "priced" | "parts">,
 ) {
-  const { ledgerRuns, rmdStartAgeByPerson, indAccounts, indKey } = ctx;
+  const { rmdStartAgeByPerson, indAccounts, indKey } = ctx;
   const { input } = ctx;
   const { enableIrmaaAwareness, filingStatus } = input;
   const { indBalance, balances, brokBasis, accountBalance } = state;
@@ -304,14 +304,12 @@ export function yearRothConversion(
     accountBalance,
     // Portfolio-parented money stays out of the conversion and its tax.
     nonRetirement,
-    parts: ledgerRuns
-      ? {
-          accounts: indAccounts,
-          balances: indBalance,
-          keyOf: indKey,
-          basis: brokBasis,
-        }
-      : undefined,
+    parts: {
+      accounts: indAccounts,
+      balances: indBalance,
+      keyOf: indKey,
+      basis: brokBasis,
+    },
     rmdSmoothingTarget,
     rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
   });

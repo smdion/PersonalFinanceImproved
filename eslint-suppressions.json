@@ -4176,11 +4176,8 @@
     }
   },
   "src/lib/pure/engine/roth-conversion.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
-      "count": 3
+      "count": 1
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1

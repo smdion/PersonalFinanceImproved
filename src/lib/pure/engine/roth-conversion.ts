@@ -6,18 +6,11 @@ import type {
   TaxBuckets,
   AccountBalances,
 } from "../accounts/account-balances.types";
-import { roundToCents, safeDivide } from "../../utils/math";
+import { roundToCents } from "../../utils/math";
 import { getAllCategories, isOverflowTarget } from "../../config/account-types";
-import {
-  getTotalBalance,
-  getBasis,
-  setBalance,
-  setBasis,
-} from "../accounts/account-balance";
-import { convertAcrossCategories } from "./conversion-categories";
+import { conversionCategoryShares } from "./conversion-categories";
 import type { IrmaaBracket } from "../../config/irmaa-tables";
 import { irmaaConversionHeadroom } from "./conversion-irmaa-cap";
-import { basisOut } from "./brokerage-basis";
 import {
   debitConvertedParts,
   payConversionTaxFromParts,
@@ -57,16 +50,15 @@ export interface RothConversionInput {
    *  `checkIrmaa`'s; see `decumulation-year.ts` `grownIrmaaBracketsForCap`. */
   irmaaBrackets: Record<string, IrmaaBracket[]>;
   filingStatus?: ReturnFilingStatus | null;
-  /** Current balances (mutated in place). */
+  /** Current tax buckets (read only). */
   balances: TaxBuckets;
-  /** Per-account balances (mutated in place). */
+  /** Per-category balances (read only). */
   accountBalance: AccountBalances;
   /** Portfolio-parented exclusion: caps the conversion source and tax-payment capacity to
-   *  Retirement money. With `parts` too, the debit goes straight to Retirement-parented
-   *  accounts. The caller passes both or neither. */
+   *  Retirement money. */
   nonRetirement?: NonRetirementExclusion;
-  /** The account parts, their balances and basis; used only with `nonRetirement`. */
-  parts?: ConversionParts;
+  /** The account parts the conversion and its tax move, their balances and basis. */
+  parts: ConversionParts;
   /** This year's household RMD-smoothing minimum (`computeRmdSmoothingTargets`). When positive it
    *  runs even with `enableRothConversions` off and may raise the target rate up to
    *  `rmdSmoothingMaxBracketTarget`; a resolved target of 0 still wins. */
@@ -87,12 +79,9 @@ interface RothConversionResult {
   rothConversionIrmaaCapped?: boolean;
 }
 
-/**
- * Perform Roth conversions: move Traditional → Roth to fill remaining
- * bracket room. Tax on conversion is paid from brokerage.
- *
- * Mutates `balances` and `accountBalance` in place.
- */
+/** Perform Roth conversions: move Traditional → Roth to fill remaining bracket
+ *  room, the tax paid from brokerage, on the account parts only; the settled
+ *  point after it gives the categories and the tax buckets. */
 export function performRothConversion(
   input: RothConversionInput,
 ): RothConversionResult {
@@ -111,9 +100,8 @@ export function performRothConversion(
     rmdSmoothingTarget,
     rmdSmoothingMaxBracketTarget,
   } = input;
-  const hasIndTracking = nonRetirement != null && parts != null;
   // The isOverflowTarget category (brokerage today), found once for the
-  // tax-payment capacity gate and the per-account debit loop.
+  // tax-payment capacity gate and the parts that pay the tax.
   const overflowCat = getAllCategories().find((c) => isOverflowTarget(c));
   // Smoothing is its own reason to proceed (no enableRothConversions
   // needed); `zero()` carries rmdSmoothingShortfall on every early return
@@ -212,52 +200,14 @@ export function performRothConversion(
   conversion = paid.conversion;
   const taxCostOfConversion = paid.tax;
 
-  // Move balance: Traditional → Roth
-  balances.preTax = roundToCents(balances.preTax - conversion);
-  balances.taxFree = roundToCents(balances.taxFree + conversion);
-  // The tax comes from brokerage, sold at average cost (parts: by the basis they sell, below)
-  const afterTax = roundToCents(balances.afterTax - taxCostOfConversion);
-  balances.afterTax = afterTax;
-  const sold = basisOut(
-    taxCostOfConversion,
-    safeDivide(balances.afterTaxBasis, afterTax + taxCostOfConversion),
+  // Traditional → Roth on each category's parts, by Retirement-only balance;
+  // the tax from the overflow category's parts, each at its own basis.
+  debitConvertedParts(
+    parts,
+    conversionCategoryShares(accountBalance, conversion, nonRetirement),
   );
-  if (!hasIndTracking && balances.afterTaxBasis > 0)
-    balances.afterTaxBasis = roundToCents(
-      Math.max(0, balances.afterTaxBasis - sold),
-    );
-
-  // Traditional → Roth across the categories, by Retirement-only balance.
-  const categoryShare = convertAcrossCategories(
-    accountBalance,
-    conversion,
-    nonRetirement,
-  );
-
-  if (hasIndTracking) debitConvertedParts(parts, categoryShare);
-
-  // Update brokerage per-account balance for tax payment
-  for (const cat of getAllCategories()) {
-    if (isOverflowTarget(cat)) {
-      setBalance(
-        accountBalance[cat],
-        roundToCents(
-          getTotalBalance(accountBalance[cat]) - taxCostOfConversion,
-        ),
-      );
-      // With parts, the tax comes from them and every track gives up their basis sold.
-      if (hasIndTracking)
-        payConversionTaxFromParts(parts, cat, taxCostOfConversion, {
-          balances,
-          category: accountBalance[cat],
-        });
-      else if (accountBalance[cat].structure === "basis_tracking") {
-        const b = getBasis(accountBalance[cat]);
-        setBasis(accountBalance[cat], roundToCents(Math.max(0, b - sold)));
-      }
-      break;
-    }
-  }
+  if (overflowCat)
+    payConversionTaxFromParts(parts, overflowCat, taxCostOfConversion);
 
   return {
     rothConversionAmount: conversion,

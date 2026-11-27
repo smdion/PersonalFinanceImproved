@@ -5,16 +5,11 @@
  */
 import type { AccountCategory } from "../../../config/account-types";
 import { isRetirementMoney } from "../../../config/account-types";
-import type {
-  IndividualAccountInput,
-  TaxBuckets,
-} from "../../accounts/account-balances.types";
-import type { AccountBalance } from "../../../config/account-types.types";
+import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { roundToCents } from "../../../utils/math";
 import {
   followDrawsSoldOnCopies,
-  takeBasisOut,
   type BrokerageBasis,
 } from "../brokerage-basis";
 import { ROTH_SPLIT_PARTS } from "../../../config/tax-treatment-buckets";
@@ -71,22 +66,19 @@ export function debitConvertedParts(
 }
 
 /** The conversion's tax, from the overflow category's Retirement-parented
- *  accounts by balance, each giving up basis at its own ratio; the tax
- *  buckets and the category give up the same basis (average cost, IRC 1012). */
+ *  accounts by balance, each giving up basis at its own ratio (average
+ *  cost, IRC 1012). */
 export function payConversionTaxFromParts(
   parts: ConversionParts,
   category: AccountCategory,
   tax: number,
-  totals: { balances: TaxBuckets; category: AccountBalance },
 ): void {
   const { accounts, keyOf, balances, basis } = parts;
-  const drawn = followDrawsSoldOnCopies(accounts, keyOf, balances, basis, (b) =>
+  followDrawsSoldOnCopies(accounts, keyOf, balances, basis, (b) =>
     debitByBalance(
       { balances: b, keyOf },
       retirementParts(parts, category),
       tax,
     ),
-  );
-  takeBasisOut(totals.balances, totals.category, drawn.sold.get(category) ?? 0);
-  drawn.land();
+  ).land();
 }

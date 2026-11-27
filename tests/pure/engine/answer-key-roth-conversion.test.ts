@@ -37,6 +37,10 @@ import { getBasis } from "@/lib/pure/accounts/account-balance";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import { makeIndividualAccount } from "../fixtures/engine-fixtures";
+import {
+  conversionParts,
+  settleConversion,
+} from "../fixtures/conversion-parts";
 
 const y2026 = readTaxData().years["2026"]!;
 const mfjTable = y2026.withholding.tables.MFJ!.standard as WithholdingBracket[];
@@ -45,7 +49,8 @@ const singleTable = y2026.withholding.tables.Single!
 const ltcg2026 = y2026.ltcg!.brackets as LtcgBracketTable;
 
 /** One MFJ 2026 conversion at the 12% target, after `traditional` of
- *  Traditional draws, with the Traditional and brokerage money given. */
+ *  Traditional draws, with the Traditional and brokerage money given, each
+ *  in one account; the settled point then gives the tax buckets. */
 function convert(c: { traditional: number; preTax: number; afterTax: number }) {
   const balances: TaxBuckets = {
     preTax: c.preTax,
@@ -54,7 +59,8 @@ function convert(c: { traditional: number; preTax: number; afterTax: number }) {
     afterTax: c.afterTax,
     afterTaxBasis: c.afterTax,
   };
-  const r = performRothConversion({
+  const accountBalance = accountBalancesFromTaxBuckets(balances);
+  const input = {
     enableRothConversions: true,
     taxBrackets: mfjTable,
     taxMultiplier: 1,
@@ -66,10 +72,13 @@ function convert(c: { traditional: number; preTax: number; afterTax: number }) {
     brokerageGainsPortion: 0,
     rothTaxableGrowth: 0,
     irmaaBrackets: {},
-    filingStatus: "MFJ",
+    filingStatus: "MFJ" as const,
     balances,
-    accountBalance: accountBalancesFromTaxBuckets(balances),
-  });
+    accountBalance,
+    parts: conversionParts(balances, accountBalance),
+  };
+  const r = performRothConversion(input);
+  settleConversion(input);
   return { ...r, balances };
 }
 
@@ -170,6 +179,7 @@ describe("answer key: the conversion amount and its tax", () => {
       afterTax: 500_000,
       afterTaxBasis: 500_000,
     };
+    const accountBalance = accountBalancesFromTaxBuckets(balances);
     const r = performRothConversion({
       enableRothConversions: true,
       taxBrackets: mfjTable,
@@ -185,7 +195,8 @@ describe("answer key: the conversion amount and its tax", () => {
       irmaaBrackets: { MFJ: tiers },
       filingStatus: "MFJ",
       balances,
-      accountBalance: accountBalancesFromTaxBuckets(balances),
+      accountBalance,
+      parts: conversionParts(balances, accountBalance),
     });
     const magi = 180_000 + r.rothConversionAmount;
     cents(
@@ -295,7 +306,7 @@ describe("answer key: the conversion's tax from a Retirement brokerage part", ()
     const brokBasis = new Map([[indKey(brokerage), 20_000]]);
     const { balances, accountBalance } = openingTotals(parts);
     const none = { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 };
-    const r = performRothConversion({
+    const input = {
       enableRothConversions: true,
       taxBrackets: mfjTable,
       taxMultiplier: 1,
@@ -307,7 +318,7 @@ describe("answer key: the conversion's tax from a Retirement brokerage part", ()
       brokerageGainsPortion: 0,
       rothTaxableGrowth: 0,
       irmaaBrackets: {},
-      filingStatus: "MFJ",
+      filingStatus: "MFJ" as const,
       balances,
       accountBalance,
       nonRetirement: { total: none, trad: none, roth: none, grandTotal: 0 },
@@ -317,7 +328,9 @@ describe("answer key: the conversion's tax from a Retirement brokerage part", ()
         keyOf: indKey,
         basis: brokBasis,
       },
-    });
+    };
+    const r = performRothConversion(input);
+    settleConversion(input);
     return {
       r,
       balances,
@@ -336,7 +349,7 @@ describe("answer key: the conversion's tax from a Retirement brokerage part", ()
     // basis ratio 20,000 / 50,000 = 0.4 (average cost; IRC 1012): basis out
     // 9,820 × 0.4 = 3,928.00, so the part's basis is 16,072.00. The tax
     // buckets' brokerage basis and the brokerage category's basis are the
-    // same money, so each falls by the same 3,928.00.
+    // same money: the settled point gives each the part's 16,072.00.
     const t = convertParts();
     cents(
       {
