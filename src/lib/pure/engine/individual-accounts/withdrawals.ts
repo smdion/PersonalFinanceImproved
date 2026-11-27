@@ -110,7 +110,7 @@ export function distributeWithdrawals(
       );
 
       // Distribute traditional withdrawal to preTax accounts (#33/#35)
-      if (slot.traditionalWithdrawal > 0 && tradAccounts.length > 0) {
+      if (slot.traditionalWithdrawal > 0) {
         let pinned = 0;
         for (const ia of tradAccounts) {
           const k = indKey(ia);
@@ -136,7 +136,7 @@ export function distributeWithdrawals(
         );
       }
       // Distribute roth withdrawal to taxFree accounts (#33/#35)
-      if (slot.rothWithdrawal > 0 && rothAccounts.length > 0) {
+      if (slot.rothWithdrawal > 0) {
         reportShortfall(
           distributeProportionallyPreferringPenaltyFree(
             slot.rothWithdrawal,
@@ -151,19 +151,17 @@ export function distributeWithdrawals(
       }
     } else {
       // Single-bucket / brokerage / fallback (#33/#35)
-      if (catAccounts.length > 0) {
-        reportShortfall(
-          distributeProportionallyPreferringPenaltyFree(
-            slot.withdrawal,
-            catAccounts,
-            indKey,
-            indBalance,
-            decumulationIndWithdrawal,
-            eligibility,
-          ),
-          slot.category,
-        );
-      }
+      reportShortfall(
+        distributeProportionallyPreferringPenaltyFree(
+          slot.withdrawal,
+          catAccounts,
+          indKey,
+          indBalance,
+          decumulationIndWithdrawal,
+          eligibility,
+        ),
+        slot.category,
+      );
     }
   }
 

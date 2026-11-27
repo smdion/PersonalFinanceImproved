@@ -280,6 +280,40 @@ describe("distributeWithdrawals", () => {
     },
   );
 
+  it.each([
+    ["a brokerage", { withdrawal: 500 }, "brokerage"],
+    [
+      "a 401(k)'s Roth side",
+      { withdrawal: 500, rothWithdrawal: 500 },
+      "401k Roth",
+    ],
+  ] as const)(
+    "a draw on %s with no Retirement part of it is reported, not skipped",
+    (_, slot, label) => {
+      // Only a Traditional 401(k) part is held: neither draw has a part.
+      const accounts = [
+        makeIndividualAccount({
+          name: "Trad 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 1000,
+        }),
+      ];
+      const indBal = new Map([[indKey(accounts[0]!), 1000]]);
+      const category = label === "brokerage" ? "brokerage" : "401k";
+      const { decumulationIndWithdrawal, warnings } = distributeWithdrawals(
+        [makeDecumulationSlot(category, slot)],
+        accounts,
+        indKey,
+        indBal,
+      );
+      expect(decumulationIndWithdrawal.size).toBe(0);
+      expect(warnings).toEqual([
+        `Individual-account shortfall: $500.00 of ${label} withdrawal could not be allocated to any tracked account`,
+      ]);
+    },
+  );
+
   it("distributes proportionally by balance for single-bucket", () => {
     const accounts: IndividualAccountInput[] = [
       makeIndividualAccount({

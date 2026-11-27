@@ -204,6 +204,27 @@ describe("performRothConversion", () => {
     expect(balances.afterTax).toBe(0);
   });
 
+  it("with an empty brokerage still converts the room that costs no tax (CV1), its $0 tax taken from nothing", () => {
+    // No income: the 32,200 deduction is room the conversion pays no tax on,
+    // so its $0 tax comes from the empty brokerage part without a throw.
+    const balances = makeTaxBuckets({ afterTax: 0, afterTaxBasis: 0 });
+    const accountBalance = makeAccountBalances({
+      afterTax: 0,
+      afterTaxBasis: 0,
+    });
+    const input = makeRothInput({
+      balances,
+      accountBalance,
+      totalTraditionalWithdrawal: 0,
+      taxableSS: 0,
+      brokerageGainsPortion: 0,
+      standardDeduction: 32200,
+    });
+    const result = performRothConversion(input);
+    expect(result.rothConversionAmount).toBeGreaterThan(0);
+    expect(result.rothConversionTaxCost).toBe(0);
+  });
+
   it("prefers rothConversionTarget over rothBracketTarget", () => {
     // rothConversionTarget = 0.12 → bracket cap at 96175 (12% → next bracket is 22% at 96175)
     // rothBracketTarget = 0.32 → bracket cap at 383325

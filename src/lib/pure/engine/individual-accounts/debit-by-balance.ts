@@ -6,12 +6,13 @@ import { roundToCents } from "../../../utils/math";
 
 /** Takes `amount` from `accounts` by balance (the rounding residual in order:
  *  cents short from the parts' balance left, cents over back to parts that
- *  gave); none when they hold nothing. */
+ *  gave); nothing for an amount of $0 or less, or from parts holding nothing. */
 export function debitByBalance(
   { balances, keyOf }: { balances: Map<string, number>; keyOf: IndKeyFn },
   accounts: readonly IndividualAccountInput[],
   amount: number,
 ): void {
+  if (amount <= 0) return;
   const total = accounts.reduce(
     (s, ia) => s + Math.max(0, balances.get(keyOf(ia)) ?? 0),
     0,
