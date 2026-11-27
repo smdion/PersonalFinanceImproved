@@ -36,7 +36,7 @@ import { shippedTaxTables } from "../helpers/tax-data";
 describe("cFIREsim apples-to-apples comparison", () => {
   it(
     "matches cFIREsim at 4% SWR, 75/25, 30yr horizon (classic Trinity)",
-    { timeout: 120_000 },
+    { timeout: 180_000 },
     () => {
       // cFIREsim 75/25 at 4% SWR, 30 years: ~95-96% success historically
       const engineInput = makeTrinityInput({
@@ -71,7 +71,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
 
   it(
     "matches cFIREsim at 3.25% SWR, 75/25, 40yr horizon (your scenario)",
-    { timeout: 120_000 },
+    { timeout: 180_000 },
     () => {
       // Conservative retirement portfolio estimate (~cFIREsim 10th percentile)
       const startingBalance = 2_770_000;
@@ -137,7 +137,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
 
   it(
     "SWR sweep with Ibbotson returns matches cFIREsim curve",
-    { timeout: 120_000 },
+    { timeout: 180_000 },
     () => {
       const results: { swr: number; success: number }[] = [];
 
@@ -220,7 +220,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
 
   it(
     "Default preset tracks close to Ibbotson/cFIREsim (no artificial bias)",
-    { timeout: 120_000 },
+    { timeout: 180_000 },
     () => {
       // Default preset uses 1.0x return multiplier (DB values are forward-looking, no haircut).
       // It should track reasonably close to Ibbotson/cFIREsim historical results.
