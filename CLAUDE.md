@@ -50,7 +50,8 @@ the reviewer and the owner do.
   missing concept (`Concept:` trailer, or `Concept: none, <reason>`) before
   the code is written; a third goes to the advisor first.
 - **No growth:** no function over 150 lines grows, and no file grows past its
-  recorded size.
+  recorded size, beyond the small raise and the other raises RULES
+  § Refactoring lists.
 - **Commit size:** at most 400 changed `src/` lines, and at most 8 `src/`
   files in an engine or tax commit. A pure move, rename or split (code
   moved unchanged) carries a `Mechanical:` line and is exempt.
