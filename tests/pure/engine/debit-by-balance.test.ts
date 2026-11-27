@@ -115,6 +115,17 @@ describe("debitByBalance", () => {
     expect([...balanceMap.values()]).toEqual([100, 0, 0, 0]);
   });
 
+  it("throws on a positive amount from parts holding nothing", () => {
+    const { balanceMap, traditional } = iraParts([0, 0]);
+    expect(() =>
+      debitByBalance(
+        { balances: balanceMap, keyOf: indKey },
+        traditional,
+        0.01,
+      ),
+    ).toThrow("from parts holding nothing");
+  });
+
   // $100 in thirds is 99.99: the cent left comes from the first part with
   // money, never the $0 part, where it would be lost.
   it("a $0 part first leaves the cents short to the next part with money", () => {

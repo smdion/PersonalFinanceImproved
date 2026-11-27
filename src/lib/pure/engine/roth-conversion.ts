@@ -184,8 +184,8 @@ export function performRothConversion(
     return zero();
   }
 
-  // The tax is paid from brokerage, never Traditional or Roth; with exclusion data only
-  // Retirement-parented money counts. A short brokerage shrinks the conversion.
+  // The tax is paid from Retirement brokerage money only, never Traditional or Roth; a short brokerage
+  // shrinks the conversion. Brokerage is the one after-tax category: a second needs its own exclusion.
   const retirementOnlyAfterTax =
     nonRetirement && overflowCat
       ? roundToCents(balances.afterTax - nonRetirement.total[overflowCat])

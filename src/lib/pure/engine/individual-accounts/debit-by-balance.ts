@@ -4,9 +4,9 @@ import type { IndividualAccountInput } from "../../accounts/account-balances.typ
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { roundToCents } from "../../../utils/math";
 
-/** Takes `amount` from `accounts` by balance (the rounding residual in order:
- *  cents short from the parts' balance left, cents over back to parts that
- *  gave); nothing for an amount of $0 or less, or from parts holding nothing. */
+/** Takes `amount` from `accounts` by balance, the rounding residual in order.
+ *  Every caller bounds it by those parts' money (a QCD, a conversion's share,
+ *  its tax), so a positive amount from parts holding nothing throws. */
 export function debitByBalance(
   { balances, keyOf }: { balances: Map<string, number>; keyOf: IndKeyFn },
   accounts: readonly IndividualAccountInput[],
@@ -17,7 +17,10 @@ export function debitByBalance(
     (s, ia) => s + Math.max(0, balances.get(keyOf(ia)) ?? 0),
     0,
   );
-  if (total <= 0) return;
+  if (total <= 0)
+    throw new Error(
+      `debitByBalance: $${amount.toFixed(2)} from parts holding nothing`,
+    );
   let distributed = 0;
   const gave = accounts.map((ia) => {
     const key = keyOf(ia);
