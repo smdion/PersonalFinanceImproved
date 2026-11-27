@@ -30,10 +30,6 @@ export function getTotalBalance(balance: AccountBalance): number {
   }
 }
 
-export function getBasis(balance: AccountBalance): number {
-  return balance.structure === "basis_tracking" ? balance.basis : 0;
-}
-
 // ---------------------------------------------------------------------------
 // Mutators (in-place updates for engine)
 // ---------------------------------------------------------------------------

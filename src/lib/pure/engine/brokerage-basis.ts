@@ -8,9 +8,7 @@ import {
   getAccountTypeConfig,
   isRetirementMoney,
 } from "../../config/account-types";
-import type { AccountCategory } from "../../config/account-types";
-import type { AccountBalance } from "../../config/account-types.types";
-import { getBasis, setBasis } from "../accounts/account-balance";
+import { setBasis } from "../accounts/account-balance";
 import type {
   AccountBalances,
   IndividualAccountInput,
@@ -141,117 +139,25 @@ export function followDraws<T>(
   return result;
 }
 
-/** The basis each category's brokerage accounts hold, unrounded. */
-function basisByCategory(
-  accounts: readonly IndividualAccountInput[],
-  keyOf: IndKeyFn,
-  basis: BrokerageBasis,
-): Map<AccountCategory, number> {
-  const held = new Map<AccountCategory, number>();
-  for (const account of basisTrackedAccounts(accounts)) {
-    const b = basis.get(keyOf(account)) ?? 0;
-    held.set(account.category, (held.get(account.category) ?? 0) + b);
-  }
-  return held;
-}
-
-/** Runs `follow` (a flow its accounts' basis follows) and returns how much
- *  each category's accounts' basis fell, to the cent (negative: rose). */
-function basisFall<T>(
-  accounts: readonly IndividualAccountInput[],
-  keyOf: IndKeyFn,
-  basis: BrokerageBasis,
-  follow: () => T,
-): { result: T; fall: Map<AccountCategory, number> } {
-  const before = basisByCategory(accounts, keyOf, basis);
-  const result = follow();
-  const after = basisByCategory(accounts, keyOf, basis);
-  const fall = new Map<AccountCategory, number>();
-  for (const [category, was] of before)
-    fall.set(category, roundToCents(was - (after.get(category) ?? 0)));
-  return { result, fall };
-}
-
-/** `followDraws`, also returning the basis each category's accounts gave up,
- *  to the cent: what the category and the tax buckets give up with them. */
-export function followDrawsSold<T>(
-  accounts: readonly IndividualAccountInput[],
-  keyOf: IndKeyFn,
-  balances: Map<string, number>,
-  basis: BrokerageBasis,
-  mutate: () => T,
-): { result: T; sold: Map<AccountCategory, number> } {
-  const { result, fall } = basisFall(accounts, keyOf, basis, () =>
-    followDraws(accounts, keyOf, balances, basis, mutate),
-  );
-  return { result, sold: fall };
-}
-
-/** `followDrawsSold` on copies of `balances` and `basis`, so the tax buckets
- *  and categories are read before the accounts move; `land` then writes the
+/** `followDraws` on copies of `balances` and `basis`; `land` then writes the
  *  copies into the same maps. */
-export function followDrawsSoldOnCopies<T>(
+export function followDrawsOnCopies<T>(
   accounts: readonly IndividualAccountInput[],
   keyOf: IndKeyFn,
   balances: Map<string, number>,
   basis: BrokerageBasis,
   mutate: (drawn: Map<string, number>) => T,
-): { result: T; sold: Map<AccountCategory, number>; land: () => void } {
+): { result: T; land: () => void } {
   const drawn = new Map(balances);
   const drawnBasis = new Map(basis);
-  const { result, sold } = followDrawsSold(
-    accounts,
-    keyOf,
-    drawn,
-    drawnBasis,
-    () => mutate(drawn),
+  const result = followDraws(accounts, keyOf, drawn, drawnBasis, () =>
+    mutate(drawn),
   );
   const land = () => {
     for (const [k, v] of drawn) balances.set(k, v);
     for (const [k, v] of drawnBasis) basis.set(k, v);
   };
-  return { result, sold, land };
-}
-
-/** `followInflows`, also returning the basis each category's accounts took
- *  in, to the cent: what the category and the tax buckets take in with them. */
-export function followInflowsAdded<T>(
-  accounts: readonly IndividualAccountInput[],
-  keyOf: IndKeyFn,
-  balances: Map<string, number>,
-  basis: BrokerageBasis,
-  mutate: () => T,
-): { result: T; added: Map<AccountCategory, number> } {
-  const { result, fall } = basisFall(accounts, keyOf, basis, () =>
-    followInflows(accounts, keyOf, balances, basis, mutate),
-  );
-  const added = new Map<AccountCategory, number>();
-  for (const [category, out] of fall) added.set(category, -out);
-  return { result, added };
-}
-
-/** A flow's basis per category: with an account ledger, what that category's
- *  accounts moved (a category none of them is in moves none); without one,
- *  the flow's one aggregate amount for every category. */
-export function categoryBasis(
-  byAccounts: ReadonlyMap<AccountCategory, number> | undefined,
-  aggregate: number,
-): (category: AccountCategory) => number {
-  return (category) =>
-    byAccounts ? (byAccounts.get(category) ?? 0) : aggregate;
-}
-
-/** A brokerage sale's basis out leaves the tax buckets and the category it
- *  was sold from, each floored at 0. */
-export function takeBasisOut(
-  balances: TaxBuckets,
-  category: AccountBalance,
-  out: number,
-): void {
-  balances.afterTaxBasis = roundToCents(
-    Math.max(0, balances.afterTaxBasis - out),
-  );
-  setBasis(category, roundToCents(Math.max(0, getBasis(category) - out)));
+  return { result, land };
 }
 
 /** Run `mutate` (money in); every brokerage account's increase is new

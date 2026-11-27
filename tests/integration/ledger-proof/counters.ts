@@ -344,7 +344,7 @@ export function reconcileModule(m: any) {
 export function brokerageBasisModule(m: any) {
   return {
     ...m,
-    followDrawsSoldOnCopies: (
+    followDrawsOnCopies: (
       parts: any[],
       partKey: any,
       partBalance: Map<string, number>,
@@ -354,7 +354,7 @@ export function brokerageBasisModule(m: any) {
       const run = ownMap(partBalance);
       if (run) run.onCopies++;
       try {
-        return m.followDrawsSoldOnCopies(
+        return m.followDrawsOnCopies(
           parts,
           partKey,
           partBalance,

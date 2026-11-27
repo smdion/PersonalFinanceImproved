@@ -31,9 +31,11 @@ import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
 import type { WithholdingBracket } from "@/lib/pure/engine/tax-estimation";
 import type { LtcgBracketTable } from "@/lib/config/tax-tables";
 import { getIrmaaCost } from "@/lib/config/irmaa-tables";
-import type { TaxBuckets } from "@/lib/pure/accounts/account-balances.types";
+import type {
+  AccountBalances,
+  TaxBuckets,
+} from "@/lib/pure/accounts/account-balances.types";
 import type { ProjectionInput } from "@/lib/pure/engine/types";
-import { getBasis } from "@/lib/pure/accounts/account-balance";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
 import { openingTotals } from "@/lib/pure/engine/opening-parts";
 import { makeIndividualAccount } from "../fixtures/engine-fixtures";
@@ -274,6 +276,11 @@ describe("answer key: the conversion amount and its tax", () => {
 });
 
 describe("answer key: the conversion's tax from a Retirement brokerage part", () => {
+  /** The brokerage category's basis. */
+  const brokerageBasis = (accountBalance: AccountBalances) => {
+    const brokerage = accountBalance.brokerage;
+    return brokerage.structure === "basis_tracking" ? brokerage.basis : NaN;
+  };
   /** RET10-1's year, the money held in parts: an IRA's Traditional part
    *  (500,000; its Roth part declared at $0) and a Retirement brokerage
    *  part (50,000 at a 20,000 basis). */
@@ -355,7 +362,7 @@ describe("answer key: the conversion's tax from a Retirement brokerage part", ()
       {
         part: t.brokBasis.get(t.indKey(t.brokerage))!,
         buckets: t.balances.afterTaxBasis,
-        category: getBasis(t.accountBalance.brokerage),
+        category: brokerageBasis(t.accountBalance),
       },
       { part: 16_072, buckets: 16_072, category: 16_072 },
     );

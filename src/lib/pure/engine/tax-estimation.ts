@@ -242,8 +242,6 @@ export interface ComputeTaxFromSlotsResult {
    *  is responsible for annotating the brokerage slot with this if needed —
    *  this function only reads slots, it doesn't mutate them. */
   brokerageBasisPortion: number;
-  /** Basis the brokerage withdrawal takes out at average cost (`basisOut`). */
-  brokerageBasisOut: number;
   /** Taxable-gains portion of the brokerage withdrawal. */
   brokerageGainsPortion: number;
   /** Tax on the brokerage withdrawal alone (subset of taxCost), exposed so callers don't
@@ -311,13 +309,11 @@ export function computeTaxFromSlots(
 
   // Basis-aware brokerage tax: average cost takes basis out; only the gain is taxable
   let brokerageTaxCost = 0;
-  let brokerageBasisOut = 0;
   let brokerageBasisPortion = 0;
   let brokerageGainsPortion = 0;
   const sellsBrokerage = brokerageWithdrawal > 0 && balances.afterTax > 0;
   if (sellsBrokerage) {
     ({
-      basisOut: brokerageBasisOut,
       basisPortion: brokerageBasisPortion,
       gainsPortion: brokerageGainsPortion,
     } = sellAtCost(
@@ -362,7 +358,6 @@ export function computeTaxFromSlots(
     actualTraditionalRate,
     actualTaxableIncome,
     brokerageBasisPortion,
-    brokerageBasisOut,
     brokerageGainsPortion,
     brokerageTaxCost,
     ssTaxCost,

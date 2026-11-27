@@ -35,7 +35,6 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-  getBasis,
 } from "@/lib/pure/accounts/account-balance";
 import {
   CONTRIBUTION_METHOD_LABELS,
@@ -340,12 +339,6 @@ describe("balance accessors", () => {
     expect(getTotalBalance(rothTrad)).toBe(150);
     expect(getTotalBalance(single)).toBe(200);
     expect(getTotalBalance(basis)).toBe(300);
-  });
-
-  it("getBasis", () => {
-    expect(getBasis(rothTrad)).toBe(0);
-    expect(getBasis(single)).toBe(0);
-    expect(getBasis(basis)).toBe(120);
   });
 });
 

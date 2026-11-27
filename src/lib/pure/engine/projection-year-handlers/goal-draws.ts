@@ -1,5 +1,5 @@
 import {
-  followDrawsSoldOnCopies,
+  followDrawsOnCopies,
   groupBasisRatio,
   sellAtCost,
 } from "../brokerage-basis";
@@ -90,7 +90,7 @@ export function brokerageGoalDraws(
           DEFAULT_TAX_RATE_BROKERAGE),
     );
     const drawn = ledgerRuns
-      ? followDrawsSoldOnCopies(...ledger, (p) =>
+      ? followDrawsOnCopies(...ledger, (p) =>
           distributeGoalWithdrawal(drawAmount, indAccounts, indKey, p),
         )
       : undefined;

@@ -5,14 +5,12 @@
 import { describe, it, expect } from "vitest";
 import {
   basisOut,
-  categoryBasis,
-  followDrawsSold,
-  followDrawsSoldOnCopies,
-  followInflowsAdded,
+  followDraws,
+  followDrawsOnCopies,
+  followInflows,
   seedBrokerageBasis,
   sellAtCost,
   syncAggregateBasis,
-  takeBasisOut,
 } from "@/lib/pure/engine/brokerage-basis";
 import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
@@ -57,8 +55,8 @@ describe("sellAtCost", () => {
   });
 });
 
-describe("followDrawsSold and takeBasisOut", () => {
-  it("each category's basis sold is the sum its accounts gave up, each at its own ratio", () => {
+describe("followDraws and followInflows", () => {
+  it("each account gives up basis at its own ratio", () => {
     // A: $30,000 at $12,000 basis (0.4) sells $3,000 → $1,200; B: $10,000 at $10,000 (1.0) sells $1,000 → $1,000.
     const accts = [brokerage("A", 0), brokerage("B", 0)];
     const indBal = new Map([
@@ -69,19 +67,12 @@ describe("followDrawsSold and takeBasisOut", () => {
       [indKey(accts[0]!), 12000],
       [indKey(accts[1]!), 10000],
     ]);
-    const { result, sold } = followDrawsSold(
-      accts,
-      indKey,
-      indBal,
-      basis,
-      () => {
-        indBal.set(indKey(accts[0]!), 27000);
-        indBal.set(indKey(accts[1]!), 9000);
-        return "drawn";
-      },
-    );
+    const result = followDraws(accts, indKey, indBal, basis, () => {
+      indBal.set(indKey(accts[0]!), 27000);
+      indBal.set(indKey(accts[1]!), 9000);
+      return "drawn";
+    });
     expect(result).toBe("drawn");
-    expect(sold.get("brokerage")).toBe(2200);
     expect(accts.map((a) => basis.get(indKey(a)))).toEqual([10800, 9000]);
   });
 
@@ -97,19 +88,12 @@ describe("followDrawsSold and takeBasisOut", () => {
       [a, 12000],
       [b, 10000],
     ]);
-    const drawn = followDrawsSoldOnCopies(
-      accts,
-      indKey,
-      indBal,
-      basis,
-      (copy) => {
-        copy.set(a, 27000);
-        copy.set(b, 9000);
-        return "drawn";
-      },
-    );
+    const drawn = followDrawsOnCopies(accts, indKey, indBal, basis, (copy) => {
+      copy.set(a, 27000);
+      copy.set(b, 9000);
+      return "drawn";
+    });
     expect(drawn.result).toBe("drawn");
-    expect(drawn.sold.get("brokerage")).toBe(2200);
     expect([...indBal.values(), ...basis.values()]).toEqual([
       30000, 10000, 12000, 10000,
     ]);
@@ -119,7 +103,7 @@ describe("followDrawsSold and takeBasisOut", () => {
     ]);
   });
 
-  it("money in: each category's basis added is the sum of its accounts' rises", () => {
+  it("money in: each account's rise is its new basis", () => {
     const accts = [brokerage("A", 0), brokerage("B", 0)];
     const indBal = new Map([
       [indKey(accts[0]!), 100],
@@ -129,35 +113,11 @@ describe("followDrawsSold and takeBasisOut", () => {
       [indKey(accts[0]!), 50],
       [indKey(accts[1]!), 0],
     ]);
-    const { added } = followInflowsAdded(accts, indKey, indBal, basis, () => {
+    followInflows(accts, indKey, indBal, basis, () => {
       indBal.set(indKey(accts[0]!), 100.33);
       indBal.set(indKey(accts[1]!), 200.34);
     });
-    expect(added.get("brokerage")).toBe(200.67);
-  });
-
-  it("a category's basis is its accounts' with a ledger, else the one aggregate amount", () => {
-    const sold = new Map([["brokerage" as const, 12.34]]);
-    expect(categoryBasis(sold, 99)("brokerage")).toBe(12.34);
-    expect(categoryBasis(sold, 99)("ira")).toBe(0);
-    expect(categoryBasis(undefined, 99)("brokerage")).toBe(99);
-  });
-
-  it("the basis out leaves the tax buckets and the category, each floored at 0", () => {
-    const balances: TaxBuckets = {
-      preTax: 0,
-      taxFree: 0,
-      hsa: 0,
-      afterTax: 5000,
-      afterTaxBasis: 3000,
-    };
-    const accountBalance = accountBalancesFromTaxBuckets(balances);
-    takeBasisOut(balances, accountBalance.brokerage, 1000.004);
-    expect(balances.afterTaxBasis).toBe(2000);
-    expect(accountBalance.brokerage).toMatchObject({ basis: 2000 });
-    takeBasisOut(balances, accountBalance.brokerage, 9000);
-    expect(balances.afterTaxBasis).toBe(0);
-    expect(accountBalance.brokerage).toMatchObject({ basis: 0 });
+    expect(accts.map((a) => basis.get(indKey(a)))).toEqual([50.33, 200.34]);
   });
 });
 

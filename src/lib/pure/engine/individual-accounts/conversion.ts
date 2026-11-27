@@ -8,10 +8,7 @@ import { isRetirementMoney } from "../../../config/account-types";
 import type { IndividualAccountInput } from "../../accounts/account-balances.types";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { roundToCents } from "../../../utils/math";
-import {
-  followDrawsSoldOnCopies,
-  type BrokerageBasis,
-} from "../brokerage-basis";
+import { followDrawsOnCopies, type BrokerageBasis } from "../brokerage-basis";
 import { ROTH_SPLIT_PARTS } from "../../../config/tax-treatment-buckets";
 import { debitByBalance } from "./debit-by-balance";
 
@@ -74,7 +71,7 @@ export function payConversionTaxFromParts(
   tax: number,
 ): void {
   const { accounts, keyOf, balances, basis } = parts;
-  followDrawsSoldOnCopies(accounts, keyOf, balances, basis, (b) =>
+  followDrawsOnCopies(accounts, keyOf, balances, basis, (b) =>
     debitByBalance(
       { balances: b, keyOf },
       retirementParts(parts, category),

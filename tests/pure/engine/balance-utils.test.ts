@@ -3,7 +3,6 @@ import {
   getRothBalance,
   getTraditionalBalance,
   getTotalBalance,
-  getBasis,
 } from "@/lib/pure/accounts/account-balance";
 import {
   cloneAccountBalances,
@@ -53,7 +52,7 @@ describe("accountBalancesFromTaxBuckets", () => {
       makeBuckets({ afterTax: 50000, afterTaxBasis: 30000 }),
     );
     expect(getTotalBalance(result.brokerage)).toBe(50000);
-    expect(getBasis(result.brokerage)).toBe(30000);
+    expect(result.brokerage).toMatchObject({ basis: 30000 });
   });
 
   it("splits preTax across roth_traditional limit groups", () => {
@@ -104,7 +103,7 @@ describe("accountBalancesFromTaxBuckets", () => {
     );
     expect(getTotalBalance(result.hsa)).toBe(25000);
     expect(getTotalBalance(result.brokerage)).toBe(80000);
-    expect(getBasis(result.brokerage)).toBe(40000);
+    expect(result.brokerage).toMatchObject({ basis: 40000 });
     // preTax split across 2 groups: 100000 each
     expect(getTraditionalBalance(result["401k"])).toBe(100000);
     expect(getTraditionalBalance(result.ira)).toBe(100000);

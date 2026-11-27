@@ -4,7 +4,6 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-  getBasis,
   addTraditional,
   addRoth,
   addBalance,
@@ -64,12 +63,6 @@ describe("accessors", () => {
     expect(getTotalBalance(makeRothTrad(100, 200))).toBe(300);
     expect(getTotalBalance(makeSingleBucket(500))).toBe(500);
     expect(getTotalBalance(makeBasisTracking(1000, 400))).toBe(1000);
-  });
-
-  it("getBasis returns basis for basis_tracking, 0 otherwise", () => {
-    expect(getBasis(makeBasisTracking(1000, 400))).toBe(400);
-    expect(getBasis(makeRothTrad())).toBe(0);
-    expect(getBasis(makeSingleBucket())).toBe(0);
   });
 });
 

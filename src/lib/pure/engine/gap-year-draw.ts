@@ -19,7 +19,7 @@ import { floorParts } from "./category-slices";
 import { depleteIndividualBasis } from "./individual-accounts/ledger";
 import { distributeWithdrawals } from "./individual-accounts/withdrawals";
 import {
-  followDrawsSoldOnCopies,
+  followDrawsOnCopies,
   retirementBrokerageBasisRatio,
 } from "./brokerage-basis";
 import {
@@ -245,7 +245,7 @@ export function runGapYearDraw(
   const pool = scopedBalances(balances, nonRetirement).allAccountsBalance;
   const { slots, warnings } = searchGrossUp(need, pool, first, evaluate).e;
 
-  const { result: taken, ...drawn } = followDrawsSoldOnCopies(
+  const { result: taken, land } = followDrawsOnCopies(
     indAccounts,
     indKey,
     indBalance,
@@ -254,7 +254,7 @@ export function runGapYearDraw(
   );
   const settled = price(slots, taken.rothGrowth, taken.penalty);
   const { cost } = settled;
-  drawn.land();
+  land();
   if (ledgerRuns) floorParts(ctx, state);
   const withdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));
   const accounts: GapYearAccounts = {
