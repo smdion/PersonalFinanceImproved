@@ -16,6 +16,7 @@ import { applyLumpSums } from "./lump-sum";
 import { perOwnerRmds } from "./helpers";
 import { irmaaOutsideNeed } from "./irmaa-charge";
 import { refreshViews } from "./settle";
+import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { yearNeed } from "./year-need";
 import type { distributeYearDraws, routeYearDraw } from "./year-draws";
 import type { enforceYearRmd } from "./rmd-step";
@@ -206,20 +207,22 @@ export function settleYearDraws(
   return { rmdExcessAmount };
 }
 
-/** RMD smoothing's target, then the year's Roth conversion, its tax paid from
- *  retirement brokerage money (UD-08, pending D4: today's tax source and sizing). */
+/** RMD smoothing's target, then the Roth conversion of Retirement money as it
+ *  stands after the year's lump sums, its tax paid from Retirement brokerage. */
 export function yearRothConversion(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
   thisYear: DecumulationYear,
   flow: Pick<DecumulationFlow, "need" | "route" | "rmd" | "priced" | "parts">,
 ) {
-  const { rmdStartAgeByPerson, indAccounts, indKey } = ctx;
+  const { rmdStartAgeByPerson, indAccounts, indKey, ledgerRuns } = ctx;
   const { input } = ctx;
   const { enableIrmaaAwareness, filingStatus } = input;
   const { indBalance, balances, brokBasis, accountBalance } = state;
   const { config, year, taxRates } = thisYear;
-  const { nonRetirement } = thisYear.setup;
+  const nonRetirement = ledgerRuns
+    ? computeNonRetirementExclusion(indAccounts, indBalance, indKey)
+    : undefined;
   const { grownTaxBrackets, grownIrmaaBracketsForCap } = thisYear.tables;
   const { totalTraditionalWithdrawal } = flow.rmd;
   const { targetWithdrawal } = flow.need;
