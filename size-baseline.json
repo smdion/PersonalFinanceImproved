@@ -68,7 +68,7 @@
     "src/components/investments/holdings-section.tsx": 794,
     "src/components/layout/scenario-bar.tsx": 487,
     "src/components/layout/sidebar.tsx": 521,
-    "src/components/methodology/decumulation-content.tsx": 861,
+    "src/components/methodology/decumulation-content.tsx": 862,
     "src/components/methodology/methodology-content.tsx": 550,
     "src/components/methodology/validation-content.tsx": 524,
     "src/components/net-worth/spreadsheet/spreadsheet-year-over-year-table.tsx": 461,
@@ -632,7 +632,7 @@
       "AccumulationMethodologyContent": 364
     },
     "src/components/methodology/decumulation-content.tsx": {
-      "DecumulationMethodologyContent": 847
+      "DecumulationMethodologyContent": 848
     },
     "src/components/methodology/methodology-content.tsx": {
       "MethodologyContent": 545

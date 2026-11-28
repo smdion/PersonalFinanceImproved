@@ -679,8 +679,9 @@ export function DecumulationMethodologyContent() {
                   rothConversionTarget
                 </td>
                 <td>
-                  The Roth conversion target bracket for that year (set to 0 to
-                  turn conversions off)
+                  The Roth conversion target bracket for that year (a conversion
+                  rate of 0 turns conversions off; a bracket target of 0
+                  converts the 0% bracket&apos;s room)
                 </td>
               </tr>
               <tr>
