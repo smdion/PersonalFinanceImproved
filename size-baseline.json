@@ -198,7 +198,7 @@
     "src/components/retirement-projection/withdrawal-comparison-chart.tsx": 110,
     "src/components/retirement-projection/withdrawal-comparison.tsx": 457,
     "src/components/retirement/assumptions-band.tsx": 404,
-    "src/components/retirement/sections/taxes.tsx": 527,
+    "src/components/retirement/sections/taxes.tsx": 530,
     "src/components/savings/api-sync-section.tsx": 588,
     "src/components/savings/contribution-grid.tsx": 473,
     "src/components/savings/extra-paycheck-growth.tsx": 231,
@@ -798,7 +798,7 @@
       "StrategyParamsSection.renderField": 173
     },
     "src/components/retirement/sections/taxes.tsx": {
-      "TaxesSection": 463
+      "TaxesSection": 462
     },
     "src/components/savings/api-sync-section.tsx": {
       "ApiSyncSection": 166,

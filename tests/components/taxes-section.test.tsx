@@ -124,9 +124,13 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
     expect(screen.queryByText(/RMD Smoothing ceiling/)).not.toBeInTheDocument();
   });
 
-  it("Apply also sets rothConversionTarget when enableRothConversions is on", () => {
+  it("Apply also sets rothConversionTarget when enableRothConversions is on and a rate is saved", () => {
     const { mutate } = renderTaxesSection(
-      { enableRothConversions: true, rmdSmoothingEnabled: false },
+      {
+        enableRothConversions: true,
+        rmdSmoothingEnabled: false,
+        rothConversionTarget: "0.12",
+      },
       { recommendedTarget: 0.22, currentTarget: 0.12, candidates: [] },
     );
     screen.getByText("Apply").click();
@@ -152,9 +156,35 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
     expect(patch.rmdSmoothingMaxBracketTarget).toBe("0.22");
   });
 
+  it("Apply leaves an unset conversion rate unset: the conversion follows the ceiling it sets", () => {
+    const { mutate } = renderTaxesSection(
+      { enableRothConversions: true, rothConversionTarget: null },
+      { recommendedTarget: 0.22, currentTarget: 0.12, candidates: [] },
+    );
+    screen.getByText("Apply").click();
+    const patch = mutate.mock.calls[0]![0];
+    expect(patch.rothBracketTarget).toBe("0.22");
+    expect(patch).not.toHaveProperty("rothConversionTarget");
+  });
+
+  it("Apply of a 0% target leaves a saved conversion rate as it is (a rate of 0 would turn conversions off)", () => {
+    const { mutate } = renderTaxesSection(
+      { enableRothConversions: true, rothConversionTarget: "0.12" },
+      { recommendedTarget: 0, currentTarget: 0.12, candidates: [] },
+    );
+    screen.getByText("Apply").click();
+    const patch = mutate.mock.calls[0]![0];
+    expect(patch.rothBracketTarget).toBe("0");
+    expect(patch).not.toHaveProperty("rothConversionTarget");
+  });
+
   it("Apply sets all three fields when both conversions and smoothing are on", () => {
     const { mutate } = renderTaxesSection(
-      { enableRothConversions: true, rmdSmoothingEnabled: true },
+      {
+        enableRothConversions: true,
+        rmdSmoothingEnabled: true,
+        rothConversionTarget: "0.12",
+      },
       { recommendedTarget: 0.22, currentTarget: 0.12, candidates: [] },
     );
     screen.getByText("Apply").click();
@@ -162,6 +192,42 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
     expect(patch.rothBracketTarget).toBe("0.22");
     expect(patch.rothConversionTarget).toBe("0.22");
     expect(patch.rmdSmoothingMaxBracketTarget).toBe("0.22");
+  });
+});
+
+describe("TaxesSection — Roth conversion rate picker", () => {
+  const picker = () =>
+    screen.getByLabelText(
+      "Roth conversion target bracket",
+    ) as HTMLSelectElement;
+  const shown = (select: HTMLSelectElement) =>
+    select.options[select.selectedIndex]!.textContent;
+
+  it("with no rate saved, shows the ceiling it follows, as an entry that can't be picked", () => {
+    renderTaxesSection({
+      enableRothConversions: true,
+      rothBracketTarget: "0.22",
+      rothConversionTarget: null,
+    });
+    expect(picker().value).toBe("");
+    expect(shown(picker())).toBe("Same as Bracket Ceiling (22%)");
+    expect(picker().options[picker().selectedIndex]!.disabled).toBe(true);
+  });
+
+  it.each([
+    ["0.12", "12%"],
+    ["0", "Off (rate 0)"],
+    ["0.32", "32%"],
+    ["0.37", "37%"],
+  ])("a saved rate of %s shows as itself (%s), selected", (saved, label) => {
+    renderTaxesSection({
+      enableRothConversions: true,
+      rothConversionTarget: saved,
+    });
+    expect(picker().value).toBe(String(Number(saved)));
+    expect(shown(picker())).toBe(label);
+    expect(picker().options[picker().selectedIndex]!.disabled).toBe(false);
+    expect(screen.queryByText(/Same as Bracket Ceiling/)).toBeNull();
   });
 });
 

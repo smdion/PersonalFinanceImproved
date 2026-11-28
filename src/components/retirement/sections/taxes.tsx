@@ -38,6 +38,10 @@ import { buildSettingsPatch } from "./settings-patch";
 import { rothTargetOf } from "./helpers";
 import { WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS } from "@/lib/config/withdrawal-routing";
 import { RoutingModeOptions } from "./routing-mode-options";
+import {
+  ConversionRateOptions,
+  conversionRateValue,
+} from "./conversion-rate-options";
 
 type Props = {
   settings: Settings;
@@ -93,8 +97,11 @@ export function TaxesSection({
       buildSettingsPatch(settings, {
         rothBracketTarget: target,
         // Moved together as the optimizer scores a candidate
-        // (buildCandidateInput), each on its own toggle; a 0% target leaves the rate (0 is off).
-        ...(settings.enableRothConversions && recommendedTarget > 0
+        // (buildCandidateInput), each on its own toggle; an unset rate stays unset, a 0% target
+        // leaves the rate (0 is off).
+        ...(settings.enableRothConversions &&
+        settings.rothConversionTarget != null &&
+        recommendedTarget > 0
           ? { rothConversionTarget: target }
           : {}),
         ...(settings.rmdSmoothingEnabled
@@ -316,11 +323,7 @@ export function TaxesSection({
             {settings.enableRothConversions && (
               <select
                 aria-label="Roth conversion target bracket"
-                value={String(
-                  rothTargetOf(
-                    settings.rothConversionTarget ?? settings.rothBracketTarget,
-                  ),
-                )}
+                value={conversionRateValue(settings.rothConversionTarget)}
                 onChange={(e) => {
                   upsertSettings.mutate(
                     buildSettingsPatch(settings, {
@@ -331,10 +334,10 @@ export function TaxesSection({
                 disabled={!isEditable}
                 className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <option value="0.1">10%</option>
-                <option value="0.12">12%</option>
-                <option value="0.22">22%</option>
-                <option value="0.24">24%</option>
+                <ConversionRateOptions
+                  saved={settings.rothConversionTarget}
+                  ceiling={rothTargetOf(settings.rothBracketTarget)}
+                />
               </select>
             )}
           </div>
