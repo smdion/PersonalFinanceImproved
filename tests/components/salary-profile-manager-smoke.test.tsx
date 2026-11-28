@@ -105,6 +105,7 @@ function detail(id: number): ProfileDetail {
     description: p.description,
     createdAt: p.createdAt,
     salaries: p.salaries,
+    notes: [],
     salaryDetails,
     combinedIncome: salaryDetails.reduce(
       (s, d) => s + d.effectiveSalary + d.estimatedBonus,

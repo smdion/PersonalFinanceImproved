@@ -294,11 +294,6 @@
       "count": 1
     }
   },
-  "src/server/routers/salary-profiles.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/server/routers/version.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2

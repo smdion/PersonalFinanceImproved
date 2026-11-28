@@ -227,6 +227,31 @@ describe("contribution router", () => {
     });
   });
 
+  describe("computeSummary — a Salary Profile entry it can't read", () => {
+    it("names the job in the page's notes", async () => {
+      const personId = await seedPerson(db, "Odd-Entry Person", "1986-02-02");
+      const jobId = seedJob(db, personId, { employerName: "Odd Entry Co" });
+      const salaryProfileId = seedSalaryProfile(db, {
+        name: "Odd entries",
+        salaries: {
+          [String(jobId)]: completeSalaryEntry({
+            salary: 90000,
+            // eslint-disable-next-line no-restricted-syntax -- a pay schedule of another shape, as the column can hold it
+            payPeriod: "fortnightly" as unknown as SalaryEntry["payPeriod"],
+          }),
+        },
+      });
+      vi.spyOn(console, "log").mockImplementation(() => {});
+      const result = await computeSummary({ salaryProfileId });
+      vi.restoreAllMocks();
+      expect(result.unknownTypeNotes).toEqual([
+        expect.stringContaining(
+          'salary for Odd Entry Co in Salary Profile "Odd entries"',
+        ),
+      ]);
+    });
+  });
+
   describe("computeSummary — 401k contribution (percent_of_salary)", () => {
     let personId: number;
     let jobId: number;

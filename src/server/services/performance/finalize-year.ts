@@ -10,7 +10,7 @@ import {
 import { invalidateYearEndCache } from "@/server/services/net-worth/year-end-history";
 import { getEffectiveOtherAssets } from "@/server/services/net-worth/other-assets";
 import { getEffectiveCash } from "@/server/services/budget/account-balances";
-import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
+import { loadReadableSalaryProfile } from "@/server/services/profiles/salary-profile-notes";
 import { toNumber } from "@/lib/utils/numbers";
 import { computeHomeImpCumulative } from "@/lib/pure/net-worth/historical";
 import {
@@ -346,7 +346,7 @@ export async function finalizePerformanceYear(
     const currentYear = ctx.scope.asOf.getFullYear();
     const salaryProfileActiveMap =
       year === currentYear
-        ? await loadEffectiveSalaryProfile(tx, null)
+        ? await loadReadableSalaryProfile(tx, null, allJobs)
         : new Map();
     const { grossIncome, anyIncomeRecorded } = yearGrossIncome(
       year,

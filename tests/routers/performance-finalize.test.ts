@@ -1,13 +1,20 @@
 /** finalizeYear end to end (async transactions run on SQLite through
  *  withAsyncTransactions). */
 import "./setup-mocks";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
+import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   adminSession,
   createTestCaller,
+  seedAppSetting,
+  seedJob,
   seedPerformanceAccount,
+  seedPerson,
+  seedSalaryProfile,
+  TEST_NOW,
 } from "./setup";
 
 describe("performance.finalizeYear", () => {
@@ -46,6 +53,49 @@ describe("performance.finalizeYear", () => {
         caller.performance.finalizeYear({ year: 2024 }),
       ).rejects.toThrow(/already finalized/);
     } finally {
+      cleanup();
+    }
+  });
+
+  it("refuses the current year while the active Salary Profile has an entry it can't read, naming it", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      vi.spyOn(console, "log").mockImplementation(() => {});
+      const personId = await seedPerson(db, "Odd Entry");
+      const jobId = seedJob(db, personId, { employerName: "Odd Entry Co" });
+      const profileId = seedSalaryProfile(db, {
+        name: "Odd entry",
+        // eslint-disable-next-line no-restricted-syntax -- a stored entry of another shape, as the column can hold it
+        salaries: { [String(jobId)]: 7 as unknown as SalaryEntry },
+      });
+      db.delete(schema.appSettings)
+        .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID))
+        .run();
+      seedAppSetting(db, SK_ACTIVE_SALARY_PROFILE_ID, profileId);
+      db.insert(schema.accountPerformance)
+        .values({
+          year: TEST_NOW.getFullYear(),
+          performanceAccountId: seedPerformanceAccount(db),
+          institution: "Fidelity",
+          accountLabel: "401k",
+          beginningBalance: "1000",
+          totalContributions: "0",
+          yearlyGainLoss: "0",
+          endingBalance: "1000",
+          employerContributions: "0",
+          fees: "0",
+          distributions: "0",
+          isActive: true,
+          parentCategory: "Retirement",
+        })
+        .run();
+      await expect(
+        caller.performance.finalizeYear({ year: TEST_NOW.getFullYear() }),
+      ).rejects.toThrow(
+        /The saved salary for Odd Entry Co in Salary Profile "Odd entry" can't be read/,
+      );
+    } finally {
+      vi.restoreAllMocks();
       cleanup();
     }
   });

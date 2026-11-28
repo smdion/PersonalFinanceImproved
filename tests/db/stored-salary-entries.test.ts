@@ -1,6 +1,11 @@
-/** salary_profiles.salaries is checked once on read; another shape throws. */
+/** salary_profiles.salaries is checked entry by entry on read; one of another
+ *  shape is left out and named, and stays stored. */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
+import {
+  checkSalaryEntries,
+  unreadableSalaryNotes,
+  withUnreadableEntries,
+} from "@/lib/db/stored-salary-entries";
 import type { SalaryEntry } from "@/lib/db/shapes/salary-entry-defaults";
 import { salaryEntry } from "../helpers/salary-entry";
 
@@ -40,22 +45,27 @@ describe("checkSalaryEntries", () => {
     expect(events).toEqual([]);
   });
 
-  it("throws on an entry of another shape, naming the profile, and logs it once", () => {
+  it("leaves out an entry of another shape, keeping the rest, and logs it once", () => {
     const salaries = {
       ...withRetiredField(),
       "4": Object.assign(salaryEntry(), { payPeriod: "quadweekly" }),
     };
     const events = eventsDuring(() => {
-      for (let i = 0; i < 2; i++)
-        expect(() => checkSalaryEntries({ id: 4, salaries })).toThrow(
-          "Salary Profile 4: its stored entries don't fit their shape",
-        );
+      for (let i = 0; i < 2; i++) {
+        const row = checkSalaryEntries({ id: 4, name: "Plan B", salaries });
+        expect(Object.keys(row.salaries)).toEqual(["3"]);
+        expect(row.unreadable).toEqual({
+          entries: { "4": salaries["4"] },
+          root: false,
+        });
+      }
     });
     expect(events).toEqual([
       expect.objectContaining({
         level: "warn",
         event: "salary_entries_unexpected_shape",
         profileId: 4,
+        job: "4",
       }),
     ]);
   });
@@ -65,15 +75,58 @@ describe("checkSalaryEntries", () => {
     ["an array", [salaryEntry()]],
     ["a scalar", 42],
     ["a double-encoded string", JSON.stringify({ "3": salaryEntry() })],
-  ])("throws on a root that is %s", (_, root) => {
+  ])("reads a root that is %s as no entries, marked unreadable", (_, root) => {
     eventsDuring(() => {
-      expect(() =>
-        checkSalaryEntries({
-          id: 5,
-          // eslint-disable-next-line no-restricted-syntax -- a stored root of any shape, as the column can hold it
-          salaries: root as unknown as Record<string, SalaryEntry>,
-        }),
-      ).toThrow("Salary Profile 5");
+      const row = checkSalaryEntries({
+        id: 5,
+        // eslint-disable-next-line no-restricted-syntax -- a stored root of any shape, as the column can hold it
+        salaries: root as unknown as Record<string, SalaryEntry>,
+      });
+      expect(row.salaries).toEqual({});
+      expect(row.unreadable).toEqual({ entries: {}, root: true });
     });
+  });
+});
+
+describe("withUnreadableEntries", () => {
+  it("puts each unreadable entry back as stored unless the save sets that job", () => {
+    const unreadable = {
+      entries: { "4": { payPeriod: "x" }, "5": 1 },
+      root: false,
+    };
+    const next = { "3": salaryEntry(), "5": salaryEntry({ salary: 1 }) };
+    expect(withUnreadableEntries(unreadable, next)).toEqual({
+      "4": { payPeriod: "x" },
+      ...next,
+    });
+  });
+});
+
+describe("unreadableSalaryNotes", () => {
+  const jobs = [{ id: 4, employerName: "Invented Co" }];
+
+  it("names each unreadable entry by its job's employer, and skips a job that is gone", () => {
+    expect(
+      unreadableSalaryNotes(
+        {
+          name: "Plan B",
+          unreadable: { entries: { "4": {}, "99": {} }, root: false },
+        },
+        jobs,
+      ),
+    ).toEqual([
+      'The saved salary for Invented Co in Salary Profile "Plan B" can\'t be read by this version of Ledgr, so that job has none there. Update Ledgr, or enter it again.',
+    ]);
+  });
+
+  it("names an unreadable root once", () => {
+    expect(
+      unreadableSalaryNotes(
+        { name: "Plan B", unreadable: { entries: {}, root: true } },
+        jobs,
+      ),
+    ).toEqual([
+      'The saved salaries in Salary Profile "Plan B" can\'t be read by this version of Ledgr, so it has none. Update Ledgr, or enter them again.',
+    ]);
   });
 });

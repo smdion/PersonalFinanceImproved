@@ -3,6 +3,7 @@ import { asc, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { DbOrTx } from "@/lib/db";
 import { lockedRow } from "@/server/data/lock-row";
+import { storedSalaryEntries } from "@/lib/db/stored-salary-entries";
 
 /** Deletes `jobIds` and their entries from every Salary Profile (each read under its lock,
  *  ascending) in one transaction (a savepoint inside a running one), so no profile keeps an
@@ -22,7 +23,8 @@ export async function deleteJobsAndEntries(
       .orderBy(asc(schema.salaryProfiles.id));
     for (const { id } of profiles) {
       const profile = await lockedRow(tx, schema.salaryProfiles, id);
-      if (!profile) continue;
+      // A root that isn't an object of entries has none to remove: left as stored.
+      if (!profile || !storedSalaryEntries(profile)) continue;
       const entries = Object.entries(profile.salaries);
       const kept = entries.filter(([jobId]) => !gone.has(jobId));
       if (kept.length < entries.length)

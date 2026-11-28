@@ -5,14 +5,13 @@
 import { eq, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
-import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 import { getAllPeople } from "@/server/data/people";
 import { getLatestSnapshot } from "@/server/data/snapshots";
 import { loadSimulationPreset } from "@/server/services/simulation/simulation-preset";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { getActiveContributionAccountsByType } from "@/server/data/contribution-accounts";
 import { applySalaryProfileRow } from "@/lib/pure/household/compensation";
-import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
+import { fetchEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
 import {
   applyContribProfileRow,
   fetchContributionProfile,
@@ -76,13 +75,7 @@ export async function fetchRetirementData(
       opts?.contributionProfileId,
     ),
     // Same batching for the independent Salary Profile axis.
-    salaryProfileRow: opts?.salaryProfileId
-      ? db
-          .select()
-          .from(schema.salaryProfiles)
-          .where(eq(schema.salaryProfiles.id, opts.salaryProfileId))
-          .then(([row]) => (row ? checkSalaryEntries(row) : null))
-      : Promise.resolve(undefined as undefined),
+    salaryProfileRow: fetchEffectiveSalaryProfile(db, opts?.salaryProfileId),
     // Which job funds which performance account (withdrawal eligibility).
     // No isActive filter: a separated employer's inactive link is the
     // evidence Rule of 55 needs (the same query as tax-buckets.ts's).
@@ -123,10 +116,7 @@ export async function applyProfiles<
   O extends { contributionProfileId?: number; salaryProfileId?: number },
 >(db: Db, data: RetirementData, opts: O) {
   const { allContribsRaw: allContributionsRaw, allJobs } = data;
-  const salaryProfileActiveMap =
-    data.salaryProfileRow !== undefined
-      ? applySalaryProfileRow(data.salaryProfileRow)
-      : await loadEffectiveSalaryProfile(db, opts.salaryProfileId);
+  const salaryProfileActiveMap = applySalaryProfileRow(data.salaryProfileRow);
 
   const contributionProfileResult = applyContribProfileRow(
     data.contributionProfileRow,

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormError } from "@/components/ui/form-error";
+import { UnknownTypeNotes } from "@/components/ui/unknown-type-notes";
 import { FormField, FormInput } from "@/components/forms";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 import {
@@ -87,6 +88,7 @@ export function ProfileEditPanel({
   return (
     <div className="bg-surface-sunken rounded-lg p-4">
       {error && <FormError message={error} className="mb-3" />}
+      <UnknownTypeNotes notes={profile.notes} />
 
       <div className="mb-4 max-w-sm">
         <FormField label="Description">

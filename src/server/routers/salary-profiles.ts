@@ -26,9 +26,9 @@ import {
   setActiveProfile,
 } from "@/server/services/profiles/profile-lifecycle";
 import { loadSalaryProfileDetail } from "@/server/services/profiles/salary-profile";
-import { lockedRow } from "@/server/data/lock-row";
 import {
   existingJobKeys,
+  mergeSalaryEntries,
   refuseEntriesWithoutJobs,
   updateSalaryProfile,
 } from "@/server/services/profiles/salary-entry-writes";
@@ -57,16 +57,14 @@ async function refreshExtraPaycheckRoutingIfActive(
 
     // Re-read the row in its own transaction: a caller's in-memory `salaries`
     // could clobber a concurrent patch to another job on the same profile.
-    const refreshedRow = await db.transaction(async (tx) => {
-      const profile = await lockedRow(tx, schema.salaryProfiles, profileId);
-      if (!profile) return undefined;
-
-      const salaries = { ...checkSalaryEntries(profile).salaries };
+    const refreshedJobs: string[] = [];
+    const row = await mergeSalaryEntries(db, profileId, async (read, tx) => {
+      refreshedJobs.length = 0;
+      const salaries = { ...read };
       const jobs = await existingJobKeys(tx, Object.keys(salaries));
-      let anyRefreshed = false;
       for (const [jobIdStr, entry] of Object.entries(salaries)) {
         const routing = entry.extraPaycheckRouting;
-        if (!routing?.rules?.length) continue; // a refused entry is read as stored
+        if (!routing?.rules.length) continue;
         // One entry whose job is gone (a same-version restore, or a raced write) can't stop the rest.
         if (!jobs.has(jobIdStr)) {
           log("warn", "salary_entry_without_job", { profileId, jobIdStr });
@@ -85,17 +83,11 @@ async function refreshExtraPaycheckRoutingIfActive(
             anchorPayDate: refreshed.anchorPayDate,
           },
         };
-        anyRefreshed = true;
+        refreshedJobs.push(jobIdStr);
       }
-      if (!anyRefreshed) return undefined;
-
-      const [refreshedRow] = await tx
-        .update(schema.salaryProfiles)
-        .set({ salaries })
-        .where(eq(schema.salaryProfiles.id, profileId))
-        .returning();
-      return refreshedRow;
+      return refreshedJobs.length > 0 ? salaries : null;
     });
+    const refreshedRow = refreshedJobs.length > 0 ? row : undefined;
     // A new net pay per check changes what the routing rules put into each
     // fund, so the planned transactions they generate follow — as
     // extraPaycheckRouting.save does.
@@ -266,41 +258,28 @@ export const salaryProfileRouter = createTRPCRouter({
       const updated = await ctx.db.transaction(async (tx) => {
         const key = String(input.jobId);
         await refuseEntriesWithoutJobs(tx, [key]);
-        const profile = await lockedRow(tx, schema.salaryProfiles, input.id);
-        if (!profile)
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Profile not found",
-          });
+        return mergeSalaryEntries(tx, input.id, async (salaries) => {
+          const mergedEntry: Record<string, unknown> = { ...salaries[key] };
+          for (const field of input.unset ?? []) delete mergedEntry[field];
+          Object.assign(mergedEntry, input.fields);
 
-        const salaries = checkSalaryEntries(profile).salaries;
-        const mergedEntry: Record<string, unknown> = { ...salaries[key] };
-        for (const field of input.unset ?? []) delete mergedEntry[field];
-        Object.assign(mergedEntry, input.fields);
+          const parsed = parseKeepingNewKeys(salaryEntrySchema, mergedEntry);
+          if (!parsed.success) {
+            // Message only, no `cause` — trpc.ts's errorFormatter attaches a
+            // `data.zodError` for any BAD_REQUEST caused by a ZodError, and
+            // friendlyMutationError prefers that over this message.
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Invalid salary entry after patch: ${parsed.issues[0]?.message}`,
+            });
+          }
 
-        const parsed = parseKeepingNewKeys(salaryEntrySchema, mergedEntry);
-        if (!parsed.success) {
-          // Message only, no `cause` — trpc.ts's errorFormatter attaches a
-          // `data.zodError` for any BAD_REQUEST caused by a ZodError, and
-          // friendlyMutationError prefers that over this message.
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Invalid salary entry after patch: ${parsed.issues[0]?.message}`,
-          });
-        }
-
-        const nextSalaries = { ...salaries, [key]: parsed.data };
-        await assertSalaryEntryTaxBracketsExist(
-          { db: tx, scope: ctx.scope },
-          { [key]: parsed.data },
-        );
-
-        const rows = await tx
-          .update(schema.salaryProfiles)
-          .set({ salaries: nextSalaries })
-          .where(eq(schema.salaryProfiles.id, input.id))
-          .returning();
-        return rows[0]!;
+          await assertSalaryEntryTaxBracketsExist(
+            { db: tx, scope: ctx.scope },
+            { [key]: parsed.data },
+          );
+          return { ...salaries, [key]: parsed.data };
+        });
       });
 
       const refreshed = await refreshExtraPaycheckRoutingIfActive(
@@ -323,24 +302,11 @@ export const salaryProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const updated = await ctx.db.transaction(async (tx) => {
-        const profile = await lockedRow(tx, schema.salaryProfiles, input.id);
-        if (!profile)
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Profile not found",
-          });
-
-        const salaries = { ...checkSalaryEntries(profile).salaries };
-        delete salaries[String(input.jobId)];
-
-        const rows = await tx
-          .update(schema.salaryProfiles)
-          .set({ salaries })
-          .where(eq(schema.salaryProfiles.id, input.id))
-          .returning();
-        return rows[0]!;
-      });
+      const updated = await mergeSalaryEntries(
+        ctx.db,
+        input.id,
+        ({ [String(input.jobId)]: _removed, ...rest }) => rest,
+      );
 
       const refreshed = await refreshExtraPaycheckRoutingIfActive(
         ctx,

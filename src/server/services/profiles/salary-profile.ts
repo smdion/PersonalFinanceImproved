@@ -8,6 +8,7 @@ import {
   resolveCompensation,
 } from "@/lib/pure/household/compensation";
 import { fetchSalaryProfile } from "@/server/data/salaries";
+import { unreadableSalaryNotes } from "@/lib/db/stored-salary-entries";
 import { activeProfileId } from "@/server/data/active-profile";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import {
@@ -27,20 +28,17 @@ export async function loadAndApplySalaryProfile(
   return applySalaryProfileRow(profile);
 }
 
-/**
- * loadAndApplySalaryProfile, falling back to the active Salary Profile when
- * no id is given: for callers that aren't showing a profile of their own.
- */
-export async function loadEffectiveSalaryProfile(
+/** The Salary Profile `id` names, else the active one; loadEffectiveSalaryProfile
+ *  applies it, for callers that aren't showing a profile of their own. */
+export const fetchEffectiveSalaryProfile = async (
   db: DbOrTx,
-  salaryProfileId: number | null | undefined,
-): Promise<SalaryProfileActiveMap> {
-  if (salaryProfileId != null) {
-    return loadAndApplySalaryProfile(db, salaryProfileId);
-  }
-  const activeId = await activeProfileId(db, "salary");
-  return activeId != null ? loadAndApplySalaryProfile(db, activeId) : new Map();
-}
+  id?: number | null,
+) => fetchSalaryProfile(db, id ?? (await activeProfileId(db, "salary")));
+
+export const loadEffectiveSalaryProfile = async (
+  db: DbOrTx,
+  id?: number | null,
+) => applySalaryProfileRow(await fetchEffectiveSalaryProfile(db, id));
 
 /**
  * W-4 filing status of the first of `personIds` with a non-speculative job in `asOf`'s year, from
@@ -199,7 +197,9 @@ export async function loadSalaryProfileDetail(
 
   return {
     ...profile,
+    unreadable: undefined,
     salaries,
+    notes: unreadableSalaryNotes(profile, allJobs),
     createdAt: profile.createdAt.toISOString(),
     salaryDetails,
     combinedIncome,

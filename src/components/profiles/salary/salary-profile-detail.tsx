@@ -1,6 +1,7 @@
 import React from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
+import { UnknownTypeNotes } from "@/components/ui/unknown-type-notes";
 import {
   Detail,
   SalaryTableHead,
@@ -48,6 +49,7 @@ export function ProfileDetail({
         )}
       </div>
 
+      <UnknownTypeNotes notes={profile.notes} />
       <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
         Salary &amp; Bonus
       </h4>

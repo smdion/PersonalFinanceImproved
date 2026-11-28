@@ -27,7 +27,7 @@ import {
 } from "@/lib/pure/paycheck/bonus";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import { applySandboxSalaryEntries } from "@/lib/pure/household/compensation";
-import { loadEffectiveSalaryProfile } from "@/server/services/profiles/salary-profile";
+import { loadEffectiveSalaryProfileNoted } from "@/server/services/profiles/salary-profile-notes";
 import { loadAndApplyContribProfile } from "@/server/services/contributions/profile";
 import { applyContribActiveFields } from "@/server/services/contributions/profile";
 import { buildSandboxContribRow } from "@/server/services/contributions/profile";
@@ -206,10 +206,12 @@ export async function computeContributionSummary(
     input?.sandboxSalaryEntries,
     new Map(),
   );
-  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
-    ctx.db,
-    input?.salaryProfileId,
-  );
+  const { salaryMap: salaryProfileActiveMap, notes: salaryNotes } =
+    await loadEffectiveSalaryProfileNoted(
+      ctx.db,
+      input?.salaryProfileId,
+      allJobs,
+    );
   const profileResult = await loadAndApplyContribProfile(
     ctx.db,
     input?.contributionProfileId,
@@ -708,7 +710,7 @@ export async function computeContributionSummary(
     filingStatus: capHousehold.filingStatus,
     jointAccountTypes,
     jointTotals,
-    unknownTypeNotes: contributionAccounts.notes,
+    unknownTypeNotes: [...contributionAccounts.notes, ...salaryNotes],
     priorYearWindow: inPriorYearWindow
       ? { priorYear, deadline: `April 15, ${currentYear}` }
       : null,

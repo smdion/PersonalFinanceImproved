@@ -383,7 +383,7 @@ export async function buildEnginePayload(
   }));
 
   const { switchProfileMap, switchSalaryProfileMap, switchWarnings } =
-    await loadSwitchProfiles(db, profileSwitchOverrides);
+    await loadSwitchProfiles(db, profileSwitchOverrides, data.allJobs);
   inputWarnings.push(...switchWarnings, ...missingLimitsWarning, ...rateNotes);
   inputWarnings.push(...negativeMatchNotes(data, switchProfileMap.values()));
 

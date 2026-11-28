@@ -25,6 +25,10 @@ import {
 } from "@/server/data/active-profile";
 import { refuseEntriesWithoutJobs } from "@/server/services/profiles/salary-entry-writes";
 import { firstRow } from "@/lib/utils/first-row";
+import {
+  checkSalaryEntries,
+  withUnreadableEntries,
+} from "@/lib/db/stored-salary-entries";
 import type { Ack } from "@/lib/http/probe-result";
 
 export type LifecycleKind = "contribution" | "salary" | "retirement";
@@ -196,12 +200,15 @@ export async function duplicateProfile(
       .then(firstRow);
     if (!source) throw sourceNotFound();
 
-    const sourceSalaries: SalaryEntryMap = orEmpty(source.salaries);
-    const salaries: SalaryEntryMap = Object.fromEntries(
-      Object.entries(sourceSalaries).map(([jobId, entry]) => [
-        jobId,
-        { ...entry, extraPaycheckRouting: null },
-      ]),
+    const read = checkSalaryEntries(source);
+    const salaries = withUnreadableEntries(
+      read.unreadable,
+      Object.fromEntries(
+        Object.entries(read.salaries).map(([jobId, entry]) => [
+          jobId,
+          { ...entry, extraPaycheckRouting: null },
+        ]),
+      ),
     );
     await refuseEntriesWithoutJobs(tx, Object.keys(salaries));
 

@@ -9,7 +9,7 @@
  * contribution.accounts, paycheck.deductions.
  */
 import "./setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import {
   createTestCaller,
   seedPerson,
@@ -19,7 +19,7 @@ import {
   seedRetirementProfile,
   seedRetirementProfilePerson,
 } from "./setup";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { buildLiabilityBracketInput } from "@/lib/pure/paycheck/liability-brackets";
 import { buildBracketInput } from "@/lib/pure/paycheck/withholding";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
@@ -631,6 +631,29 @@ describe("deleting a job removes its Salary Profile entries", () => {
     for (const id of profiles)
       expect(Object.keys(salariesOf(id))).toEqual([String(kept)]);
   });
+
+  it.each([
+    ["a JSON null", null],
+    ["an array", [BLANK_SALARY_ENTRY]],
+    ["a string", "{}"],
+  ])(
+    "jobs.delete leaves a Salary Profile root that is %s as stored",
+    async (label, root) => {
+      const personId = await seedPerson(db, "Odd Root", "1990-01-01");
+      const job = seedJob(db, personId);
+      const id = db
+        .insert(schema.salaryProfiles)
+        .values({ name: `Invented odd root: ${label}`, salaries: {} })
+        .returning()
+        .get().id;
+      db.run(
+        sql`update salary_profiles set salaries = ${JSON.stringify(root)} where id = ${id}`,
+      );
+      vi.spyOn(console, "log").mockImplementation(() => {});
+      await caller.jobs.delete({ id: job });
+      expect(salariesOf(id)).toEqual(root);
+    },
+  );
 
   it("a Salary Profile write naming a job that doesn't exist is refused, and nothing changes", async () => {
     const personId = await seedPerson(db, "One Job", "1990-01-01");

@@ -4,7 +4,7 @@ import type { DbOrTx } from "@/lib/db";
 import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 
 /**
- * Fetch a Salary Profile by id, its entries checked (checkSalaryEntries).
+ * Fetch a Salary Profile by id, its unreadable entries left out (checkSalaryEntries).
  *
  * A null/undefined id (none selected here) yields null; a non-null id that
  * doesn't resolve is a missing row, not a sentinel.
@@ -12,7 +12,7 @@ import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
 export async function fetchSalaryProfile(
   db: DbOrTx,
   salaryProfileId: number | null | undefined,
-): Promise<typeof schema.salaryProfiles.$inferSelect | null> {
+) {
   if (salaryProfileId == null) return null;
   const rows = await db
     .select()

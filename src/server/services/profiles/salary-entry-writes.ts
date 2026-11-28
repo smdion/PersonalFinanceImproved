@@ -5,7 +5,10 @@ import { TRPCError } from "@trpc/server";
 import * as schema from "@/lib/db/schema";
 import { isPostgres, type DbOrTx } from "@/lib/db";
 import type { SalaryEntryMap } from "@/lib/pure/household/compensation";
-import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
+import {
+  checkSalaryEntries,
+  withUnreadableEntries,
+} from "@/lib/db/stored-salary-entries";
 import { lockedRow } from "@/server/data/lock-row";
 
 type SalaryProfileRow = typeof schema.salaryProfiles.$inferSelect;
@@ -61,11 +64,18 @@ export function updateSalaryProfile(
   return db.transaction(async (tx) => {
     if (updates.salaries)
       await refuseEntriesWithoutJobs(tx, Object.keys(updates.salaries));
-    if (!(await lockedRow(tx, schema.salaryProfiles, id)))
+    const stored = await lockedRow(tx, schema.salaryProfiles, id);
+    if (!stored)
       throw new TRPCError({ code: "NOT_FOUND", message: "Profile not found" });
+    const { unreadable } = checkSalaryEntries(stored);
     const [row] = await tx
       .update(schema.salaryProfiles)
-      .set(updates)
+      .set({
+        ...updates,
+        ...(updates.salaries && {
+          salaries: withUnreadableEntries(unreadable, updates.salaries),
+        }),
+      })
       .where(eq(schema.salaryProfiles.id, id))
       .returning();
     return row!;
@@ -73,21 +83,25 @@ export function updateSalaryProfile(
 }
 
 /** Reads the profile's entries under its lock and writes what `change` returns (null leaves
- *  them; it may throw to refuse). NOT_FOUND when the profile is gone; returns the row. */
+ *  them; it may throw to refuse), each entry it can't read kept. NOT_FOUND when gone. */
 export function mergeSalaryEntries(
   db: DbOrTx,
   profileId: number,
-  change: (salaries: SalaryEntryMap) => SalaryEntryMap | null,
+  change: (
+    salaries: SalaryEntryMap,
+    tx: DbOrTx,
+  ) => SalaryEntryMap | null | Promise<SalaryEntryMap | null>,
 ): Promise<SalaryProfileRow> {
   return db.transaction(async (tx) => {
     const row = await lockedRow(tx, schema.salaryProfiles, profileId);
     if (!row)
       throw new TRPCError({ code: "NOT_FOUND", message: "Profile not found" });
-    const next = change(checkSalaryEntries(row).salaries);
+    const { salaries, unreadable } = checkSalaryEntries(row);
+    const next = await change(salaries, tx);
     if (next === null) return row;
     const [updated] = await tx
       .update(schema.salaryProfiles)
-      .set({ salaries: next })
+      .set({ salaries: withUnreadableEntries(unreadable, next) })
       .where(eq(schema.salaryProfiles.id, profileId))
       .returning();
     return updated!;

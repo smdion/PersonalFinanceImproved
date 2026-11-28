@@ -12,7 +12,10 @@ import {
 } from "@/lib/pure/contributions/cap-pass";
 import { inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { checkSalaryEntries } from "@/lib/db/stored-salary-entries";
+import {
+  checkSalaryEntries,
+  unreadableSalaryNotes,
+} from "@/lib/db/stored-salary-entries";
 import {
   contributionPay,
   getTotalCompensation,
@@ -37,6 +40,7 @@ type SalaryOverrideRow = RetirementData["salaryOverrideRows"][number];
 export async function loadSwitchProfiles(
   db: Db,
   profileSwitchOverrides: readonly SalaryOverrideRow[],
+  jobs: RetirementData["allJobs"],
 ) {
   const profileSwitchProfileIds = Array.from(
     new Set(
@@ -72,15 +76,14 @@ export async function loadSwitchProfiles(
     switchSalaryProfileRows.map((p) => [p.id, checkSalaryEntries(p)]),
   );
 
-  return {
+  const switchWarnings = missingSwitchProfileWarnings(
+    profileSwitchOverrides,
     switchProfileMap,
     switchSalaryProfileMap,
-    switchWarnings: missingSwitchProfileWarnings(
-      profileSwitchOverrides,
-      switchProfileMap,
-      switchSalaryProfileMap,
-    ),
-  };
+  );
+  for (const p of switchSalaryProfileMap.values())
+    switchWarnings.push(...unreadableSalaryNotes(p, jobs));
+  return { switchProfileMap, switchSalaryProfileMap, switchWarnings };
 }
 
 export function buildProfileSwitches<

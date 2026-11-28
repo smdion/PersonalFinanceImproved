@@ -597,6 +597,34 @@ describe("salaryProfile router", () => {
       }
     });
 
+    it("copies an entry it can't read as stored, routing and all", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const readable = seedJob(db, personId);
+        const unreadable = seedJob(db, personId);
+        const sourceId = seedSalaryProfile(db, {
+          salaries: {
+            [String(readable)]: entry({ salary: 1 }),
+            // eslint-disable-next-line no-restricted-syntax -- a stored entry of another shape, as the column can hold it
+            [String(unreadable)]: 7 as unknown as SalaryEntry,
+          },
+        });
+        vi.spyOn(console, "log").mockImplementation(() => {});
+        const created = await caller.salaryProfile.duplicate({
+          sourceProfileId: sourceId,
+          name: "Clone of odd",
+        });
+        expect(created.salaries).toEqual({
+          [String(readable)]: entry({ salary: 1 }),
+          [String(unreadable)]: 7,
+        });
+      } finally {
+        cleanup();
+        vi.restoreAllMocks();
+      }
+    });
+
     it("throws when the source profile doesn't exist", async () => {
       const { caller, cleanup } = await createTestCaller(adminSession);
       try {
@@ -670,6 +698,70 @@ describe("salaryProfile router", () => {
             String(jobId)
           ],
         ).toMatchObject({ salary: 175000, stockGrants: 3 });
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("leaves out an entry it can't read, names it, and keeps it stored through every write", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const readable = seedJob(db, personId, { employerName: "Readable Co" });
+        const unreadable = seedJob(db, personId, { employerName: "Odd Co" });
+        // An entry of another shape: a pay schedule this version doesn't know.
+        const odd = { ...entry({ salary: 99000 }), payPeriod: "fortnightly" };
+        const profileId = seedSalaryProfile(db, {
+          name: "Mixed",
+          salaries: {
+            [String(readable)]: entry({ salary: 80000 }),
+            // eslint-disable-next-line no-restricted-syntax -- a stored entry of another shape, as the column can hold it
+            [String(unreadable)]: odd as unknown as SalaryEntry,
+          },
+        });
+
+        const detail = await caller.salaryProfile.getById({ id: profileId });
+        expect(Object.keys(detail!.salaries)).toEqual([String(readable)]);
+        expect(detail!.notes).toEqual([
+          expect.stringContaining(
+            'salary for Odd Co in Salary Profile "Mixed"',
+          ),
+        ]);
+        expect(detail).not.toHaveProperty("unreadable.entries");
+
+        const stored = async () =>
+          db
+            .select()
+            .from(sqliteSchema.salaryProfiles)
+            .where(eq(sqliteSchema.salaryProfiles.id, profileId))
+            .get()!.salaries[String(unreadable)];
+        await caller.salaryProfile.patchEntry({
+          id: profileId,
+          jobId: readable,
+          fields: { salary: 85000 },
+        });
+        expect(await stored()).toEqual(odd);
+        await caller.salaryProfile.update({
+          id: profileId,
+          salaries: { [String(readable)]: entry({ salary: 86000 }) },
+        });
+        expect(await stored()).toEqual(odd);
+        await caller.salaryProfile.removeEntry({
+          id: profileId,
+          jobId: readable,
+        });
+        expect(await stored()).toEqual(odd);
+
+        // A save that sets that job replaces it.
+        await caller.salaryProfile.patchEntry({
+          id: profileId,
+          jobId: unreadable,
+          fields: entry({ salary: 70000 }),
+        });
+        expect(await stored()).toMatchObject({
+          salary: 70000,
+          payPeriod: "biweekly",
+        });
       } finally {
         cleanup();
       }

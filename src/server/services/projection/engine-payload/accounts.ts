@@ -17,6 +17,7 @@ import {
   unknownTypeNote,
   unknownTypeRows,
 } from "@/lib/pure/accounts/tax-buckets/unknown-type-rows";
+import { unreadableSalaryNotes } from "@/lib/db/stored-salary-entries";
 import { contributionAccountName } from "@/server/services/contributions/account-name";
 import { buildIndividualAccounts } from "./individual-accounts";
 import type { RetirementData } from "./load";
@@ -133,6 +134,10 @@ export function startingAccounts(
       unknownTypeNote,
     ),
   );
+  if (data.salaryProfileRow)
+    inputWarnings.push(
+      ...unreadableSalaryNotes(data.salaryProfileRow, allJobs),
+    );
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
   const performanceAccountsById = new Map(perfAccounts.map((p) => [p.id, p]));
   for (const account of data.unknownTypeContributions)

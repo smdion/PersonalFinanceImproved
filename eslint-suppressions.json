@@ -5438,9 +5438,6 @@
     }
   },
   "src/server/services/projection/engine-payload/load.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
       "count": 7
     }
