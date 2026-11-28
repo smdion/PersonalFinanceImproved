@@ -7,8 +7,8 @@
     "src/app/(dashboard)/brokerage/brokerage-goal-status.tsx": 64,
     "src/app/(dashboard)/brokerage/brokerage-sections.tsx": 246,
     "src/app/(dashboard)/brokerage/brokerage-year-table-head.tsx": 36,
-    "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 283,
-    "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 137,
+    "src/app/(dashboard)/brokerage/brokerage-year-table.tsx": 284,
+    "src/app/(dashboard)/brokerage/use-brokerage-page.ts": 120,
     "src/app/(dashboard)/budget/budget-content.tsx": 635,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 294,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 924,
@@ -378,7 +378,7 @@
     "src/server/routers/projection/coast-fire.ts": 83,
     "src/server/routers/projection/monte-carlo.ts": 172,
     "src/server/routers/projection/relocation.ts": 120,
-    "src/server/routers/projection/scenarios.ts": 128,
+    "src/server/routers/projection/scenarios.ts": 130,
     "src/server/routers/projection/strategy.ts": 85,
     "src/server/routers/projection/tax-optimization.ts": 432,
     "src/server/routers/retirement/index.ts": 15,
@@ -995,7 +995,7 @@
       "calculateRelocation": 316
     },
     "src/lib/pure/savings/brokerage-goals.ts": {
-      "calculateBrokerageGoals": 211
+      "calculateBrokerageGoals": 206
     },
     "src/lib/pure/simulation/trial-run.ts": {
       "runTrials": 293

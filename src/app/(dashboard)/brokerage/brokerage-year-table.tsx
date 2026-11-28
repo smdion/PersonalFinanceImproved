@@ -74,7 +74,8 @@ function growthTooltip(yearRow: BrokerageGoalYear): TooltipData {
 }
 
 function withdrawalTooltip(yearRow: BrokerageGoalYear): TooltipData {
-  const items = yearRow.goalWithdrawals.map((gw) => ({
+  const draws = [...yearRow.plannedWithdrawals, ...yearRow.goalWithdrawals];
+  const items = draws.map((gw) => ({
     label: gw.name,
     amount: gw.amount,
     prefix: "-" as const,
@@ -95,7 +96,7 @@ function withdrawalTooltip(yearRow: BrokerageGoalYear): TooltipData {
   }));
   return {
     kind: "money",
-    header: "Goal Withdrawals",
+    header: "Withdrawals",
     items,
     withdrawals: {
       amount: yearRow.totalWithdrawal,

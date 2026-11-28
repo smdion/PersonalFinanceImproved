@@ -4,12 +4,12 @@ import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useProfileIdSetting } from "@/lib/hooks/use-profile-id-setting";
 import type { AccumOverride } from "@/components/retirement-projection/types";
-import { lumpSumTarget } from "@/components/retirement-projection/lump-sum-target";
 import { isPortfolioParent, tracksCostBasis } from "@/lib/config/account-types";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 import { useBrokerageLumpSums } from "./use-brokerage-lump-sums";
+import { plannedEventFlows } from "./planned-event-flows";
 
 /** The Brokerage page's queries, mutations and local state, in the order it calls them. */
 export function useBrokeragePage() {
@@ -38,29 +38,11 @@ export function useBrokeragePage() {
   // Brokerage planned events (persisted to DB)
   const { brokerageLumpSums, setBrokerageLumpSums } = useBrokerageLumpSums();
 
-  const accumOverridesFromLumpSums: AccumOverride[] = React.useMemo(() => {
-    const byYear = new Map<number, AccumOverride>();
-    for (const ls of brokerageLumpSums) {
-      const y = parseInt(ls.year);
-      const amount = parseFloat(ls.amount);
-      if (isNaN(y) || isNaN(amount) || amount === 0) continue;
-      let ov = byYear.get(y);
-      if (!ov) {
-        ov = { year: y, lumpSums: [] };
-        byYear.set(y, ov);
-      }
-      ov.lumpSums!.push({
-        id: ls.id,
-        amount: Math.abs(amount),
-        targetAccount: ls.targetAccount,
-        // Brokerage-page lump sums are Portfolio savings.
-        targetParentCategory: "Portfolio" as const,
-        ...lumpSumTarget(ls),
-        ...(ls.label ? { label: ls.label } : {}),
-      });
-    }
-    return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
-  }, [brokerageLumpSums]);
+  const { accumulationOverrides: accumOverridesFromLumpSums, withdrawals } =
+    React.useMemo(
+      () => plannedEventFlows(brokerageLumpSums),
+      [brokerageLumpSums],
+    );
 
   // Sending only the lump sums would replace the saved Changes by year, so
   // merge by year: the saved row keeps its fields, lump sums come from both.
@@ -89,6 +71,7 @@ export function useBrokeragePage() {
     ...(mergedAccumOverrides
       ? { accumulationOverrides: mergedAccumOverrides }
       : {}),
+    ...(withdrawals.length > 0 ? { brokerageWithdrawals: withdrawals } : {}),
     selection: profileSelectionFrom(contributionInput),
   };
 

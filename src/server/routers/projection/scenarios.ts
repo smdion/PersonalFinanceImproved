@@ -11,6 +11,7 @@ import {
   writeProjectionCache,
 } from "@/server/services/projection/projection-cache";
 import {
+  brokerageWithdrawalsSchema,
   prepareEngineInput,
   prepareProjectionRun,
 } from "@/server/services/projection/projection-run";
@@ -42,6 +43,7 @@ export const scenariosRouter = createTRPCRouter({
 
         // --- Decumulation overrides ---
         decumulationOverrides: decumulationOverrideSchema,
+        brokerageWithdrawals: brokerageWithdrawalsSchema,
 
         selection: profileSelectionSchema.optional(),
         /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */

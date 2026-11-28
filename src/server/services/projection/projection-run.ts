@@ -138,6 +138,20 @@ async function savedOverrides<S extends z.ZodArray<z.ZodType>>(
   );
 }
 
+/** The Brokerage page's planned withdrawals (PlannedBrokerageWithdrawal),
+ *  sent with its projection. */
+export const brokerageWithdrawalsSchema = z
+  .array(
+    z.object({
+      // Any saved event's id and label: the page's saves don't bound them.
+      id: z.string(),
+      year: z.number().int(),
+      amount: z.number().positive(),
+      label: z.string().optional(),
+    }),
+  )
+  .optional();
+
 /** The "Changes by year" every projection runs with (relocation and the
  *  strategy comparison too), as engine types: what the caller sent, else
  *  the household's saved sets (`savedOverrides`, its notes in `notes`). */
@@ -348,6 +362,7 @@ export async function prepareEngineInput<Base extends object>(
   },
   input: Parameters<typeof resolveProjectionOverrides>[1] & {
     decumulationDefaults: Parameters<typeof buildDecumulationDefaults>[1];
+    brokerageWithdrawals?: z.infer<typeof brokerageWithdrawalsSchema>;
   },
 ) {
   const notes: string[] = [];
@@ -363,5 +378,8 @@ export async function prepareEngineInput<Base extends object>(
     ...inputWarningsWith(payload.baseEngineInput, notes),
     decumulationDefaults,
     ...overrides,
+    ...(input.brokerageWithdrawals && {
+      brokerageWithdrawals: input.brokerageWithdrawals,
+    }),
   };
 }

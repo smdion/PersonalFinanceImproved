@@ -9,6 +9,7 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type {
+  BrokerageDraw,
   EngineAccumulationYear,
   EngineDecumulationYear,
   EngineYearProjection,
@@ -42,6 +43,9 @@ type BrokerageGoalWithdrawal = {
   taxCost: number;
 };
 
+/** A planned withdrawal's draw, named by its label. */
+type BrokeragePlannedWithdrawal = Omit<BrokerageGoalWithdrawal, "goalId">;
+
 type BrokerageIndividualAccount = {
   name: string;
   category: string;
@@ -65,6 +69,9 @@ export type BrokerageGoalYear = {
   growth: number;
   /** Goal withdrawals processed by the engine this year. */
   goalWithdrawals: BrokerageGoalWithdrawal[];
+  /** Planned withdrawals drawn this year, before the goals. */
+  plannedWithdrawals: BrokeragePlannedWithdrawal[];
+  /** Planned and goal withdrawals together, and their tax. */
   totalWithdrawal: number;
   totalTaxCost: number;
   endBalance: number;
@@ -104,6 +111,28 @@ type BrokerageGoalsResult = {
 };
 
 // --- Calculator ---
+
+/** A working year's draws as the page lists them: each goal's, and each
+ *  planned withdrawal's under its label. */
+function yearDraws(y: EngineAccumulationYear) {
+  const view = (d: BrokerageDraw) => ({
+    amount: d.amount,
+    basisPortion: d.basisPortion,
+    gainsPortion: d.gainsPortion,
+    taxCost: d.taxCost,
+  });
+  return {
+    goalWithdrawals: y.brokerageGoalWithdrawals.map((gw) => ({
+      goalId: gw.goalId,
+      name: gw.name,
+      ...view(gw),
+    })),
+    plannedWithdrawals: (y.brokerageWithdrawals ?? []).map((w) => ({
+      name: w.label ?? "Planned withdrawal",
+      ...view(w),
+    })),
+  };
+}
 
 export function calculateBrokerageGoals(
   input: BrokerageGoalsInput,
@@ -170,6 +199,7 @@ export function calculateBrokerageGoals(
     let employerMatch = 0;
     let overflow = 0;
     let goalWithdrawals: BrokerageGoalWithdrawal[] = [];
+    let plannedWithdrawals: BrokeragePlannedWithdrawal[] = [];
     let totalWithdrawal = 0;
     let totalTaxCost = 0;
     let proRateFraction: number | null = null;
@@ -211,17 +241,10 @@ export function calculateBrokerageGoals(
         overflow = accumulationYear.overflowToBrokerage;
       }
 
-      // Goal withdrawals from engine
-      goalWithdrawals = accumulationYear.brokerageGoalWithdrawals.map((gw) => ({
-        goalId: gw.goalId,
-        name: gw.name,
-        amount: gw.amount,
-        basisPortion: gw.basisPortion,
-        gainsPortion: gw.gainsPortion,
-        taxCost: gw.taxCost,
-      }));
-      totalWithdrawal = roundToCents(sumBy(goalWithdrawals, (gw) => gw.amount));
-      totalTaxCost = roundToCents(sumBy(goalWithdrawals, (gw) => gw.taxCost));
+      ({ goalWithdrawals, plannedWithdrawals } = yearDraws(accumulationYear));
+      const draws = [...plannedWithdrawals, ...goalWithdrawals];
+      totalWithdrawal = roundToCents(sumBy(draws, (gw) => gw.amount));
+      totalTaxCost = roundToCents(sumBy(draws, (gw) => gw.taxCost));
 
       // Update goal statuses
       for (const gw of accumulationYear.brokerageGoalWithdrawals) {
@@ -275,6 +298,7 @@ export function calculateBrokerageGoals(
       overflow,
       growth,
       goalWithdrawals,
+      plannedWithdrawals,
       totalWithdrawal,
       totalTaxCost,
       endBalance: roundToCents(afterTax),

@@ -28,7 +28,7 @@ export function LumpSumFields({
       onAdd={(ls) => {
         const lumpEntry = {
           id: ls.id,
-          amount: Math.abs(parseFloat(ls.amount)),
+          amount: parseFloat(ls.amount),
           targetAccount: ls.targetAccount,
           ...lumpSumTarget(ls),
           ...(ls.targetOwnerName

@@ -87,6 +87,17 @@ describe("prepareEngineInput", () => {
     expect(out.accumulationOverrides).toEqual(sent);
     expect(out.decumulationDefaults.withdrawalRoutingMode).toBe("percentage");
   });
+
+  it("passes the Brokerage page's planned withdrawals to the engine", async () => {
+    const brokerageWithdrawals = [
+      { id: "w", year: 2030, amount: 20_000, label: "Invented" },
+    ];
+    const out = await prepareEngineInput(ctx.rawDb, payload, {
+      decumulationDefaults: NO_CLIENT,
+      brokerageWithdrawals,
+    });
+    expect(out.brokerageWithdrawals).toEqual(brokerageWithdrawals);
+  });
 });
 
 describe("buildDecumulationDefaults, a saved routing mode this version doesn't know", () => {
