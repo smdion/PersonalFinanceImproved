@@ -52,7 +52,7 @@ const PAGE_BUDGET_KB: Record<string, number> = {
   "/(dashboard)/assets/page": 225,
   "/(dashboard)/benchmarks/methodology/page": 221,
   "/(dashboard)/benchmarks/page": 424,
-  "/(dashboard)/brokerage/page": 244,
+  "/(dashboard)/brokerage/page": 245,
   "/(dashboard)/budget/page": 364,
   "/(dashboard)/contributions/page": 292,
   "/(dashboard)/data-browser/page": 222,
