@@ -1,28 +1,15 @@
 /** The individual track at year end: each account's row, negatives clamped,
- *  each category reconciled to `accountBalance`, basis clamped to the balance. */
+ *  basis clamped to the balance. */
 import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
-  AccountBalances,
   AccountYearDraw,
   AccountYearRothBasis,
 } from "../../accounts/account-balances.types";
 import { roundToCents } from "../../../utils/math";
-import {
-  getAccountTypeConfig,
-  isOverflowTarget,
-  getAllCategories,
-  isPreTaxType,
-  isTaxFreeBucket,
-} from "../../../config/account-types";
-import {
-  getTraditionalBalance,
-  getRothBalance,
-  getTotalBalance,
-} from "../../accounts/account-balance";
+import { isOverflowTarget } from "../../../config/account-types";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
 import { accountIdKeyOf, isHeldPart } from "@/lib/pure/accounts/account-part";
-import { reconcileGroup } from "./reconcile-group";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {
   clampBasisToBalance,
@@ -184,53 +171,6 @@ export function clampIndividualBalances(
     const v = indBalance.get(k) ?? 0;
     if (v < 0) indBalance.set(k, 0);
   }
-}
-
-/**
- * Pushes `indBalance` onto the authoritative `accountBalance` each year so eligibility sees
- * matching tracks; no writes when a group already matches. Run after `clampIndividualBalances`,
- * before `clampIndividualBasis`. Mutates `indBalance`; returns drift (>$1) diagnostics.
- */
-export function reconcileIndividualToAggregate(
-  indAccounts: IndividualAccountInput[],
-  indKey: IndKeyFn,
-  indBalance: Map<string, number>,
-  accountBalance: AccountBalances,
-): string[] {
-  const diagnostics: string[] = [];
-  for (const cat of getAllCategories()) {
-    const catAccounts = indAccounts.filter((ia) => ia.category === cat);
-    if (catAccounts.length === 0) continue;
-    const bs = getAccountTypeConfig(cat).balanceStructure;
-    if (bs === "roth_traditional") {
-      reconcileGroup(
-        catAccounts.filter((ia) => isPreTaxType(ia.taxType)),
-        indKey,
-        indBalance,
-        getTraditionalBalance(accountBalance[cat]),
-        `${cat} traditional`,
-        diagnostics,
-      );
-      reconcileGroup(
-        catAccounts.filter((ia) => isTaxFreeBucket(ia.taxType)),
-        indKey,
-        indBalance,
-        getRothBalance(accountBalance[cat]),
-        `${cat} Roth`,
-        diagnostics,
-      );
-    } else {
-      reconcileGroup(
-        catAccounts,
-        indKey,
-        indBalance,
-        getTotalBalance(accountBalance[cat]),
-        cat,
-        diagnostics,
-      );
-    }
-  }
-  return diagnostics;
 }
 
 /**

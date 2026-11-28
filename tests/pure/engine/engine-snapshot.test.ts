@@ -17,8 +17,7 @@ import {
 } from "../fixtures/engine-fixtures";
 import { expectFirstRmdAndClaimYears } from "../fixtures/retirement-milestones";
 import { describe, it, expect } from "vitest";
-import { calculateProjection as runEngine } from "@/lib/pure/engine";
-import { recordDrift } from "../fixtures/drift";
+import { calculateProjection } from "@/lib/pure/engine";
 
 import type {
   ProjectionInput,
@@ -29,10 +28,6 @@ import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../../helpers/tax-data";
 import { onePerson } from "../../fixtures/engine-people";
 import type { FixtureInput } from "../fixtures/engine-input";
-
-/** Every projection here is checked for indBalance/accountBalance drift (end of file). */
-const drift = recordDrift(runEngine);
-const calculateProjection = drift.calculate;
 
 const AS_OF = new Date("2025-03-07");
 
@@ -3664,17 +3659,9 @@ describe("engine snapshot parity", () => {
     expect(decYears[0]?.totalTraditionalWithdrawal).toBe(0);
     expect(decYears[0]?.rmdExcessAmount).toBe(0);
     const metrics = extractMetrics(result);
-    // The QCD debit now applies directly
-    // to the IRA's individual-account balance instead of being deferred to
-    // reconcileIndividualToAggregate — the withdrawal fan-out now correctly
-    // sees the post-QCD capacity mid-year instead of a stale pre-QCD figure,
-    // so it can no longer over-draw the account for spending need before
-    // reconcile silently "fixes" the balance at year-end.
-    // Lower than before the QCD-cap fix (was 2499086.87) — the extra
-    // ~$33.7k/yr now going out as QCD (maximized to the cap instead of
-    // stopping at the RMD) never gets to compound in the account across
-    // the remaining 10-year horizon, same direction the allAccountsBalance drop
-    // in fixture 66/67 shows.
+    // The QCD debit lands on the IRA's part, so the withdrawal fan-out sees
+    // the post-QCD capacity; the QCD, maximized to the cap, leaves the
+    // account each year rather than compounding.
     expect(metrics.finalYear?.allAccountsBalance).toBe(2242061.04);
     expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
@@ -4250,23 +4237,4 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(withFlagOmitted);
     expect(metrics).toMatchSnapshot();
   });
-});
-
-/** Fixtures whose two balance tracks drift today. */
-describe("the two balance tracks agree", () => {
-  it("no projection above drifts by more than $1 (indBal vs acctBal)", () => {
-    expect(drift.byTest.size).toBeGreaterThan(0);
-    expect(drift.drifting().map(([name]) => name)).toEqual([]);
-  });
-
-  // Their savings with no contribution specs land on the parts.
-  for (const fixture of [
-    "fixture 39: Individual account tracking through full projection",
-    "fixture 52: 3+ individual accounts with unequal balances in same category",
-  ])
-    it(`${fixture}: no drift`, () => {
-      const ran = [...drift.byTest].filter(([name]) => name.endsWith(fixture));
-      expect(ran).toHaveLength(1);
-      expect(ran[0]![1]).toEqual([]);
-    });
 });

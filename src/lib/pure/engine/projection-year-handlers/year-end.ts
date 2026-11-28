@@ -1,11 +1,8 @@
 /** The decumulation year's close: growth, year-end state and balances. */
 import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import { scopedBalances } from "../balance-utils";
-import { followReconciliation, syncAggregateBasis } from "../brokerage-basis";
-import {
-  clampIndividualBasis,
-  reconcileIndividualToAggregate,
-} from "../individual-accounts/reconcile";
+import { syncAggregateBasis } from "../brokerage-basis";
+import { clampIndividualBasis } from "../individual-accounts/reconcile";
 import { growYearToRows } from "./year-end-rows";
 import type {
   DecumulationYear,
@@ -16,8 +13,8 @@ import type { DecumulationFlow } from "./tax-year-settlement";
 import type { decumulationPortfolioContributions } from "./portfolio-contributions";
 
 /** The year closed: growth applied, next year's RMD and strategy state set,
- *  each account's row built, dust cleared, accounts reconciled to the
- *  aggregate, and retirement depletion tracked. */
+ *  each account's row built, dust cleared, the aggregate basis taken from
+ *  the parts, and retirement depletion tracked. */
 export function closeDecumulationYear(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
@@ -33,27 +30,8 @@ export function closeDecumulationYear(
   const { routeWarnings } = flow.route;
   const { individualYearBalances } = growYearToRows(ctx, state, thisYear, flow);
 
-  // indBalance reconciled to accountBalance once a year (the tracks drift), after dust
-  // cleanup and before the basis re-clamp, so next year's eligibility can't
-  // see an eligible balance in a locked category.
+  // The aggregate basis is the accounts' sum.
   if (ledgerRuns) {
-    routeWarnings.push(
-      ...followReconciliation(
-        indAccounts,
-        indKey,
-        indBalance,
-        brokBasis,
-        balances.afterTaxBasis,
-        () =>
-          reconcileIndividualToAggregate(
-            indAccounts,
-            indKey,
-            indBalance,
-            accountBalance,
-          ),
-      ),
-    );
-    // The aggregate basis is the accounts' sum.
     syncAggregateBasis(
       indAccounts,
       indKey,

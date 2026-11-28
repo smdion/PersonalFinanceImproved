@@ -1040,21 +1040,11 @@ describe("routeForMode (Tier B eligibility gate)", () => {
   });
 
   it("draws exactly $0 from a fully-locked category in pass 1 when penaltyExposedTrad equals the category's real balance exactly (v0.7.8 indBal reconciliation follow-up)", () => {
-    // Regression for the live bug found on the real household:
-    // Before
-    // reconcileIndividualToAggregate existed, eligibility.penaltyExposedTrad[cat]
-    // (summed from indBalance-derived per-account locked amounts) could be a
-    // few cents LESS than balances[cat].traditional (the separately-
-    // maintained aggregate) even when the category was reported 100%
-    // locked -- subtractLocked would then leave that residual "eligible",
-    // and pass 1 would draw it from an account the engine had just
-    // declared locked. This test asserts subtractLocked's arithmetic is
-    // exact (draws exactly 0) when its two inputs agree exactly, which is
-    // the property reconciliation now guarantees upstream, in
-    // decumulation-year.ts, before eligibility is ever computed.
+    // subtractLocked's arithmetic is exact: a category whose locked amount
+    // equals its balance draws exactly $0 in pass 1. The two always agree,
+    // since the category is its parts' sum.
     const balances = lockedBalances().balances;
-    // Exactly equal to balances["401k"].traditional (100000) -- the
-    // no-drift case reconciliation guarantees.
+    // Exactly equal to balances["401k"].traditional (100000).
     const lockedTrad = {
       "401k": 100000,
       "403b": 0,

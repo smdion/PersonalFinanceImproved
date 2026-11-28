@@ -310,52 +310,12 @@ export function portfolioContributionsModule(m: any) {
   };
 }
 
-const snapshot = (map: Map<string, number>, keys: Iterable<string>) =>
-  new Map([...keys].map((k) => [k, map.get(k) ?? 0]));
 const ownMap = (map: unknown) =>
   proof.current && map === proof.current.state?.indBalance
     ? proof.current
     : undefined;
 
-/** The yearly reconcile: what it wrote on the parts' balances. */
-export function reconcileModule(m: any) {
-  return {
-    ...m,
-    reconcileIndividualToAggregate: (
-      parts: any[],
-      partKey: any,
-      partBalance: Map<string, number>,
-      accountBalance: any,
-    ) => {
-      const run = ownMap(partBalance);
-      if (!run)
-        return m.reconcileIndividualToAggregate(
-          parts,
-          partKey,
-          partBalance,
-          accountBalance,
-        );
-      const before = snapshot(partBalance, parts.map(partKey));
-      const out = m.reconcileIndividualToAggregate(
-        parts,
-        partKey,
-        partBalance,
-        accountBalance,
-      );
-      let total = 0;
-      let largest = "";
-      for (const [k, v] of before) {
-        const d = (partBalance.get(k) ?? 0) - v;
-        total += Math.abs(d);
-        if (Math.abs(d) >= CENT && !largest) largest = `${k} ${d.toFixed(2)}`;
-      }
-      observe(run, "reconcile.write", total, at(run, `reconcile ${largest}`));
-      return out;
-    },
-  };
-}
-
-/** The surplus handoff, and the basis sync's keep-A branch and writes. */
+/** The basis sync's keep-A branch and writes, and the draws on copies. */
 export function brokerageBasisModule(m: any) {
   return {
     ...m,
@@ -379,33 +339,6 @@ export function brokerageBasisModule(m: any) {
       } finally {
         if (run) run.onCopies--;
       }
-    },
-    followReconciliation: (
-      parts: any[],
-      partKey: any,
-      partBalance: Map<string, number>,
-      basis: Map<string, number>,
-      aggregateBasis: number,
-      mutate: () => unknown,
-    ) => {
-      const run = ownMap(partBalance);
-      const call = () =>
-        m.followReconciliation(
-          parts,
-          partKey,
-          partBalance,
-          basis,
-          aggregateBasis,
-          mutate,
-        );
-      if (!run) return call();
-      const before = new Map(basis);
-      const out = call();
-      let handoff = 0;
-      for (const [k, v] of basis)
-        handoff += Math.max(0, v - (before.get(k) ?? 0));
-      observe(run, "handoff", handoff, at(run, "handoff"));
-      return out;
     },
     syncAggregateBasis: (
       parts: any[],
@@ -632,8 +565,6 @@ export const STOPS = [
   "d3",
   "d2.noPart",
   "d3.noPart",
-  "reconcile.write",
-  "handoff",
   "keepA",
   "sync.writeA",
   "sync.writeB",

@@ -3933,7 +3933,7 @@
       "count": 1
     },
     "ratchet/no-abbreviation": {
-      "count": 24
+      "count": 21
     },
     "ratchet/no-guarded-division": {
       "count": 2
@@ -3988,14 +3988,9 @@
       "count": 14
     }
   },
-  "src/lib/pure/engine/individual-accounts/reconcile-group.ts": {
-    "ratchet/no-abbreviation": {
-      "count": 3
-    }
-  },
   "src/lib/pure/engine/individual-accounts/reconcile.ts": {
     "ratchet/no-abbreviation": {
-      "count": 16
+      "count": 11
     },
     "ratchet/no-unregistered-fallback": {
       "count": 1

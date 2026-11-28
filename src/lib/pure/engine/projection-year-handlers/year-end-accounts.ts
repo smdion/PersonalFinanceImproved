@@ -1,15 +1,12 @@
-import { followReconciliation, syncAggregateBasis } from "../brokerage-basis";
+import { syncAggregateBasis } from "../brokerage-basis";
 import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
-import {
-  buildIndividualYearBalances,
-  reconcileIndividualToAggregate,
-} from "../individual-accounts/reconcile";
+import { buildIndividualYearBalances } from "../individual-accounts/reconcile";
 import { scopedBalances } from "../balance-utils";
 import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { yearGapDraw } from "./goal-draws";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
-/** The year's per-account rows, then the accounts reconciled. */
+/** The year's per-account rows, then the aggregate basis from the parts. */
 export function closeYearAccounts(
   ctx: Pick<ProjectionContext, "ledgerRuns" | "holdsRealAccount">,
   indAccounts: ProjectionContext["indAccounts"],
@@ -57,27 +54,8 @@ export function closeYearAccounts(
       )
     : [];
 
-  // Reconcile indBalance to accountBalance once per year, as decumulation-year.ts does:
-  // after the output row is built (output shows pre-cleanup figures, the
-  // carried state post-cleanup).
+  // The aggregate basis is the accounts' sum.
   if (ledgerRuns) {
-    routeWarnings.push(
-      ...followReconciliation(
-        indAccounts,
-        indKey,
-        indBalance,
-        brokBasis,
-        balances.afterTaxBasis,
-        () =>
-          reconcileIndividualToAggregate(
-            indAccounts,
-            indKey,
-            indBalance,
-            accountBalance,
-          ),
-      ),
-    );
-    // The aggregate basis is the accounts' sum.
     syncAggregateBasis(
       indAccounts,
       indKey,

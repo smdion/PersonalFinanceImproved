@@ -102,8 +102,8 @@ export function runWorkingYearFlows(
     routeWarnings,
   );
   settle(ctx, state, "accumulation.goalDraws");
-  // Nothing writes between the goal draws and the year's close, whose
-  // rows are read before its reconcile.
+  // Nothing writes between the goal draws and the year's close, which reads
+  // the rows.
   settle(ctx, state, "accumulation.beforeReconcile");
   return {
     individualContributions,

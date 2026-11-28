@@ -1,4 +1,4 @@
-/** The decumulation year's growth, year-end state and rows, before the reconcile. */
+/** The decumulation year's growth, year-end state and rows, before its close. */
 import { cleanupDust } from "../balance-deduction";
 import { followDraws } from "../brokerage-basis";
 import {

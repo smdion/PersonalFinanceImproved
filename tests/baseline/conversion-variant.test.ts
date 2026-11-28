@@ -24,7 +24,6 @@ import { seedHousehold } from "./seed";
 import { BASELINE_NOW, REGENERATE } from "./router-suite";
 import { PROCEDURES, callProcedure } from "./procedures";
 import { PIN_DIRS } from "./pin-runs";
-import { driftIn } from "../pure/fixtures/drift";
 import type { NumberTree } from "./numbers";
 import { flatten, numberTree } from "./numbers";
 
@@ -126,9 +125,5 @@ describe(`conversion variant: ${KEY}`, () => {
       true,
     );
     expect(years().some((y) => (y.rmdAmount ?? 0) > 0)).toBe(true);
-  });
-
-  it("the two balance tracks agree: a conversion moves money between account parts", () => {
-    expect(driftIn(output)).toEqual([]);
   });
 });

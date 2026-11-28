@@ -283,9 +283,8 @@ describe("engine invariants", () => {
               const catBal = year.balanceByAccount[cat as AccountCategory];
               if (!catBal) continue;
               const catTotal = getTotalBalance(catBal);
-              // Individual account sum should equal category total to the
-              // cent — tightened from < $1 now that
-              // reconcileIndividualToAggregate runs every year.
+              // Individual account sum equals the category total to the
+              // cent: the category is a view of its parts.
               expect(Math.abs(indivTotal - catTotal)).toBeLessThan(0.01);
             }
           }
@@ -463,29 +462,6 @@ describe("engine invariants", () => {
             expect(Math.abs(slotTotal - year.totalWithdrawal)).toBeLessThan(
               EPSILON + 1,
             );
-          }
-        }),
-        { numRuns: NUM_RUNS },
-      );
-    });
-
-    it("31 — no indBal/acctBal reconciliation diagnostic is emitted for any fixture (v0.7.8 indBal reconciliation follow-up)", () => {
-      // A >$1 indBalance/accountBalance drift is a structural finding, not rounding, and
-      // reconcileIndividualToAggregate surfaces it as a "[DIAG] indBal/
-      // acctBal reconciliation:"-prefixed warning rather than silently
-      // absorbing it. This invariant asserts that finding never actually
-      // fires for generated fixtures — if it does, that's real drift worth
-      // investigating, not a test to relax.
-      //
-      // Scoped to this specific prefix, not every "[DIAG]"-tagged warning.
-      fc.assert(
-        fc.property(arbitraryInput(), (input) => {
-          const result = calculateProjection(input);
-          for (const year of result.projectionByYear) {
-            const reconciliationWarnings = (year.warnings ?? []).filter(
-              (w: string) => w.includes("[DIAG] indBal/acctBal reconciliation"),
-            );
-            expect(reconciliationWarnings).toEqual([]);
           }
         }),
         { numRuns: NUM_RUNS },
@@ -1770,9 +1746,6 @@ describe("engine invariants", () => {
           brokerage.reduce((s, a) => s + a.balance, 0),
           `${y.year} brokerage accounts = brokerage total`,
         ).toBeCloseTo(y.balanceByTaxType.afterTax, 0);
-        expect(
-          (y.warnings ?? []).filter((w) => w.includes("reconciliation")),
-        ).toEqual([]);
         // The Portfolio brokerage grows only by its own contribution.
         const portfolio = brokerage.find(
           (a) => a.parentCategory === "Portfolio",
@@ -1884,8 +1857,8 @@ describe("engine invariants", () => {
       expect(big.retirement).toBeCloseTo(small.retirement, 0);
     });
 
-    // Shared checks: per-account brokerage = brokerage total, no
-    // reconciliation warning, every year in the window.
+    // Shared check: per-account brokerage = brokerage total, every year in
+    // the window.
     const brokerageAddsUp = (input: ProjectionInput, years = 4) => {
       for (const y of calculateProjection(input).projectionByYear.slice(
         0,
@@ -1898,10 +1871,6 @@ describe("engine invariants", () => {
           brokerage.reduce((t, a) => t + a.balance, 0),
           `${y.year} brokerage accounts = brokerage total`,
         ).toBeCloseTo(y.balanceByTaxType.afterTax, 0);
-        expect(
-          (y.warnings ?? []).filter((w) => w.includes("reconciliation")),
-          `${y.year} reconciliation`,
-        ).toEqual([]);
       }
     };
 
@@ -1973,8 +1942,8 @@ describe("engine invariants", () => {
         parentCategory: "Retirement",
         origin: "projected",
       };
-      // No account holds money the aggregate doesn't know about, so neither
-      // reconciliation nor the basis sync has anything to report.
+      // No account holds money the aggregate doesn't know about, so the
+      // basis sync has nothing to report.
       const noDiagnostics = (input: ProjectionInput) => {
         for (const y of calculateProjection(input).projectionByYear.slice(0, 4))
           expect(

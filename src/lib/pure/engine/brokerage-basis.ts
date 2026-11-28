@@ -179,39 +179,6 @@ export function followInflows<T>(
 }
 
 /**
- * Runs the yearly reconciliation (`mutate`). Lowered accounts give up basis at their ratio;
- * raised ones receive the aggregate's basis surplus, by and at most their increase.
- */
-export function followReconciliation<T>(
-  indAccounts: readonly IndividualAccountInput[],
-  indKey: IndKeyFn,
-  indBalance: Map<string, number>,
-  basis: BrokerageBasis,
-  aggregateBasis: number,
-  mutate: () => T,
-): T {
-  const before = brokerageBalances(indAccounts, indKey, indBalance);
-  const result = followDraws(indAccounts, indKey, indBalance, basis, mutate);
-  const raised = [...before]
-    .map(([k, was]) => [k, Math.max(0, indBalance.get(k) ?? 0) - was] as const)
-    .filter(([, inc]) => inc > 0);
-  if (raised.length === 0) return result;
-  let accountsBasis = 0;
-  for (const k of before.keys()) accountsBasis += basis.get(k) ?? 0;
-  const surplus = aggregateBasis - accountsBasis;
-  if (surplus <= 0) return result;
-  const totalInc = raised.reduce((s, [, inc]) => s + inc, 0);
-  for (const [k, inc] of raised)
-    basis.set(
-      k,
-      roundToCents(
-        (basis.get(k) ?? 0) + Math.min(inc, surplus * (inc / totalInc)),
-      ),
-    );
-  return result;
-}
-
-/**
  * Year end: when the accounts hold all brokerage money the aggregate basis is their sum (basis is
  * cost, so it can sit above the balance after a loss). Drift over $1 is surfaced as a diagnostic.
  */
