@@ -1,7 +1,7 @@
 /**
  * The JSON ratchets: size-baseline.json, the ESLint suppressions files, the
- * calculation-register baseline, the duplicate-code counts and the count of
- * procedures without a doc comment, each compared with its base copy.
+ * calculation-register baseline and the counts files (COUNT_FILES), each
+ * compared with its base copy.
  */
 import { members, sumByGroup } from "./moves";
 import { named, type Rise } from "./rise";
@@ -20,6 +20,8 @@ export const DUPLICATES_FILE = "scripts/ratchets/duplicates.json";
 /** tests/lint/procedure-doc-comments.test.ts's count. */
 export const UNDOCUMENTED_FILE =
   "scripts/ratchets/undocumented-procedures.json";
+/** tests/lint/writing.test.ts's counts (RULES § Writing). */
+export const WRITING_FILE = "scripts/ratchets/writing.json";
 const FILE_LIMIT = 400;
 
 export type SizeBaseline = {
@@ -208,41 +210,32 @@ export function registerRises(base: Register, head: Register): Rise[] {
 }
 
 export type Duplicates = { blocks: number; lines: number };
+export type Undocumented = { procedures: number };
+export type Writing = { longSentences: number; modals: number };
+export type Counts = Record<string, number>;
 
-/** Neither total rises; a file the base doesn't have yet starts the count. */
-export function duplicateRises(
-  base: Duplicates | undefined,
-  head: Duplicates | undefined,
+/** Each counts file, and how its failure names a count (its key). */
+export const COUNT_FILES: Record<string, (key: string) => string> = {
+  [DUPLICATES_FILE]: (key) => `copied ${key}`,
+  [UNDOCUMENTED_FILE]: () => "procedures without a doc comment",
+  [WRITING_FILE]: (key) =>
+    key === "modals"
+      ? `"should" and "may" as modals`
+      : "sentences over 25 words",
+};
+
+/** No count rises; a file or a count the base doesn't have yet starts it. */
+export function countRises(
+  file: string,
+  base: Counts | undefined,
+  head: Counts | undefined,
 ): Rise[] {
   if (!base || !head) return [];
-  return (["blocks", "lines"] as const)
-    .filter((key) => head[key] > base[key])
-    .map((key) =>
-      named(
-        DUPLICATES_FILE,
-        key,
-        `copied ${key}: ${head[key]}, ${base[key]} at the base`,
-        [key],
-        head[key] - base[key],
-      ),
-    );
-}
-
-export type Undocumented = { procedures: number };
-
-/** The count doesn't rise; a file the base doesn't have yet starts it. */
-export function undocumentedRises(
-  base: Undocumented | undefined,
-  head: Undocumented | undefined,
-): Rise[] {
-  if (!base || !head || head.procedures <= base.procedures) return [];
-  return [
-    named(
-      UNDOCUMENTED_FILE,
-      "procedures",
-      `procedures without a doc comment: ${head.procedures}, ${base.procedures} at the base`,
-      ["procedures"],
-      head.procedures - base.procedures,
-    ),
-  ];
+  const label = COUNT_FILES[file] ?? ((key: string) => key);
+  return Object.entries(head).flatMap(([key, count]) => {
+    const was = base[key];
+    if (was === undefined || count <= was) return [];
+    const text = `${label(key)}: ${count}, ${was} at the base`;
+    return [named(file, key, text, [key], count - was)];
+  });
 }

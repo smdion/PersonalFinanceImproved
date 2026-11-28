@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { readRouterCatalog } from "../../scripts/gen-api-docs";
 import {
   UNDOCUMENTED_FILE,
-  undocumentedRises,
+  countRises,
   type Undocumented,
 } from "../../scripts/ratchets/counts";
 import { excuse } from "../../scripts/ratchets/raise";
@@ -48,7 +48,9 @@ describe("procedure doc comments", () => {
   });
 });
 
-describe("undocumentedRises", () => {
+describe("countRises on the undocumented-procedures count", () => {
+  const undocumentedRises = (base?: Undocumented, head?: Undocumented) =>
+    countRises(UNDOCUMENTED_FILE, base, head);
   const base = { procedures: 40 };
 
   it("passes the same or a lower count and a new file", () => {

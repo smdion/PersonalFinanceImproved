@@ -7,7 +7,11 @@ import {
   judge,
   type Clone,
 } from "../../scripts/check-duplicates";
-import { duplicateRises } from "../../scripts/ratchets/counts";
+import {
+  DUPLICATES_FILE,
+  countRises,
+  type Duplicates,
+} from "../../scripts/ratchets/counts";
 import { excuse } from "../../scripts/ratchets/raise";
 
 const clone = (lines: number, a: string, b: string): Clone => ({
@@ -74,7 +78,9 @@ describe("check-duplicates", () => {
   });
 });
 
-describe("duplicateRises", () => {
+describe("countRises on the copied-code counts", () => {
+  const duplicateRises = (base?: Duplicates, head?: Duplicates) =>
+    countRises(DUPLICATES_FILE, base, head);
   const base = { blocks: 32, lines: 757 };
 
   it("passes the same or lower counts and a new file", () => {

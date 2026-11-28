@@ -6,8 +6,8 @@
  *   size-baseline.json, eslint-suppressions.json, eslint-suppressions-typed.json,
  *   tests/accessibility/axe-baseline.json (counts per page and rule),
  *   scripts/calculation-register-baseline.json (lists and risk labels),
- *   scripts/ratchets/duplicates.json (copied blocks and lines),
- *   scripts/ratchets/undocumented-procedures.json (procedures without a doc comment),
+ *   the counts files in ratchets/counts.ts's COUNT_FILES (copied code,
+ *   procedures without a doc comment, the docs' long sentences and modals),
  *   the page budgets in scripts/check-bundle-size.ts, the coverage thresholds
  *   and excludes in vitest.config.ts, the known lists in
  *   tests/lint/violations.test.ts, tests/lint/procedure-verbs.test.ts and
@@ -46,20 +46,17 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  DUPLICATES_FILE,
+  COUNT_FILES,
   REGISTER_FILE,
   SIZE_FILE,
   SUPPRESSION_FILES,
-  UNDOCUMENTED_FILE,
-  duplicateRises,
+  countRises,
   registerRises,
   sizeRises,
   suppressionRises,
-  undocumentedRises,
-  type Duplicates,
+  type Counts,
   type Register,
   type SizeBaseline,
-  type Undocumented,
 } from "./ratchets/counts";
 import {
   BUNDLE_FILE,
@@ -205,8 +202,7 @@ export const RATCHET_FILES = [
   SIZE_FILE,
   ...SUPPRESSION_FILES,
   REGISTER_FILE,
-  DUPLICATES_FILE,
-  UNDOCUMENTED_FILE,
+  ...Object.keys(COUNT_FILES),
   BUNDLE_FILE,
   COVERAGE_FILE,
   ...LIST_FILES,
@@ -257,18 +253,14 @@ export function risesBetween(git: Git, from: string, to: string): Rise[] {
       json(now, REGISTER_FILE, emptyRegister),
     ),
   );
-  rises.push(
-    ...duplicateRises(
-      json<Duplicates | undefined>(was, DUPLICATES_FILE, undefined),
-      json<Duplicates | undefined>(now, DUPLICATES_FILE, undefined),
-    ),
-  );
-  rises.push(
-    ...undocumentedRises(
-      json<Undocumented | undefined>(was, UNDOCUMENTED_FILE, undefined),
-      json<Undocumented | undefined>(now, UNDOCUMENTED_FILE, undefined),
-    ),
-  );
+  for (const file of Object.keys(COUNT_FILES))
+    rises.push(
+      ...countRises(
+        file,
+        json<Counts | undefined>(was, file, undefined),
+        json<Counts | undefined>(now, file, undefined),
+      ),
+    );
   rises.push(...bundleRises(...both(BUNDLE_FILE), now));
   rises.push(...coverageRises(...both(COVERAGE_FILE), moves));
   for (const file of LIST_FILES)
