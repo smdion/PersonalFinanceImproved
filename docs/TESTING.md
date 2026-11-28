@@ -115,6 +115,7 @@ When the behavior baseline is rewritten on purpose (`LEDGR_BASELINE_WRITE=1`, v0
 - Two routers fetching the same data independently
 - A What-If sandbox value that leaks into another page or into the active profiles
 - Logic, wording or UI that treats one profile as a baseline ("Main", "default", "not active — viewing", "changed from main")
+- Prose that breaks RULES § Writing: "should" or "may" in a rule, a sentence over 25 words, passive voice, or one word in two meanings
 - User-facing text that says "pin/pinned" (say active or set), "override" (say set, changed, changes by year, month changes), "customized"/"customize" (say set or changed), or "Monte Carlo"/"MC" (say Simulation). Code names may keep them.
 - A metric (wealth score, FI progress, tax location, etc.) computed via different code paths on different pages
 - A router calling `getLatestSnapshot()` for year-level data instead of reading from `buildYearEndHistory()`

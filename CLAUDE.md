@@ -55,6 +55,8 @@ the reviewer and the owner do.
 - **Commit size:** at most 400 changed `src/` lines, and at most 8 `src/`
   files in an engine or tax commit. A pure move, rename or split (code
   moved unchanged) carries a `Mechanical:` line and is exempt.
+- **Writing:** docs, user-visible strings, commit bodies and agent prompts
+  follow RULES § Writing.
 - **Shape pass on bug fixes:** why was the bug possible, and where else does
   it exist? Fix the cause there, not one call site.
 
