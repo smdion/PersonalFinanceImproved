@@ -1,5 +1,5 @@
-import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
 import { buildIndividualYearBalances } from "../individual-accounts/reconcile";
+import { yearAccountView } from "../individual-accounts/year-view";
 import { scopedBalances } from "../balance-utils";
 import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { yearGapDraw } from "./goal-draws";
@@ -24,32 +24,30 @@ export function closeYearAccounts(
   balances: ProjectionLoopState["balances"],
 ) {
   const { ledgerRuns, holdsRealAccount } = ctx;
-  const indYearBalances: IndividualAccountYearBalance[] = holdsRealAccount
-    ? buildIndividualYearBalances(
-        indAccounts,
-        indKey,
-        indBalance,
-        indParentCat,
-        "accumulation",
-        {
-          contribs: indContributions,
-          match: indMatch,
-          growth: indGrowth,
-          intentional: indIntentional,
-          overflow: indOverflow,
-          ramp: indRamp,
-          basis: indBasis,
-          brokerageBasis: brokBasis,
-          ...(gapRun?.accounts
-            ? {
-                withdrawal: gapRun.accounts.withdrawal,
-                draws: gapRun.accounts.draws,
-              }
-            : {}),
-        },
-        gapRun?.accounts?.eligibility,
-      )
-    : [];
+  const records = buildIndividualYearBalances(
+    indAccounts,
+    indKey,
+    indBalance,
+    indParentCat,
+    "accumulation",
+    {
+      contribs: indContributions,
+      match: indMatch,
+      growth: indGrowth,
+      intentional: indIntentional,
+      overflow: indOverflow,
+      ramp: indRamp,
+      basis: indBasis,
+      brokerageBasis: brokBasis,
+      ...(gapRun?.accounts
+        ? {
+            withdrawal: gapRun.accounts.withdrawal,
+            draws: gapRun.accounts.draws,
+          }
+        : {}),
+    },
+    gapRun?.accounts?.eligibility,
+  );
 
   const { allAccountsBalance, retirementBalance } = scopedBalances(
     balances,
@@ -58,5 +56,6 @@ export function closeYearAccounts(
       : undefined,
   );
 
-  return { indYearBalances, allAccountsBalance, retirementBalance };
+  const accountView = yearAccountView(indAccounts, records, holdsRealAccount);
+  return { accountView, allAccountsBalance, retirementBalance };
 }

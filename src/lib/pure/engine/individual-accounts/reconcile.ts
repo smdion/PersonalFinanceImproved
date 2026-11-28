@@ -9,7 +9,7 @@ import type {
 import { roundToCents } from "../../../utils/math";
 import { isOverflowTarget } from "../../../config/account-types";
 import type { EligibilityRecord } from "@/lib/pure/accounts/eligibility";
-import { accountIdKeyOf, isHeldPart } from "@/lib/pure/accounts/account-part";
+import { accountIdKeyOf } from "@/lib/pure/accounts/account-part";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {
   clampBasisToBalance,
@@ -18,8 +18,8 @@ import {
 } from "@/lib/pure/accounts/roth-basis-tracking";
 
 /**
- * Builds per-account year records. `eligibility` (decumulation) passes through lock state and
- * reason; `maps.basis`/`maps.draws` fill the Roth basis fields from end-of-year `indBasis`.
+ * Builds each part's year record, in `indAccounts` order. `eligibility` (decumulation) passes
+ * through lock state and reason; `maps.basis`/`maps.draws` fill the Roth basis fields.
  */
 export function buildIndividualYearBalances(
   indAccounts: IndividualAccountInput[],
@@ -67,7 +67,7 @@ export function buildIndividualYearBalances(
   // The roth group, when this account has any of its fields.
   const rothFields = (roth: AccountYearRothBasis) =>
     Object.keys(roth).length > 0 ? { roth } : {};
-  const rows = indAccounts.map((ia): IndividualAccountYearBalance => {
+  return indAccounts.map((ia): IndividualAccountYearBalance => {
     const k = indKey(ia);
     const isOverflow = isOverflowTarget(ia.category);
     const projectedFields =
@@ -147,13 +147,6 @@ export function buildIndividualYearBalances(
       ...costBasisFields,
       ...projectedFields,
     };
-  });
-  // A held part shows; a synthetic one never; any other once it holds money.
-  return rows.filter((r, i) => {
-    if (isHeldPart(indAccounts[i]!)) return true;
-    if (indAccounts[i]!.origin === "synthetic") return false;
-    const drawn = r.draw?.withdrawal ?? 0;
-    return r.balance !== 0 || r.contribution !== 0 || drawn !== 0;
   });
 }
 

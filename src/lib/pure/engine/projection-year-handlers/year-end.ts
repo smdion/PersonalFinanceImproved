@@ -25,7 +25,7 @@ export function closeDecumulationYear(
   const { ledgerRuns, indAccounts, indKey } = ctx;
   const { balances, indBalance, indBasis } = state;
   const { year, age } = thisYear;
-  const { individualYearBalances } = growYearToRows(ctx, state, thisYear, flow);
+  const { accountView } = growYearToRows(ctx, state, thisYear, flow);
 
   // Basis re-clamped after dust cleanup: an account cleaned to $0 carries $0
   // basis into next year (the row already shows the pre-cleanup figure).
@@ -46,5 +46,5 @@ export function closeDecumulationYear(
     state.retirementDepletionAge = age;
   }
 
-  return { individualYearBalances, yearEnd };
+  return { accountView, yearEnd };
 }

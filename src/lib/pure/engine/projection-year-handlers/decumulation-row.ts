@@ -122,7 +122,7 @@ export function decumulationYearRow(
     allAccountsBalance: yearEnd.allAccountsBalance,
     balanceByTaxType: { ...balances },
     balanceByAccount: cloneAccountBalances(accountBalance),
-    individualAccountBalances: parts.closed.individualYearBalances,
+    ...parts.closed.accountView,
     returnRate,
     annualizedReturnRate: returnRate,
     rmdAmount,

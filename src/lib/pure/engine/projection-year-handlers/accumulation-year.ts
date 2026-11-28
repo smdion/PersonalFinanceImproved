@@ -69,7 +69,7 @@ export function runAccumulationYear(
     sized,
   });
   const { gapDraw, effectiveReturn, goalWithdrawals } = flows;
-  const { indYearBalances, allAccountsBalance, retirementBalance } =
+  const { accountView, allAccountsBalance, retirementBalance } =
     closeYearAccounts(
       ctx,
       indAccounts,
@@ -125,7 +125,7 @@ export function runAccumulationYear(
     allAccountsBalance,
     balanceByTaxType: { ...balances },
     balanceByAccount: cloneAccountBalances(accountBalance),
-    individualAccountBalances: indYearBalances,
+    ...accountView,
     returnRate: effectiveReturn,
     annualizedReturnRate:
       yearIndex === 0 && firstYearFraction < 1

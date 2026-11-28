@@ -5,6 +5,7 @@ import {
   buildIndividualYearBalances,
   clampIndividualBasis,
 } from "../individual-accounts/reconcile";
+import { yearAccountView } from "../individual-accounts/year-view";
 import { updatePerPersonTradBalance } from "./helpers";
 import { settle } from "./settle";
 import { growYear } from "./year-growth";
@@ -76,25 +77,28 @@ export function growYearToRows(
     );
   }
 
-  // Build individual account year balances (decumulation)
-  const individualYearBalances = holdsRealAccount
-    ? buildIndividualYearBalances(
-        individualAccounts,
-        individualKey,
-        individualBalance,
-        individualParentCategory,
-        "decumulation",
-        {
-          contribs: individualContributions,
-          growth: individualGrowth,
-          withdrawal: individualWithdrawal,
-          basis: individualBasis,
-          draws: basisDraws,
-          brokerageBasis,
-        },
-        eligibility,
-      )
-    : [];
+  // Each part's year record (decumulation), and the view the year states
+  const records = buildIndividualYearBalances(
+    individualAccounts,
+    individualKey,
+    individualBalance,
+    individualParentCategory,
+    "decumulation",
+    {
+      contribs: individualContributions,
+      growth: individualGrowth,
+      withdrawal: individualWithdrawal,
+      basis: individualBasis,
+      draws: basisDraws,
+      brokerageBasis,
+    },
+    eligibility,
+  );
+  const accountView = yearAccountView(
+    individualAccounts,
+    records,
+    holdsRealAccount,
+  );
 
   // Zero out rounding dust
   followDraws(
@@ -111,5 +115,5 @@ export function growYearToRows(
       ),
   );
   settle(ctx, state, "decumulation.beforeReconcile");
-  return { individualYearBalances };
+  return { accountView };
 }

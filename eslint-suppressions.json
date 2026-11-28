@@ -3988,9 +3988,6 @@
   "src/lib/pure/engine/individual-accounts/reconcile.ts": {
     "ratchet/no-abbreviation": {
       "count": 11
-    },
-    "ratchet/no-unregistered-fallback": {
-      "count": 1
     }
   },
   "src/lib/pure/engine/individual-accounts/withdrawals.ts": {
@@ -4011,7 +4008,7 @@
   },
   "src/lib/pure/engine/projection-year-handlers/accumulation-year.ts": {
     "ratchet/no-abbreviation": {
-      "count": 7
+      "count": 6
     }
   },
   "src/lib/pure/engine/projection-year-handlers/context.ts": {
@@ -4126,7 +4123,7 @@
   },
   "src/lib/pure/engine/projection-year-handlers/year-end-accounts.ts": {
     "ratchet/no-abbreviation": {
-      "count": 13
+      "count": 12
     }
   },
   "src/lib/pure/engine/projection-year-handlers/year-end.ts": {
