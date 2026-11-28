@@ -178,6 +178,17 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
     expect(patch).not.toHaveProperty("rothConversionTarget");
   });
 
+  it("Apply leaves a saved conversion rate of 0 at 0: conversions stay off", () => {
+    const { mutate } = renderTaxesSection(
+      { enableRothConversions: true, rothConversionTarget: "0" },
+      { recommendedTarget: 0.22, currentTarget: 0.12, candidates: [] },
+    );
+    screen.getByText("Apply").click();
+    const patch = mutate.mock.calls[0]![0];
+    expect(patch.rothBracketTarget).toBe("0.22");
+    expect(patch).not.toHaveProperty("rothConversionTarget");
+  });
+
   it("Apply sets all three fields when both conversions and smoothing are on", () => {
     const { mutate } = renderTaxesSection(
       {

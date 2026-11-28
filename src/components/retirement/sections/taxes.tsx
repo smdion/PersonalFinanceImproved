@@ -98,10 +98,10 @@ export function TaxesSection({
       buildSettingsPatch(settings, {
         rothBracketTarget: target,
         // Moved together as the optimizer scores a candidate
-        // (buildCandidateInput), each on its own toggle; an unset rate stays unset, a 0% target
-        // leaves the rate (0 is off).
+        // (buildCandidateInput), each on its own toggle. Only a saved rate above 0 moves: an unset
+        // rate stays unset, a saved 0 stays off, and a 0% target leaves the rate.
         ...(settings.enableRothConversions &&
-        settings.rothConversionTarget != null &&
+        Number(settings.rothConversionTarget) > 0 &&
         recommendedTarget > 0
           ? { rothConversionTarget: target }
           : {}),

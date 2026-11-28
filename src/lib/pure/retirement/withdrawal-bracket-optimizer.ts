@@ -4,7 +4,7 @@
  * Calls `calculateProjection()` as a black box via `decumulationOverrides`; no engine changes.
  */
 import { withControlledOverrides } from "@/lib/pure/contributions/controlled-overrides";
-import { calculateProjection } from "../engine";
+import { calculateProjection, conversionOff } from "../engine";
 import type {
   ProjectionInput,
   DecumulationOverride,
@@ -82,7 +82,10 @@ function buildCandidateInput(
     year: firstDecumulationYear(input),
     rothBracketTarget: target,
     // A 0% target leaves the conversion rate unset: a rate of 0 is off, a 0% bracket converts.
-    ...(distributionTaxRates.enableRothConversions && target > 0
+    // A saved rate of 0 stays: the household's conversions are off, so its candidates are too.
+    ...(distributionTaxRates.enableRothConversions &&
+    target > 0 &&
+    !conversionOff(distributionTaxRates.rothConversionTarget)
       ? { rothConversionTarget: target }
       : {}),
     ...(input.decumulationDefaults.rmdSmoothingEnabled

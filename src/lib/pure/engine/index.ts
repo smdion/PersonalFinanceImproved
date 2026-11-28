@@ -7,6 +7,7 @@ export { openingParts, syntheticOpeningParts } from "./opening-parts";
 export { lumpSumParts, resolveLumpSums, runLumpSums } from "./lump-sum-targets";
 export type { ResolvedLumpSums } from "./lump-sum-targets";
 export { projectionPriceLevel } from "./price-level";
+export { conversionOff } from "./conversion-room";
 
 export {
   estimateEffectiveTaxRate,

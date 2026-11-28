@@ -525,6 +525,20 @@ describe("optimizeRothBracketTarget", () => {
     expect(result.recommendedTarget).toBe(0.12);
   });
 
+  it("a saved conversion rate of 0 keeps conversions off in every candidate (Q-conversion-zero-2)", () => {
+    // Conversions on with a rate of 0 is off: each candidate must score
+    // the plan the household has, the same as with the switch off.
+    const rateZero = makeMainHousehold(0.22, true);
+    rateZero.decumulationDefaults.distributionTaxRates.rothConversionTarget = 0;
+    const switchOff = makeMainHousehold(0.22, false);
+    const scores = (input: ProjectionInput) =>
+      optimizeRothBracketTarget(input).candidates.map((c) => [
+        c.target,
+        Math.round(c.netCost * 100) / 100,
+      ]);
+    expect(scores(rateZero)).toEqual(scores(switchOff));
+  });
+
   it("a 0% current target with conversions on and no conversion rate scores staying put as it runs: converting the 0% room (Q-conversion-zero-2)", () => {
     // The CZ2 shape: the 0% candidate is the household's own setting, so
     // its score is the plan unchanged. Brokerage drawn first leaves the 0%
