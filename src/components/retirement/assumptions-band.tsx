@@ -19,6 +19,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { storedStrategyConfig } from "@/lib/config/stored-withdrawal-strategy";
 import { StrategyChip } from "@/components/retirement/sections/strategy-picker";
 import { buildSettingsPatch } from "@/components/retirement/sections/settings-patch";
+import { CeilingOptions } from "@/components/retirement/sections/rate-options";
 import {
   decimalToWhole,
   rothTargetOf,
@@ -295,11 +296,9 @@ export function AssumptionsBand({
               }
               className="text-caption bg-transparent"
             >
-              <option value="0.1">10%</option>
-              <option value="0.12">12%</option>
-              <option value="0.22">22%</option>
-              <option value="0.24">24%</option>
-              <option value="0.32">32%</option>
+              <CeilingOptions
+                saved={rothTargetOf(settings.rothBracketTarget)}
+              />
             </select>
           ) : (
             <span className="font-medium">

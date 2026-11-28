@@ -39,9 +39,10 @@ import { rothTargetOf } from "./helpers";
 import { WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS } from "@/lib/config/withdrawal-routing";
 import { RoutingModeOptions } from "./routing-mode-options";
 import {
+  CeilingOptions,
   ConversionRateOptions,
   conversionRateValue,
-} from "./conversion-rate-options";
+} from "./rate-options";
 
 type Props = {
   settings: Settings;
@@ -263,11 +264,10 @@ export function TaxesSection({
               disabled={!isEditable}
               className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option value="0.1">10% (~$30k MFJ)</option>
-              <option value="0.12">12% (~$116k MFJ)</option>
-              <option value="0.22">22% (~$226k MFJ)</option>
-              <option value="0.24">24% (~$414k MFJ)</option>
-              <option value="0.32">32% (~$526k MFJ)</option>
+              <CeilingOptions
+                saved={rothTargetOf(settings.rothBracketTarget)}
+                withIncome
+              />
             </select>
             <EngineWarnings warnings={optimizer?.notes ?? []} />
             {recommendedTarget != null && (

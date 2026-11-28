@@ -231,6 +231,22 @@ describe("TaxesSection — Roth conversion rate picker", () => {
   });
 });
 
+describe("TaxesSection — Bracket Ceiling picker", () => {
+  it.each([
+    ["0.12", "12% (~$116k MFJ)"],
+    ["0", "0%"],
+    ["0.35", "35%"],
+    ["0.37", "37%"],
+  ])("a saved ceiling of %s shows as itself (%s), selected", (saved, label) => {
+    renderTaxesSection({ rothBracketTarget: saved });
+    const select = screen.getByLabelText(/Bracket Ceiling/, {
+      selector: "select",
+    }) as HTMLSelectElement;
+    expect(select.value).toBe(String(Number(saved)));
+    expect(select.options[select.selectedIndex]!.textContent).toBe(label);
+  });
+});
+
 describe("TaxesSection — Withdrawal Routing (persisted default)", () => {
   it("defaults the select to Bracket Filling when the household has no setting yet", () => {
     renderTaxesSection({ withdrawalRoutingMode: undefined });
