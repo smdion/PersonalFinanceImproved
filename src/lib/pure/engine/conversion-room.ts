@@ -24,13 +24,20 @@ export function convertiblePreTax(
   return roundToCents(balances.preTax - excluded);
 }
 
-/** A resolved conversion target of 0 turns conversions off, whichever setting it came from;
- *  routing's reservation and the conversion both read this. */
-export const conversionOff = (target: number | undefined) => target === 0;
+/** A conversion rate (`conversionRate`) of 0 turns conversions off; a bracket target of 0 the
+ *  conversion falls back to is the 0% band, as for withdrawals (Q-conversion-zero-2).
+ *  Routing's reservation and the conversion both read this. */
+export const conversionOff = (rate: number | undefined) => rate === 0;
+
+/** The conversion's own rate: the year's `rothConversionTarget`, else the plan's. */
+export const conversionRate = (
+  config: { rothConversionTarget?: number },
+  taxRates: { rothConversionTarget?: number },
+) => config.rothConversionTarget ?? taxRates.rothConversionTarget;
 
 /** What routing's conversion reservation reads, as `performRothConversion` resolves it: the
- *  target (the year's override first), whether the year converts (`conversionOff`), and
- *  the Traditional it can draw on before this year's draws. */
+ *  target (the rate, else the bracket target; the year's first), whether the year converts
+ *  (`conversionOff` on the rate), and the Traditional it can draw on before this year's draws. */
 export function conversionRoutingInputs(
   config: { rothConversionTarget?: number; rothBracketTarget?: number },
   taxRates: {
@@ -40,15 +47,12 @@ export function conversionRoutingInputs(
   },
   source: Readonly<Parameters<typeof convertiblePreTax>>,
 ) {
+  const rate = conversionRate(config, taxRates);
   const conversionTarget =
-    config.rothConversionTarget ??
-    taxRates.rothConversionTarget ??
-    config.rothBracketTarget ??
-    taxRates.rothBracketTarget;
+    rate ?? config.rothBracketTarget ?? taxRates.rothBracketTarget;
   return {
     conversionTarget,
-    conversionsEnabled:
-      taxRates.enableRothConversions && !conversionOff(conversionTarget),
+    conversionsEnabled: taxRates.enableRothConversions && !conversionOff(rate),
     conversionSource: convertiblePreTax(...source),
   };
 }
@@ -56,7 +60,7 @@ export function conversionRoutingInputs(
 interface ConversionRoomInput {
   /** Conversions on: the household's own target's room is the floor under smoothing's. */
   enableRothConversions: boolean | undefined;
-  /** The household's `rothConversionTarget` (it and its fallback never 0 here: 0 opts out before). */
+  /** The conversion rate (`conversionRate`; never 0 here: 0 opts out before). */
   configTarget: number | undefined;
   rothBracketTarget: number | undefined;
   yearTaxableIncome: number;

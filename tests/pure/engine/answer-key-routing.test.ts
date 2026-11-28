@@ -774,16 +774,16 @@ describe("answer key: Bracket filling", () => {
     });
   });
 
-  describe("strategies/CZ a conversion target of 0 is off", () => {
+  describe("strategies/CZ a conversion rate of 0 is off; a bracket target of 0 converts the 0% room", () => {
     // MFJ 2026, both born 1980 (46), retired, no Social Security. A holds
     // a brokerage of 500,000, all basis, drawn first, and a Traditional
     // IRA of 1,000,000 the draw avoids (penalty-exposed before 59½); a
     // conversion owes no 10% penalty. Spending 50,000 comes from the
-    // brokerage, no taxable income. Conversions on: a target of 0% would
-    // convert to the 0% band's top, gross 32,200 (the deduction). A
-    // resolved target of 0, from the plan's conversion target or from the
-    // bracket target it falls back to, turns conversions off: nothing
-    // converts.
+    // brokerage, no taxable income. Conversions on: a target of 0% fills
+    // the 0% band's top, gross 32,200 (the deduction). A conversion rate
+    // of 0 set on its own turns conversions off (Q-conversion-zero-2 (a));
+    // a bracket target of 0 the conversion falls back to is the 0% band,
+    // as it is for withdrawals, so it converts the 0% room.
     const person = (id: "A" | "B") => ({
       id,
       primary: id === "A",
@@ -842,9 +842,9 @@ describe("answer key: Bracket filling", () => {
     it("strategies/CZ1 [RET-10] the plan's conversion target of 0 converts nothing", () => {
       cents(converted({ conversion: 0 }), { converted: 0, withdrawal: 50_000 });
     });
-    it("strategies/CZ2 [RET-10] no conversion target and a bracket target of 0 converts nothing", () => {
+    it("strategies/CZ2 [RET-10] no conversion target and a bracket target of 0 converts the 0% band's room: 32,200", () => {
       cents(converted({ conversion: null, bracket: 0 }), {
-        converted: 0,
+        converted: 32_200,
         withdrawal: 50_000,
       });
     });

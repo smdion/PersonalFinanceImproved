@@ -61,7 +61,7 @@ export interface RothConversionInput {
   parts: ConversionParts;
   /** This year's household RMD-smoothing minimum (`computeRmdSmoothingTargets`). When positive it
    *  runs even with `enableRothConversions` off and may raise the target rate up to
-   *  `rmdSmoothingMaxBracketTarget`; a resolved target of 0 still wins. */
+   *  `rmdSmoothingMaxBracketTarget`; a conversion rate of 0 still wins. */
   rmdSmoothingTarget?: number;
   /** Ceiling smoothing may raise the target rate to; always resolved when `rmdSmoothingTarget`
    *  is supplied. */
@@ -127,9 +127,9 @@ export function performRothConversion(
     return zero();
   }
 
-  // A resolved target of 0 is off (conversionOff); smoothing never overrides it.
+  // A conversion rate of 0 is off (conversionOff); smoothing never overrides it.
   const configTarget = input.rothConversionTarget;
-  if (conversionOff(configTarget ?? input.rothBracketTarget)) return zero();
+  if (conversionOff(configTarget)) return zero();
 
   // Total taxable income this year (Traditional withdrawals + taxable SS +
   // non-qualified Roth growth) -- needed before target resolution now,

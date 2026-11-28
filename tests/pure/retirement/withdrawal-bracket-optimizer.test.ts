@@ -525,6 +525,38 @@ describe("optimizeRothBracketTarget", () => {
     expect(result.recommendedTarget).toBe(0.12);
   });
 
+  it("a 0% current target with conversions on and no conversion rate scores staying put as it runs: converting the 0% room (Q-conversion-zero-2)", () => {
+    // The CZ2 shape: the 0% candidate is the household's own setting, so
+    // its score is the plan unchanged. Brokerage drawn first leaves the 0%
+    // room to the conversion. A conversion rate of 0 would turn conversions
+    // off; the candidate leaves the rate unset instead.
+    const input: ProjectionInput = makeMainHousehold(0, true);
+    const { decumulationDefaults: d } = input;
+    d.distributionTaxRates.rothConversionTarget = undefined;
+    d.distributionTaxRates.rothBracketOverlay = false;
+    d.withdrawalRoutingMode = "waterfall";
+    d.withdrawalOrder = ["brokerage", "401k", "403b", "ira", "hsa"];
+    const result = optimizeRothBracketTarget(input);
+    const atZero = result.candidates.find((c) => c.target === 0)!;
+    const asIs = calculateProjection(input).projectionByYear;
+    const decum = asIs.filter((y) => y.phase === "decumulation");
+    expect(decum.some((y) => (y.rothConversionAmount ?? 0) > 0)).toBe(true);
+    const lifetimeTax = decum.reduce(
+      (s, y) =>
+        s +
+        (y.taxCost ?? 0) +
+        (y.rothConversionTaxCost ?? 0) +
+        (y.penaltyCost ?? 0) +
+        (y.irmaaCost ?? 0),
+      0,
+    );
+    const preTaxEnd = asIs[asIs.length - 1]?.balanceByTaxType.preTax ?? 0;
+    expect(atZero.netCost).toBeCloseTo(
+      lifetimeTax + ASSUMED_TERMINAL_RATE * preTaxEnd,
+      0,
+    );
+  });
+
   it("searched-policy-equals-adopted-policy: the winning candidate's own override set reproduces its scored netCost", () => {
     const input = makeMainHousehold(0.22, true);
     const result = optimizeRothBracketTarget(input);

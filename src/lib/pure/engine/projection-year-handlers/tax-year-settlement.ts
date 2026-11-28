@@ -8,6 +8,7 @@ import { reinvestRmdExcess, trackDepletions } from "../balance-deduction";
 import { floorParts } from "../category-slices";
 import { performRothConversion } from "../roth-conversion";
 import { premiumYearHasEnrollee } from "../conversion-irmaa-cap";
+import { conversionRate } from "../conversion-room";
 import { rmdOwnerOf } from "../rmd-enforcement";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
@@ -281,8 +282,8 @@ export function yearRothConversion(
     taxBrackets: grownTaxBrackets,
     taxMultiplier: taxRates.taxMultiplier,
     standardDeduction: grownStandardDeduction,
-    rothConversionTarget: config.rothConversionTarget,
-    // The fallback with no year's target: conversionRoutingInputs' resolved target
+    rothConversionTarget: conversionRate(config, taxRates),
+    // The fallback with no conversion rate: conversionRoutingInputs' resolved target
     // (engine-snapshot fixtures 31/41/54/55/61 pin its order).
     rothBracketTarget: resolvedConversionTarget,
     totalTraditionalWithdrawal,

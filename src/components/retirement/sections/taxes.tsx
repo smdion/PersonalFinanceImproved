@@ -93,8 +93,8 @@ export function TaxesSection({
       buildSettingsPatch(settings, {
         rothBracketTarget: target,
         // Moved together as the optimizer scores a candidate
-        // (buildCandidateInput), each on its own toggle.
-        ...(settings.enableRothConversions
+        // (buildCandidateInput), each on its own toggle; a 0% target leaves the rate (0 is off).
+        ...(settings.enableRothConversions && recommendedTarget > 0
           ? { rothConversionTarget: target }
           : {}),
         ...(settings.rmdSmoothingEnabled

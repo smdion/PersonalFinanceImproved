@@ -81,7 +81,8 @@ function buildCandidateInput(
   const override: DecumulationOverride = {
     year: firstDecumulationYear(input),
     rothBracketTarget: target,
-    ...(distributionTaxRates.enableRothConversions
+    // A 0% target leaves the conversion rate unset: a rate of 0 is off, a 0% bracket converts.
+    ...(distributionTaxRates.enableRothConversions && target > 0
       ? { rothConversionTarget: target }
       : {}),
     ...(input.decumulationDefaults.rmdSmoothingEnabled
