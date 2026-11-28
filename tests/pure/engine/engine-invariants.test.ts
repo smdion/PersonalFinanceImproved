@@ -1942,15 +1942,6 @@ describe("engine invariants", () => {
         parentCategory: "Retirement",
         origin: "projected",
       };
-      // No account holds money the aggregate doesn't know about, so the
-      // basis sync has nothing to report.
-      const noDiagnostics = (input: ProjectionInput) => {
-        for (const y of calculateProjection(input).projectionByYear.slice(0, 4))
-          expect(
-            (y.warnings ?? []).filter((w) => w.startsWith("[DIAG]")),
-            `${y.year}`,
-          ).toEqual([]);
-      };
       const withoutRetirementBrokerage = (
         keepPortfolio: boolean,
       ): ProjectionInput => {
@@ -2011,7 +2002,6 @@ describe("engine invariants", () => {
             ?.balance,
         ).toBeGreaterThan(0);
         brokerageAddsUp(input);
-        noDiagnostics(input);
       });
 
       it("a retirement lump sum lands in the projection-only one, not Portfolio", () => {
@@ -2031,13 +2021,11 @@ describe("engine invariants", () => {
         };
         expect(portfolioIn(input)).toBeCloseTo(portfolioIn(base), 0);
         brokerageAddsUp(input);
-        noDiagnostics(input);
       });
 
       it("no brokerage at all: the projection-only one holds all of it", () => {
         const input = withoutRetirementBrokerage(false);
         brokerageAddsUp(input);
-        noDiagnostics(input);
       });
     });
 

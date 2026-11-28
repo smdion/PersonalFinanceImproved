@@ -1,5 +1,5 @@
 /**
- * Brokerage cost basis per account — seeding and the year-end sync
+ * Brokerage cost basis per account — seeding, draws and inflows
  * (fictional accounts).
  */
 import { describe, it, expect } from "vitest";
@@ -10,14 +10,9 @@ import {
   followInflows,
   seedBrokerageBasis,
   sellAtCost,
-  syncAggregateBasis,
 } from "@/lib/pure/engine/brokerage-basis";
-import { accountBalancesFromTaxBuckets } from "../fixtures/tax-bucket-split";
 import { makeIndKey } from "@/lib/pure/engine/individual-accounts/ledger";
-import type {
-  IndividualAccountInput,
-  TaxBuckets,
-} from "@/lib/pure/accounts/account-balances.types";
+import type { IndividualAccountInput } from "@/lib/pure/accounts/account-balances.types";
 import { withAccountId } from "../fixtures/engine-input";
 
 const indKey = makeIndKey();
@@ -149,82 +144,5 @@ describe("seedBrokerageBasis", () => {
   it("an account holding nothing seeds no basis, whatever it states", () => {
     const accts = [brokerage("A", 0, 2500)];
     expect(seedBrokerageBasis(accts, indKey, 0).get(indKey(accts[0]!))).toBe(0);
-  });
-});
-
-describe("syncAggregateBasis", () => {
-  const buckets = (afterTax: number, afterTaxBasis: number): TaxBuckets => ({
-    preTax: 0,
-    taxFree: 0,
-    hsa: 0,
-    afterTax,
-    afterTaxBasis,
-  });
-
-  it("the accounts' basis becomes the aggregate when they hold all the brokerage money", () => {
-    const accts = [brokerage("A", 0), brokerage("B", 0)];
-    const indBal = new Map([
-      [indKey(accts[0]!), 30000],
-      [indKey(accts[1]!), 10000],
-    ]);
-    const basis = new Map([
-      [indKey(accts[0]!), 12000],
-      [indKey(accts[1]!), 10000],
-    ]);
-    const balances = buckets(40000, 25000);
-    const diagnostics: string[] = [];
-    syncAggregateBasis(
-      accts,
-      indKey,
-      indBal,
-      basis,
-      balances,
-      accountBalancesFromTaxBuckets(balances),
-      diagnostics,
-    );
-    expect(balances.afterTaxBasis).toBe(22000);
-    expect(diagnostics).toHaveLength(1); // the $3,000 drift is surfaced
-  });
-
-  it("basis above the balance after a loss stays on every track", () => {
-    // $8,000 held at $10,000 cost: the aggregate, the category and the account all keep $10,000.
-    const accts = [brokerage("A", 0)];
-    const indBal = new Map([[indKey(accts[0]!), 8000]]);
-    const basis = new Map([[indKey(accts[0]!), 10000]]);
-    const balances = buckets(8000, 10000);
-    const accountBalance = accountBalancesFromTaxBuckets(balances);
-    syncAggregateBasis(
-      accts,
-      indKey,
-      indBal,
-      basis,
-      balances,
-      accountBalance,
-      [],
-    );
-    expect(balances.afterTaxBasis).toBe(10000);
-    expect(accountBalance.brokerage).toMatchObject({ basis: 10000 });
-    expect(basis.get(indKey(accts[0]!))).toBe(10000);
-  });
-
-  it("keeps the aggregate basis when brokerage money lives outside the accounts", () => {
-    // Overflow built $50k of brokerage with no account to hold it; only a
-    // projection-only account at $0 exists.
-    const accts = [brokerage("Projected", 0, 0)];
-    const indBal = new Map([[indKey(accts[0]!), 0]]);
-    const basis = new Map([[indKey(accts[0]!), 0]]);
-    const balances = buckets(50000, 45000);
-    const diagnostics: string[] = [];
-    syncAggregateBasis(
-      accts,
-      indKey,
-      indBal,
-      basis,
-      balances,
-      accountBalancesFromTaxBuckets(balances),
-      diagnostics,
-    );
-    expect(balances.afterTaxBasis).toBe(45000);
-    expect(diagnostics[0]).toMatch(/aggregate basis kept/);
   });
 });

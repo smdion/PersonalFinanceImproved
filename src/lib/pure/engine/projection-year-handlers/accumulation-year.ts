@@ -85,9 +85,7 @@ export function runAccumulationYear(
       indBasis,
       brokBasis,
       flows.gapRun,
-      routeWarnings,
       balances,
-      accountBalance,
     );
 
   const yearProjection: EngineAccumulationYear = {

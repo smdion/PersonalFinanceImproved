@@ -444,7 +444,6 @@
     "src/lib/pure/engine/bracket-growth.ts:taxGrowthYears",
     "src/lib/pure/engine/bracket-growth.ts:taxTableYears",
     "src/lib/pure/engine/brokerage-basis.ts:retirementBrokerageBasisRatio",
-    "src/lib/pure/engine/brokerage-basis.ts:syncAggregateBasis",
     "src/lib/pure/engine/contribution-projection.ts:projectSpecAmount",
     "src/lib/pure/engine/contribution-routing.ts:capSpecs",
     "src/lib/pure/engine/contribution-routing.ts:slotLimits",

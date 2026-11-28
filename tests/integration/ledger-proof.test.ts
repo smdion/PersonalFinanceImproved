@@ -3,8 +3,7 @@
  * buckets; B, the categories; C, the account parts) agree to the cent at the
  * seed and at every settled point (D1: A against B at the seed; D2: B against
  * its parts, except at a point whose flow moves only the parts; D3: a
- * category's basis against its parts'), the year-end basis sync writes
- * nothing, every draw
+ * category's basis against its parts'), every draw
  * lands on parts, no part is ever below $0, no money sits in a
  * slice or basis category without parts, every run holds a ledger, and the
  * overwrite of A at `settle` stays within a cent or two a bucket. The

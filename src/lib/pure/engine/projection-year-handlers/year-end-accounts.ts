@@ -1,4 +1,3 @@
-import { syncAggregateBasis } from "../brokerage-basis";
 import type { IndividualAccountYearBalance } from "../../accounts/account-balances.types";
 import { buildIndividualYearBalances } from "../individual-accounts/reconcile";
 import { scopedBalances } from "../balance-utils";
@@ -6,7 +5,7 @@ import { computeNonRetirementExclusion } from "@/lib/pure/accounts/eligibility";
 import type { yearGapDraw } from "./goal-draws";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
-/** The year's per-account rows, then the aggregate basis from the parts. */
+/** The year's per-account rows and its year-end balances. */
 export function closeYearAccounts(
   ctx: Pick<ProjectionContext, "ledgerRuns" | "holdsRealAccount">,
   indAccounts: ProjectionContext["indAccounts"],
@@ -22,9 +21,7 @@ export function closeYearAccounts(
   indBasis: ProjectionLoopState["indBasis"],
   brokBasis: ProjectionLoopState["brokBasis"],
   gapRun: ReturnType<typeof yearGapDraw>["gapRun"],
-  routeWarnings: string[],
   balances: ProjectionLoopState["balances"],
-  accountBalance: ProjectionLoopState["accountBalance"],
 ) {
   const { ledgerRuns, holdsRealAccount } = ctx;
   const indYearBalances: IndividualAccountYearBalance[] = holdsRealAccount
@@ -53,19 +50,6 @@ export function closeYearAccounts(
         gapRun?.accounts?.eligibility,
       )
     : [];
-
-  // The aggregate basis is the accounts' sum.
-  if (ledgerRuns) {
-    syncAggregateBasis(
-      indAccounts,
-      indKey,
-      indBalance,
-      brokBasis,
-      balances,
-      accountBalance,
-      routeWarnings,
-    );
-  }
 
   const { allAccountsBalance, retirementBalance } = scopedBalances(
     balances,

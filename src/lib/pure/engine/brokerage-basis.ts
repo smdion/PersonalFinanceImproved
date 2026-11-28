@@ -8,12 +8,7 @@ import {
   getAccountTypeConfig,
   isRetirementMoney,
 } from "../../config/account-types";
-import { setBasis } from "../accounts/account-balance";
-import type {
-  AccountBalances,
-  IndividualAccountInput,
-  TaxBuckets,
-} from "../accounts/account-balances.types";
+import type { IndividualAccountInput } from "../accounts/account-balances.types";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 export type BrokerageBasis = Map<string, number>;
@@ -176,57 +171,6 @@ export function followInflows<T>(
     if (now > was) basis.set(k, roundToCents((basis.get(k) ?? 0) + now - was));
   }
   return result;
-}
-
-/**
- * Year end: when the accounts hold all brokerage money the aggregate basis is their sum (basis is
- * cost, so it can sit above the balance after a loss). Drift over $1 is surfaced as a diagnostic.
- */
-export function syncAggregateBasis(
-  indAccounts: readonly IndividualAccountInput[],
-  indKey: IndKeyFn,
-  indBalance: Map<string, number>,
-  basis: BrokerageBasis,
-  balances: TaxBuckets,
-  accountBalance: AccountBalances,
-  diagnostics: string[],
-): void {
-  const accounts = basisTrackedAccounts(indAccounts);
-  if (accounts.length === 0) return;
-  // The accounts' sum is the truth only when they hold all the brokerage
-  // money; otherwise keep the aggregate's basis and say so rather than
-  // price the rest as all gain.
-  const held = accounts.reduce(
-    (s, ia) => s + Math.max(0, indBalance.get(indKey(ia)) ?? 0),
-    0,
-  );
-  if (Math.abs(held - balances.afterTax) > 1) {
-    diagnostics.push(
-      `[DIAG] brokerage basis: accounts hold $${held.toFixed(2)} of $${balances.afterTax.toFixed(2)} brokerage — aggregate basis kept`,
-    );
-    return;
-  }
-  let total = 0;
-  const byCategory = new Map<string, number>();
-  for (const ia of accounts) {
-    const k = indKey(ia);
-    const b = roundToCents(basis.get(k) ?? 0);
-    basis.set(k, b);
-    total += b;
-    byCategory.set(ia.category, (byCategory.get(ia.category) ?? 0) + b);
-  }
-  total = roundToCents(total);
-  const drift = roundToCents(balances.afterTaxBasis - total);
-  if (Math.abs(drift) > 1)
-    diagnostics.push(
-      `[DIAG] brokerage basis: aggregate $${balances.afterTaxBasis.toFixed(2)} vs accounts $${total.toFixed(2)} (drift $${drift.toFixed(2)})`,
-    );
-  balances.afterTaxBasis = total;
-  for (const [cat, b] of byCategory) {
-    const balance = accountBalance[cat as keyof AccountBalances];
-    if (balance.structure === "basis_tracking")
-      setBasis(balance, roundToCents(b));
-  }
 }
 
 /** Basis ratio for a retirement brokerage withdrawal: Retirement-parented brokerages' basis ÷

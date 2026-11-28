@@ -21,7 +21,7 @@ projection-year-handlers/    one year of work
   rate-ceiling.ts            the retirement-rate ceiling on the spec slots
   contribution-credits.ts    the totals and overflow, the credits to the balances, the per-account spread
   goal-draws.ts              a gap year's draw and the brokerage goal draws
-  year-end-accounts.ts       the per-account rows, reconcile and the year-end balances
+  year-end-accounts.ts       the per-account rows and the year-end balances
   accumulation-year.ts       runAccumulationYear
   working-year-flows.ts      runWorkingYearFlows: contributions credited and spread, the gap draw, growth, goal draws
   decumulation-year.ts       runDecumulationYear: calls the stages below in order
@@ -38,7 +38,7 @@ projection-year-handlers/    one year of work
   funding-shortfall.ts       the unmet need (raw) and whether it's material
   year-cliffs.ts             IRMAA and ACA cliff checks
   portfolio-contributions.ts Portfolio contributions after retirement, reported only
-  year-end.ts                the year's close: the stage below, then reconciliation and year-end balances
+  year-end.ts                the year's close: the stage below, then the year-end balances
   year-end-rows.ts           growYearToRows: growth, year-end state, account rows, dust
   decumulation-row.ts        the decumulation year's row, from what its stages settled
   lump-sum.ts                one-time lump sums (both phases)
@@ -68,7 +68,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 | `individual-accounts/contributions.ts`  | Contributions, match, overflow and ramp spread to each account.                                                                                                     |
 | `individual-accounts/other-tax-part.ts` | Slot money of a tax type no spec in its category carries, onto the spec account's part of that tax type.                                                            |
 | `individual-accounts/withdrawals.ts`    | Withdrawals and brokerage goal draws spread to each account.                                                                                                        |
-| `individual-accounts/reconcile.ts`      | Year end per account: each account's row, clamps, and `reconcileIndividualToAggregate`; one group's reconciling is `reconcile-group.ts`.                            |
+| `individual-accounts/reconcile.ts`      | Year end per account: each account's row and the clamps.                                                                                                            |
 
 **Withdrawals and tax**
 
@@ -109,7 +109,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `balance-deduction.ts`  | Reinvests unspent RMD money on the accounts, tracks depletion, cleans dust.                                                  |
 | `balance-utils.ts`      | Cloning, bucket ↔ account conversions, `scopedBalances` (retirement vs all-accounts balance), penalty/exclusion subtraction. |
-| `brokerage-basis.ts`    | Cost basis per brokerage account (draws, inflows, reconciliation, the Retirement-group ratio) and `syncAggregateBasis`.      |
+| `brokerage-basis.ts`    | Cost basis per brokerage account (draws, inflows, the Retirement-group ratio).                                               |
 | `growth-application.ts` | The return rate at an age, from the plan's rate breakpoints.                                                                 |
 
 **Spending strategies** — `spending-strategy.ts` dispatches by strategy key (`STRATEGY_DISPATCH`); each strategy is its own module in `spending-strategies/`, a pure `(params, input) → result`, and their shared types are `types/spending-strategy.ts`:
@@ -131,7 +131,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 
 **Every year** — `runPreYearSetup`: return rate, profile switches, the spending strategy's target (from the retirement balance), the Portfolio exclusion for the year.
 
-**Accumulation** — `runAccumulationYear`, in this order: `sizeYearContributions` (`year-contributions.ts`, nothing credited yet: `yearZeroBasis` and `yearContributionTarget` (`contribution-target.ts`: year 0's basis, the target, the employer match), `yearContributionLimits` and `routeYearSlots` (`contribution-slots.ts`, with `applyRateCeiling`), `yearContributionTotals`, the brokerage ramp, and a gap year's need, `gapYearNeed`), then the year's money flows, `runWorkingYearFlows` (`working-year-flows.ts`): `creditYearLumpSums` and `distributeYearContributions` (`contribution-credits.ts`: the lump sums' and the contributions' account parts), `yearGapDraw` (`goal-draws.ts`), `growYear` (`year-growth.ts`), `brokerageGoalDraws` (Portfolio brokerages); then `closeYearAccounts` (`year-end-accounts.ts`: the per-account rows, `reconcileIndividualToAggregate`, `syncAggregateBasis`).
+**Accumulation** — `runAccumulationYear`, in this order: `sizeYearContributions` (`year-contributions.ts`, nothing credited yet: `yearZeroBasis` and `yearContributionTarget` (`contribution-target.ts`: year 0's basis, the target, the employer match), `yearContributionLimits` and `routeYearSlots` (`contribution-slots.ts`, with `applyRateCeiling`), `yearContributionTotals`, the brokerage ramp, and a gap year's need, `gapYearNeed`), then the year's money flows, `runWorkingYearFlows` (`working-year-flows.ts`): `creditYearLumpSums` and `distributeYearContributions` (`contribution-credits.ts`: the lump sums' and the contributions' account parts), `yearGapDraw` (`goal-draws.ts`), `growYear` (`year-growth.ts`), `brokerageGoalDraws` (Portfolio brokerages); then `closeYearAccounts` (`year-end-accounts.ts`: the per-account rows and the year-end balances).
 
 **When the phases change** — dates come from `lib/pure/household/household-timeline.ts`: plan dates (retirement year, end year) count from the primary person; per-person rules (catch-up, RMDs, 59½, the senior deduction) use that person's age; withdrawals start when the last person with a job retires (`retirementYear`), and the projection's last row is the year before `projectionEndYear` (the last person's end age): the end year itself isn't run, so a Projection to 95 stops at 94 (RULES.md § Known Gaps). Nothing averages the people.
 
@@ -155,7 +155,7 @@ spending-strategies/         the eight spending strategies, each (params, input)
 12. `yearCliffChecks` (`year-cliffs.ts`) — records the year's tax year for later IRMAA years (`recordIrmaaTaxYear`; a working year records its wages, `workingYearIncome`, in `runWorkingYearFlows`); the year's IRMAA charge (the year-start one, else `settleIrmaaCharge` from this year's own MAGI; `checkHouseholdIrmaa`, per person `checkIrmaa` × people 65+) and its warnings; `checkAca`
 13. `fundingShortfallForYear` (`funding-shortfall.ts`) — the unmet need (`unmetNeedRaw` inside the engine), whether it's material, and the IRMAA paid on top
 14. `decumulationPortfolioContributions` (`portfolio-contributions.ts`) — Portfolio contributions after retirement, reported only
-15. `closeDecumulationYear` (`year-end.ts`) — `growYearToRows` (`year-end-rows.ts`: `growYear`, the rows, `cleanupDust`), `reconcileIndividualToAggregate`, `syncAggregateBasis`, the year's row
+15. `closeDecumulationYear` (`year-end.ts`) — `growYearToRows` (`year-end-rows.ts`: `growYear`, the rows, `cleanupDust`), the year's row
 
 Steps 9 to 11 are one stage, the tax settlement: `settleYearTax` (`tax-settlement.ts`) runs them in order and returns what each settled. The year's tax is priced with one deduction, `priced.standardDeduction`, which the conversion and the re-price read back.
 

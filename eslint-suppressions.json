@@ -3929,11 +3929,8 @@
     }
   },
   "src/lib/pure/engine/brokerage-basis.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/no-abbreviation": {
-      "count": 21
+      "count": 17
     },
     "ratchet/no-guarded-division": {
       "count": 2
@@ -4134,7 +4131,7 @@
   },
   "src/lib/pure/engine/projection-year-handlers/year-end.ts": {
     "ratchet/no-abbreviation": {
-      "count": 5
+      "count": 4
     }
   },
   "src/lib/pure/engine/projection-year-handlers/year-need.ts": {

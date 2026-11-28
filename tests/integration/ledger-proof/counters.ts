@@ -1,7 +1,7 @@
 /**
  * The ledger proof's counters: wrappers around the engine's own functions
  * (installed by `vi.mock` in ledger-proof.test.ts) that read what each flow
- * and each year-end correction changed, in integer cents, at the seed and
+ * changed, in integer cents, at the seed and
  * at every settled point before `settle` writes the tax buckets.
  */
 import {
@@ -315,7 +315,7 @@ const ownMap = (map: unknown) =>
     ? proof.current
     : undefined;
 
-/** The basis sync's keep-A branch and writes, and the draws on copies. */
+/** The draws on copies of the run's maps (each counted as a trial). */
 export function brokerageBasisModule(m: any) {
   return {
     ...m,
@@ -339,63 +339,6 @@ export function brokerageBasisModule(m: any) {
       } finally {
         if (run) run.onCopies--;
       }
-    },
-    syncAggregateBasis: (
-      parts: any[],
-      partKey: any,
-      partBalance: Map<string, number>,
-      basis: Map<string, number>,
-      balances: any,
-      accountBalance: any,
-      diagnostics: string[],
-    ) => {
-      const run = ownMap(partBalance);
-      const call = () =>
-        m.syncAggregateBasis(
-          parts,
-          partKey,
-          partBalance,
-          basis,
-          balances,
-          accountBalance,
-          diagnostics,
-        );
-      const tracked = parts.filter(
-        (p) =>
-          getAccountTypeConfig(p.category).balanceStructure ===
-          "basis_tracking",
-      );
-      if (!run || tracked.length === 0) return call();
-      const A = run.state.balances;
-      const B = run.state.accountBalance;
-      const held = tracked.reduce(
-        (s, p) => s + Math.max(0, partBalance.get(partKey(p)) ?? 0),
-        0,
-      );
-      const keepA = Math.abs(held - A.afterTax) > 1;
-      observe(
-        run,
-        "keepA",
-        keepA ? 1 : 0,
-        at(run, `sync: parts hold ${held.toFixed(2)} of ${A.afterTax}`),
-      );
-      const basisA = A.afterTaxBasis;
-      const basisB = new Map(
-        getAllCategories().map((c) => [c, B[c].basis ?? 0]),
-      );
-      const out = call();
-      if (!keepA) {
-        observe(
-          run,
-          "sync.writeA",
-          A.afterTaxBasis - basisA,
-          at(run, "sync afterTaxBasis"),
-        );
-        for (const [c, v] of basisB)
-          if (B[c].structure === "basis_tracking")
-            observe(run, "sync.writeB", B[c].basis - v, at(run, `sync ${c}`));
-      }
-      return out;
     },
   };
 }
@@ -565,9 +508,6 @@ export const STOPS = [
   "d3",
   "d2.noPart",
   "d3.noPart",
-  "keepA",
-  "sync.writeA",
-  "sync.writeB",
   "unplaced.draw",
   "conv.mopUp",
   "neg.part",
