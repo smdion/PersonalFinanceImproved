@@ -344,6 +344,47 @@ describe("answer key: a goal draw's tax (decision D12.8)", () => {
   });
 });
 
+describe("answer key: a planned brokerage withdrawal", () => {
+  // The owner's rule: a planned withdrawal leaves the Portfolio brokerage
+  // that year with its gain's tax, as a goal draw does. The brokerage above
+  // gives 10,000: half is basis (5,000), half gain (5,000), its tax 5,000 ×
+  // 0.15 = 750, and the brokerage ends 2027 at 90,000 with basis 45,000.
+  it("engine/BW1 [ENG-14] a planned withdrawal leaves the brokerage with its gain's tax", () => {
+    const brokerage = {
+      ...acct("Ann brokerage", "brokerage", 100_000, 1, "afterTax"),
+      parentCategory: "Portfolio",
+      startingBasis: 50_000,
+    };
+    const y = workingRow(
+      years(
+        {
+          ...WORKING,
+          brokerageWithdrawals: [{ id: "roof", year: 2027, amount: 10_000 }],
+        },
+        [acct("Roth IRA", "ira", 1_000_000, 1, "taxFree"), brokerage],
+      ),
+      2027,
+    );
+    const drawn = y.brokerageWithdrawals![0]!;
+    cents(
+      {
+        brokerage: y.balanceByTaxType.afterTax,
+        basis: y.balanceByTaxType.afterTaxBasis,
+        amount: drawn.amount,
+        gain: drawn.gainsPortion,
+        taxCost: drawn.taxCost,
+      },
+      {
+        brokerage: 90_000,
+        basis: 45_000,
+        amount: 10_000,
+        gain: 5_000,
+        taxCost: 750,
+      },
+    );
+  });
+});
+
 describe("answer key: the standard deduction grown into 2027 (decision D12.9)", () => {
   // A 2026 standard deduction of 32,200 (MFJ, the 2026 tax data), grown
   // at 3% inflation (no 65+ add-on in this fixture). D12.9: grow year by

@@ -68,7 +68,8 @@ export function runAccumulationYear(
     config,
     sized,
   });
-  const { gapDraw, effectiveReturn, goalWithdrawals } = flows;
+  const { gapDraw, effectiveReturn, goalWithdrawals, brokerageWithdrawals } =
+    flows;
   const { accountView, allAccountsBalance, retirementBalance } =
     closeYearAccounts(
       ctx,
@@ -120,6 +121,7 @@ export function runAccumulationYear(
     brokerageRampContribution: rampAmount,
     totalTaxAdvSpace,
     brokerageGoalWithdrawals: goalWithdrawals,
+    ...(brokerageWithdrawals.length > 0 ? { brokerageWithdrawals } : {}),
     ...(gapDraw ? { gapDraw, savingStopped: setup.savingStopped } : {}),
     retirementBalance,
     allAccountsBalance,

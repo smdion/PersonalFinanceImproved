@@ -17,7 +17,7 @@ import { settle } from "./settle";
 import { growYear } from "./year-growth";
 
 /** The year's contributions credited and spread to each account, the gap
- *  year's draw, the year's growth and the brokerage goals' draws. */
+ *  year's draw, the year's growth and the brokerage withdrawals and goals. */
 export function runWorkingYearFlows(
   ctx: ProjectionContext,
   state: ProjectionLoopState,
@@ -95,7 +95,7 @@ export function runWorkingYearFlows(
   const individualGrowth = growYear(ctx, state, effectiveReturn, false);
   settle(ctx, state, "accumulation.growth");
 
-  const { goalWithdrawals } = brokerageGoalDraws(
+  const { goalWithdrawals, brokerageWithdrawals } = brokerageGoalDraws(
     ctx,
     state,
     year,
@@ -116,5 +116,6 @@ export function runWorkingYearFlows(
     gapDraw,
     effectiveReturn,
     goalWithdrawals,
+    brokerageWithdrawals,
   };
 }

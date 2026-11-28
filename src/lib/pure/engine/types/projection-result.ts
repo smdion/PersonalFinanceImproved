@@ -8,7 +8,12 @@ import type {
   IndividualAccountYearBalance,
   IndividualAccountInput,
 } from "../../accounts/account-balances.types";
-import type { RetirementYearOverride } from "./year-overrides";
+import type {
+  BrokerageGoalDraw,
+  PlannedBrokerageDraw,
+  PlannedBrokerageWithdrawal,
+  RetirementYearOverride,
+} from "./year-overrides";
 import type {
   AccumulationDefaults,
   AccumulationOverride,
@@ -171,6 +176,8 @@ export type ProjectionInput = {
     targetYear: number;
     priority: number;
   }[];
+  /** Planned withdrawals from the Portfolio brokerages, by year. */
+  brokerageWithdrawals?: PlannedBrokerageWithdrawal[];
 
   // --- Starting money ---
   /** The ledger's opening state, the one starting input: every account part
@@ -301,14 +308,9 @@ export type EngineAccumulationYear = {
   /** Total IRS-limited space this year. */
   totalTaxAdvSpace: number;
   /** Brokerage goal withdrawals processed this year (during accumulation). */
-  brokerageGoalWithdrawals: {
-    goalId: number;
-    name: string;
-    amount: number;
-    basisPortion: number;
-    gainsPortion: number;
-    taxCost: number;
-  }[];
+  brokerageGoalWithdrawals: BrokerageGoalDraw[];
+  /** This year's planned brokerage withdrawals (absent with none). */
+  brokerageWithdrawals?: PlannedBrokerageDraw[];
   /** Set when a paycheck is gone and pay didn't cover the budget: what came
    *  out of the accounts (gap-year-draw.ts). */
   gapDraw?: GapYearDraw;
@@ -566,5 +568,6 @@ export type ProjectionResult = {
     depletionYear: number;
     depletionAge: number;
   }[];
+  undrawnBrokerageWithdrawals?: PlannedBrokerageWithdrawal[]; // no working year
   warnings: string[];
 };

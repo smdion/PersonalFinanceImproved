@@ -1,5 +1,5 @@
-/** Inputs the projection applies in one calendar year: lump sums and
- *  salary or budget overrides. */
+/** Inputs the projection applies in one calendar year: lump sums, planned
+ *  brokerage withdrawals and salary or budget overrides. */
 
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { RothSplitSide } from "@/lib/config/tax-treatment-buckets";
@@ -31,6 +31,39 @@ export type LumpSum = {
    *  Retirement-parented accounts first. */
   targetParentCategory?: "Retirement" | "Portfolio";
   label?: string;
+};
+
+/**
+ * A one-time withdrawal from the Portfolio brokerages in a working year (the
+ * Brokerage page's planned events, above $0). It is drawn as a brokerage goal
+ * is, before the year's goals.
+ */
+export type PlannedBrokerageWithdrawal = {
+  id: string;
+  year: number;
+  amount: number;
+  label?: string;
+};
+
+/** One draw from the Portfolio brokerages: the amount drawn (at most what
+ *  they hold), the basis and gain it sold, and the gain's tax. */
+export type BrokerageDraw = {
+  amount: number;
+  basisPortion: number;
+  gainsPortion: number;
+  taxCost: number;
+};
+/** A goal's draw and a planned withdrawal's, as the year row reports them. */
+export type BrokerageGoalDraw = BrokerageDraw & {
+  goalId: number;
+  name: string;
+};
+export type PlannedBrokerageDraw = BrokerageDraw & {
+  id: string;
+  label?: string;
+  /** What the withdrawal asked for; `amount` is below it when the
+   *  brokerages held less. */
+  requested: number;
 };
 
 /** Override salary or budget at a specific calendar year in the projection. */

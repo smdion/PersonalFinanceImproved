@@ -3,6 +3,7 @@
  * per-year sticky-forward overrides. Year logic lives in projection-year-handlers/.
  */
 import type {
+  EngineYearProjection,
   ProjectionInput,
   ProjectionResult,
 } from "./types/projection-result";
@@ -25,6 +26,18 @@ import { runDecumulationYear } from "./projection-year-handlers/decumulation-yea
  *  couldn't cover. */
 function uncoveredPartNote({ name, amount }: UncoveredPart): string {
   return `${name} is saved below $0, and the other accounts of its type in the same Retirement or Portfolio group can't cover $${amount.toFixed(2)} of it, so the projection counts that $${amount.toFixed(2)} as $0.`;
+}
+
+/** The planned brokerage withdrawals dated outside the projected working
+ *  years: only a working year draws one. */
+function undrawnWithdrawals(
+  withdrawals: ProjectionInput["brokerageWithdrawals"],
+  years: readonly EngineYearProjection[],
+) {
+  const working = new Set(
+    years.filter((y) => y.phase === "accumulation").map((y) => y.year),
+  );
+  return (withdrawals ?? []).filter((w) => !working.has(w.year));
 }
 
 export function calculateProjection(
@@ -85,6 +98,11 @@ export function calculateProjection(
     }
   }
 
+  const undrawn = undrawnWithdrawals(
+    input.brokerageWithdrawals,
+    state.projectionByYear,
+  );
+
   // Sustainable withdrawal at retirement: the first decumulation year's
   // `targetWithdrawal` (tax-grossed need, before RMDs force more), not
   // `totalWithdrawal`, whose RMD excess is reinvested, never spent.
@@ -115,6 +133,7 @@ export function calculateProjection(
     sustainableWithdrawal,
     firstDecumulationYearStatedNeed: state.firstDecumulationYearStatedNeed,
     accountDepletions: state.accountDepletions,
+    ...(undrawn.length > 0 ? { undrawnBrokerageWithdrawals: undrawn } : {}),
     warnings,
   };
 }
